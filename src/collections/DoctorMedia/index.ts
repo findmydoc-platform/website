@@ -1,4 +1,5 @@
 import { beforeOperationNormalizeImageEdits } from '@/hooks/media/normalizeImageEdits'
+import { revalidateDoctorMediaChange } from '@/hooks/revalidateClinicSurfaces'
 import type { CollectionConfig } from 'payload'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -49,6 +50,7 @@ export const DoctorMedia: CollectionConfig = {
   },
   trash: true,
   hooks: {
+    afterChange: [revalidateDoctorMediaChange],
     afterError: [afterErrorLogMediaUploadError],
     beforeChange: [stableIdBeforeChangeHook, guardDoctorChange, beforeChangeDoctorMedia],
     beforeDelete: [beforeDeleteRejectReferencedDoctorMedia],

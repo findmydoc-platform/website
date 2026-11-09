@@ -5,6 +5,7 @@ import { createLocalReq, getPayload, type Payload, type PayloadRequest } from 'p
 import config from '@payload-config'
 import type { ClinicMedia } from '@/payload-types'
 import { platformClinicGalleryAppendHandler } from '@/endpoints/platformClinicGallery'
+import { clinicGalleryConstraints } from '@/features/clinicDashboard/gallery/contracts'
 import {
   asPayloadStaffUser,
   cleanupTrackedUsers,
@@ -22,6 +23,7 @@ describe('Platform clinic gallery', () => {
   let doctorId: number | undefined
   let otherDoctorId: number | undefined
   let doctorMediaId: number | undefined
+  const extraDraftIds: number[] = []
   const keyIds: number[] = []
   const staffIds: Array<number | string> = []
   const suffix = randomUUID()
@@ -66,6 +68,8 @@ describe('Platform clinic gallery', () => {
       await payload.delete({ collection: 'clinicMedia', id: secondMediaId, overrideAccess: true, trash: true })
     if (uploadedMediaId)
       await payload.delete({ collection: 'clinicMedia', id: uploadedMediaId, overrideAccess: true, trash: true })
+    for (const id of extraDraftIds)
+      await payload.delete({ collection: 'clinicMedia', id, overrideAccess: true, trash: true })
     if (otherDoctorId)
       await payload.update({
         collection: 'doctors',
@@ -106,12 +110,19 @@ describe('Platform clinic gallery', () => {
   })
 
   it('requires an explicit MCP key grant and preserves the existing gallery order', async () => {
+    expect((await request(staff)).status).toBe(200)
     const token = randomUUID()
     const ungrantedToken = randomUUID()
     const ungranted = await payload.create({
       collection: 'payload-mcp-api-keys',
       overrideAccess: true,
-      data: { user: staff.id, label: `gallery-ungranted-${suffix}`, enableAPIKey: true, apiKey: ungrantedToken },
+      data: {
+        user: staff.id,
+        label: `gallery-ungranted-${suffix}`,
+        enableAPIKey: true,
+        apiKey: ungrantedToken,
+        clinics: { update: true },
+      },
     })
     keyIds.push(ungranted.id)
     const key = await payload.create({
@@ -177,7 +188,10 @@ describe('Platform clinic gallery', () => {
               .trim()
           : body
       const result = JSON.parse(serialized)
-      return (result.result?.content?.[0]?.text ?? result.error?.message ?? '') as string
+      return (result.result?.content?.[0]?.text ??
+        result.result?.content?.[0]?.data ??
+        result.error?.message ??
+        '') as string
     }
     expect(await call(ungrantedToken)).not.toContain('Second synthetic image')
     expect(
@@ -188,6 +202,24 @@ describe('Platform clinic gallery', () => {
     const clinic = await payload.findByID({ collection: 'clinics', id: clinicId, depth: 0, overrideAccess: true })
     expect(clinic.profileGallery).toEqual([mediaId, secondMediaId])
     expect(clinic.thumbnail).toBe(mediaId)
+    const initialSnapshot = await call(token, 'readClinicGallery', { clinicId })
+    expect(initialSnapshot).not.toContain('/clinic-dashboard/')
+    expect(await call(ungrantedToken, 'readClinicGallery', { clinicId, mediaId })).not.toContain('iVBOR')
+    const image = JSON.parse(await call(token, 'readClinicGallery', { clinicId, mediaId })) as {
+      data: string
+      mimeType: string
+    }
+    expect(image.mimeType).toBe('image/png')
+    expect((await sharp(Buffer.from(image.data, 'base64')).metadata()).format).toBe('png')
+    expect(await call(token, 'readClinicGallery', { clinicId, mediaId: secondMediaId + 999999 })).not.toContain('iVBOR')
+    expect(await call(ungrantedToken, 'updateClinics', { id: clinicId, profileGallery: [] })).not.toContain(
+      'Document updated successfully',
+    )
+    const retained = await payload.findByID({ collection: 'clinics', id: clinicId, depth: 0, overrideAccess: true })
+    expect(retained.profileGallery).toEqual([mediaId, secondMediaId])
+    expect((await payload.findByID({ collection: 'clinicMedia', id: mediaId, overrideAccess: true })).status).toBe(
+      'published',
+    )
 
     const bytes = await sharp({ create: { width: 320, height: 240, channels: 3, background: '#99aabb' } })
       .png()
@@ -222,6 +254,23 @@ describe('Platform clinic gallery', () => {
       overrideAccess: true,
     })
     expect(stored).toMatchObject({ clinic: clinicId, alt: 'MCP synthetic image', status: 'draft' })
+    for (let index = 1; index < clinicGalleryConstraints.maxItems; index++) {
+      const extra = (await payload.create({
+        collection: 'clinicMedia',
+        overrideAccess: true,
+        user: staff,
+        data: { clinic: clinicId, alt: `Draft ${index}`, status: 'draft' },
+        file: { name: `draft-${index}-${suffix}.png`, data: bytes, size: bytes.length, mimetype: 'image/png' },
+      } as Parameters<Payload['create']>[0])) as ClinicMedia
+      extraDraftIds.push(extra.id)
+    }
+    expect(await call(token, 'uploadClinicGalleryImage', { ...upload, name: `over-limit-${suffix}.png` })).toContain(
+      'Too many unfinished clinic gallery uploads.',
+    )
+    while (extraDraftIds.length) {
+      const id = extraDraftIds.pop()!
+      await payload.delete({ collection: 'clinicMedia', id, overrideAccess: true, trash: true })
+    }
     expect(await call(ungrantedToken, 'readClinicGallery', { clinicId })).not.toContain('"revision"')
     const snapshot = JSON.parse(await call(token, 'readClinicGallery', { clinicId })) as { revision: number }
     const edit = {

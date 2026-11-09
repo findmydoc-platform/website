@@ -3,6 +3,8 @@ import { relationId } from '@/collections/clinics/profileGallery'
 import { clinicGallerySaveInputSchema } from './contracts'
 import { readClinicGallerySnapshot, saveClinicGallery } from './service'
 import { richTextToPlainText } from '@/features/clinicDashboard/profile/richText'
+import { clinicProfileMediaImageMimeTypes } from '@/collections/common/mediaCollection'
+import { MEDIA_UPLOAD_MAX_BYTES } from '@/config/mediaUploadPolicy'
 import type { ClinicGallerySaveInput } from './contracts'
 
 export async function requireCurrentPlatformStaff(req: PayloadRequest): Promise<void> {
@@ -30,6 +32,47 @@ async function requirePlatformClinicAccess(req: PayloadRequest, clinicId: number
 export async function readPlatformClinicGallery(req: PayloadRequest, clinicId: number) {
   await requirePlatformClinicAccess(req, clinicId)
   return (await readClinicGallerySnapshot(req, clinicId)).snapshot
+}
+
+export async function readPlatformClinicGalleryImage(req: PayloadRequest, clinicId: number, mediaId: number) {
+  const snapshot = await readPlatformClinicGallery(req, clinicId)
+  if (!snapshot.items.some((item) => item.id === String(mediaId))) throw new APIError('Gallery image not found.', 404)
+  const media = await req.payload.findByID({
+    collection: 'clinicMedia',
+    id: mediaId,
+    depth: 0,
+    overrideAccess: false,
+    req,
+  })
+  if (!media.filename || !media.mimeType || !clinicProfileMediaImageMimeTypes.includes(media.mimeType)) {
+    throw new APIError('Gallery image is unavailable.', 503)
+  }
+  const upload = req.payload.collections.clinicMedia.config.upload
+  if (!upload || !upload.handlers?.length) throw new APIError('Gallery image is unavailable.', 503)
+  for (const handler of upload.handlers) {
+    const response = await handler(req, {
+      doc: media,
+      headers: new Headers(),
+      params: { collection: 'clinicMedia', filename: media.filename, prefix: media.prefix ?? undefined },
+    })
+    if (!(response instanceof Response)) continue
+    if (response.status !== 200 || !response.body) throw new APIError('Gallery image is unavailable.', 503)
+    const reader = response.body.getReader()
+    const chunks: Uint8Array[] = []
+    let size = 0
+    while (true) {
+      const result = await reader.read()
+      if (result.done) break
+      size += result.value.byteLength
+      if (size > MEDIA_UPLOAD_MAX_BYTES) {
+        await reader.cancel()
+        throw new APIError('Gallery image exceeds the download limit.', 413)
+      }
+      chunks.push(result.value)
+    }
+    return { data: Buffer.concat(chunks).toString('base64'), mimeType: media.mimeType }
+  }
+  throw new APIError('Gallery image is unavailable.', 503)
 }
 
 export async function savePlatformClinicGallery(req: PayloadRequest, clinicId: number, input: ClinicGallerySaveInput) {

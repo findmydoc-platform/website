@@ -382,6 +382,125 @@ describe('MCP key management and client access', () => {
     const doctor = doctorResult.docs[0]!
     expect(doctor.slug).toBeTruthy()
     doctorIds.push(doctor.id)
+
+    const batchDoctor = await payload.create({
+      collection: 'doctors',
+      overrideAccess: true,
+      data: {
+        firstName: `${prefix}-batch`,
+        lastName: 'Doctor',
+        fullName: 'Batch Doctor',
+        active: false,
+        gender: 'female',
+        clinic: created.docs[0]!.id,
+        qualifications: ['Test'],
+        languages: ['english'],
+        slug: `${prefix}-batch-doctor`,
+      },
+    })
+    doctorIds.push(batchDoctor.id)
+    const batchToken = randomUUID()
+    const batchKey = await payload.create({
+      collection: 'payload-mcp-api-keys',
+      overrideAccess: true,
+      data: {
+        user: support.id,
+        label: `${prefix}-batch`,
+        enableAPIKey: true,
+        apiKey: batchToken,
+        clinics: { update: true },
+        'payload-mcp-tool': { trashDoctor: true },
+      },
+    })
+    keyIds.push(batchKey.id)
+    let releaseDoctor!: () => void
+    let signalDoctorStarted!: () => void
+    let clinicUpdateObserved = false
+    const doctorGate = new Promise<void>((resolve) => {
+      releaseDoctor = resolve
+    })
+    const doctorStarted = new Promise<void>((resolve) => {
+      signalDoctorStarted = resolve
+    })
+    const originalUpdate = payload.update.bind(payload)
+    const updateSpy = vi.spyOn(payload, 'update').mockImplementation((async (
+      options: Parameters<Payload['update']>[0],
+    ) => {
+      if (
+        options.collection === 'doctors' &&
+        'id' in options &&
+        options.id === batchDoctor.id &&
+        'deletedAt' in options.data
+      ) {
+        signalDoctorStarted()
+        await doctorGate
+      }
+      if (options.collection === 'clinics' && 'deletedAt' in options.data) {
+        await doctorStarted
+        clinicUpdateObserved = true
+        try {
+          return await originalUpdate(options)
+        } finally {
+          releaseDoctor()
+        }
+      }
+      return originalUpdate(options)
+    }) as typeof payload.update)
+    try {
+      const request = new Request('http://localhost:3000/api/mcp', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${batchToken}`,
+          'Content-Type': 'application/json',
+          Accept: 'application/json, text/event-stream',
+        },
+        body: JSON.stringify([
+          {
+            jsonrpc: '2.0',
+            id: 11,
+            method: 'tools/call',
+            params: { name: 'trashDoctor', arguments: { id: batchDoctor.id } },
+          },
+          {
+            jsonrpc: '2.0',
+            id: 12,
+            method: 'tools/call',
+            params: {
+              name: 'updateClinics',
+              arguments: {
+                where: JSON.stringify({ id: { equals: created.docs[0]!.id } }),
+                deletedAt: new Date().toISOString(),
+              },
+            },
+          },
+        ]),
+      })
+      const req = await createLocalReq(
+        { req: { method: request.method, url: request.url, headers: request.headers, body: request.body } },
+        payload,
+      )
+      const timeout = setTimeout(releaseDoctor, 3000)
+      try {
+        const response = await endpoint.handler(req)
+        const result = await response.text()
+        expect(result).toContain('moved to trash')
+        expect(result).toContain('Use the explicitly authorized trash tool')
+        expect(clinicUpdateObserved).toBe(true)
+      } finally {
+        clearTimeout(timeout)
+        releaseDoctor()
+      }
+    } finally {
+      updateSpy.mockRestore()
+    }
+    const clinicAfterBatch = await payload.findByID({
+      collection: 'clinics',
+      id: created.docs[0]!.id,
+      overrideAccess: true,
+      trash: true,
+    })
+    expect(clinicAfterBatch.deletedAt).toBeFalsy()
+
     const specialty = await payload.create({
       collection: 'medical-specialties',
       overrideAccess: true,

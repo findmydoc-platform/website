@@ -4064,7 +4064,7 @@ export interface PayloadMcpApiKey {
      */
     deleteDoctorImage?: boolean | null;
     /**
-     * Read the current ordered gallery and revision for a clinic.
+     * Read the ordered gallery and revision, or pass a gallery media ID to receive its base64 image and MIME type.
      */
     readClinicGallery?: boolean | null;
     /**

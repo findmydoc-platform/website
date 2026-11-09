@@ -58,7 +58,7 @@ export const Doctors: CollectionConfig<'doctors'> = {
     delete: isPlatformStaff, // Only Platform can delete
   },
   hooks: {
-    beforeOperation: [guardMcpTrash<'doctors'>(), guardDoctorOperation],
+    beforeOperation: [guardMcpTrash<'doctors'>('doctors'), guardDoctorOperation],
     afterOperation: [
       async (args) => {
         await verifyDoctorOperation({ ...args, result: args.result as unknown })

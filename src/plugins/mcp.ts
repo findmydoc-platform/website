@@ -7,6 +7,7 @@ import { generatedCollectionAccess } from '@/security/generatedCollectionAccess'
 import {
   appendPlatformClinicGalleryMedia,
   readPlatformClinicGallery,
+  readPlatformClinicGalleryImage,
   requireCurrentPlatformStaff,
   savePlatformClinicGallery,
 } from '@/features/clinicDashboard/gallery/platformGallery'
@@ -28,6 +29,13 @@ type McpCollectionConfig = {
 }
 
 const mcpUserCollection: CollectionSlug = 'platformStaff'
+
+const mcpGallerySnapshot = (snapshot: Awaited<ReturnType<typeof readPlatformClinicGallery>>) => ({
+  ...snapshot,
+  items: snapshot.items.map((item) =>
+    Object.fromEntries(Object.entries(item).filter(([key]) => key !== 'url' && key !== 'thumbnailUrl')),
+  ),
+})
 
 export const isPlatformStaffMcpUser = (user: unknown): boolean => {
   if (typeof user !== 'object' || user === null) return false
@@ -114,7 +122,7 @@ const createTrashTool = (collection: 'clinics' | 'doctors', name: string, label:
   handler: async (args: Record<string, unknown>, req: import('payload').PayloadRequest) => {
     const id = args.id
     if (typeof id !== 'string' && typeof id !== 'number') throw new Error(`Invalid ${label} ID`)
-    await withAuthorizedMcpTrash(req, () =>
+    await withAuthorizedMcpTrash({ req, collection, id }, () =>
       req.payload.update({
         collection,
         id,
@@ -153,7 +161,7 @@ const publishClinicGalleryImage = {
       throw new Error('Invalid image ID')
     }
     const snapshot = await appendPlatformClinicGalleryMedia(req, args.mediaId)
-    return { content: [{ type: 'text' as const, text: JSON.stringify(snapshot) }] }
+    return { content: [{ type: 'text' as const, text: JSON.stringify(mcpGallerySnapshot(snapshot)) }] }
   },
 }
 
@@ -261,12 +269,18 @@ const createDeleteMediaTool = (collection: 'clinicMedia' | 'doctorMedia', name: 
 
 const readClinicGallery = {
   name: 'readClinicGallery',
-  description: 'Read the current ordered gallery and revision for a clinic.',
-  parameters: { clinicId: z.number().int().positive().safe() },
+  description:
+    'Read the ordered gallery and revision, or pass a gallery media ID to receive its base64 image and MIME type.',
+  parameters: { clinicId: z.number().int().positive().safe(), mediaId: z.number().int().positive().safe().optional() },
   handler: async (args: Record<string, unknown>, req: import('payload').PayloadRequest) => {
     const clinicId = z.number().int().positive().safe().parse(args.clinicId)
+    const mediaId = z.number().int().positive().safe().optional().parse(args.mediaId)
+    if (mediaId !== undefined) {
+      const image = await readPlatformClinicGalleryImage(req, clinicId, mediaId)
+      return { content: [{ type: 'text' as const, text: JSON.stringify(image) }] }
+    }
     const snapshot = await readPlatformClinicGallery(req, clinicId)
-    return { content: [{ type: 'text' as const, text: JSON.stringify(snapshot) }] }
+    return { content: [{ type: 'text' as const, text: JSON.stringify(mcpGallerySnapshot(snapshot)) }] }
   },
 }
 
@@ -278,7 +292,7 @@ const saveClinicGalleryTool = {
     const clinicId = z.number().int().positive().safe().parse(args.clinicId)
     const input = clinicGallerySaveInputSchema.parse({ expectedRevision: args.expectedRevision, items: args.items })
     const snapshot = await savePlatformClinicGallery(req, clinicId, input)
-    return { content: [{ type: 'text' as const, text: JSON.stringify(snapshot) }] }
+    return { content: [{ type: 'text' as const, text: JSON.stringify(mcpGallerySnapshot(snapshot)) }] }
   },
 }
 

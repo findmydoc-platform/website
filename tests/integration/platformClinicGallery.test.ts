@@ -154,7 +154,7 @@ describe('Platform clinic gallery', () => {
     keyIds.push(key.id)
     const endpoint = payload.config.endpoints.find((entry) => entry.path === '/mcp' && entry.method === 'post')
     if (!endpoint) throw new Error('Expected the MCP endpoint')
-    const call = async (
+    const callResult = async (
       apiKey: string,
       name = 'publishClinicGalleryImage',
       args: Record<string, unknown> = { mediaId: secondMediaId },
@@ -188,7 +188,14 @@ describe('Platform clinic gallery', () => {
               .slice(5)
               .trim()
           : body
-      const result = JSON.parse(serialized)
+      return JSON.parse(serialized)
+    }
+    const call = async (
+      apiKey: string,
+      name = 'publishClinicGalleryImage',
+      args: Record<string, unknown> = { mediaId: secondMediaId },
+    ) => {
+      const result = await callResult(apiKey, name, args)
       return (result.result?.content?.[0]?.text ??
         result.result?.content?.[0]?.data ??
         result.error?.message ??
@@ -347,13 +354,20 @@ describe('Platform clinic gallery', () => {
     keyIds.push(metadataKey.id)
     expect(metadataKey['payload-mcp-tool']?.readDoctorImage).toBe(false)
     expect(await call(metadataToken, 'findDoctorMedia', { id: doctorMediaId })).toContain('Synthetic doctor image')
-    expect(await call(metadataToken, 'readDoctorImage', { id: doctorMediaId })).not.toContain('iVBOR')
+    const deniedImage = await callResult(metadataToken, 'readDoctorImage', { id: doctorMediaId })
+    expect(deniedImage.error).toBeUndefined()
+    expect(deniedImage.result).toEqual({
+      isError: true,
+      content: [{ type: 'text', text: expect.stringContaining('Tool readDoctorImage not found') }],
+    })
     const doctorImageBytes = JSON.parse(await call(token, 'readDoctorImage', { id: doctorMediaId })) as {
       data: string
       mimeType: string
     }
     expect(doctorImageBytes.mimeType).toBe('image/png')
-    expect((await sharp(Buffer.from(doctorImageBytes.data, 'base64')).metadata()).format).toBe('png')
+    const returnedImage = Buffer.from(doctorImageBytes.data, 'base64')
+    expect(await sharp(returnedImage).metadata()).toMatchObject({ format: 'png', width: 320, height: 240 })
+    expect(await sharp(returnedImage).raw().toBuffer()).toEqual(await sharp(bytes).raw().toBuffer())
     expect(await call(ungrantedToken, 'findDoctorMedia', { limit: 20 })).not.toContain('Synthetic doctor image')
     expect(await call(token, 'findDoctorMedia', { limit: 20 })).toContain('Synthetic doctor image')
     expect(await call(token, 'updateDoctorImage', { id: doctorMediaId, alt: 'Updated doctor image' })).toContain(

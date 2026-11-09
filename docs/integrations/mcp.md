@@ -56,7 +56,8 @@ call the same tool with both `clinicId` and the item's numeric `mediaId`. The re
 (base64 image bytes) and `mimeType`; the image must still belong to that gallery. `saveClinicGallery` accepts the
 current revision and the complete desired item list; a stale revision is rejected. Removing an item returns it to draft.
 Image status remains system-managed. `uploadDoctorImage` uploads an image for its doctor, and `updateDoctorImage`
-changes its alternative text. The `clinicMedia` and `doctorMedia` find permissions expose media metadata.
+changes its alternative text. `readDoctorImage` returns an authorized doctor image as base64 bytes and a MIME type.
+The `clinicMedia` and `doctorMedia` find permissions expose media metadata.
 `deleteClinicImage` and `deleteDoctorImage` permanently delete individual images only after references are removed.
 Uploads accept base64-encoded image bytes and the configured media size and type limits apply.
 

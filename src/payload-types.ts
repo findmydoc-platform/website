@@ -4052,6 +4052,10 @@ export interface PayloadMcpApiKey {
      */
     uploadDoctorImage?: boolean | null;
     /**
+     * Read a doctor-owned image as base64 bytes and a MIME type.
+     */
+    readDoctorImage?: boolean | null;
+    /**
      * Update the alternative text of a doctor-owned image.
      */
     updateDoctorImage?: boolean | null;
@@ -6667,6 +6671,7 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
         publishClinicGalleryImage?: T;
         uploadClinicGalleryImage?: T;
         uploadDoctorImage?: T;
+        readDoctorImage?: T;
         updateDoctorImage?: T;
         deleteClinicImage?: T;
         deleteDoctorImage?: T;

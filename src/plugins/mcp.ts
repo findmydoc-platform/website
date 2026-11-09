@@ -16,6 +16,7 @@ import { clinicProfileMediaImageMimeTypes, standardMediaImageMimeTypes } from '@
 import { MEDIA_UPLOAD_MAX_BYTES } from '@/config/mediaUploadPolicy'
 import { relationId } from '@/collections/clinics/profileGallery'
 import type { ClinicMedia, DoctorMedia } from '@/payload-types'
+import { readStoredImage } from '@/features/platformMedia/readStoredImage'
 
 type McpCollectionConfig = {
   description: string
@@ -255,6 +256,18 @@ const updateDoctorImage = {
   },
 }
 
+const readDoctorImage = {
+  name: 'readDoctorImage',
+  description: 'Read a doctor-owned image as base64 bytes and a MIME type.',
+  parameters: { id: z.number().int().positive().safe() },
+  handler: async (args: Record<string, unknown>, req: import('payload').PayloadRequest) => {
+    const id = z.number().int().positive().safe().parse(args.id)
+    await requireCurrentPlatformStaff(req)
+    const image = await readStoredImage(req, 'doctorMedia', id)
+    return { content: [{ type: 'text' as const, text: JSON.stringify(image) }] }
+  },
+}
+
 const createDeleteMediaTool = (collection: 'clinicMedia' | 'doctorMedia', name: string) => ({
   name,
   description: 'Permanently delete one unreferenced image using the current staff member’s access rights.',
@@ -310,6 +323,7 @@ export const createMcpPlugin = (): Plugin =>
         publishClinicGalleryImage,
         uploadClinicGalleryImage,
         uploadDoctorImage,
+        readDoctorImage,
         updateDoctorImage,
         createDeleteMediaTool('clinicMedia', 'deleteClinicImage'),
         createDeleteMediaTool('doctorMedia', 'deleteDoctorImage'),

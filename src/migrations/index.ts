@@ -107,6 +107,7 @@ import * as migration_20261107_091935_inquiry_preparations from './20261107_0919
 import * as migration_20261107_123538_settle_inquiry_attempts from './20261107_123538_settle_inquiry_attempts'
 import * as migration_20261108_230722_clinic_profile_mcp_permissions from './20261108_230722_clinic_profile_mcp_permissions'
 import * as migration_20261109_005746_clinic_group_mcp_read from './20261109_005746_clinic_group_mcp_read'
+import * as migration_20261109_100853_read_doctor_image_mcp from './20261109_100853_read_doctor_image_mcp'
 
 export const migrations = [
   {
@@ -653,5 +654,10 @@ export const migrations = [
     up: migration_20261109_005746_clinic_group_mcp_read.up,
     down: migration_20261109_005746_clinic_group_mcp_read.down,
     name: '20261109_005746_clinic_group_mcp_read',
+  },
+  {
+    up: migration_20261109_100853_read_doctor_image_mcp.up,
+    down: migration_20261109_100853_read_doctor_image_mcp.down,
+    name: '20261109_100853_read_doctor_image_mcp',
   },
 ]

@@ -140,6 +140,7 @@ describe('Platform clinic gallery', () => {
             readClinicGallery: true,
             saveClinicGallery: true,
             uploadDoctorImage: true,
+            readDoctorImage: true,
             updateDoctorImage: true,
             deleteDoctorImage: true,
             deleteClinicImage: true,
@@ -331,6 +332,28 @@ describe('Platform clinic gallery', () => {
       overrideAccess: true,
     })
     expect(storedDoctorImage).toMatchObject({ doctor: doctorId, clinic: clinicId, alt: 'Synthetic doctor image' })
+    const metadataToken = randomUUID()
+    const metadataKey = await payload.create({
+      collection: 'payload-mcp-api-keys',
+      overrideAccess: true,
+      data: {
+        user: staff.id,
+        label: `doctor-metadata-${suffix}`,
+        enableAPIKey: true,
+        apiKey: metadataToken,
+        doctorMedia: { find: true },
+      },
+    })
+    keyIds.push(metadataKey.id)
+    expect(metadataKey['payload-mcp-tool']?.readDoctorImage).toBe(false)
+    expect(await call(metadataToken, 'findDoctorMedia', { id: doctorMediaId })).toContain('Synthetic doctor image')
+    expect(await call(metadataToken, 'readDoctorImage', { id: doctorMediaId })).not.toContain('iVBOR')
+    const doctorImageBytes = JSON.parse(await call(token, 'readDoctorImage', { id: doctorMediaId })) as {
+      data: string
+      mimeType: string
+    }
+    expect(doctorImageBytes.mimeType).toBe('image/png')
+    expect((await sharp(Buffer.from(doctorImageBytes.data, 'base64')).metadata()).format).toBe('png')
     expect(await call(ungrantedToken, 'findDoctorMedia', { limit: 20 })).not.toContain('Synthetic doctor image')
     expect(await call(token, 'findDoctorMedia', { limit: 20 })).toContain('Synthetic doctor image')
     expect(await call(token, 'updateDoctorImage', { id: doctorMediaId, alt: 'Updated doctor image' })).toContain(

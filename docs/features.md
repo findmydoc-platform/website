@@ -131,7 +131,7 @@ Architecture reference:
 PostHog controls public Holding mode through the server-side feature flag `temporary-landing-mode`.
 
 - Flag default in code: `false`
-- Holding evaluation uses a stable host identity and the `feature_flag_site_host` person property. With valid PostHog analytics consent, a browser identifier can exclude that browser from a Holding rule. Discovery remains host-wide.
+- Holding evaluation uses a stable host identity and the `feature_flag_site_host` person property. With valid PostHog analytics consent, the browser identifier, verified user ID, and trusted user type can exclude a visitor from a Holding rule. Discovery remains host-wide.
 - An evaluated boolean `true` selects Holding and an evaluated boolean `false` selects full operation. Missing output, a non-boolean output, missing PostHog configuration, and evaluation errors use `PUBLIC_SITE_FALLBACK_MODE`.
 - Shared header and footer chrome render in the frontend route template so client and browser-history navigations use the effective mode attached to each request. The root layout keeps document structure and persistent providers.
 - `PUBLIC_SITE_FALLBACK_MODE` accepts `holding` or `full`. Missing or invalid configuration safely selects Holding and writes a sanitized operational warning. `.env.example` explicitly sets local development to `full`; prepare the current Production deployment with `holding` before rollout.

@@ -70,6 +70,8 @@ export type PostHogFlagEvaluation =
 export type PostHogFlagEvaluationContext = {
   feature_flag_site_host: string
   feature_flag_browser_id?: string
+  feature_flag_user_id?: string
+  feature_flag_user_type?: string
 }
 
 export type PostHogServerAnalyticsConsent = {
@@ -136,6 +138,8 @@ export const createPostHogHoldingEvaluationContext = ({
 }: CreatePostHogHoldingEvaluationContextInput): PostHogFlagEvaluationContext => ({
   feature_flag_site_host: url.hostname.trim().toLowerCase(),
   feature_flag_browser_id: '',
+  feature_flag_user_id: '',
+  feature_flag_user_type: '',
 })
 
 export const resolvePostHogHoldingFlagActor = (context: PostHogFlagEvaluationContext): PostHogActor =>
@@ -146,15 +150,34 @@ export const resolvePostHogHoldingFlagActor = (context: PostHogFlagEvaluationCon
 export const resolvePostHogHoldingRequestContext = async ({
   context,
   headers,
+  getVerifiedUser,
 }: {
   context: PostHogFlagEvaluationContext
   headers: Headers
+  getVerifiedUser?: () => Promise<{ id: string; app_metadata: Record<string, unknown> } | null>
 }): Promise<{ actor: PostHogActor; context: PostHogFlagEvaluationContext }> => {
   const actor = resolvePostHogHoldingFlagActor(context)
   const browserId = extractPostHogDistinctIdFromCookieHeader(headers.get('cookie'))?.trim()
-  if (!browserId) return { actor, context }
   const consent = await postHogServerConsent.resolveAnalyticsConsent({ headers })
-  return { actor, context: consent.isAllowed ? { ...context, feature_flag_browser_id: browserId } : context }
+  if (!consent.isAllowed) return { actor, context }
+  let user: Awaited<ReturnType<NonNullable<typeof getVerifiedUser>>> = null
+  try {
+    user = (await getVerifiedUser?.()) ?? null
+  } catch {
+    // Browser targeting remains available when authentication is unavailable.
+  }
+  const userId = typeof user?.id === 'string' ? user.id.trim() : ''
+  const userType = user?.app_metadata?.user_type
+  const trustedType = userType === 'patient' || userType === 'clinic' || userType === 'platform' ? userType : ''
+  return {
+    actor,
+    context: {
+      ...context,
+      feature_flag_browser_id: browserId ?? '',
+      feature_flag_user_id: userId,
+      feature_flag_user_type: userId ? trustedType : '',
+    },
+  }
 }
 
 const normalizeIdentifier = (value: number | string | null | undefined): string | undefined => {

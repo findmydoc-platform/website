@@ -1,3 +1,4 @@
+import { postHogServerConsent } from './serverConsent'
 import type { AuthData } from '@/auth/types/authTypes'
 import { extractSupabaseUserData } from '@/auth/utilities/jwtValidation'
 import { fallbackConsoleLogger } from '@/utilities/logging/consoleLogger'
@@ -68,6 +69,7 @@ export type PostHogFlagEvaluation =
 
 export type PostHogFlagEvaluationContext = {
   feature_flag_site_host: string
+  feature_flag_browser_id?: string
 }
 
 export type PostHogServerAnalyticsConsent = {
@@ -133,12 +135,27 @@ export const createPostHogHoldingEvaluationContext = ({
   url,
 }: CreatePostHogHoldingEvaluationContextInput): PostHogFlagEvaluationContext => ({
   feature_flag_site_host: url.hostname.trim().toLowerCase(),
+  feature_flag_browser_id: '',
 })
 
 export const resolvePostHogHoldingFlagActor = (context: PostHogFlagEvaluationContext): PostHogActor =>
   toAnonymousPostHogActor({
     fallbackAnonymousId: `holding:${context.feature_flag_site_host}`,
   })
+
+export const resolvePostHogHoldingRequestContext = async ({
+  context,
+  headers,
+}: {
+  context: PostHogFlagEvaluationContext
+  headers: Headers
+}): Promise<{ actor: PostHogActor; context: PostHogFlagEvaluationContext }> => {
+  const actor = resolvePostHogHoldingFlagActor(context)
+  const browserId = extractPostHogDistinctIdFromCookieHeader(headers.get('cookie'))?.trim()
+  if (!browserId) return { actor, context }
+  const consent = await postHogServerConsent.resolveAnalyticsConsent({ headers })
+  return { actor, context: consent.isAllowed ? { ...context, feature_flag_browser_id: browserId } : context }
+}
 
 const normalizeIdentifier = (value: number | string | null | undefined): string | undefined => {
   if (typeof value === 'number' && Number.isFinite(value)) return String(value)

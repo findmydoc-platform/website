@@ -51,8 +51,10 @@ validates every field and applies its access rules during creation. Remove the p
 behavior upstream.
 
 Clinic gallery images can be uploaded with `uploadClinicGalleryImage`, then added with `publishClinicGalleryImage`.
-Use `readClinicGallery` to obtain the current revision and ordered items. `saveClinicGallery` accepts that revision
-and the complete desired item list; a stale revision is rejected. Removing an item from the list returns it to draft.
+Use `readClinicGallery` with `clinicId` to obtain the current revision and ordered items. To read a gallery image,
+call the same tool with both `clinicId` and the item's numeric `mediaId`. The response is a JSON object with `data`
+(base64 image bytes) and `mimeType`; the image must still belong to that gallery. `saveClinicGallery` accepts the
+current revision and the complete desired item list; a stale revision is rejected. Removing an item returns it to draft.
 Image status remains system-managed. `uploadDoctorImage` uploads an image for its doctor, and `updateDoctorImage`
 changes its alternative text. The `clinicMedia` and `doctorMedia` find permissions expose media metadata.
 `deleteClinicImage` and `deleteDoctorImage` permanently delete individual images only after references are removed.

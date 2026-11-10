@@ -42,6 +42,7 @@ import {
 } from './endpoints/clinicDashboardGallery'
 import {
   clinicDashboardInquiriesGetHandler,
+  clinicDashboardInquiryOpenInventoryGetHandler,
   clinicDashboardInquiryAttachmentDiscardPostHandler,
   clinicDashboardInquiryAttachmentDownloadGetHandler,
   clinicDashboardInquiryAttachmentDraftPostHandler,
@@ -354,6 +355,11 @@ export default buildConfig({
       path: '/clinic-dashboard/clinics/:clinicId/gallery/discard',
       method: 'post',
       handler: clinicDashboardGalleryDiscardPostHandler as PayloadHandler,
+    },
+    {
+      path: '/clinic-dashboard/clinics/:clinicId/inquiries/open-inventory',
+      method: 'get',
+      handler: clinicDashboardInquiryOpenInventoryGetHandler as PayloadHandler,
     },
     {
       path: '/clinic-dashboard/clinics/:clinicId/inquiries',

@@ -582,6 +582,22 @@ Supabase, database, and storage errors never cross this boundary.
 The Dashboard BFF remains responsible for its same-origin session-bound CSRF guard on mutations. These server-to-server
 Payload endpoints do not add browser CORS access or a second CSRF scheme.
 
+### Current open inquiry inventory
+
+`GET /api/clinic-dashboard/clinics/:clinicId/inquiries/open-inventory` uses the inquiry communication contract and
+`clinic-scope-v1`. It requires the current approved clinic principal and revalidates the exact selected clinic. No
+query parameters are accepted. The complete closed result is `{ count: number }`, a nonnegative safe integer.
+
+The native inquiry read counts the entire authorized open, non-spam population across submitted, in_review and
+contacted handling states. Existing legacy records use the same lifecycle and handling projection as the queue.
+Creation dates, pagination, searches, list restrictions, reporting periods and personal unread positions do not limit
+the inventory. An inquiry preparation is a separate record and never enters this population. Source deletion and
+retention rules continue to own the stored inquiry lifecycle. The read changes neither inquiry status nor read
+positions. Authorization is checked again after the source count; revoked access and source failures return no count.
+
+The endpoint remains private/no-store and uses sanitized inquiry errors. This private read has no public-cache impact,
+shared cache, persistent aggregate, scheduled write or schema migration.
+
 ### Inquiry moderation contract
 
 A clinic or patient participant may report one immutable opposite-party external message, private attachment, or the

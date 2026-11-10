@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   CLINIC_INQUIRY_CONTACT_REAUTH_MAX_AGE_SECONDS,
   clinicDashboardInquiriesGetHandler,
+  clinicDashboardInquiryOpenInventoryGetHandler,
   clinicDashboardInquiryAttachmentDiscardPostHandler,
   clinicDashboardInquiryAttachmentDownloadGetHandler,
   clinicDashboardInquiryAttachmentDraftPostHandler,
@@ -31,6 +32,7 @@ const mocks = vi.hoisted(() => ({
   readAttachmentAccess: vi.fn(),
   readDetail: vi.fn(),
   readQueue: vi.fn(),
+  readInventory: vi.fn(),
   reconcileModeration: vi.fn(),
   revealContact: vi.fn(),
   sendMessage: vi.fn(),
@@ -63,6 +65,7 @@ vi.mock('@/features/inquiryCommunication/service', async (importOriginal) => ({
   readAttachmentAccess: mocks.readAttachmentAccess,
   readClinicInquiryDetail: mocks.readDetail,
   readClinicInquiryQueue: mocks.readQueue,
+  readClinicOpenInquiryInventory: mocks.readInventory,
   revealClinicInquiryContact: mocks.revealContact,
   sendClinicInquiryMessage: mocks.sendMessage,
   sweepExpiredAttachmentDrafts: mocks.sweep,
@@ -138,6 +141,28 @@ const expectPrivateLive = (response: Response): void => {
 }
 
 describe('Clinic Dashboard inquiry endpoints', () => {
+  it('returns only the authorized inventory with private headers', async () => {
+    mocks.readInventory.mockResolvedValue({ count: 104 })
+    const response = await clinicDashboardInquiryOpenInventoryGetHandler(request())
+    expectPrivateLive(response)
+    expect(await response.json()).toEqual({ count: 104 })
+  })
+
+  it('rejects list or reporting restrictions on the inventory capability', async () => {
+    const response = await clinicDashboardInquiryOpenInventoryGetHandler(request({ search: 'periodDays=7' }))
+    expect(response.status).toBe(400)
+    expectPrivateLive(response)
+    expect(mocks.readInventory).not.toHaveBeenCalled()
+  })
+
+  it('sanitizes inventory source failures without a partial result', async () => {
+    mocks.readInventory.mockRejectedValue(new Error('Synthetic private source detail'))
+    const response = await clinicDashboardInquiryOpenInventoryGetHandler(request())
+    expect(response.status).toBe(503)
+    expectPrivateLive(response)
+    expect(await response.json()).toEqual({ error: { code: 'INQUIRY_SERVICE_UNAVAILABLE' } })
+  })
+
   it('rejects an inquiry queue without an explicit clinic target', async () => {
     const req = request()
     req.routeParams = {}

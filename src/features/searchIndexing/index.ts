@@ -1,5 +1,4 @@
 import { isPreviewRuntime } from '@/features/runtimePolicy'
-import { readHoldingViewRequestHeader } from '@/features/temporaryLandingMode'
 
 export type SearchIndexingEnvInput = {
   DEPLOYMENT_ENVIRONMENT?: string
@@ -9,6 +8,7 @@ export type SearchIndexingEnvInput = {
 
 export const SEARCH_ROBOTS_HEADER = 'X-Robots-Tag'
 export const SEARCH_ROBOTS_HEADER_VALUE = 'noindex, nofollow, noarchive'
+export const SEARCH_INDEXING_REQUEST_HEADER = 'x-search-indexing'
 
 export const shouldBlockSearchIndexing = (env: SearchIndexingEnvInput = process.env): boolean => {
   return isPreviewRuntime(env)
@@ -21,7 +21,7 @@ export const shouldBlockSearchIndexingForRequest = ({
   env?: SearchIndexingEnvInput
   headers: Headers
 }): boolean => {
-  return readHoldingViewRequestHeader(headers) === 'standalone' || shouldBlockSearchIndexing(env)
+  return headers.get(SEARCH_INDEXING_REQUEST_HEADER) === 'noindex' || shouldBlockSearchIndexing(env)
 }
 
 export * from './listingComparison'

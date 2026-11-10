@@ -70,6 +70,7 @@ export const isTemporaryLandingIndexablePath = (pathname: string): boolean => {
   }
 
   return (
+    normalizedPath === '/' ||
     normalizedPath === '/posts' ||
     /^\/posts\/page\/[1-9]\d*$/.test(normalizedPath) ||
     /^\/posts\/[^/]+$/.test(normalizedPath)

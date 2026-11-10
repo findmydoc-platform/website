@@ -54,7 +54,7 @@ JSON does not support comments, so we keep the rationale and evidence here for r
   - https://registry.npmjs.org/@payloadcms/plugin-import-export/3.92.1
 
 ### AWS S3 storage (`@payloadcms/storage-s3@3.92.1` -> `@aws-sdk/lib-storage@3.1152.0`)
-- Reason: Fresh resolution selects `lib-storage@3.1165.0`, whose client peer range excludes the application's pinned `@aws-sdk/client-s3@3.1152.0`. The scoped override stays within the storage plugin's declared dependency range and aligns its upload helper with the application's client.
+- Reason: Fresh resolution selects `lib-storage@3.1165.0`, whose client peer range excludes the application's pinned `@aws-sdk/client-s3@3.1161.0`. The scoped override stays within the storage plugin's declared dependency range and supports the application's client.
 - References:
   - https://registry.npmjs.org/@payloadcms/storage-s3/3.92.1
   - https://registry.npmjs.org/@aws-sdk/lib-storage/3.1165.0

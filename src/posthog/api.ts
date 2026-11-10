@@ -117,6 +117,7 @@ const identifiedActors = new Set<string>()
 
 const silentPostHogFlagEvaluationHost: ConstructorParameters<typeof FeatureFlagEvaluations>[0]['host'] = {
   captureFlagCalledEventIfNeeded: () => undefined,
+  resolveSendFeatureFlagEvents: () => false,
   logWarning(message: string): void {
     logger.warn(
       {

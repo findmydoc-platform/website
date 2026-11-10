@@ -5,6 +5,7 @@ const SITE_URL =
   process.env.NEXT_PUBLIC_SERVER_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL || 'https://example.com'
 
 const blockSearchIndexing = isPreviewRuntime(process.env)
+const directSitemaps = blockSearchIndexing ? [] : [`${SITE_URL}/pages-sitemap.xml`, `${SITE_URL}/posts-sitemap.xml`]
 
 const PUBLIC_DISCOVERY_USER_AGENTS = [
   'Googlebot',
@@ -53,6 +54,12 @@ module.exports = {
           }
         : productionRobotsPolicies,
     ].flat(),
-    additionalSitemaps: blockSearchIndexing ? [] : [`${SITE_URL}/pages-sitemap.xml`, `${SITE_URL}/posts-sitemap.xml`],
+    additionalSitemaps: directSitemaps,
+    // next-sitemap also adds its generated index, which is not reachable in Holding.
+    transformRobotsTxt: async (_config, robotsTxt) =>
+      robotsTxt
+        .split('\n')
+        .filter((line) => !line.startsWith('Sitemap:') || directSitemaps.includes(line.slice('Sitemap:'.length).trim()))
+        .join('\n'),
   },
 }

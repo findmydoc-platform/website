@@ -1,3 +1,4 @@
+import { JSDOM } from 'jsdom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const routeMocks = vi.hoisted(() => ({
@@ -5,13 +6,8 @@ const routeMocks = vi.hoisted(() => ({
   findPostSitemapDocs: vi.fn(),
   getListingComparisonServerData: vi.fn(),
   getPayload: vi.fn(),
-  getServerSideSitemap: vi.fn(),
   resolveSitemapIndexingAccessForRequest: vi.fn(),
   unstableCache: vi.fn((callback: () => unknown) => callback),
-}))
-
-vi.mock('next-sitemap', () => ({
-  getServerSideSitemap: routeMocks.getServerSideSitemap,
 }))
 
 vi.mock('payload', () => ({
@@ -39,6 +35,19 @@ vi.mock('@/features/searchIndexing/sitemapGuards', () => ({
   resolveSitemapIndexingAccessForRequest: routeMocks.resolveSitemapIndexingAccessForRequest,
 }))
 
+const readSitemap = async (response: Response) => {
+  expect(response.headers.get('content-type')).toContain('text/xml')
+  const document = new JSDOM(await response.text(), { contentType: 'text/xml' }).window.document
+  expect(document.documentElement.localName).toBe('urlset')
+  expect(document.documentElement.namespaceURI).toBe('http://www.sitemaps.org/schemas/sitemap/0.9')
+  return {
+    entries: Array.from(document.querySelectorAll('url')).map((entry) => ({
+      loc: entry.querySelector('loc')?.textContent ?? '',
+      ...(entry.querySelector('lastmod') ? { lastmod: entry.querySelector('lastmod')?.textContent } : {}),
+    })),
+  }
+}
+
 const getEntryLocations = (entries: Array<{ loc: string }>) => entries.map((entry) => entry.loc)
 
 describe('frontend sitemap routes', () => {
@@ -59,9 +68,6 @@ describe('frontend sitemap routes', () => {
         sourceCollections: ['clinics'],
       },
     })
-    routeMocks.getServerSideSitemap.mockImplementation((entries: unknown[], headers?: Record<string, string>) => {
-      return Response.json({ entries, headers })
-    })
     routeMocks.resolveSitemapIndexingAccessForRequest.mockResolvedValue({ allowed: true })
   })
 
@@ -78,16 +84,12 @@ describe('frontend sitemap routes', () => {
     const { GET } = await import('@/app/(frontend)/(sitemaps)/pages-sitemap.xml/route')
 
     const response = await GET(request)
-    const body = await response.json()
+    const body = await readSitemap(response)
 
     expect(routeMocks.resolveSitemapIndexingAccessForRequest).toHaveBeenCalledWith(request)
     expect(routeMocks.findPageSitemapDocs).not.toHaveBeenCalled()
-    expect(body).toEqual({
-      entries: [],
-      headers: {
-        'X-Robots-Tag': 'noindex, nofollow, noarchive',
-      },
-    })
+    expect(body.entries).toEqual([])
+    expect(response.headers.get('X-Robots-Tag')).toBe('noindex, nofollow, noarchive')
   })
 
   it('returns an empty noindex posts sitemap when discovery is blocked', async () => {
@@ -99,19 +101,15 @@ describe('frontend sitemap routes', () => {
     const { GET } = await import('@/app/(frontend)/(sitemaps)/posts-sitemap.xml/route')
 
     const response = await GET(request)
-    const body = await response.json()
+    const body = await readSitemap(response)
 
     expect(routeMocks.resolveSitemapIndexingAccessForRequest).toHaveBeenCalledWith(request)
     expect(routeMocks.findPostSitemapDocs).not.toHaveBeenCalled()
-    expect(body).toEqual({
-      entries: [],
-      headers: {
-        'X-Robots-Tag': 'noindex, nofollow, noarchive',
-      },
-    })
+    expect(body.entries).toEqual([])
+    expect(response.headers.get('X-Robots-Tag')).toBe('noindex, nofollow, noarchive')
   })
 
-  it('returns only the blog index in the temporary landing pages sitemap', async () => {
+  it('returns exactly the canonical home and blog index in the Holding pages sitemap', async () => {
     routeMocks.resolveSitemapIndexingAccessForRequest.mockResolvedValue({
       allowed: true,
       temporaryLandingMode: true,
@@ -120,9 +118,9 @@ describe('frontend sitemap routes', () => {
     const { GET } = await import('@/app/(frontend)/(sitemaps)/pages-sitemap.xml/route')
 
     const response = await GET(request)
-    const body = await response.json()
+    const body = await readSitemap(response)
 
-    expect(body.entries).toEqual([{ loc: 'https://findmydoc.eu/posts' }])
+    expect(body.entries).toEqual([{ loc: 'https://findmydoc.eu/' }, { loc: 'https://findmydoc.eu/posts' }])
     expect(routeMocks.findPageSitemapDocs).not.toHaveBeenCalled()
   })
 
@@ -132,7 +130,7 @@ describe('frontend sitemap routes', () => {
     const { GET } = await import('@/app/(frontend)/(sitemaps)/pages-sitemap.xml/route')
 
     const response = await GET(request)
-    const body = await response.json()
+    const body = await readSitemap(response)
     const locs = getEntryLocations(body.entries)
 
     expect(locs).toEqual(
@@ -170,7 +168,7 @@ describe('frontend sitemap routes', () => {
     const { GET } = await import('@/app/(frontend)/(sitemaps)/pages-sitemap.xml/route')
 
     const response = await GET(request)
-    const body = await response.json()
+    const body = await readSitemap(response)
     const locs = getEntryLocations(body.entries)
 
     expect(locs.filter((loc: string) => loc === 'https://findmydoc.eu/')).toHaveLength(1)
@@ -200,7 +198,7 @@ describe('frontend sitemap routes', () => {
     const { GET } = await import('@/app/(frontend)/(sitemaps)/posts-sitemap.xml/route')
 
     const response = await GET(request)
-    const body = await response.json()
+    const body = await readSitemap(response)
     const locs = getEntryLocations(body.entries)
 
     expect(locs).toEqual(['https://findmydoc.eu/posts/first-post', 'https://findmydoc.eu/posts/second-post'])

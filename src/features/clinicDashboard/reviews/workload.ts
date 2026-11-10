@@ -4,7 +4,7 @@ import { readClinicTargetAccess } from '@/auth/utilities/clinicPrincipalAccess'
 import { clinicAssignmentRelationId } from '@/auth/utilities/clinicStaffAssignment'
 import { isReviewPubliclyVisible } from '@/collections/reviews/publicProjection'
 
-export const clinicReviewWorkloadSchema = z
+const clinicReviewWorkloadSchema = z
   .object({
     reviewsToAnswerCount: z.number().int().nonnegative(),
     pendingModerationCount: z.number().int().nonnegative(),

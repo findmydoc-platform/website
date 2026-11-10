@@ -1362,6 +1362,43 @@ export const readClinicInquiryDetail = async (
   }
 }
 
+export const readClinicOpenInquiryInventory = async (req: PayloadRequest): Promise<{ count: number }> => {
+  const actor = await resolveCurrentActor(req)
+  if (actor.kind !== 'clinic') throw new InquiryCommunicationServiceError('access-denied', 'Clinic access is required.')
+  const result = await req.payload.count({
+    collection: 'patientClinicInquiries',
+    overrideAccess: true,
+    req,
+    where: {
+      and: [
+        { clinic: { equals: actor.clinicId } },
+        {
+          or: [
+            { lifecycle: { equals: 'open' } },
+            { and: [{ lifecycle: { exists: false } }, { status: { in: ['submitted', 'in_review', 'contacted'] } }] },
+          ],
+        },
+        {
+          or: [
+            { handlingStatus: { in: ['submitted', 'in_review', 'contacted'] } },
+            {
+              and: [{ handlingStatus: { exists: false } }, { status: { in: ['submitted', 'in_review', 'contacted'] } }],
+            },
+          ],
+        },
+      ],
+    },
+  })
+  if (!Number.isSafeInteger(result.totalDocs) || result.totalDocs < 0) {
+    throw new InquiryCommunicationServiceError('unavailable', 'The inventory could not be established.')
+  }
+  const current = await resolveCurrentActor(req)
+  if (current.kind !== 'clinic' || current.key !== actor.key || current.clinicId !== actor.clinicId) {
+    throw new InquiryCommunicationServiceError('access-denied', 'The clinic participant changed.')
+  }
+  return { count: result.totalDocs }
+}
+
 export const readClinicInquiryQueue = async (
   req: PayloadRequest,
   rawInput: ClinicInquiryQueueInput,

@@ -13,7 +13,13 @@ export const readPublicSiteModeRequestHeader = (headers: Headers): 'full' | 'hol
 }
 
 const TEMPORARY_LANDING_PUBLIC_EXEMPT_PATHS = new Set(['/privacy-policy', '/imprint', '/contact'])
-const TEMPORARY_LANDING_PUBLIC_DISCOVERY_PATHS = new Set(['/robots.txt', '/pages-sitemap.xml', '/posts-sitemap.xml'])
+const TEMPORARY_LANDING_PUBLIC_DISCOVERY_PATHS = new Set([
+  '/robots.txt',
+  '/pages-sitemap.xml',
+  '/posts-sitemap.xml',
+  '/llms.txt',
+  '/.well-known/llms.txt',
+])
 const TEMPORARY_LANDING_EXEMPT_PATHS = new Set(['/admin', ...TEMPORARY_LANDING_PUBLIC_EXEMPT_PATHS])
 const TEMPORARY_LANDING_EXEMPT_PREFIXES = new Set(['/admin', '/auth', '/login', '/logout', '/register'])
 

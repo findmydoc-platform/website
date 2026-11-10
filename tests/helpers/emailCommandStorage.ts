@@ -1,5 +1,6 @@
 import type { CollectionConfig, Payload, PayloadRequest } from 'payload'
 import { vi } from 'vitest'
+import { InquiryPreparations } from '@/collections/InquiryPreparations'
 import { RecoveryRequestEvents } from '@/collections/RecoveryRequestEvents'
 import { AuthActions } from '@/collections/AuthActions'
 import { TransactionalEmailOutbox } from '@/collections/TransactionalEmailOutbox'
@@ -18,6 +19,7 @@ type Options = {
 }
 const collections: Record<string, CollectionConfig> = {
   authActions: AuthActions,
+  inquiryPreparations: InquiryPreparations,
   recoveryRequestEvents: RecoveryRequestEvents,
   transactionalEmailOutbox: TransactionalEmailOutbox,
   transactionalEmailEvents: TransactionalEmailEvents,

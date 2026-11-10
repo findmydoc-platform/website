@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { NextRequest, NextResponse } from 'next/server'
 import { applyPrivateAuthHeaders } from '@/auth/utilities/tokenHashCallback'
 import { supabaseEmailTokenHashSchema } from '@/auth/utilities/supabaseEmailTokenHash'
+import { preparationCookie } from '@/features/inquiryPreparations/context'
 import { InvalidWebsiteRecovery, RecoveryPasswordRejected, websiteRecoveryAuthority } from './websiteRecoveryCompletion'
 import {
   WEBSITE_RECOVERY_COOKIE,
@@ -100,10 +101,24 @@ async function recoveryPost(request: NextRequest, complete: boolean) {
       complete && parsed?.success
         ? await authority.complete(context, parsed.data.password ?? '', save)
         : await authority.confirm(context, save)
-    const success = applyPrivateAuthHeaders(NextResponse.json({ redirectTo }))
+    let preparationBinding: string | null = null
+    let inquiryContinuationPending = false
+    if (complete) {
+      try {
+        preparationBinding = await authority.restorePreparation(context)
+      } catch {
+        // Password change and sign-out already succeeded. Keep the signed-out receipt for inquiry continuation.
+        inquiryContinuationPending = true
+      }
+    }
+    const success = applyPrivateAuthHeaders(
+      NextResponse.json({ redirectTo, ...(inquiryContinuationPending ? { inquiryContinuationPending: true } : {}) }),
+    )
     const grant = response.cookies.get(WEBSITE_RECOVERY_COOKIE)
-    if (complete) clearWebsiteRecoveryContext(success)
+    if (complete && !inquiryContinuationPending) clearWebsiteRecoveryContext(success)
     else if (grant) success.cookies.set(grant)
+    else if (inquiryContinuationPending) setWebsiteRecoveryContext(success, context, authority.keys)
+    if (preparationBinding) success.headers.append('Set-Cookie', preparationCookie(preparationBinding))
     return success
   } catch (error) {
     if (error instanceof InvalidWebsiteRecovery) {

@@ -21,6 +21,12 @@ export async function GET(request: Request) {
   const deadline = Date.now() + schedulerInvocationBudgetMilliseconds
   let failed = false
   try {
+    const { runInquiryPreparationCleanup } = await import('@/features/inquiryPreparations/cleanup')
+    await runInquiryPreparationCleanup(deadline)
+  } catch {
+    failed = true
+  }
+  try {
     const { runHostedRecoveryRetention } = await import('@/auth/actions/hostedRecoveryRetention')
     await runHostedRecoveryRetention(deadline)
   } catch {

@@ -1,13 +1,13 @@
 import { CLINIC_DASHBOARD_REPORTING_QUERY_CATALOG } from '@/posthog/api'
-import type { ClinicDashboardReportingV2DTO, ReportingSourceState, ReportingPeriodDays } from './contracts'
+import type { ClinicDashboardReportingV3DTO, ReportingSourceState, ReportingPeriodDays } from './contracts'
 import { countMetric } from './countMetric'
 import { REPORTING_CAPTURE_STARTS_BY_PROJECT } from './config'
 
-type AnalyticsMetric = 'impressions' | 'profileViews' | 'uniqueVisitors' | 'inquiryStarters'
-type AnalyticsCounts = Pick<ClinicDashboardReportingV2DTO['metrics'], AnalyticsMetric>
+type AnalyticsMetric = 'impressions' | 'profileViews' | 'uniqueVisitors'
+type AnalyticsCounts = Pick<ClinicDashboardReportingV3DTO['metrics'], AnalyticsMetric>
 type Window = { from: string; to: string; days?: ReportingPeriodDays }
 type Input = { clinicId: string; comparison: Window; current: Window }
-const metrics: AnalyticsMetric[] = ['impressions', 'profileViews', 'uniqueVisitors', 'inquiryStarters']
+const metrics: AnalyticsMetric[] = ['impressions', 'profileViews', 'uniqueVisitors']
 const escaped = (value: string) => value.replaceAll('\\', '\\\\').replaceAll("'", "\\'")
 
 const queryInstant = (value: string) => escaped(value.replace('T', ' ').replace(/Z$/u, ''))
@@ -20,15 +20,13 @@ const queryFor = ({ clinicId, comparison, current }: Input): string => {
       `countIf(event = '${events.profileViewed}' AND ${inWindow}) AS ${window}_profileViews`,
       `uniqExactIf(distinct_id, event = '${events.profileViewed}' AND ${inWindow} AND notEmpty(distinct_id)) AS ${window}_uniqueVisitors`,
       `countIf(event = '${events.searchResultViewed}' AND ${inWindow}) AS ${window}_impressions`,
-      `uniqExactIf(distinct_id, event = '${events.inquiryStarted}' AND ${inWindow} AND notEmpty(distinct_id)) AS ${window}_inquiryStarters`,
       `countIf(event = '${events.profileViewed}' AND ${inWindow} AND empty(distinct_id)) AS ${window}_missingVisitors`,
-      `countIf(event = '${events.inquiryStarted}' AND ${inWindow} AND empty(distinct_id)) AS ${window}_missingStarters`,
     ]
   })
   return `SELECT ${columns.join(',\n')} FROM (
     SELECT event, distinct_id, if(timestamp >= toDateTime64('${queryInstant(current.from)}', 3, 'UTC'), 'current', 'comparison') AS window
     FROM events WHERE properties.clinic_id = '${escaped(clinicId)}'
-      AND event IN ('${events.profileViewed}', '${events.searchResultViewed}', '${events.inquiryStarted}')
+      AND event IN ('${events.profileViewed}', '${events.searchResultViewed}')
       AND ((timestamp >= toDateTime64('${queryInstant(comparison.from)}', 3, 'UTC') AND timestamp < toDateTime64('${queryInstant(comparison.to)}', 3, 'UTC'))
         OR (timestamp >= toDateTime64('${queryInstant(current.from)}', 3, 'UTC') AND timestamp <= toDateTime64('${queryInstant(current.to)}', 3, 'UTC')))
   )`
@@ -36,12 +34,7 @@ const queryFor = ({ clinicId, comparison, current }: Input): string => {
 
 const captureStart = (project: string, metric: AnalyticsMetric): number => {
   const events = CLINIC_DASHBOARD_REPORTING_QUERY_CATALOG.events
-  const event =
-    metric === 'impressions'
-      ? events.searchResultViewed
-      : metric === 'inquiryStarters'
-        ? events.inquiryStarted
-        : events.profileViewed
+  const event = metric === 'impressions' ? events.searchResultViewed : events.profileViewed
   const setting = REPORTING_CAPTURE_STARTS_BY_PROJECT[project]?.[event]
   return setting && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/u.test(setting) ? Date.parse(setting) : Number.NaN
 }
@@ -63,7 +56,7 @@ const unavailable = (): AnalyticsCounts =>
     metrics.map((metric) => [metric, countMetric('posthog', null, 'source_unavailable', null, 'source_unavailable')]),
   ) as AnalyticsCounts
 
-export async function readPostHogClinicDashboardReportingV2(input: Input): Promise<AnalyticsCounts> {
+export async function readPostHogClinicDashboardReportingV3(input: Input): Promise<AnalyticsCounts> {
   const key = process.env.POSTHOG_QUERY_API_KEY
   const project = process.env.POSTHOG_QUERY_PROJECT_ID
   const retention = Number(process.env.POSTHOG_QUERY_RETENTION_DAYS)
@@ -77,7 +70,7 @@ export async function readPostHogClinicDashboardReportingV2(input: Input): Promi
       signal: controller.signal,
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        name: 'clinic-dashboard-reporting-v2',
+        name: 'clinic-dashboard-reporting-v3',
         query: { kind: 'HogQLQuery', query: queryFor(input) },
         refresh: 'force_blocking',
       }),
@@ -115,12 +108,7 @@ export async function readPostHogClinicDashboardReportingV2(input: Input): Promi
       metrics.map((metric) => {
         const state = (window: 'current' | 'comparison'): ReportingSourceState => {
           const covered = coverage(project, metric, input[window], input.current.to, retention)
-          const missing =
-            metric === 'uniqueVisitors'
-              ? get(`${window}_missingVisitors`)
-              : metric === 'inquiryStarters'
-                ? get(`${window}_missingStarters`)
-                : 0
+          const missing = metric === 'uniqueVisitors' ? get(`${window}_missingVisitors`) : 0
           return covered === 'available' && missing > 0 ? 'partial_coverage' : covered
         }
         return [

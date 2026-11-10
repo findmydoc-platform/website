@@ -11,14 +11,9 @@ import {
   type PublicAccountMenuState,
 } from '@/components/templates/Header/PublicAccountMenu'
 import { PreviewDataNotice } from '@/components/templates/PreviewDataNotice/Component'
-import {
-  PREVIEW_GUARD_ACTIVE_REQUEST_HEADER,
-  PREVIEW_GUARD_LOCK_REQUEST_HEADER,
-  isPreviewDeployment,
-  isNonProductionDeployment,
-} from '@/features/previewGuard'
+import { isNonProductionRuntime } from '@/features/runtimePolicy'
 import { projectHoldingFooterGroups, projectHoldingHeaderNavItems } from '@/features/temporaryLandingMode/navigation'
-import { readPublicSiteModeRequestHeader } from '@/features/temporaryLandingMode'
+import { readHoldingViewRequestHeader, readPublicSiteModeRequestHeader } from '@/features/temporaryLandingMode'
 import { resolveHoldingMode } from '@/features/temporaryLandingMode/resolver'
 import { getCachedGlobal } from '@/utilities/getGlobals'
 import { getServerSideURL } from '@/utilities/getURL'
@@ -54,11 +49,8 @@ function resolvePublicAccountMenuState(authData: AuthData | null): PublicAccount
 
 export default async function FrontendTemplate({ children }: { children: React.ReactNode }) {
   const requestHeaders = await headers()
-  const isGuardLocked = requestHeaders.get(PREVIEW_GUARD_LOCK_REQUEST_HEADER) === '1'
+  const holdingView = readHoldingViewRequestHeader(requestHeaders)
   const requestMode = readPublicSiteModeRequestHeader(requestHeaders)
-  const isPreviewGuardActive =
-    requestHeaders.get(PREVIEW_GUARD_ACTIVE_REQUEST_HEADER) === '1' ||
-    (requestMode === null && isPreviewDeployment(process.env))
   const siteOrigin = getServerSideURL()
   const requestHost = requestHeaders.get('host')
   let requestUrl = new URL(siteOrigin)
@@ -69,11 +61,11 @@ export default async function FrontendTemplate({ children }: { children: React.R
       // Fall back to the configured site origin when the request host is malformed.
     }
   }
-  const resolvedMode = requestMode ?? (isPreviewGuardActive ? null : (await resolveHoldingMode(requestUrl)).mode)
-  const showSiteChrome = !isGuardLocked
+  const resolvedMode = requestMode ?? (await resolveHoldingMode(requestUrl)).mode
+  const showSiteChrome = holdingView !== 'standalone'
   const authData = showSiteChrome ? await extractSupabaseUserData({ headers: requestHeaders }) : null
-  const isHoldingPublicView = resolvedMode === 'holding' && !isPreviewGuardActive && authData?.userType !== 'platform'
-  const showPreviewBadge = isNonProductionDeployment(process.env)
+  const isHoldingPublicView = resolvedMode === 'holding' && authData?.userType !== 'platform'
+  const showPreviewBadge = isNonProductionRuntime(process.env)
   const configuredHeaderLogoSrc = process.env.NEXT_PUBLIC_HEADER_LOGO_SRC?.trim() || undefined
   const configuredFooterLogoSrc = process.env.NEXT_PUBLIC_FOOTER_LOGO_SRC?.trim() || undefined
   const headerLogoSrc = configuredHeaderLogoSrc

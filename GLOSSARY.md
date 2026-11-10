@@ -112,6 +112,12 @@ _Avoid_: Review appeal, initial report.
 A neutral email notice announcing a new clinic message and directing the patient to the protected Inquiry conversation. It does not contain the conversation content.
 _Avoid_: Inquiry message, conversation transcript, Dashboard notification record.
 
+### Product wording
+
+**Product UI Copy**:
+Reusable wording for findmydoc interactions, such as buttons, form messages, navigation, and empty states. It is distinct from editorial, marketing, legal, and medical content, and from internal Admin labels.
+_Avoid_: CMS content, Admin labels.
+
 ### Editorial content
 
 **Post**:

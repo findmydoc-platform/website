@@ -1,3 +1,4 @@
+import { completeInquiryPreparationAccount } from '@/features/inquiryCommunication/service'
 import type { User } from '@supabase/supabase-js'
 import { APIError, createLocalReq, getPayload } from 'payload'
 import configPromise from '@/payload.config'
@@ -95,6 +96,8 @@ export async function patientVerificationAuthority() {
     async confirm(
       context: PatientVerificationContext,
       saveConfirmation: (context: PatientVerificationContext) => void,
+      savePreparation?: (binding: string) => void,
+      preparationUnavailable?: () => void,
     ) {
       const source = await load(context.actionId, context)
       const expected = source.user
@@ -132,7 +135,6 @@ export async function patientVerificationAuthority() {
         throw error
       }
       await commitConfirmation?.()
-      if (action.state === 'completed') return policy.completionRoute
       if (action.state === 'active') await actions.transition({ id: action.id, to: 'confirmed' })
       const patient = await ensurePatientOnAuth({
         payload,
@@ -148,6 +150,18 @@ export async function patientVerificationAuthority() {
       if (!patient || patient.supabaseUserId !== user.id) invalid()
       await actions.bindPrincipal({ id: action.id, principal: { relationTo: 'patients', value: patient.id } })
       await actions.transition({ id: action.id, to: 'completed' })
+      // Account completion is durable before any inquiry handoff is attempted.
+      try {
+        const binding = await completeInquiryPreparationAccount(req, {
+          actionId: action.id,
+          subject: user.id,
+          patientId: patient.id,
+        })
+        if (binding) savePreparation?.(binding)
+      } catch {
+        // Auth has completed. Retain its confirmed context for a separate inquiry continuation.
+        preparationUnavailable?.()
+      }
       return policy.completionRoute
     },
   }

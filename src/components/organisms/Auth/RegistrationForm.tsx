@@ -32,6 +32,7 @@ interface RegistrationFormProps {
   successMessage?: string
   fields: FormField[]
   submitButtonText: string
+  initialValues?: Record<string, string>
   containerClassName?: string
   links?: {
     login?: { href: string; text: string }
@@ -50,6 +51,7 @@ export function RegistrationForm({
   fields,
   submitButtonText,
   containerClassName,
+  initialValues,
   links,
   onSubmit,
   onSuccess,
@@ -114,6 +116,7 @@ export function RegistrationForm({
           required={field.required}
           disabled={isLoading}
           minLength={field.minLength}
+          defaultValue={initialValues?.[field.name]}
           onChange={formValidation.handleFieldChange}
           {...formValidation.getFieldProps(field.name)}
         />

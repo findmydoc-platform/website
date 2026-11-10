@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import React from 'react'
+import { locks } from 'node:worker_threads'
 import { render } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import type {
   ClinicContactRequestPayload,
@@ -33,6 +34,9 @@ import {
 } from '@/app/(frontend)/clinics/[slug]/ClinicDetailClientAdapter.client'
 
 const originalFetch = global.fetch
+
+beforeAll(() => Object.defineProperty(navigator, 'locks', { configurable: true, value: locks }))
+afterAll(() => Reflect.deleteProperty(navigator, 'locks'))
 
 const requestPayload: ClinicContactRequestPayload = {
   clinicId: '42',
@@ -79,7 +83,11 @@ describe('ClinicDetailClientAdapter', () => {
   })
 
   it.each([
-    [false, '/api/clinic-contact-requests', { id: 42 }],
+    [
+      false,
+      '/api/patient/inquiry-preparations',
+      { status: 'saved-not-sent', reference: '42', expiresAt: '2026-11-14T12:00:00.000Z' },
+    ],
     [true, '/api/patient/inquiries', { inquiry: { id: 43 } }],
   ])('submits through the route-owned endpoint for authenticated=%s', async (authenticated, endpoint, responseBody) => {
     const fetchMock = vi.fn(
@@ -102,6 +110,7 @@ describe('ClinicDetailClientAdapter', () => {
 
     await expect(submitContactRequest(requestPayload, authenticated)).resolves.toEqual({
       id: authenticated ? '43' : '42',
+      ...(!authenticated ? { preparation: { reference: '42', expiresAt: '2026-11-14T12:00:00.000Z' } } : {}),
     })
     expect(fetchMock).toHaveBeenCalledWith(endpoint, {
       method: 'POST',
@@ -156,7 +165,7 @@ describe('ClinicDetailClientAdapter', () => {
     const result = submitClinicContactRequest(requestPayload, false)
 
     await expect(result).rejects.toMatchObject({
-      message: 'Could not confirm your clinic request.',
+      message: 'Could not confirm your saved inquiry.',
       requiresReauthentication: false,
     } satisfies Partial<ClinicContactRequestError>)
   })

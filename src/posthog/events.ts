@@ -119,7 +119,6 @@ const registeredReportingEvent = <Name extends PostHogEventName>(name: Name): Na
 export const CLINIC_DASHBOARD_REPORTING_QUERY_CATALOG = Object.freeze({
   events: Object.freeze({
     profileViewed: registeredReportingEvent('clinic_profile_viewed'),
-    inquiryStarted: registeredReportingEvent('clinic_inquiry_started'),
     searchResultViewed: registeredReportingEvent('clinic_search_result_viewed'),
   }),
 })

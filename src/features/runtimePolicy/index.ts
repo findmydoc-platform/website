@@ -1,3 +1,4 @@
+import { resolveServerRuntimeEnvironment, type ServerRuntimeEnvInput } from './core'
 import type { RuntimeClass, RuntimeEnvironment } from './core'
 export type { ClientRuntimeEnvInput, RuntimeClass, RuntimeEnvironment, ServerRuntimeEnvInput } from './core'
 export {
@@ -72,3 +73,6 @@ const SEED_RUNTIME_POLICY: Record<SeedRuntimeEnvironment, SeedRuntimePolicy> = {
 export const resolveSeedRuntimePolicy = (runtimeEnvironment: SeedRuntimeEnvironment): SeedRuntimePolicy => {
   return SEED_RUNTIME_POLICY[runtimeEnvironment]
 }
+
+export const isNonProductionRuntime = (env: ServerRuntimeEnvInput = process.env): boolean =>
+  resolveServerRuntimeEnvironment(env) !== 'production'

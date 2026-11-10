@@ -28,6 +28,18 @@ JSON does not support comments, so we keep the rationale and evidence here for r
   - https://registry.npmjs.org/vite/8.2.2
   - https://github.com/advisories/GHSA-67mh-4wv8-2f99
 
+### glob (`react-email>glob` and `@joshwooding/vite-plugin-react-docgen-typescript>glob` -> `14.0.2`)
+- Reason: The production email path and the Storybook documentation plugin resolve vulnerable `glob@13.0.6`. Scoped overrides move only those paths to `glob@14.0.2`, which also resolves a patched minimatch release, without changing the older glob used by `copyfiles`.
+- References:
+  - https://github.com/advisories/GHSA-3g3m-2fjr-6pw4
+  - https://github.com/advisories/GHSA-g3hv-75wg-m249
+
+### minimatch (`@ts-morph/common` and `@typescript-eslint/typescript-estree` -> `11.0.5`)
+- Reason: Dependabot alert `#253` identified `minimatch@10.2.6` in development-only paths. Scoped overrides move the two direct package paths to the patched `11.0.5` release without changing the separate `minimatch@3.1.5` path used by `glob@7`.
+- References:
+  - https://github.com/advisories/GHSA-g3hv-75wg-m249
+  - https://github.com/isaacs/minimatch/releases/tag/v11.0.5
+
 ### graphql-scalars (`@payloadcms/graphql@3.90.2` -> `2.0.1`)
 - Reason: Payload resolves `graphql-scalars@1.22.2` through an exact dependency. Version 2.0.1 contains the linear-time `PhoneNumber` scalar parser that fixes the high-severity regular-expression denial-of-service advisory. Payload uses the unchanged `DateTimeResolver` and `EmailAddressResolver` exports.
 - References:

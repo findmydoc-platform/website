@@ -320,6 +320,7 @@ export function ClinicDetail({
           isPhoneLocked={interaction.isPhoneLocked}
           requiresReauthentication={interaction.requiresReauthentication}
           submittedInquiryHref={interaction.submittedInquiryHref}
+          preparationRegistrationHref={interaction.preparationRegistrationHref}
           selectedDoctorId={interaction.selectedDoctorId}
           selectedTreatmentId={interaction.selectedTreatmentId}
           doctors={data.doctors}

@@ -139,13 +139,16 @@ export type ClinicContactRequestPayload = {
   consent: boolean
   email?: string
   fullName?: string
+  firstName?: string
+  lastName?: string
+  accountAuthorization?: boolean
   phoneNumber?: string
 }
 
 export type ClinicContactRequestSubmitter = (
   payload: ClinicContactRequestPayload,
   authenticated: boolean,
-) => Promise<{ id: string }>
+) => Promise<{ id: string; preparation?: { reference: string; expiresAt: string } }>
 
 export type ClinicDetailProfileViewedEvent = {
   clinicId: string

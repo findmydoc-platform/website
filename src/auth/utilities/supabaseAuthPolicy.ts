@@ -2,6 +2,13 @@ import type { User } from '@supabase/supabase-js'
 
 import { VALID_USER_TYPES } from '@/auth/config/authConfig'
 
+type UserTypeCarrier = Pick<User, 'app_metadata'> | null
+
+export const isPlatformUser = (user: UserTypeCarrier): boolean => {
+  const userType = user?.app_metadata?.user_type
+  return typeof userType === 'string' && userType.trim().toLowerCase() === 'platform'
+}
+
 export type SupabaseAuthErrorLike = {
   code?: string
   message?: string

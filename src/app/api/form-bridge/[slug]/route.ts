@@ -113,10 +113,13 @@ const getInternalRequestContext = (request: NextRequest) => {
 
   const authorization = request.headers.get('authorization')
   const cookie = request.headers.get('cookie')
+  // Vercel injects this Website invocation's identity, independently of the caller's trusted-source token.
+  const deploymentToken = request.headers.get('x-vercel-oidc-token')
   return {
     headers: {
       ...(authorization ? { authorization } : {}),
       ...(cookie ? { cookie } : {}),
+      ...(deploymentToken ? { 'x-vercel-trusted-oidc-idp-token': deploymentToken } : {}),
     },
     origin: request.nextUrl.origin,
   }

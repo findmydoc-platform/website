@@ -118,7 +118,7 @@ describe('clinic-scope-v1 source authorization', () => {
             headers: new Headers({
               Authorization: 'Bearer synthetic-personal-token',
               'X-Findmydoc-Clinic-Scope-Contract': 'clinic-scope-v1',
-              'X-Findmydoc-Reporting-Contract': 'clinic-dashboard-reporting-v2',
+              'X-Findmydoc-Reporting-Contract': 'clinic-dashboard-reporting-v3',
             }),
             routeParams: clinicId ? { clinicId: String(clinicId) } : {},
             searchParams: new URLSearchParams('periodDays=7'),
@@ -153,7 +153,7 @@ describe('clinic-scope-v1 source authorization', () => {
     const selected = await reporting(second.id)
     expect(selected.status).toBe(200)
     expect(await selected.json()).toMatchObject({
-      schemaVersion: 'clinic-dashboard-reporting-v2',
+      schemaVersion: 'clinic-dashboard-reporting-v3',
       metrics: {
         inquiries: { current: { value: 0 } },
         profileViews: { current: { state: 'source_unavailable', value: null } },

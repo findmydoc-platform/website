@@ -31,11 +31,11 @@ export type ReportingReviewAverageSnapshot = {
   comparison: null
 }
 
-export const CLINIC_DASHBOARD_REPORTING_V2_SCHEMA_VERSION = 'clinic-dashboard-reporting-v2' as const
+export const CLINIC_DASHBOARD_REPORTING_V3_SCHEMA_VERSION = 'clinic-dashboard-reporting-v3' as const
 export const REPORTING_CONTENT_CONTRACT_HEADER = 'X-Findmydoc-Reporting-Contract' as const
 
-export type ClinicDashboardReportingV2DTO = {
-  schemaVersion: typeof CLINIC_DASHBOARD_REPORTING_V2_SCHEMA_VERSION
+export type ClinicDashboardReportingV3DTO = {
+  schemaVersion: typeof CLINIC_DASHBOARD_REPORTING_V3_SCHEMA_VERSION
   asOf: string
   timezone: 'Europe/Istanbul'
   period: { days: ReportingPeriodDays; from: string; to: string }
@@ -44,7 +44,6 @@ export type ClinicDashboardReportingV2DTO = {
     impressions: ReportingCountMetric & { source: 'posthog' }
     profileViews: ReportingCountMetric & { source: 'posthog' }
     uniqueVisitors: ReportingCountMetric & { source: 'posthog' }
-    inquiryStarters: ReportingCountMetric & { source: 'posthog' }
     inquiries: ReportingCountMetric & { source: 'payload' }
     reviews: {
       source: 'payload'

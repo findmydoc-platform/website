@@ -158,11 +158,11 @@ request-bound projections. A selected clinic path never grants permission and la
 
 ## Clinic Dashboard reporting contract
 
-[ADR 029](../adrs/029-adr-tenant-safe-clinic-dashboard-reporting.md) defines the active five-count contract.
+[ADR 040](../adrs/040-adr-four-count-clinic-dashboard-reporting.md) defines the active four-count contract.
 `GET /api/clinic-dashboard/clinics/:clinicId/reporting` requires both
 `X-Findmydoc-Clinic-Scope-Contract: clinic-scope-v1` and
-`X-Findmydoc-Reporting-Contract: clinic-dashboard-reporting-v2`.
-Missing, V1 or unknown reporting versions return private `400 CLINIC_DASHBOARD_INVALID_CONTRACT`.
+`X-Findmydoc-Reporting-Contract: clinic-dashboard-reporting-v3`.
+Missing, V1, V2 or unknown reporting versions return private `400 CLINIC_DASHBOARD_INVALID_CONTRACT`.
 
 Every request validates the personal Bearer identity and authorizes its positive integer clinic target against current
 local or group assignment and participation. The selected path grants no permission. Every source read uses that
@@ -195,8 +195,8 @@ type CountMetric<Source extends 'payload' | 'posthog'> = {
     relativeDeltaPercent: number | null
   }
 }
-type ClinicDashboardReportingV2 = {
-  schemaVersion: 'clinic-dashboard-reporting-v2'
+type ClinicDashboardReportingV3 = {
+  schemaVersion: 'clinic-dashboard-reporting-v3'
   asOf: string
   timezone: 'Europe/Istanbul'
   period: { days: 7 | 30 | 90; from: string; to: string }
@@ -205,7 +205,6 @@ type ClinicDashboardReportingV2 = {
     impressions: CountMetric<'posthog'>
     profileViews: CountMetric<'posthog'>
     uniqueVisitors: CountMetric<'posthog'>
-    inquiryStarters: CountMetric<'posthog'>
     inquiries: CountMetric<'payload'>
     reviews: {
       source: 'payload'
@@ -217,8 +216,7 @@ type ClinicDashboardReportingV2 = {
 ```
 
 Profile Views counts every matching `clinic_profile_viewed` event. Unique Visitors counts distinct nonempty existing
-consent-controlled browser `distinct_id` values among those events, per clinic/window. Inquiry starters uses the same
-recognition on `clinic_inquiry_started`; Impressions counts `clinic_search_result_viewed`. Browser/device changes and
+consent-controlled browser `distinct_id` values among those events, per clinic/window. Impressions counts `clinic_search_result_viewed`. Browser/device changes and
 cleared storage can count a visitor again. Visitors without analytics consent are outside this population. No individual
 identities leave the adapter. Patient, inquiry and session identifiers do not substitute for browser recognition.
 
@@ -238,6 +236,11 @@ One consolidated PostHog query covers both windows within a three-second total b
 or stale fallback. Metric-source failures remain null states in an authorized `200` response. Payload inquiry counts and
 review snapshots remain available during an analytics outage. Source tests do not prove deployed PostHog ingestion,
 configuration or coverage.
+
+The V3 cutover replaces V2 directly in both applications. A mismatched deployment pair fails closed; no legacy
+response is synthesized. Deploy Website before Dashboard and roll back both to a matching pair if needed.
+The form-side `clinic_inquiry_started` capture remains consent-controlled and is not queried by clinic reporting.
+
 
 ## Clinic Profile Draft Contract
 
@@ -446,6 +449,14 @@ is 4 MiB per request and the Dashboard sends no more than three independent uplo
 normalizes orientation and strips metadata before generating its registered image sizes. Returned media URLs are
 absolute protected image-operation URLs. The optional `size=thumbnail` selects a stored registered size; neither
 the URL nor its encrypted Dashboard token grants access. Public media URLs keep their existing behavior.
+
+Doctor and Gallery image operations validate the stored Website origin and media path before adding deployment
+access to their internal file request. They use the current Website Function's `x-vercel-oidc-token` as
+`x-vercel-trusted-oidc-idp-token`, retain the application bearer and existing timeout, and reject redirects.
+The incoming caller's trusted-source identity is not forwarded. OIDC Federation and the Website's effective
+Trusted Sources policy must allow the Website runtime to call its own protected destination. These transport
+headers do not replace clinic, doctor, or media authorization. Cache impact is `no-public-impact`; private
+image responses remain uncached and existing public revalidation owners are unchanged.
 
 The Website instance installs the bounded native upload owner from [ADR 036](../adrs/036-adr-clinic-authorization-mutation-ordering.md#bounded-native-media-initialization-retry).
 Direct root `payload.create` uploads and this custom multipart handler retain native transaction ownership. At most

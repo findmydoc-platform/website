@@ -1,14 +1,14 @@
 import { revalidateClinicDashboardTargetRequest } from '@/features/clinicDashboard/authorization'
 import type { PayloadRequest, Where } from 'payload'
 import {
-  CLINIC_DASHBOARD_REPORTING_V2_SCHEMA_VERSION,
-  type ClinicDashboardReportingV2DTO,
+  CLINIC_DASHBOARD_REPORTING_V3_SCHEMA_VERSION,
+  type ClinicDashboardReportingV3DTO,
   REPORTING_PERIOD_DAYS,
   type ReportingPeriodDays,
 } from './contracts'
 import { countMetric } from './countMetric'
 
-import { readPostHogClinicDashboardReportingV2 } from './posthog-v2'
+import { readPostHogClinicDashboardReportingV3 } from './posthog-v3'
 
 const ISTANBUL_TIME_ZONE = 'Europe/Istanbul' as const
 const INQUIRY_STATUSES = ['submitted', 'in_review', 'contacted', 'closed'] as const
@@ -28,7 +28,7 @@ type ReportingWindows = {
 type RecordValue = Record<string, unknown>
 
 export type ClinicDashboardReportingResult =
-  | { status: 'success'; data: ClinicDashboardReportingV2DTO }
+  | { status: 'success'; data: ClinicDashboardReportingV3DTO }
   | { status: 'unauthorized' }
   | { status: 'access-denied' }
   | { status: 'unavailable' }
@@ -234,7 +234,7 @@ export const parseReportingPeriodDays = (value: string | undefined): ReportingPe
   return REPORTING_PERIOD_DAYS.includes(parsed as ReportingPeriodDays) ? (parsed as ReportingPeriodDays) : undefined
 }
 
-export async function resolveClinicDashboardReportingV2(
+export async function resolveClinicDashboardReportingV3(
   req: PayloadRequest,
   targetClinicId: string,
   periodDays: ReportingPeriodDays,
@@ -253,12 +253,12 @@ export async function resolveClinicDashboardReportingV2(
   const [inquiries, reviews, analytics] = await Promise.all([
     resolveInquiryMetrics(req, clinicId, windows).catch(() => undefined),
     resolveReviews(req, clinicId).catch(() => undefined),
-    readPostHogClinicDashboardReportingV2({ clinicId, comparison: windows.comparison, current: windows.current }),
+    readPostHogClinicDashboardReportingV3({ clinicId, comparison: windows.comparison, current: windows.current }),
   ])
   return {
     status: 'success',
     data: {
-      schemaVersion: CLINIC_DASHBOARD_REPORTING_V2_SCHEMA_VERSION,
+      schemaVersion: CLINIC_DASHBOARD_REPORTING_V3_SCHEMA_VERSION,
       asOf: windows.asOf,
       timezone: ISTANBUL_TIME_ZONE,
       period: windows.current,
@@ -271,7 +271,7 @@ export async function resolveClinicDashboardReportingV2(
           inquiries ? 'available' : 'source_unavailable',
           inquiries?.comparison,
           inquiries ? 'available' : 'source_unavailable',
-        ) as ClinicDashboardReportingV2DTO['metrics']['inquiries'],
+        ) as ClinicDashboardReportingV3DTO['metrics']['inquiries'],
         reviews: {
           source: 'payload',
           count: {

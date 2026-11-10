@@ -18,6 +18,7 @@ import { recoveryCorrelations } from './recoveryCorrelation'
 import { confirmedWebsiteRecovery, type WebsiteRecoveryContext } from './websiteRecoveryContext'
 import { withWebsiteRecoveryExecution, type RecoveryExecution } from './websiteRecoveryExecution'
 import { websiteRecoveryProgress } from './websiteRecoveryProgress'
+import { completeInquiryPreparationAccount } from '@/features/inquiryCommunication/service'
 
 export class InvalidWebsiteRecovery extends Error {}
 export class RecoveryPasswordRejected extends Error {}
@@ -107,6 +108,15 @@ export async function websiteRecoveryAuthority() {
     environment,
     keys,
     load,
+    async restorePreparation(context: WebsiteRecoveryContext) {
+      if (context.flow !== 'patient-recovery') return null
+      const source = await load(context.actionId, { ...context, stage: 'signed-out' })
+      return completeInquiryPreparationAccount(req, {
+        actionId: source.action.id,
+        subject: source.user.id,
+        patientId: source.principal.document.id,
+      })
+    },
     async confirm(context: WebsiteRecoveryContext, save: (grant: WebsiteRecoveryContext) => void) {
       return withWebsiteRecoveryExecution(
         payload,

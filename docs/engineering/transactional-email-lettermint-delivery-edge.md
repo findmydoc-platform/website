@@ -564,8 +564,6 @@ defines the narrow control-only adapter exception, cleanup limits and required P
 
 `POST /api/internal/transactional-email/lettermint/[environment]` accepts `preview` or `production` only when the
 path matches the hosted runtime and the complete fingerprint-bound configuration passes validation. The
-Preview session guard exempts only the exact Preview and Production webhook paths, leaving their authentication to
-the signature boundary even when a caller supplies session headers. Neighboring internal paths remain guarded. The
 private inbound binding contains only target identities, webhook secrets, and their overlap bounds; project tokens
 and recipient-digest keys remain outside the receiver. The Node.js
 route authenticates `t=<Unix seconds>,v1=<64 hex characters>` over the timestamp, a period, and the unmodified request

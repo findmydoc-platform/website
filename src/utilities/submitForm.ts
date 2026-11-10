@@ -28,6 +28,7 @@ type SameOriginRequestContext = {
   headers: {
     authorization?: string
     cookie?: string
+    'x-vercel-trusted-oidc-idp-token'?: string
   }
   origin: string
 }
@@ -55,7 +56,11 @@ export async function submitFormData({
   if (requestContext?.headers.authorization) requestHeaders.Authorization = requestContext.headers.authorization
   if (requestContext?.headers.cookie) requestHeaders.Cookie = requestContext.headers.cookie
 
+  const deploymentToken = requestContext?.headers['x-vercel-trusted-oidc-idp-token']
+  if (deploymentToken) requestHeaders['x-vercel-trusted-oidc-idp-token'] = deploymentToken
+
   const res = await fetch(requestUrl, {
+    ...(requestContext ? { redirect: 'error' as const } : {}),
     method: 'POST',
     headers: requestHeaders,
     body: JSON.stringify({

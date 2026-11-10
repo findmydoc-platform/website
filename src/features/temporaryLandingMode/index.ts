@@ -1,5 +1,12 @@
 export const TEMPORARY_LANDING_MODE_REQUEST_HEADER = 'x-temporary-landing-mode'
 export const PUBLIC_SITE_MODE_REQUEST_HEADER = 'x-public-site-mode'
+export const HOLDING_VIEW_REQUEST_HEADER = 'x-holding-view'
+
+export const readHoldingViewRequestHeader = (headers: Headers): 'standalone' | 'public' | null => {
+  const view = headers.get(HOLDING_VIEW_REQUEST_HEADER)
+  return view === 'standalone' || view === 'public' ? view : null
+}
+
 export const readPublicSiteModeRequestHeader = (headers: Headers): 'full' | 'holding' | null => {
   const mode = headers.get(PUBLIC_SITE_MODE_REQUEST_HEADER)
   return mode === 'full' || mode === 'holding' ? mode : null

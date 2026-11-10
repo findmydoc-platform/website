@@ -5,7 +5,7 @@ import { normalizeEmail } from '@/auth/utilities/emailNormalization'
 import { requestPatientVerification } from '@/auth/actions/patientVerificationRequests'
 import configPromise from '@/payload.config'
 import { hashLogValue } from '@/utilities/logging/shared'
-import { PREVIEW_GUARD_ACTIVE_REQUEST_HEADER } from '@/features/previewGuard'
+import { readPreparationBinding } from '@/features/inquiryPreparations/context'
 
 const bodySchema = z
   .object({
@@ -17,17 +17,14 @@ const bodySchema = z
   .strict()
 
 export async function POST(request: Request) {
-  if (request.headers.get(PREVIEW_GUARD_ACTIVE_REQUEST_HEADER) === '1') {
-    return NextResponse.json(
-      { error: 'Patient accounts are created by platform staff while Preview Guard is active.' },
-      { status: 403 },
-    )
-  }
+  if (readPreparationBinding(request.headers) && request.headers.get('origin') !== new URL(request.url).origin)
+    return NextResponse.json({ error: 'Request rejected.' }, { status: 403 })
   const parsed = bodySchema.safeParse(await request.json().catch(() => null))
   if (!parsed.success) return NextResponse.json({ error: 'Invalid payload' }, { status: 400 })
   const payload = await getPayload({ config: configPromise })
   try {
     const req = await createLocalReq({}, payload)
+    req.headers = request.headers
     await requestPatientVerification(req, parsed.data)
     return NextResponse.json({ success: true })
   } catch (error) {

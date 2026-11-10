@@ -27,11 +27,19 @@ const clinicDetailAnalytics: Omit<ClinicDetailAnalyticsPort, 'isReady'> = {
 }
 
 export const submitClinicContactRequest: ClinicContactRequestSubmitter = async (payload, authenticated) => {
-  const response = await fetch(authenticated ? '/api/patient/inquiries' : '/api/clinic-contact-requests', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  })
+  if (!authenticated && !navigator.locks)
+    throw new ClinicContactRequestError(
+      'This browser cannot save your inquiry safely. Please use an updated browser.',
+      false,
+    )
+  const send = () =>
+    fetch(authenticated ? '/api/patient/inquiries' : '/api/patient/inquiry-preparations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+  // Let the first response establish its HttpOnly group before another tab saves.
+  const response = await (authenticated ? send() : navigator.locks.request('findmydoc-inquiry-preparations', send))
 
   if (!response.ok) {
     const errorPayload = await response.json().catch(() => ({}))
@@ -50,8 +58,17 @@ export const submitClinicContactRequest: ClinicContactRequestSubmitter = async (
 
   const responseBody = (await response.json().catch(() => ({}))) as {
     id?: unknown
+    reference?: string
+    expiresAt?: string
+    status?: string
     inquiry?: { id?: unknown }
   }
+  if (!authenticated && responseBody.status === 'saved-not-sent' && responseBody.reference && responseBody.expiresAt)
+    return {
+      id: responseBody.reference,
+      preparation: { reference: responseBody.reference, expiresAt: responseBody.expiresAt },
+    }
+  if (!authenticated) throw new ClinicContactRequestError('Could not confirm your saved inquiry.', false)
   const id = responseBody.inquiry?.id ?? responseBody.id
   if (typeof id !== 'string' && typeof id !== 'number') {
     throw new ClinicContactRequestError('Could not confirm your clinic request.', false)

@@ -1,4 +1,7 @@
+import { readdirSync } from 'node:fs'
 import { networkInterfaces } from 'node:os'
+import { join, relative, sep } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { withPayload } from '@payloadcms/next/withPayload'
 
 import { IMAGE_LOCAL_PATTERNS, IMAGE_QUALITIES } from './src/imageConfig.js'
@@ -11,6 +14,17 @@ const NEXT_PUBLIC_SERVER_URL = process.env.VERCEL_PROJECT_PRODUCTION_URL
 
 const SEED_ASSET_TRACING_INCLUDE = './src/endpoints/seed/assets/**/*'
 const SEARCH_ROBOTS_HEADER_VALUE = 'noindex, nofollow, noarchive'
+const publicDirectory = fileURLToPath(new URL('./public/', import.meta.url))
+// Resolve actual assets at build time. Generated robots/sitemaps retain their route policy.
+const publicStaticAssetPaths = readdirSync(publicDirectory, { recursive: true, withFileTypes: true })
+  .filter(
+    (entry) => entry.isFile() && /\.(?:avif|css|gif|ico|jpe?g|js|mp4|png|svg|webm|webp|woff2?)$/i.test(entry.name),
+  )
+  .map(
+    (entry) =>
+      `/${relative(publicDirectory, join(entry.parentPath, entry.name)).split(sep).map(encodeURIComponent).join('/')}`,
+  )
+  .sort()
 
 const normalizeEnvValue = (value) => {
   if (!value) return null
@@ -37,6 +51,7 @@ const allowedDevOrigins = getAllowedDevOrigins({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  env: { PUBLIC_STATIC_ASSET_PATHS: JSON.stringify(publicStaticAssetPaths) },
   // Authentication callbacks arrive with one-time link material; never print their request query.
   logging: { incomingRequests: { ignore: [/^\/auth\/callback(?:\?|$)/] } },
   ...(allowedDevOrigins.length > 0 ? { allowedDevOrigins } : {}),

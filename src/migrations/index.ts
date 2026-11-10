@@ -103,6 +103,8 @@ import * as migration_20261017_084048_clinic_staff_identity_activation from './2
 import * as migration_20261017_085356_clinic_groups_initial_membership from './20261017_085356_clinic_groups_initial_membership'
 import * as migration_20261017_091316_clinic_staff_group_assignment from './20261017_091316_clinic_staff_group_assignment'
 import * as migration_20261017_101649_personal_group_invitation from './20261017_101649_personal_group_invitation'
+import * as migration_20261107_091935_inquiry_preparations from './20261107_091935_inquiry_preparations'
+import * as migration_20261107_123538_settle_inquiry_attempts from './20261107_123538_settle_inquiry_attempts'
 
 export const migrations = [
   {
@@ -629,5 +631,15 @@ export const migrations = [
     up: migration_20261017_101649_personal_group_invitation.up,
     down: migration_20261017_101649_personal_group_invitation.down,
     name: '20261017_101649_personal_group_invitation',
+  },
+  {
+    up: migration_20261107_091935_inquiry_preparations.up,
+    down: migration_20261107_091935_inquiry_preparations.down,
+    name: '20261107_091935_inquiry_preparations',
+  },
+  {
+    up: migration_20261107_123538_settle_inquiry_attempts.up,
+    down: migration_20261107_123538_settle_inquiry_attempts.down,
+    name: '20261107_123538_settle_inquiry_attempts',
   },
 ]

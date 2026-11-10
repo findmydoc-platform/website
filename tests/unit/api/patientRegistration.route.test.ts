@@ -3,7 +3,6 @@ import type { Payload } from 'payload'
 import type { User } from '@supabase/supabase-js'
 import { POST } from '@/app/api/auth/register/patient/route'
 import { POST as resend } from '@/app/api/auth/register/patient/resend/route'
-import { PREVIEW_GUARD_ACTIVE_REQUEST_HEADER } from '@/features/previewGuard'
 import { createEmailCommandStorage } from '../../helpers/emailCommandStorage'
 import { createTransactionalEmailWorker } from '@/features/transactionalEmail/worker'
 import { createFakeDeliveryAdapter } from '@/features/transactionalEmail/delivery'
@@ -32,13 +31,12 @@ vi.mock('@/auth/utilities/supaBaseServer', () => ({
 const key = { version: 'offline-v1', secret: 'offline-only-verification-registration-key' } // pragma: allowlist secret
 const subject = '3525d8e2-0ff0-44cc-9f14-ad8a783a57dd'
 const validBody = { email: 'PATIENT@example.test', firstName: 'John', lastName: 'Doe', password: 'OfflinePatient123' } // pragma: allowlist secret
-function makeRequest(body: unknown = validBody, previewGuardActive = false) {
+function makeRequest(body: unknown = validBody) {
   return new Request('http://localhost/api/auth/register/patient', {
     method: 'POST',
     body: JSON.stringify(body),
     headers: {
       'Content-Type': 'application/json',
-      ...(previewGuardActive ? { [PREVIEW_GUARD_ACTIVE_REQUEST_HEADER]: '1' } : {}),
     },
   })
 }
@@ -264,8 +262,7 @@ describe('patient registration through Auth, catalog, Outbox and offline deliver
     expect(boundary.admin.generateLink).not.toHaveBeenCalled()
   })
 
-  test('preserves Preview Guard and rejects caller-supplied mail or resend authority', async () => {
-    expect((await POST(makeRequest(validBody, true))).status).toBe(403)
+  test('rejects caller-supplied mail or resend authority', async () => {
     for (const injected of [
       { resendOf: 1 },
       { actionUrl: 'https://attacker.example' },

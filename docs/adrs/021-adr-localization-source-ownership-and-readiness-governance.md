@@ -7,7 +7,7 @@
 | Author  | Sebastian Schuetze |
 | Version | 1.0                |
 | Date    | 20.06.2026         |
-| Status  | draft              |
+| Status  | superseded         |
 
 ## Background
 
@@ -113,4 +113,4 @@ The later routing and SEO ADR must consume the readiness model from this ADR ins
 
 ## Superseded by (Optional)
 
-Not superseded.
+The publication-readiness and fallback-completeness requirements are superseded by [ADR 038 — Native Payload locale publication without aggregate readiness gates](./038-adr-native-payload-locale-publication.md). The source-language, content-ownership, Product UI Copy format, and English-only Payload Admin decisions remain in force.

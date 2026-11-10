@@ -208,11 +208,13 @@ export const EmailField = ({
   placeholder = 'name@example.com',
   autoComplete = 'email',
   className,
+  defaultValue,
 }: {
   label?: string
   placeholder?: string
   autoComplete?: React.ComponentProps<typeof Input>['autoComplete']
   className?: string
+  defaultValue?: string
 }) => {
   const { clearFieldError, formValidation, state } = useLoginFormContext()
   const fieldError = formValidation.getFieldError('email') ?? state.fieldErrors.email
@@ -227,6 +229,7 @@ export const EmailField = ({
         type="email"
         placeholder={placeholder}
         autoComplete={autoComplete}
+        defaultValue={defaultValue}
         required
         disabled={state.isLoading}
         aria-describedby={fieldError ? fieldErrorId : undefined}

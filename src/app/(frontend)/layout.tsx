@@ -20,6 +20,8 @@ import {
 } from '@/features/searchIndexing'
 import { JsonLdScript, buildSiteBaseJsonLd } from '@/utilities/structuredData'
 import type { CookieConsent as CookieConsentType } from '@/payload-types'
+import { isPreviewRuntime } from '@/features/runtimePolicy'
+import { VercelToolbar } from '@vercel/toolbar/next'
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const requestHeaders = await headers()
@@ -54,6 +56,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           config={cookieConsentContext.config}
           initialConsent={cookieConsentContext.initialConsent}
         />
+        {isPreviewRuntime(process.env) ? <VercelToolbar /> : null}
       </body>
     </html>
   )

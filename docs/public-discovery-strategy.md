@@ -44,7 +44,15 @@ Public canonical URLs should prefer readable slug routes over query URLs. Query 
 
 Sitemap entries should use real content timestamps when available. Request-time timestamps must not be used as freshness signals because they imply content freshness that did not happen.
 
-Preview, draft, unpublished, private, and admin-only states stay out of public sitemap discovery. Temporary landing mode is the narrow exception: it exposes only the public blog index, positive-integer pagination, published post details, `robots.txt`, the pages and posts sitemaps, and the scoped llms orientation paths. Its pages sitemap contains only `/posts`; its posts sitemap keeps the published-status filter. The landing page, sitemap index, and all other discovery routes remain excluded.
+Preview, draft, unpublished, private, and admin-only states stay out of public sitemap discovery. Production Holding exposes the home page, public blog index, positive-integer pagination, published post details, `robots.txt`, the pages and posts sitemaps, and the scoped llms orientation paths. Its pages sitemap contains only `/posts`; its posts sitemap keeps the published-status filter. The sitemap index and all other discovery routes remain excluded.
+
+The Production Holding home page is indexable while retaining its standalone presentation, existing navigation, and contact access. Standalone presentation and search exclusion are separate decisions. Contact and legal pages keep their existing indexing exclusions, and Preview remains excluded independently of the public host mode.
+
+English remains the default Holding language, with the existing German and Turkish choices. The home page canonical is `https://findmydoc.eu/` without query parameters, including for `lang=en`, `lang=de`, and `lang=tr`. These choices do not create additional canonical language routes or sitemap entries. Existing titles, descriptions, and visible page text remain the source for localized content.
+
+Holding base structured data identifies only the Organization and WebSite. Its description uses the existing English Holding status and visible blog description. The platform vision does not supply claims about available clinic offers, ratings, reviews, verification, or medical quality.
+
+Material changes to Holding presentation, navigation, or the composition of HTTP headers and page metadata require a bounded browser check on a running production build. Check the standalone page, allowed navigation and contact access, language choice, HTTP robots header, canonical, robots and Googlebot metadata, and JSON-LD together.
 
 findmydoc observes public discovery traffic only as operational visibility. Platform logs may record recognized crawler classes, the requested public path, platform timestamp, runtime environment, and coarse response context so the team can detect crawl problems, sitemap errors, and agent-discovery drift. This is not product analytics or user behavior tracking. Logs must not capture private content, draft content, admin-only surfaces, cookies, authentication data, contact details, medical free text, IP-based user profiles, or individual user identities.
 

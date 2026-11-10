@@ -47,7 +47,8 @@ describe('temporaryLandingMode feature', () => {
     expect(isTemporaryLandingPublicExemptPath('/posts/page/2/extra')).toBe(false)
   })
 
-  it('keeps the indexable surface limited to blog and its discovery files', () => {
+  it('keeps the indexable surface limited to root, blog, and their discovery files', () => {
+    expect(isTemporaryLandingIndexablePath('/')).toBe(true)
     expect(isTemporaryLandingIndexablePath('/posts')).toBe(true)
     expect(isTemporaryLandingIndexablePath('/posts/example')).toBe(true)
     expect(isTemporaryLandingIndexablePath('/posts/page/2')).toBe(true)

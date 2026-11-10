@@ -1,6 +1,7 @@
-import { afterAll, afterEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { PostHog } from 'posthog-node'
 import { NextRequest } from 'next/server'
+import type { CookieConsent } from '@/payload-types'
 
 const state = vi.hoisted(() => ({ client: null as import('posthog-node').PostHog | null }))
 vi.mock('@supabase/ssr', () => ({
@@ -37,22 +38,15 @@ vi.mock('@/posthog/server', () => ({
   schedulePostHogFeatureFlagServerIdleShutdown: () => undefined,
 }))
 
-vi.mock('@/utilities/getGlobals', () => ({
-  getGlobal: async () => ({
-    enabled: true,
-    consentVersion: 3,
-    optionalCategorySettings: {
-      analytics: { enabled: true, label: 'Analytics', tools: ['posthog'] },
-      functional: { enabled: true, label: 'Functional', tools: [] },
-      marketing: { enabled: true, label: 'Marketing', tools: [] },
-    },
-  }),
-}))
+// Keep concurrent dynamic CMS imports on the same mocked module exports.
+vi.mock('@/utilities/getGlobals', { spy: true })
 
 import { proxy } from '@/proxy'
 import { PUBLIC_DISCOVERY_SURFACE_PATHS } from '@/features/publicDiscovery/site'
 import { PUBLIC_SITE_MODE_REQUEST_HEADER } from '@/features/temporaryLandingMode'
 import { SEARCH_ROBOTS_HEADER, SEARCH_ROBOTS_HEADER_VALUE } from '@/features/searchIndexing'
+import { resolvePublicDiscoveryAccessForRequest } from '@/features/publicDiscovery/access'
+import { getGlobal } from '@/utilities/getGlobals'
 import {
   createPostHogHoldingEvaluationContext,
   evaluatePostHogFlags,
@@ -60,6 +54,35 @@ import {
 } from '@/posthog/api'
 
 describe('Holding local PostHog rules', () => {
+  beforeEach(() => {
+    vi.mocked(getGlobal).mockResolvedValue({
+      id: 1,
+      enabled: true,
+      consentVersion: 3,
+      bannerTitle: 'Cookies',
+      bannerDescription: 'Choose optional cookies.',
+      acceptLabel: 'Accept',
+      rejectLabel: 'Reject',
+      customizeLabel: 'Customize',
+      cancelLabel: 'Cancel',
+      saveLabel: 'Save',
+      reopenLabel: 'Cookie settings',
+      privacyPolicyPage: 1,
+      privacyPolicyLabel: 'Privacy policy',
+      settingsTitle: 'Cookie settings',
+      settingsDescription: 'Choose optional categories.',
+      essentialLabel: 'Essential',
+      essentialDescription: 'Required cookies.',
+      optionalCategorySettings: {
+        analytics: { enabled: true, label: 'Analytics', tools: ['posthog'] },
+        functional: { enabled: true, label: 'Functional', tools: [] },
+        marketing: { enabled: true, label: 'Marketing', tools: [] },
+      },
+    } satisfies CookieConsent)
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://example.supabase.co')
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'test-key')
+  })
+
   afterEach(() => {
     vi.unstubAllEnvs()
   })
@@ -127,6 +150,16 @@ describe('Holding local PostHog rules', () => {
         const response = await proxy(new NextRequest('https://findmydoc.eu/clinics'))
         expect(response.status, environment).toBe(status)
       }
+      await expect(
+        resolvePublicDiscoveryAccessForRequest(new Request('https://findmydoc.eu/llms.txt'), {
+          VERCEL_ENV: 'production',
+        }),
+      ).resolves.toEqual({ allowed: false, reason: 'temporary-landing-mode' })
+      await expect(
+        resolvePublicDiscoveryAccessForRequest(new Request('https://findmydoc.eu/llms.txt'), {
+          NODE_ENV: 'development',
+        }),
+      ).resolves.toEqual({ allowed: true })
       vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'production')
       expect((await proxy(new NextRequest('https://another.example/clinics'))).status).toBe(200)
       vi.stubEnv('VERCEL_ENV', 'preview')
@@ -237,8 +270,6 @@ describe('Holding local PostHog rules', () => {
       'private, no-store',
     ])
 
-    vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://example.supabase.co')
-    vi.stubEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'test-key')
     const signedIn = (session: string, id?: string, consent = true) => {
       const request = browser(id, consent)
       request.cookies.set('test-session', session)

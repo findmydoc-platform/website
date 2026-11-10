@@ -75,7 +75,7 @@ export const resolveHoldingMode = async (
   headers?: Headers,
   getVerifiedUser?: () => Promise<{ id: string; app_metadata: Record<string, unknown> } | null>,
 ): Promise<HoldingModeDecision> => {
-  const hostContext = createPostHogHoldingEvaluationContext({ url })
+  const hostContext = createPostHogHoldingEvaluationContext({ url, env })
   const { actor, context } = headers
     ? await resolvePostHogHoldingRequestContext({ context: hostContext, headers, getVerifiedUser })
     : { actor: resolvePostHogHoldingFlagActor(hostContext), context: hostContext }

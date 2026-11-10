@@ -17,8 +17,10 @@ import {
 import { resolveHoldingMode, type PublicSiteMode } from '@/features/temporaryLandingMode/resolver'
 import { SEARCH_ROBOTS_HEADER, SEARCH_ROBOTS_HEADER_VALUE } from '@/features/searchIndexing'
 import { logCrawlerRequest } from '@/features/publicDiscovery/crawlerMonitoring'
+import { PUBLIC_DISCOVERY_SURFACE_PATHS } from '@/features/publicDiscovery/site'
 
 const NON_PAGE_PATHS = new Set(['/next/exit-preview', '/next/preview'])
+const PUBLIC_DISCOVERY_PATHS = new Set<string>(PUBLIC_DISCOVERY_SURFACE_PATHS)
 
 const isPathFamily = (pathname: string, prefix: string): boolean =>
   pathname === prefix || pathname.startsWith(`${prefix}/`)
@@ -119,7 +121,9 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
 
   const previewDeployment = isPreviewRuntime()
   const discovery =
-    isTemporaryLandingPublicDiscoveryPath(pathname) || pathname === '/llms.txt' || pathname.endsWith('-sitemap.xml')
+    PUBLIC_DISCOVERY_PATHS.has(pathname) ||
+    isTemporaryLandingPublicDiscoveryPath(pathname) ||
+    pathname.endsWith('-sitemap.xml')
   let verifiedUser: Promise<User | null> | undefined
   const getVerifiedUser = () => (verifiedUser ??= getHoldingRequestUser(request))
   const holdingMode = (

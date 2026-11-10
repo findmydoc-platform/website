@@ -66,9 +66,19 @@ analytics consent is absent; only PostHog event capture is skipped.
 
 The repository registers the server-side PostHog flag `temporary-landing-mode` for public Holding mode.
 It is evaluated through `evaluatePostHogFlags()` with a stable host actor and the `feature_flag_site_host`
-person property. With valid analytics consent, request evaluation also supplies the existing browser distinct ID as `feature_flag_browser_id`, the verified Supabase user ID as `feature_flag_user_id`, and the verified `app_metadata.user_type` as `feature_flag_user_type`. Missing or ineligible attributes are empty strings. The user types are `patient`, `clinic`, and `platform`; client-controlled user metadata is not used. An evaluated boolean selects Holding or Full. Unavailable or invalid evaluation uses
+person property. The `feature_flag_environment` person property uses the existing server runtime classification:
+`production`, `preview`, `development`, or `test`. `VERCEL_ENV` takes precedence over `DEPLOYMENT_ENVIRONMENT`;
+without a recognized deployment environment, `NODE_ENV=test` selects `test` and other values select `development`.
+The request hostname does not determine the environment. Both properties are available without analytics consent.
+With valid analytics consent, request evaluation also supplies the existing browser distinct ID as `feature_flag_browser_id`, the verified Supabase user ID as `feature_flag_user_id`, and the verified `app_metadata.user_type` as `feature_flag_user_type`. Missing or ineligible attributes are empty strings. The user types are `patient`, `clinic`, and `platform`; client-controlled user metadata is not used. An evaluated boolean selects Holding or Full. Unavailable or invalid evaluation uses
 `PUBLIC_SITE_FALLBACK_MODE`; missing or invalid fallback configuration selects Holding. Browser-side
 feature-flag evaluation is disabled.
+
+For an environment-specific Holding condition, add `feature_flag_environment` with operator **equals** and one of
+the supported values alongside the host condition. The condition then applies only when both properties match.
+Keep existing host conditions unchanged when no environment restriction is intended. The actor remains host-based,
+so adding the environment property alone does not change existing host rollout assignments. Public discovery uses
+these host and environment properties without browser or user selection on all canonical discovery paths.
 
 To release a browser on a Holding host, first obtain its distinct ID from its own browser after allowing analytics.
 In DevTools, inspect the `ph_phc_*_posthog` cookie and copy `distinct_id` from its decoded JSON. The first

@@ -1,4 +1,4 @@
-import { afterAll, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, describe, expect, it, vi } from 'vitest'
 import { PostHog } from 'posthog-node'
 import { NextRequest } from 'next/server'
 
@@ -50,6 +50,9 @@ vi.mock('@/utilities/getGlobals', () => ({
 }))
 
 import { proxy } from '@/proxy'
+import { PUBLIC_DISCOVERY_SURFACE_PATHS } from '@/features/publicDiscovery/site'
+import { PUBLIC_SITE_MODE_REQUEST_HEADER } from '@/features/temporaryLandingMode'
+import { SEARCH_ROBOTS_HEADER, SEARCH_ROBOTS_HEADER_VALUE } from '@/features/searchIndexing'
 import {
   createPostHogHoldingEvaluationContext,
   evaluatePostHogFlags,
@@ -57,8 +60,81 @@ import {
 } from '@/posthog/api'
 
 describe('Holding local PostHog rules', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
   afterAll(async () => {
     await state.client?.shutdown()
+  })
+
+  it('targets the trusted runtime independently of host without changing the host default', async () => {
+    state.client = new PostHog('phc_test', {
+      enableLocalEvaluation: true,
+      flagDefinitionCacheProvider: {
+        getFlagDefinitions: () => ({
+          flags: [
+            {
+              id: 2,
+              name: 'Holding production host',
+              key: 'temporary-landing-mode',
+              active: true,
+              deleted: false,
+              rollout_percentage: null,
+              ensure_experience_continuity: false,
+              experiment_set: [],
+              filters: {
+                groups: [
+                  {
+                    properties: [
+                      { key: 'feature_flag_site_host', value: 'findmydoc.eu', operator: 'exact', type: 'person' },
+                      { key: 'feature_flag_environment', value: 'production', operator: 'exact', type: 'person' },
+                    ],
+                    rollout_percentage: 100,
+                  },
+                ],
+              },
+            },
+          ],
+          groupTypeMapping: {},
+          cohorts: {},
+        }),
+        shouldFetchFlagDefinitions: () => false,
+        onFlagDefinitionsReceived: () => undefined,
+        shutdown: () => undefined,
+      },
+    })
+    try {
+      vi.stubEnv('VERCEL_ENV', '')
+      for (const [environment, status] of [
+        ['preview', 200],
+        ['production', 404],
+        ['development', 200],
+        ['test', 200],
+      ] as const) {
+        vi.stubEnv('DEPLOYMENT_ENVIRONMENT', environment)
+        const context = createPostHogHoldingEvaluationContext({
+          url: new URL('https://findmydoc.eu'),
+          env: { DEPLOYMENT_ENVIRONMENT: environment },
+        })
+        const flags = await evaluatePostHogFlags(resolvePostHogHoldingFlagActor(context), ['temporary-landing-mode'], {
+          context,
+        })
+        expect(flags.getEvaluation('temporary-landing-mode'), environment).toEqual({
+          status: 'evaluated',
+          value: environment === 'production',
+        })
+        const response = await proxy(new NextRequest('https://findmydoc.eu/clinics'))
+        expect(response.status, environment).toBe(status)
+      }
+      vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'production')
+      expect((await proxy(new NextRequest('https://another.example/clinics'))).status).toBe(200)
+      vi.stubEnv('VERCEL_ENV', 'preview')
+      expect((await proxy(new NextRequest('https://findmydoc.eu/clinics'))).status).toBe(200)
+    } finally {
+      await state.client.shutdown()
+      state.client = null
+    }
   })
 
   it('excludes a selected browser from a host Holding rule while retaining host bucketing', async () => {
@@ -129,10 +205,31 @@ describe('Holding local PostHog rules', () => {
       proxy(browser()),
     ])
     expect([selected.status, other.status, withdrawn.status, missing.status]).toEqual([200, 404, 404, 404])
-    const discovery = await proxy(
-      new NextRequest('https://findmydoc.eu/llms.txt', { headers: browser('selected-browser').headers }),
-    )
-    expect(discovery.status).toBe(404)
+    const discoveryStatuses: Record<string, number> = {
+      '/robots.txt': 200,
+      '/sitemap.xml': 404,
+      '/pages-sitemap.xml': 200,
+      '/posts-sitemap.xml': 200,
+      '/llms.txt': 404,
+      '/.well-known/llms.txt': 404,
+    }
+    for (const path of PUBLIC_DISCOVERY_SURFACE_PATHS) {
+      const responses = await Promise.all(
+        ['selected-browser', 'another-browser'].map((id) =>
+          proxy(new NextRequest(`https://findmydoc.eu${path}`, { headers: browser(id).headers })),
+        ),
+      )
+      for (const response of responses) {
+        expect(response.status, path).toBe(discoveryStatuses[path])
+        expect(response.headers.get(`x-middleware-request-${PUBLIC_SITE_MODE_REQUEST_HEADER}`), path).toBe(
+          discoveryStatuses[path] === 200 ? 'holding' : null,
+        )
+        expect(response.headers.get(SEARCH_ROBOTS_HEADER), path).toBe(
+          discoveryStatuses[path] === 200 ? null : SEARCH_ROBOTS_HEADER_VALUE,
+        )
+        expect(response.headers.get('cache-control'), path).toBeNull()
+      }
+    }
     expect([selected, other, withdrawn, missing].map((response) => response.headers.get('cache-control'))).toEqual([
       'private, no-store',
       'private, no-store',

@@ -83,7 +83,12 @@ describe('public site mode proxy', () => {
   it('keeps browser-specific page responses private and forwards request cookies to the decision', async () => {
     const request = new NextRequest('https://findmydoc.eu/clinics', { headers: { cookie: 'test=browser' } })
     const response = await proxy(request)
-    expect(mocks.resolveHoldingMode).toHaveBeenCalledWith(request.nextUrl, process.env, request.headers)
+    expect(mocks.resolveHoldingMode).toHaveBeenCalledWith(
+      request.nextUrl,
+      process.env,
+      request.headers,
+      expect.any(Function),
+    )
     expect(response.headers.get('cache-control')).toBe('private, no-store')
   })
 

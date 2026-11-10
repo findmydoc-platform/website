@@ -1,6 +1,11 @@
 import { postHogServerConsent } from './serverConsent'
 import type { AuthData } from '@/auth/types/authTypes'
 import { extractSupabaseUserData } from '@/auth/utilities/jwtValidation'
+import {
+  resolveServerRuntimeEnvironment,
+  type RuntimeEnvironment,
+  type ServerRuntimeEnvInput,
+} from '@/features/runtimePolicy'
 import { fallbackConsoleLogger } from '@/utilities/logging/consoleLogger'
 import { createScopedLogger, toLoggedError, type ServerLogger } from '@/utilities/logging/shared'
 import { FeatureFlagEvaluations, type FeatureFlagEvaluations as PostHogFeatureFlagEvaluations } from 'posthog-node'
@@ -69,6 +74,7 @@ export type PostHogFlagEvaluation =
 
 export type PostHogFlagEvaluationContext = {
   feature_flag_site_host: string
+  feature_flag_environment?: RuntimeEnvironment
   feature_flag_browser_id?: string
   feature_flag_user_id?: string
   feature_flag_user_type?: string
@@ -80,6 +86,7 @@ export type PostHogServerAnalyticsConsent = {
 
 type CreatePostHogHoldingEvaluationContextInput = {
   url: Pick<URL, 'hostname'>
+  env?: ServerRuntimeEnvInput
 }
 
 type InternalPostHogFlagSnapshot = PostHogFlagSnapshot & {
@@ -135,8 +142,10 @@ const isNodeRuntime = (): boolean => process.env.NEXT_RUNTIME !== 'edge'
 
 export const createPostHogHoldingEvaluationContext = ({
   url,
+  env,
 }: CreatePostHogHoldingEvaluationContextInput): PostHogFlagEvaluationContext => ({
   feature_flag_site_host: url.hostname.trim().toLowerCase(),
+  feature_flag_environment: resolveServerRuntimeEnvironment(env),
   feature_flag_browser_id: '',
   feature_flag_user_id: '',
   feature_flag_user_type: '',

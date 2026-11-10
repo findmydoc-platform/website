@@ -56,7 +56,10 @@ describe('temporaryLandingMode feature', () => {
     expect(isTemporaryLandingIndexablePath('/posts-sitemap.xml')).toBe(true)
     expect(isTemporaryLandingIndexablePath('/contact')).toBe(false)
     expect(isTemporaryLandingIndexablePath('/sitemap.xml')).toBe(false)
-    expect(isTemporaryLandingPublicDiscoveryPath('/llms.txt')).toBe(false)
+    expect(isTemporaryLandingPublicDiscoveryPath('/llms.txt')).toBe(true)
+    expect(isTemporaryLandingPublicDiscoveryPath('/.well-known/llms.txt')).toBe(true)
+    expect(isTemporaryLandingPublicDiscoveryPath('/.well-known/private')).toBe(false)
+    expect(isTemporaryLandingPublicDiscoveryPath('/llms.txt/private')).toBe(false)
   })
 
   it('recognizes temporary landing root paths', () => {

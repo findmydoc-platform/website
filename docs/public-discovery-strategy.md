@@ -10,6 +10,12 @@ Public discovery includes both automated search indexing and user-directed AI re
 
 `/llms.txt` is a curated agent-context file for public findmydoc orientation. It points agents to canonical public URLs and citation boundaries; it is not a content export, crawler policy, private capability registry, or substitute for public page citations.
 
+`/llms.txt` and `/.well-known/llms.txt` share one document builder and the resolved public host mode. Production Holding orientation covers only the existing home page, published blog, and their direct pages and posts sitemaps. It does not recommend clinic profiles, comparison, About, contact, legal pages, or internal interfaces. Full retains its broader public-page orientation. Preview returns no public agent-context content. Platform staff access and visitor-supplied mode markers do not expand this host-wide scope.
+
+The request-dependent mode decision and llms response envelope stay live. Both successful documents and blocked responses use `Cache-Control: private, no-store` so shared HTTP caches cannot reuse Full content for Holding or Preview. The existing public-content and sitemap data caches keep their policy, tags, and invalidation owners. These static orientation documents have no per-article list or CMS dependency; new articles are discovered through the published blog and posts sitemap.
+
+Changes to host-mode selection or the llms response envelope require a bounded HTTP check of both paths across Full, Holding, and Preview on a running production build. Content-cache or publication changes also require the existing bounded sitemap freshness check through the application process.
+
 Public discovery work supports three outcomes:
 
 - Search engines can discover stable, crawlable, canonical URLs.
@@ -38,7 +44,7 @@ Public canonical URLs should prefer readable slug routes over query URLs. Query 
 
 Sitemap entries should use real content timestamps when available. Request-time timestamps must not be used as freshness signals because they imply content freshness that did not happen.
 
-Preview, draft, unpublished, private, and admin-only states stay out of public sitemap discovery. Temporary landing mode is the narrow exception: it exposes only the public blog index, positive-integer pagination, published post details, `robots.txt`, and the pages and posts sitemaps. Its pages sitemap contains only `/posts`; its posts sitemap keeps the published-status filter. The landing page, sitemap index, `llms.txt`, and all other discovery routes remain excluded.
+Preview, draft, unpublished, private, and admin-only states stay out of public sitemap discovery. Temporary landing mode is the narrow exception: it exposes only the public blog index, positive-integer pagination, published post details, `robots.txt`, the pages and posts sitemaps, and the scoped llms orientation paths. Its pages sitemap contains only `/posts`; its posts sitemap keeps the published-status filter. The landing page, sitemap index, and all other discovery routes remain excluded.
 
 findmydoc observes public discovery traffic only as operational visibility. Platform logs may record recognized crawler classes, the requested public path, platform timestamp, runtime environment, and coarse response context so the team can detect crawl problems, sitemap errors, and agent-discovery drift. This is not product analytics or user behavior tracking. Logs must not capture private content, draft content, admin-only surfaces, cookies, authentication data, contact details, medical free text, IP-based user profiles, or individual user identities.
 

@@ -57,4 +57,21 @@ describe('public discovery contract', () => {
     expect(urls.some((url) => url.includes('/admin'))).toBe(false)
     expect(urls.some((url) => url.includes('/api'))).toBe(false)
   })
+
+  it('limits Holding llms links to canonical home, blog and direct sitemaps', () => {
+    const content = buildLlmsTxt('holding')
+    const links = [...content.matchAll(/\]\((https?:\/\/[^)]+)\)/gu)].map((match) => match[1])
+
+    expect(links).toEqual([
+      'https://findmydoc.eu/',
+      'https://findmydoc.eu/posts',
+      'https://findmydoc.eu/pages-sitemap.xml',
+      'https://findmydoc.eu/posts-sitemap.xml',
+    ])
+    expect(content).toContain('The platform vision does not establish that marketplace features are available.')
+    expect(content).toContain(
+      'Do not cite preview, authenticated, internal, draft, unpublished, or query-variant URLs.',
+    )
+    expect(content).toContain('Treat request-time timestamps as crawl time, not content freshness.')
+  })
 })

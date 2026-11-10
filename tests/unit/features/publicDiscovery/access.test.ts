@@ -45,10 +45,10 @@ describe('public discovery access', () => {
     })
   })
 
-  it('blocks production discovery when temporary landing mode is active', async () => {
+  it('keeps the sitemap index blocked when temporary landing mode is active', async () => {
     resolverMocks.resolveHoldingMode.mockResolvedValue({ mode: 'holding', source: 'posthog' })
     const { resolvePublicDiscoveryAccessForRequest } = await import('@/features/publicDiscovery/access')
-    const request = new Request('https://findmydoc.eu/llms.txt')
+    const request = new Request('https://findmydoc.eu/sitemap.xml')
 
     await expect(
       resolvePublicDiscoveryAccessForRequest(request, {
@@ -63,20 +63,23 @@ describe('public discovery access', () => {
     expect(resolverMocks.resolveHoldingMode).toHaveBeenCalledOnce()
   })
 
-  it('allows only the blog discovery files when temporary landing mode is active', async () => {
-    resolverMocks.resolveHoldingMode.mockResolvedValue({ mode: 'holding', source: 'posthog' })
-    const { resolvePublicDiscoveryAccessForRequest } = await import('@/features/publicDiscovery/access')
+  it.each(['/robots.txt', '/pages-sitemap.xml', '/posts-sitemap.xml', '/llms.txt', '/.well-known/llms.txt'])(
+    'allows the scoped discovery file %s when temporary landing mode is active',
+    async (pathname) => {
+      resolverMocks.resolveHoldingMode.mockResolvedValue({ mode: 'holding', source: 'posthog' })
+      const { resolvePublicDiscoveryAccessForRequest } = await import('@/features/publicDiscovery/access')
 
-    await expect(
-      resolvePublicDiscoveryAccessForRequest(new Request('https://findmydoc.eu/posts-sitemap.xml'), {
-        NODE_ENV: 'production',
-        VERCEL_ENV: 'production',
-      }),
-    ).resolves.toEqual({
-      allowed: true,
-      temporaryLandingMode: true,
-    })
-  })
+      await expect(
+        resolvePublicDiscoveryAccessForRequest(new Request(`https://findmydoc.eu${pathname}`), {
+          NODE_ENV: 'production',
+          VERCEL_ENV: 'production',
+        }),
+      ).resolves.toEqual({
+        allowed: true,
+        temporaryLandingMode: true,
+      })
+    },
+  )
 
   it('allows production discovery when runtime and feature flag policy allow it', async () => {
     const { resolvePublicDiscoveryAccessForRequest } = await import('@/features/publicDiscovery/access')
@@ -102,7 +105,7 @@ describe('public discovery access', () => {
         NODE_ENV: 'production',
         VERCEL_ENV: 'production',
       }),
-    ).resolves.toEqual({ allowed: false, reason: 'temporary-landing-mode' })
+    ).resolves.toEqual({ allowed: true, temporaryLandingMode: true })
     expect(resolverMocks.resolveHoldingMode).not.toHaveBeenCalled()
   })
 

@@ -210,14 +210,12 @@ describe('public site mode proxy', () => {
     mockHoldingMode('holding')
 
     const indexableResponses = await Promise.all(
-      ['/robots.txt', '/pages-sitemap.xml', '/posts-sitemap.xml'].map((path) =>
+      ['/robots.txt', '/pages-sitemap.xml', '/posts-sitemap.xml', '/llms.txt', '/.well-known/llms.txt'].map((path) =>
         proxy(new NextRequest(`https://findmydoc.eu${path}`)),
       ),
     )
     const blockedResponses = await Promise.all(
-      ['/sitemap.xml', '/llms.txt', '/.well-known/llms.txt'].map((path) =>
-        proxy(new NextRequest(`https://findmydoc.eu${path}`)),
-      ),
+      ['/sitemap.xml', '/.well-known/private'].map((path) => proxy(new NextRequest(`https://findmydoc.eu${path}`))),
     )
 
     expect(indexableResponses.every((response) => response.status === 200)).toBe(true)

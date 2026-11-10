@@ -4,6 +4,7 @@ import { revalidateClinicDashboardTargetRequest } from '@/features/clinicDashboa
 import { hasClinicScopeContract, CLINIC_SCOPE_CONTRACT_HEADER } from '@/features/clinicDashboard/contractNegotiation'
 import { clinicReviewDetailIdSchema } from '@/features/clinicDashboard/reviews/contracts'
 import { readClinicReviewDetail } from '@/features/clinicDashboard/reviews/service'
+import { readClinicReviewWorkload } from '@/features/clinicDashboard/reviews/workload'
 import { reviewPublicationHistoryGetHandler } from '@/collections/reviews/endpoints'
 import {
   createClinicReviewWorkflow,
@@ -107,6 +108,7 @@ const id = (req: PayloadRequest, key = 'id') => {
   if (!parsed.success) throw invalid()
   return parsed.data
 }
+export const clinicDashboardReviewWorkloadGetHandler = handler(readClinicReviewWorkload)
 export const clinicDashboardReviewsGetHandler = handler(readClinicReviewPage)
 export const clinicDashboardReviewRecordGetHandler = handler(async (req, clinicId) => {
   if (new URL(req.url ?? 'http://localhost:3000').search !== '?depth=1') throw invalid()

@@ -41,7 +41,8 @@ describe('public discovery access', () => {
     })
 
     expect(resolverMocks.resolveHoldingMode).toHaveBeenCalledWith(new URL('https://preview.findmydoc.eu/llms.txt'), {
-      PUBLIC_SITE_FALLBACK_MODE: undefined,
+      NODE_ENV: 'production',
+      VERCEL_ENV: 'production',
     })
   })
 

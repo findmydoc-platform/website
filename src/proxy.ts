@@ -9,6 +9,7 @@ import {
   isTemporaryLandingModeExemptPath,
   isTemporaryLandingIndexablePath,
   isTemporaryLandingPublicExemptPath,
+  isTemporaryLandingPublicDiscoveryPath,
   isTemporaryLandingRootPath,
   TEMPORARY_LANDING_MODE_REQUEST_HEADER,
   PUBLIC_SITE_MODE_REQUEST_HEADER,
@@ -20,8 +21,10 @@ import {
   SEARCH_ROBOTS_HEADER_VALUE,
 } from '@/features/searchIndexing'
 import { logCrawlerRequest } from '@/features/publicDiscovery/crawlerMonitoring'
+import { PUBLIC_DISCOVERY_SURFACE_PATHS } from '@/features/publicDiscovery/site'
 
 const NON_PAGE_PATHS = new Set(['/next/exit-preview', '/next/preview'])
+const PUBLIC_DISCOVERY_PATHS = new Set<string>(PUBLIC_DISCOVERY_SURFACE_PATHS)
 
 const isPathFamily = (pathname: string, prefix: string): boolean =>
   pathname === prefix || pathname.startsWith(`${prefix}/`)
@@ -42,15 +45,15 @@ const getHoldingRequestUser = async (request: NextRequest): Promise<User | null>
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   if (!supabaseUrl || !supabaseAnonKey) return null
 
-  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      getAll: () => request.cookies.getAll(),
-      setAll() {
-        // Holding only reads the server-validated session for its platform staff exception.
-      },
-    },
-  })
   try {
+    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+      cookies: {
+        getAll: () => request.cookies.getAll(),
+        setAll() {
+          // Holding only reads the server-validated session for its platform staff exception.
+        },
+      },
+    })
     const {
       data: { user },
       error,
@@ -123,14 +126,26 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   logCrawlerRequest(request)
 
   const previewDeployment = isPreviewRuntime()
-  const holdingMode = (await resolveHoldingMode(request.nextUrl)).mode
+  const discovery =
+    PUBLIC_DISCOVERY_PATHS.has(pathname) ||
+    isTemporaryLandingPublicDiscoveryPath(pathname) ||
+    pathname.endsWith('-sitemap.xml')
+  let verifiedUser: Promise<User | null> | undefined
+  const getVerifiedUser = () => (verifiedUser ??= getHoldingRequestUser(request))
+  const holdingMode = (
+    await resolveHoldingMode(request.nextUrl, process.env, discovery ? undefined : request.headers, getVerifiedUser)
+  ).mode
+  const privateResponse = (response: NextResponse): NextResponse => {
+    if (!discovery) response.headers.set('Cache-Control', 'private, no-store')
+    return response
+  }
 
   if (holdingMode === 'full') {
     const response = nextWithPublicMode(request, holdingMode)
-    return previewDeployment ? withSearchRobotsHeader(response) : response
+    return privateResponse(previewDeployment ? withSearchRobotsHeader(response) : response)
   }
 
-  const platformUser = isPlatformUser(await getHoldingRequestUser(request))
+  const platformUser = isPlatformUser(await getVerifiedUser())
 
   if (holdingMode === 'holding' && !platformUser) {
     if (isTemporaryLandingRootPath(pathname) || isTemporaryLandingPublicExemptPath(pathname)) {
@@ -138,20 +153,20 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
         const response = isTemporaryLandingRootPath(pathname)
           ? nextWithTemporaryLandingHeaders(request, holdingMode)
           : nextWithTemporaryLandingPublicHeaders(request, holdingMode)
-        return previewDeployment ? withSearchRobotsHeader(response) : response
+        return privateResponse(previewDeployment ? withSearchRobotsHeader(response) : response)
       }
 
-      return withSearchRobotsHeader(nextWithTemporaryLandingHeaders(request, holdingMode))
+      return privateResponse(withSearchRobotsHeader(nextWithTemporaryLandingHeaders(request, holdingMode)))
     }
 
     if (isTemporaryLandingModeExemptPath(pathname)) {
-      return withSearchRobotsHeader(nextWithTemporaryLandingHeaders(request, holdingMode))
+      return privateResponse(withSearchRobotsHeader(nextWithTemporaryLandingHeaders(request, holdingMode)))
     }
 
-    return withSearchRobotsHeader(new NextResponse('Not Found', { status: 404 }))
+    return privateResponse(withSearchRobotsHeader(new NextResponse('Not Found', { status: 404 })))
   }
 
-  return withSearchRobotsHeader(nextWithPublicMode(request, holdingMode))
+  return privateResponse(withSearchRobotsHeader(nextWithPublicMode(request, holdingMode)))
 }
 
 export const config = {

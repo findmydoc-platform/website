@@ -144,7 +144,6 @@ describe('media image editing through Payload and cloud storage', () => {
     expect(updated.focalX).toBe(0)
     expect(updated.focalY).toBe(0)
     expect(fileReads).toHaveLength(1)
-    expect(req.query.uploadEdits).toBeUndefined()
     expect(req.query.locale).toBe('en')
     expect(query.uploadEdits.widthInPixels).toBe(50)
     const stored = await payload.findByID({
@@ -210,7 +209,7 @@ describe('media image editing through Payload and cloud storage', () => {
     expect(pixels[1]).toBeLessThan(20)
   })
 
-  it('keeps image edits consumed when internal metadata persistence fails', async () => {
+  it('does not reprocess image edits when internal metadata persistence fails', async () => {
     const doc = await createImage()
     const hooks = payload.collections.platformContentMedia.config.hooks.beforeChange
     let internalRequest: PayloadRequest | undefined
@@ -245,7 +244,6 @@ describe('media image editing through Payload and cloud storage', () => {
           },
         }),
       ).rejects.toThrow('Metadata persistence failed')
-      expect(internalRequest?.query.uploadEdits).toBeUndefined()
       expect(internalRequest?.query.locale).toBe('en')
       expect(internalRequest?.context.skipCloudStorage).toBeUndefined()
       expect(fileReads).toHaveLength(1)

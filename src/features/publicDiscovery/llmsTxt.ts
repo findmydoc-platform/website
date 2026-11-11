@@ -1,8 +1,9 @@
 import { buildPublicDiscoveryBlockedResponse, type PublicDiscoveryAccess } from './access'
 import { PUBLIC_CANONICAL_SITE_URL, toPublicCanonicalUrl } from './site'
+import type { PublicSiteMode } from '@/features/temporaryLandingMode/resolver'
 
 const LLMS_TXT_CONTENT_TYPE = 'text/markdown; charset=utf-8'
-const LLMS_TXT_CACHE_CONTROL = 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800'
+const LLMS_TXT_CACHE_CONTROL = 'private, no-store'
 
 type LlmsTxtLink = {
   description: string
@@ -131,6 +132,67 @@ const llmsTxtDocument = {
   title: 'findmydoc',
 } satisfies LlmsTxtDocument
 
+const holdingLlmsTxtDocument = {
+  intro: [
+    'This Holding-mode orientation covers the existing home page and published blog. The platform vision does not establish that marketplace features are available.',
+    'Use this file as curated agent context. Cite the public pages themselves; this file is not a content export or a crawler policy.',
+  ],
+  sections: [
+    {
+      heading: 'Key URLs',
+      items: [
+        {
+          description: 'Public introduction to findmydoc and its platform vision.',
+          href: toPublicCanonicalUrl('/'),
+          label: 'Home',
+        },
+        {
+          description: 'Published public posts and links to their canonical detail pages.',
+          href: toPublicCanonicalUrl('/posts'),
+          label: 'Posts',
+        },
+        {
+          description: 'Canonical home and blog index entries.',
+          href: toPublicCanonicalUrl('/pages-sitemap.xml'),
+          label: 'Pages sitemap',
+        },
+        {
+          description: 'Current published posts, including future publications.',
+          href: toPublicCanonicalUrl('/posts-sitemap.xml'),
+          label: 'Posts sitemap',
+        },
+      ].map(renderLinkItem),
+    },
+    {
+      heading: 'Citation Guidance',
+      items: [
+        `Cite canonical production URLs on ${PUBLIC_CANONICAL_SITE_URL}.`,
+        'Prefer page-level citations over inferred summaries.',
+        'Do not cite preview, authenticated, internal, draft, unpublished, or query-variant URLs.',
+        'Do not infer available clinic offers, ratings, review counts, accreditations, prices, recommendations, or medical-quality claims from the platform vision or blog.',
+      ],
+    },
+    {
+      heading: 'Freshness Policy',
+      items: [
+        'Discover published articles through the blog index and posts sitemap; this file does not maintain an article list.',
+        'Prefer visible page dates, sitemap lastmod values, and source-backed freshness signals.',
+        'Treat request-time timestamps as crawl time, not content freshness.',
+        'If a public page has no visible or source-backed freshness signal, omit the freshness claim.',
+      ],
+    },
+    {
+      heading: 'Medical Disclaimer',
+      items: [
+        'Published articles provide general information, not medical advice or medical recommendations.',
+        'Patients should consult qualified medical professionals before making medical decisions.',
+      ],
+    },
+  ],
+  summary: 'findmydoc presents its platform vision and publishes articles for patients considering care abroad.',
+  title: 'findmydoc',
+} satisfies LlmsTxtDocument
+
 const renderSection = ({ heading, items }: LlmsTxtSection): string => {
   return [`## ${heading}`, '', ...items.map((item) => `- ${item}`)].join('\n')
 }
@@ -139,16 +201,16 @@ const renderLlmsTxtDocument = ({ intro, sections, summary, title }: LlmsTxtDocum
   return [`# ${title}`, '', `> ${summary}`, '', ...intro, '', ...sections.map(renderSection), ''].join('\n\n')
 }
 
-export const buildLlmsTxt = (): string => {
-  return renderLlmsTxtDocument(llmsTxtDocument)
+export const buildLlmsTxt = (mode: PublicSiteMode = 'full'): string => {
+  return renderLlmsTxtDocument(mode === 'holding' ? holdingLlmsTxtDocument : llmsTxtDocument)
 }
 
 export const buildLlmsTxtResponse = (access: PublicDiscoveryAccess): Response => {
   if (!access.allowed) {
-    return buildPublicDiscoveryBlockedResponse()
+    return buildPublicDiscoveryBlockedResponse({ headers: { 'Cache-Control': LLMS_TXT_CACHE_CONTROL } })
   }
 
-  return new Response(buildLlmsTxt(), {
+  return new Response(buildLlmsTxt(access.temporaryLandingMode ? 'holding' : 'full'), {
     headers: {
       'Cache-Control': LLMS_TXT_CACHE_CONTROL,
       'Content-Type': LLMS_TXT_CONTENT_TYPE,

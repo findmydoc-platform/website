@@ -5,6 +5,27 @@ export type CleanupTask = {
   ids: Array<number | string>
 }
 
+export async function clearTrackedDoctorImageReferences(payload: Payload, mediaIds: Array<number>): Promise<void> {
+  if (!mediaIds.length) return
+  const doctors = await payload.find({
+    collection: 'doctors',
+    where: { profileImage: { in: mediaIds } },
+    depth: 0,
+    pagination: false,
+    overrideAccess: true,
+    trash: true,
+  })
+  for (const doctor of doctors.docs) {
+    await payload.update({
+      collection: 'doctors',
+      id: doctor.id,
+      data: { profileImage: null },
+      overrideAccess: true,
+      trash: true,
+    })
+  }
+}
+
 // Shared cleanup helper for integration tests with tracked created ids.
 // Tasks run in caller-defined order to preserve collection dependency cleanup.
 export async function cleanupTrackedDocs(payload: Payload, tasks: CleanupTask[]): Promise<void> {

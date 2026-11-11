@@ -96,6 +96,9 @@ export async function GET(request: Request) {
 
     return getServerSideSitemap([
       {
+        loc: buildSitemapLocation(siteUrl, '/'),
+      },
+      {
         loc: buildSitemapLocation(siteUrl, '/posts'),
       },
     ])

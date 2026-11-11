@@ -21,11 +21,20 @@ import {
 import { JsonLdScript, buildSiteBaseJsonLd } from '@/utilities/structuredData'
 import type { CookieConsent as CookieConsentType } from '@/payload-types'
 import { isPreviewRuntime } from '@/features/runtimePolicy'
+import {
+  getTemporaryLandingBlogCopy,
+  getTemporaryLandingPageContent,
+  isTemporaryLandingModeRequest,
+  TEMPORARY_LANDING_DEFAULT_LOCALE,
+} from '@/features/temporaryLandingMode'
 import { VercelToolbar } from '@vercel/toolbar/next'
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const requestHeaders = await headers()
   const blockSearchIndexing = shouldBlockSearchIndexingForRequest({ env: process.env, headers: requestHeaders })
+  const holdingDescription = isTemporaryLandingModeRequest(requestHeaders)
+    ? `${getTemporaryLandingPageContent(TEMPORARY_LANDING_DEFAULT_LOCALE).statusLabel}. ${getTemporaryLandingBlogCopy(TEMPORARY_LANDING_DEFAULT_LOCALE).description}`
+    : undefined
   const { isEnabled } = await draftMode()
   const requestCookies = await cookies()
   const cookieConsentContext = resolveCookieConsentContext(
@@ -47,7 +56,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body className="min-h-screen bg-site-canvas text-foreground antialiased">
         <SupabaseAuthHashUrlScrubber />
-        {!blockSearchIndexing ? <JsonLdScript data={buildSiteBaseJsonLd()} /> : null}
+        {!blockSearchIndexing ? <JsonLdScript data={buildSiteBaseJsonLd({ description: holdingDescription })} /> : null}
         <div className="flex min-h-screen min-h-svh flex-col">
           <AdminBarClientAdapter preview={isEnabled} />
           {children}

@@ -15,7 +15,11 @@ import {
   PUBLIC_SITE_MODE_REQUEST_HEADER,
 } from '@/features/temporaryLandingMode'
 import { resolveHoldingMode, type PublicSiteMode } from '@/features/temporaryLandingMode/resolver'
-import { SEARCH_ROBOTS_HEADER, SEARCH_ROBOTS_HEADER_VALUE } from '@/features/searchIndexing'
+import {
+  SEARCH_INDEXING_REQUEST_HEADER,
+  SEARCH_ROBOTS_HEADER,
+  SEARCH_ROBOTS_HEADER_VALUE,
+} from '@/features/searchIndexing'
 import { logCrawlerRequest } from '@/features/publicDiscovery/crawlerMonitoring'
 import { PUBLIC_DISCOVERY_SURFACE_PATHS } from '@/features/publicDiscovery/site'
 
@@ -65,6 +69,7 @@ const nextWithRequestHeaders = (request: NextRequest, headersToSet: Record<strin
   requestHeaders.delete(PUBLIC_SITE_MODE_REQUEST_HEADER)
   requestHeaders.delete(TEMPORARY_LANDING_MODE_REQUEST_HEADER)
   requestHeaders.delete(HOLDING_VIEW_REQUEST_HEADER)
+  requestHeaders.delete(SEARCH_INDEXING_REQUEST_HEADER)
   Object.entries(headersToSet).forEach(([key, value]) => {
     if (value === null) {
       requestHeaders.delete(key)
@@ -86,6 +91,7 @@ const nextWithTemporaryLandingHeaders = (request: NextRequest, publicMode: Publi
     [HOLDING_VIEW_REQUEST_HEADER]: 'standalone',
     [PUBLIC_SITE_MODE_REQUEST_HEADER]: publicMode,
     [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: publicMode === 'holding' ? '1' : null,
+    [SEARCH_INDEXING_REQUEST_HEADER]: isTemporaryLandingIndexablePath(request.nextUrl.pathname) ? null : 'noindex',
   })
 
 const nextWithTemporaryLandingPublicHeaders = (
@@ -144,7 +150,9 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   if (holdingMode === 'holding' && !platformUser) {
     if (isTemporaryLandingRootPath(pathname) || isTemporaryLandingPublicExemptPath(pathname)) {
       if (isTemporaryLandingIndexablePath(pathname)) {
-        const response = nextWithTemporaryLandingPublicHeaders(request, holdingMode)
+        const response = isTemporaryLandingRootPath(pathname)
+          ? nextWithTemporaryLandingHeaders(request, holdingMode)
+          : nextWithTemporaryLandingPublicHeaders(request, holdingMode)
         return privateResponse(previewDeployment ? withSearchRobotsHeader(response) : response)
       }
 

@@ -10,6 +10,7 @@ export type CookieConsentCategoryConfig = {
   label: string
   description: string
   tools: CookieConsentToolKey[]
+  services?: { name: string; description: string; privacyHref: string }[]
 }
 
 export type CookieConsentCategoryMap = Partial<Record<CookieConsentCategoryKey, boolean>>
@@ -47,6 +48,7 @@ export type CookieConsentConfig = {
   privacyPolicyLabel: string
   privacyPolicyHref: string | null
   reopenLabel: string
+  imprintLink?: { href: string; label: string }
 }
 
 export type CookieConsentOptionalCategorySettings = CookieConsentCategorySettings

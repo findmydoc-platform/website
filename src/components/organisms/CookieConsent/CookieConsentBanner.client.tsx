@@ -92,16 +92,27 @@ export function CookieConsentBanner({
           </Button>
         </div>
 
-        {config.privacyPolicyHref ? (
-          <UiLink
-            href={config.privacyPolicyHref}
-            newTab
-            className="w-fit text-sm text-primary underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            {config.privacyPolicyLabel}
-            <span className="sr-only"> (opens in a new tab)</span>
-          </UiLink>
-        ) : null}
+        <div className="flex flex-wrap gap-x-6 gap-y-3">
+          {config.privacyPolicyHref ? (
+            <UiLink
+              href={config.privacyPolicyHref}
+              newTab
+              className="w-fit text-sm text-primary underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {config.privacyPolicyLabel}
+              <span className="sr-only"> (opens in a new tab)</span>
+            </UiLink>
+          ) : null}
+          {config.imprintLink ? (
+            <UiLink
+              {...config.imprintLink}
+              newTab
+              className="w-fit text-sm text-primary underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <span className="sr-only"> (opens in a new tab)</span>
+            </UiLink>
+          ) : null}
+        </div>
       </DialogContent>
     </Dialog>
   )

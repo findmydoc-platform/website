@@ -19,7 +19,7 @@ export function CookieConsentClientAdapter(
   props: Omit<CookieConsentManagerProps, 'onAnalyticsConsentChange' | 'onPersistConsent' | 'readConsent'>,
 ) {
   const pathname = usePathname()
-  const legalHrefs = [props.config?.privacyPolicyHref]
+  const legalHrefs = [props.config?.privacyPolicyHref, props.config?.imprintLink?.href]
   const deferInitialPrompt = legalHrefs.some((href) => {
     if (!href?.startsWith('/') || href.startsWith('//')) return false
     const legalPath = new URL(href, 'http://localhost:3000').pathname.replace(/\/+$/, '') || '/'

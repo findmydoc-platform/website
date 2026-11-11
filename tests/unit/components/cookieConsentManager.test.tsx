@@ -119,8 +119,8 @@ describe('CookieConsentManager', () => {
     expect(screen.getByRole('heading', { name: config.banner.title })).toHaveFocus()
   })
 
-  it('keeps legal pages readable before a decision and still offers settings', () => {
-    navigation.pathname = '/privacy-policy'
+  it.each(['/privacy-policy', '/imprint'])('keeps %s readable before a decision and still offers settings', (path) => {
+    navigation.pathname = path
     const view = render(<CookieConsentClientAdapter config={config} initialConsent={null} />)
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(document.cookie).not.toContain(COOKIE_CONSENT_COOKIE_NAME)
@@ -161,7 +161,7 @@ describe('CookieConsentManager', () => {
       },
       version: 3,
     })
-    expect(screen.queryByText('Cookies on findmydoc')).not.toBeInTheDocument()
+    expect(screen.queryByText(config.banner.title)).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Cookie settings' })).toBeInTheDocument()
   })
 
@@ -265,7 +265,7 @@ describe('CookieConsentManager', () => {
   it('shows the privacy policy link in the settings dialog', async () => {
     render(<CookieConsentClientAdapter config={config} initialConsent={null} />)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Customize' }))
+    fireEvent.click(screen.getByRole('button', { name: config.banner.customizeLabel }))
 
     expect(screen.getByRole('dialog', { name: 'Cookie settings' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Privacy Policy' })).toHaveAttribute('href', '/privacy-policy')
@@ -310,7 +310,7 @@ describe('CookieConsentManager', () => {
   it('opens settings, stores a customized preference, and disables analytics', async () => {
     render(<CookieConsentClientAdapter config={config} initialConsent={null} />)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Customize' }))
+    fireEvent.click(screen.getByRole('button', { name: config.banner.customizeLabel }))
 
     expect(screen.getByRole('dialog', { name: 'Cookie settings' })).toBeInTheDocument()
 

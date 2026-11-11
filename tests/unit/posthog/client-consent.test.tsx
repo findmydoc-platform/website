@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import '@testing-library/jest-dom'
 import React from 'react'
 import { locks } from 'node:worker_threads'
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
@@ -60,6 +61,126 @@ afterEach(() => {
 })
 
 describe('browser consent with the installed PostHog SDK', () => {
+  it.each([
+    ['accepted', { analytics: true, functional: true, marketing: true }],
+    ['rejected', { analytics: false, functional: false, marketing: false }],
+    ['customized', { analytics: false, functional: true, marketing: false }],
+  ] as const)('stores a new %s choice for 90 days from saving', async (choice, categories) => {
+    const { CookieConsentClientAdapter } = await import('@/features/cookieConsent/CookieConsentClientAdapter.client')
+    const { DEFAULT_COOKIE_CONSENT_CONFIG, readCookieConsentFromDocument } = await import('@/features/cookieConsent')
+    const api = await import('@/posthog/client-api')
+    const cookieWrite = vi.spyOn(document, 'cookie', 'set')
+    vi.setSystemTime(new Date('2026-11-11T12:00:00.000Z'))
+
+    render(<CookieConsentClientAdapter config={DEFAULT_COOKIE_CONSENT_CONFIG} initialConsent={null} />)
+    if (choice === 'customized') {
+      fireEvent.click(screen.getByRole('button', { name: DEFAULT_COOKIE_CONSENT_CONFIG.banner.customizeLabel }))
+      fireEvent.click(screen.getByRole('checkbox', { name: 'Functional cookies' }))
+      fireEvent.click(screen.getByRole('button', { name: DEFAULT_COOKIE_CONSENT_CONFIG.settings.saveLabel }))
+    } else {
+      fireEvent.click(screen.getByRole('button', { name: choice === 'accepted' ? 'Accept all' : 'Reject all' }))
+    }
+
+    expect(cookieWrite.mock.calls.map(([cookie]) => cookie)).toContainEqual(
+      expect.stringMatching(/^findmydoc_cookie_consent=.*; Max-Age=7776000; Path=\/; SameSite=Lax$/),
+    )
+    expect(readCookieConsentFromDocument(3)).toMatchObject({
+      choice,
+      categories,
+      decidedAt: '2026-11-11T12:00:00.000Z',
+    })
+    expect(api.postHogBrowserEvents.clinicProfileViewed(profile)).toBe(categories.analytics)
+  })
+
+  it('preserves a compatible 180-day decision older than 90 days until the visitor saves again', async () => {
+    const { CookieConsentClientAdapter } = await import('@/features/cookieConsent/CookieConsentClientAdapter.client')
+    const {
+      COOKIE_CONSENT_COOKIE_NAME,
+      DEFAULT_COOKIE_CONSENT_CONFIG,
+      createCookieConsentState,
+      readCookieConsentFromDocument,
+      serializeCookieConsentState,
+    } = await import('@/features/cookieConsent')
+    const api = await import('@/posthog/client-api')
+    vi.setSystemTime(new Date('2026-11-11T12:00:00.000Z'))
+    const legacyConsent = createCookieConsentState({
+      choice: 'accepted',
+      categories: { analytics: true, functional: true, marketing: true },
+      version: 3,
+      decidedAt: '2026-07-15T12:00:00.000Z',
+    })
+    document.cookie = `${COOKIE_CONSENT_COOKIE_NAME}=${serializeCookieConsentState(legacyConsent)}; Expires=Mon, 11 Jan 2027 12:00:00 GMT; Path=/; SameSite=Lax`
+    const cookieWrite = vi.spyOn(document, 'cookie', 'set')
+    const consentWrites = () =>
+      cookieWrite.mock.calls
+        .map(([cookie]) => cookie)
+        .filter((cookie) => cookie.startsWith(`${COOKIE_CONSENT_COOKIE_NAME}=`))
+    const view = render(
+      <CookieConsentClientAdapter config={DEFAULT_COOKIE_CONSENT_CONFIG} initialConsent={legacyConsent} />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: DEFAULT_COOKIE_CONSENT_CONFIG.reopenLabel }))
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Analytics cookies' }))
+    fireEvent.click(screen.getByRole('button', { name: DEFAULT_COOKIE_CONSENT_CONFIG.settings.cancelLabel }))
+    view.rerender(
+      <CookieConsentClientAdapter
+        config={{ ...DEFAULT_COOKIE_CONSENT_CONFIG, categories: [...DEFAULT_COOKIE_CONSENT_CONFIG.categories] }}
+        initialConsent={null}
+      />,
+    )
+    view.unmount()
+    render(<CookieConsentClientAdapter config={DEFAULT_COOKIE_CONSENT_CONFIG} initialConsent={null} />)
+
+    expect(readCookieConsentFromDocument(3)).toEqual(legacyConsent)
+    expect(api.postHogBrowserEvents.clinicProfileViewed(profile)).toBe(true)
+    expect(screen.queryByRole('button', { name: 'Accept all' })).not.toBeInTheDocument()
+    expect(consentWrites()).toEqual([])
+
+    fireEvent.click(screen.getByRole('button', { name: DEFAULT_COOKIE_CONSENT_CONFIG.reopenLabel }))
+    fireEvent.click(screen.getByRole('button', { name: DEFAULT_COOKIE_CONSENT_CONFIG.settings.saveLabel }))
+
+    expect(consentWrites()).toEqual([
+      expect.stringMatching(/^findmydoc_cookie_consent=.*; Max-Age=7776000; Path=\/; SameSite=Lax$/),
+    ])
+    expect(readCookieConsentFromDocument(3)).toEqual({
+      ...legacyConsent,
+      choice: 'customized',
+      decidedAt: '2026-11-11T12:00:00.000Z',
+    })
+  })
+
+  it.each(['missing', 'expired', 'malformed', 'version_incompatible'] as const)(
+    'keeps optional analytics closed on a fresh mount with %s consent',
+    async (condition) => {
+      const { CookieConsentClientAdapter } = await import('@/features/cookieConsent/CookieConsentClientAdapter.client')
+      const {
+        COOKIE_CONSENT_COOKIE_NAME,
+        DEFAULT_COOKIE_CONSENT_CONFIG,
+        createCookieConsentState,
+        serializeCookieConsentState,
+      } = await import('@/features/cookieConsent')
+      const api = await import('@/posthog/client-api')
+      vi.setSystemTime(new Date('2026-11-11T12:00:00.000Z'))
+      const oldConsent = createCookieConsentState({
+        choice: 'accepted',
+        categories: { analytics: true, functional: true, marketing: true },
+        version: condition === 'version_incompatible' ? 2 : 3,
+        decidedAt: '2026-07-15T12:00:00.000Z',
+      })
+      if (condition !== 'missing') {
+        const value = condition === 'malformed' ? '%invalid-json' : serializeCookieConsentState(oldConsent)
+        const expiry = condition === 'expired' ? '; Expires=Tue, 10 Nov 2026 12:00:00 GMT' : ''
+        document.cookie = `${COOKIE_CONSENT_COOKIE_NAME}=${value}; Path=/${expiry}`
+      }
+
+      render(<CookieConsentClientAdapter config={DEFAULT_COOKIE_CONSENT_CONFIG} initialConsent={oldConsent} />)
+
+      expect(screen.getByRole('button', { name: 'Accept all' })).toBeEnabled()
+      expect(api.postHogBrowserEvents.clinicProfileViewed(profile)).toBe(false)
+      expect(api.getPostHogBrowserDiagnostics().sessionAvailable).toBe(false)
+    },
+  )
+
   it('captures the current profile once after consent without capturing retired CTA actions', async () => {
     const { CookieConsentClientAdapter } = await import('@/features/cookieConsent/CookieConsentClientAdapter.client')
     const { ClinicDetailClientAdapter } =

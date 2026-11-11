@@ -1,0 +1,23 @@
+.clinic-media-gallery-action {
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid var(--theme-elevation-200, #ccc);
+  color: var(--theme-text, #222);
+  background: var(--theme-bg, #fff);
+  overflow-wrap: anywhere;
+
+  button {
+    min-height: 44px;
+    max-width: 100%;
+    padding: 0.5rem 1rem;
+    color: inherit;
+    background: var(--theme-input-bg, #fff);
+    border: 1px solid var(--theme-elevation-400, #777);
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+    opacity: 0.65;
+  }
+}

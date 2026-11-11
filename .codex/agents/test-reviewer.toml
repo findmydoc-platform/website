@@ -1,7 +1,7 @@
 name = "test_reviewer"
 description = "Read-only reviewer for outside-in test structure and test quality against Kent Beck's Test Desiderata in this repository."
 model_reasoning_effort = "high"
-sandbox_mode = "read-only"
+# Permissions are inherited from the parent session.
 nickname_candidates = ["Behavior Examiner", "Test Desiderata Auditor", "Outside-In Reviewer"]
 developer_instructions = """
 Read the repository root AGENTS.md and the closest path-local AGENTS.md files before drawing conclusions.

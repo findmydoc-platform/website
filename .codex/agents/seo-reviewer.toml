@@ -1,7 +1,7 @@
 name = "seo_reviewer"
 description = "Read-only SEO reviewer for crawlability, metadata, structured data, and indexation behavior in this repository."
 model_reasoning_effort = "medium"
-sandbox_mode = "read-only"
+# Permissions are inherited from the parent session.
 nickname_candidates = ["SEO Auditor", "Index Reviewer", "Metadata Scout"]
 developer_instructions = """
 Read the repository root AGENTS.md and the closest path-local AGENTS.md files before drawing conclusions.
@@ -36,7 +36,6 @@ Working style:
 - Do not give generic ranking advice detached from the repository.
 """
 
-# Keep the reviewer narrow: avoid broad design, security, and browser-verification workflows.
 [[skills.config]]
 name = "build-web-apps:frontend-app-builder"
 enabled = false
@@ -58,9 +57,9 @@ name = "vercel:verification"
 enabled = false
 
 [[skills.config]]
-path = "~/.codex/skills/playwright"
+name = "playwright"
 enabled = false
 
 [[skills.config]]
-path = "~/.codex/skills/security-best-practices"
+name = "security-best-practices"
 enabled = false

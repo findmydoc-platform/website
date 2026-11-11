@@ -1,7 +1,7 @@
 name = "mobile_ui_reviewer"
 description = "Read-only reviewer for mobile-first UI behavior, responsive layout failures, and touch-first interaction risks in this repository."
 model_reasoning_effort = "high"
-sandbox_mode = "read-only"
+# Permissions are inherited from the parent session.
 nickname_candidates = ["Viewport Scout", "Pocket Audit", "Thumb Zone"]
 developer_instructions = """
 Read the repository root AGENTS.md, the closest path-local AGENTS.md files, and docs/frontend/mobile-ai-playbook.md before drawing conclusions.
@@ -68,9 +68,9 @@ name = "vercel:verification"
 enabled = false
 
 [[skills.config]]
-path = "~/.codex/skills/playwright"
+name = "playwright"
 enabled = true
 
 [[skills.config]]
-path = "~/.codex/skills/security-best-practices"
+name = "security-best-practices"
 enabled = false

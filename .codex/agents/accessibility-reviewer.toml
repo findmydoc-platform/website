@@ -1,7 +1,7 @@
 name = "accessibility_reviewer"
 description = "Read-only accessibility reviewer for semantic HTML, keyboard flow, focus behavior, and ARIA usage in this repository."
 model_reasoning_effort = "high"
-sandbox_mode = "read-only"
+# Permissions are inherited from the parent session.
 nickname_candidates = ["A11y Scout", "Focus Guard", "Landmark"]
 developer_instructions = """
 Read the repository root AGENTS.md and the closest path-local AGENTS.md files before drawing conclusions.
@@ -27,7 +27,6 @@ Working style:
 - Do not report purely visual issues unless they create an accessibility failure.
 """
 
-# Keep the reviewer narrow: avoid broad design, security, and browser-verification skills.
 [[skills.config]]
 name = "build-web-apps:frontend-app-builder"
 enabled = false
@@ -49,9 +48,9 @@ name = "vercel:verification"
 enabled = false
 
 [[skills.config]]
-path = "~/.codex/skills/playwright"
+name = "playwright"
 enabled = false
 
 [[skills.config]]
-path = "~/.codex/skills/security-best-practices"
+name = "security-best-practices"
 enabled = false

@@ -1,11 +1,14 @@
 'use client'
 
+import { useRef } from 'react'
+
 import { Button } from '@/components/atoms/button'
-import { Heading } from '@/components/atoms/Heading'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/atoms/dialog'
+import { UiLink } from '@/components/molecules/Link'
 import type { CookieConsentConfig } from '@/features/cookieConsent'
 
 type CookieConsentBannerProps = {
-  compact?: boolean
+  onClose?: () => void
   ready: boolean
   config: CookieConsentConfig
   onAcceptAll: () => void
@@ -14,118 +17,92 @@ type CookieConsentBannerProps = {
 }
 
 export function CookieConsentBanner({
-  compact = false,
   ready,
   config,
   onAcceptAll,
   onRejectAll,
   onCustomize,
+  onClose,
 }: CookieConsentBannerProps) {
-  return (
-    <div
-      className={
-        compact
-          ? 'relative z-50 px-2.5 pt-1 [padding-bottom:calc(env(safe-area-inset-bottom)+0.25rem)] sm:px-6 lg:px-8'
-          : 'fixed inset-x-0 bottom-0 z-50 px-2.5 pt-2 [padding-bottom:calc(env(safe-area-inset-bottom)+0.625rem)] sm:px-6 sm:pt-4 sm:[padding-bottom:calc(env(safe-area-inset-bottom)+1rem)] lg:px-8'
-      }
-    >
-      <div className="mx-auto w-full max-w-6xl">
-        <div
-          className={
-            compact
-              ? 'overflow-hidden rounded-xl border border-border/70 bg-background/95 shadow-[0_16px_42px_rgba(0,0,0,0.16)] backdrop-blur-xl'
-              : 'max-h-[calc(100svh-0.75rem)] overflow-y-auto overscroll-contain rounded-3xl border border-border/70 bg-background/95 shadow-[0_30px_80px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:max-h-none'
-          }
-        >
-          <div className="bg-linear-to-r from-primary/10 via-background to-accent/10 p-1">
-            {compact ? (
-              <div className="rounded-lg bg-background/95 p-1.5 sm:p-2">
-                <div>
-                  <Heading as="h2" align="left" size="h4" className="sr-only">
-                    {config.banner.title}
-                  </Heading>
-                  <p className="sr-only">{config.banner.description}</p>
-                  <div className="grid grid-cols-3 gap-2">
-                    <Button
-                      type="button"
-                      variant="primary"
-                      className="h-8 w-full rounded-full px-1 text-[10px] whitespace-nowrap sm:text-xs"
-                      disabled={!ready}
-                      onClick={onAcceptAll}
-                    >
-                      {config.banner.acceptLabel}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      className="h-8 w-full rounded-full px-1 text-[10px] whitespace-nowrap sm:text-xs"
-                      disabled={!ready}
-                      onClick={onRejectAll}
-                    >
-                      {config.banner.rejectLabel}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="h-8 w-full rounded-full px-1 text-[10px] whitespace-nowrap sm:text-xs"
-                      disabled={!ready}
-                      onClick={onCustomize}
-                    >
-                      {config.banner.customizeLabel}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="grid gap-3 rounded-[1.35rem] bg-background/95 p-2.5 sm:gap-5 sm:p-6 lg:grid-cols-[minmax(0,1.4fr)_auto] lg:items-center">
-                <div className="space-y-2 sm:space-y-3">
-                  <Heading
-                    as="h2"
-                    align="left"
-                    size="h4"
-                    className="max-w-2xl text-base leading-tight sm:text-xl md:text-2xl lg:text-3xl"
-                  >
-                    {config.banner.title}
-                  </Heading>
-                  <p className="line-clamp-3 max-w-3xl text-xs leading-[1.35rem] text-muted-foreground sm:line-clamp-none sm:text-base sm:leading-6">
-                    {config.banner.description}
-                  </p>
-                </div>
+  const titleRef = useRef<HTMLHeadingElement>(null)
 
-                <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:flex-wrap sm:gap-3 lg:justify-end">
-                  <Button
-                    type="button"
-                    variant="primary"
-                    className="h-10 w-full rounded-full px-4 text-sm sm:h-10 sm:w-auto sm:px-6"
-                    disabled={!ready}
-                    onClick={onAcceptAll}
-                  >
-                    {config.banner.acceptLabel}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="h-10 w-full rounded-full px-4 text-sm sm:h-10 sm:w-auto sm:px-6"
-                    disabled={!ready}
-                    onClick={onRejectAll}
-                  >
-                    {config.banner.rejectLabel}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="col-span-2 h-9 w-full rounded-full px-4 text-sm sm:col-auto sm:h-10 sm:w-auto sm:px-6"
-                    disabled={!ready}
-                    onClick={onCustomize}
-                  >
-                    {config.banner.customizeLabel}
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
+  return (
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open && ready) onRejectAll()
+      }}
+    >
+      <DialogContent
+        aria-modal="true"
+        className="max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-xl overflow-y-auto overscroll-contain rounded-2xl p-5 sm:p-6"
+        onOpenAutoFocus={(event) => {
+          event.preventDefault()
+          titleRef.current?.focus()
+        }}
+        onCloseAutoFocus={(event) => {
+          event.preventDefault()
+          onClose?.()
+        }}
+        onPointerDownOutside={(event) => event.preventDefault()}
+        onEscapeKeyDown={(event) => {
+          if (!ready) event.preventDefault()
+        }}
+      >
+        <DialogHeader className="space-y-4 text-left">
+          <DialogTitle
+            ref={titleRef}
+            tabIndex={-1}
+            className="pr-8 text-xl leading-tight focus-visible:outline-none sm:text-2xl"
+          >
+            {config.banner.title}
+          </DialogTitle>
+          <DialogDescription className="text-base leading-6 whitespace-pre-line">
+            {config.banner.description}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Button
+            type="button"
+            variant="primary"
+            className="h-auto min-h-11 w-full rounded-full whitespace-normal"
+            disabled={!ready}
+            onClick={onAcceptAll}
+          >
+            {config.banner.acceptLabel}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="h-auto min-h-11 w-full rounded-full whitespace-normal"
+            disabled={!ready}
+            onClick={onRejectAll}
+          >
+            {config.banner.rejectLabel}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            className="h-auto min-h-11 w-full rounded-full whitespace-normal sm:col-span-2"
+            disabled={!ready}
+            onClick={onCustomize}
+          >
+            {config.banner.customizeLabel}
+          </Button>
         </div>
-      </div>
-    </div>
+
+        {config.privacyPolicyHref ? (
+          <UiLink
+            href={config.privacyPolicyHref}
+            newTab
+            className="w-fit text-sm text-primary underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {config.privacyPolicyLabel}
+            <span className="sr-only"> (opens in a new tab)</span>
+          </UiLink>
+        ) : null}
+      </DialogContent>
+    </Dialog>
   )
 }

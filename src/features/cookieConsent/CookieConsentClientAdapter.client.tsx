@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { usePathname } from 'next/navigation'
 
 import {
   CookieConsentManager,
@@ -17,6 +18,13 @@ import { readCookieConsentFromDocument, writeCookieConsentToDocument } from './c
 export function CookieConsentClientAdapter(
   props: Omit<CookieConsentManagerProps, 'onAnalyticsConsentChange' | 'onPersistConsent' | 'readConsent'>,
 ) {
+  const pathname = usePathname()
+  const legalHrefs = [props.config?.privacyPolicyHref]
+  const deferInitialPrompt = legalHrefs.some((href) => {
+    if (!href?.startsWith('/') || href.startsWith('//')) return false
+    const legalPath = new URL(href, 'http://localhost:3000').pathname.replace(/\/+$/, '') || '/'
+    return legalPath === (pathname?.replace(/\/+$/, '') || '/')
+  })
   const sdkReady = usePostHogAnalyticsReady()
   const [diagnostics, setDiagnostics] = useState({
     cookieValid: false,
@@ -51,6 +59,7 @@ export function CookieConsentClientAdapter(
       <span hidden data-analytics-diagnostics={JSON.stringify(diagnostics)} />
       <CookieConsentManager
         {...props}
+        deferInitialPrompt={deferInitialPrompt}
         onAnalyticsConsentChange={handleAnalyticsConsentChange}
         onPersistConsent={writeCookieConsentToDocument}
         readConsent={readCookieConsentFromDocument}

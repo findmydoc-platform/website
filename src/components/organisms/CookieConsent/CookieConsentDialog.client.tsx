@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useId } from 'react'
+import { useId, useRef } from 'react'
 
 import { Button } from '@/components/atoms/button'
 import { Checkbox } from '@/components/atoms/checkbox'
@@ -18,6 +18,7 @@ import type { CookieConsentCategoryKey, CookieConsentCategoryMap, CookieConsentC
 import { cn } from '@/utilities/ui'
 
 type CookieConsentDialogProps = {
+  onClose?: () => void
   open: boolean
   config: CookieConsentConfig
   categoryDrafts: CookieConsentCategoryMap
@@ -30,6 +31,7 @@ type CookieConsentDialogProps = {
 
 export function CookieConsentDialog({
   open,
+  onClose,
   config,
   categoryDrafts,
   onOpenChange,
@@ -39,12 +41,31 @@ export function CookieConsentDialog({
   onSave,
 }: CookieConsentDialogProps) {
   const essentialCookieCheckboxId = useId()
+  const titleRef = useRef<HTMLHeadingElement>(null)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[calc(100svh-2rem)] overflow-y-auto p-5 sm:max-w-2xl sm:p-6">
+      <DialogContent
+        aria-modal="true"
+        className="max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] overflow-y-auto overscroll-contain rounded-2xl p-5 sm:max-w-2xl sm:p-6"
+        onOpenAutoFocus={(event) => {
+          event.preventDefault()
+          titleRef.current?.focus()
+        }}
+        onCloseAutoFocus={
+          onClose
+            ? (event) => {
+                event.preventDefault()
+                onClose()
+              }
+            : undefined
+        }
+        onPointerDownOutside={(event) => event.preventDefault()}
+      >
         <DialogHeader>
-          <DialogTitle>{config.settings.title}</DialogTitle>
+          <DialogTitle ref={titleRef} tabIndex={-1} className="pr-8 leading-tight focus-visible:outline-none">
+            {config.settings.title}
+          </DialogTitle>
           <DialogDescription>{config.settings.description}</DialogDescription>
         </DialogHeader>
 

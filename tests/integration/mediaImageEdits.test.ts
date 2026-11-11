@@ -216,7 +216,7 @@ describe('media image editing through Payload and cloud storage', () => {
     expect(pixels[1]).toBeLessThan(20)
   })
 
-  it('keeps image edits consumed when internal metadata persistence fails', async () => {
+  it('does not reprocess image edits when internal metadata persistence fails', async () => {
     const doc = await createImage()
     const hooks = payload.collections.platformContentMedia.config.hooks.beforeChange
     let internalRequest: PayloadRequest | undefined

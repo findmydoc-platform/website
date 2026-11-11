@@ -154,7 +154,7 @@ describe('Holding local PostHog rules', () => {
         resolvePublicDiscoveryAccessForRequest(new Request('https://findmydoc.eu/llms.txt'), {
           VERCEL_ENV: 'production',
         }),
-      ).resolves.toEqual({ allowed: false, reason: 'temporary-landing-mode' })
+      ).resolves.toEqual({ allowed: true, temporaryLandingMode: true })
       await expect(
         resolvePublicDiscoveryAccessForRequest(new Request('https://findmydoc.eu/llms.txt'), {
           NODE_ENV: 'development',
@@ -243,8 +243,8 @@ describe('Holding local PostHog rules', () => {
       '/sitemap.xml': 404,
       '/pages-sitemap.xml': 200,
       '/posts-sitemap.xml': 200,
-      '/llms.txt': 404,
-      '/.well-known/llms.txt': 404,
+      '/llms.txt': 200,
+      '/.well-known/llms.txt': 200,
     }
     for (const path of PUBLIC_DISCOVERY_SURFACE_PATHS) {
       const responses = await Promise.all(

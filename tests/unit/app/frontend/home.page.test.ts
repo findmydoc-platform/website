@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { renderToStaticMarkup } from 'react-dom/server'
 
-import { TEMPORARY_LANDING_MODE_REQUEST_HEADER } from '@/features/temporaryLandingMode'
+import { HOLDING_VIEW_REQUEST_HEADER, TEMPORARY_LANDING_MODE_REQUEST_HEADER } from '@/features/temporaryLandingMode'
 
 import { cloneBaselineLandingPages } from '../../helpers/landingPagesBaseline'
 
@@ -17,7 +18,18 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('next/headers', () => ({
   headers: mocks.headersMock,
+  cookies: vi.fn(async () => new Map()),
+  draftMode: vi.fn(async () => ({ isEnabled: false })),
 }))
+
+vi.mock('@/app/(frontend)/AdminBarClientAdapter.client', () => ({ AdminBarClientAdapter: () => null }))
+vi.mock('@/app/(frontend)/_components/SupabaseAuthHashUrlScrubber.client', () => ({
+  SupabaseAuthHashUrlScrubber: () => null,
+}))
+vi.mock('@/features/cookieConsent/CookieConsentClientAdapter.client', () => ({
+  CookieConsentClientAdapter: () => null,
+}))
+vi.mock('@vercel/toolbar/next', () => ({ VercelToolbar: () => null }))
 
 vi.mock('@payload-config', () => ({
   default: {},
@@ -83,6 +95,47 @@ describe('frontend home page route', () => {
 
   afterEach(() => {
     vi.clearAllMocks()
+    vi.unstubAllEnvs()
+  })
+
+  it('renders the standalone Production Holding document without blocking robots or Googlebot metadata', async () => {
+    vi.stubEnv('VERCEL_ENV', 'production')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'production')
+    vi.stubEnv('NEXT_PUBLIC_SERVER_URL', 'https://findmydoc.eu')
+    mocks.headersMock.mockResolvedValue(
+      new Headers({
+        [HOLDING_VIEW_REQUEST_HEADER]: 'standalone',
+        [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: '1',
+      }),
+    )
+    const layoutModule = await import('@/app/(frontend)/layout')
+    const document = renderToStaticMarkup(await layoutModule.default({ children: null }))
+
+    expect(document).not.toMatch(/<meta[^>]+name="(?:robots|googlebot)"/)
+    expect(layoutModule.metadata.robots).toBeUndefined()
+    const structuredData = Array.from(
+      document.matchAll(/<script type="application\/ld\+json">(.*?)<\/script>/g),
+      ([, json]) => JSON.parse(json ?? 'null'),
+    )
+    expect(structuredData).toEqual([
+      {
+        '@context': 'https://schema.org',
+        '@id': 'https://findmydoc.eu/#organization',
+        '@type': 'Organization',
+        name: 'findmydoc',
+        url: 'https://findmydoc.eu/',
+      },
+      {
+        '@context': 'https://schema.org',
+        '@id': 'https://findmydoc.eu/#website',
+        '@type': 'WebSite',
+        description:
+          'Coming Soon. Practical guidance and clear context for comparing clinics, treatments, and quality signals.',
+        name: 'findmydoc',
+        publisher: { '@id': 'https://findmydoc.eu/#organization' },
+        url: 'https://findmydoc.eu/',
+      },
+    ])
   })
 
   it('returns temporary landing page when landing request header is set', async () => {
@@ -103,6 +156,52 @@ describe('frontend home page route', () => {
     expect(result.props.contentLocale).toEqual({})
     expect(result.props.posts).toEqual([])
   })
+
+  it.each([
+    [
+      'Preview Holding',
+      'preview',
+      { [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: '1', [HOLDING_VIEW_REQUEST_HEADER]: 'standalone' },
+    ],
+    ['Preview Full', 'preview', {}],
+    [
+      'an excluded Production Holding page',
+      'production',
+      { [HOLDING_VIEW_REQUEST_HEADER]: 'standalone', 'x-search-indexing': 'noindex' },
+    ],
+  ] as const)('keeps robots and Googlebot blocked for %s', async (_description, runtime, requestHeaders) => {
+    vi.stubEnv('VERCEL_ENV', runtime)
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', runtime)
+    mocks.headersMock.mockResolvedValue(new Headers(requestHeaders))
+    const layoutModule = await import('@/app/(frontend)/layout')
+    const document = renderToStaticMarkup(await layoutModule.default({ children: null }))
+
+    expect(document).toContain('<meta content="noindex, nofollow, noarchive" name="robots"/>')
+    expect(document).toContain('<meta content="noindex, nofollow, noarchive, noimageindex" name="googlebot"/>')
+    expect(document).not.toContain('type="application/ld+json"')
+    if (runtime === 'preview') {
+      expect(layoutModule.metadata.robots).toMatchObject({ index: false, googleBot: { index: false } })
+    }
+  })
+
+  it.each([undefined, 'en', 'de', 'tr'])(
+    'keeps the Production root canonical for Holding language %s',
+    async (lang) => {
+      vi.stubEnv('NEXT_PUBLIC_SERVER_URL', 'https://findmydoc.eu')
+      mocks.headersMock.mockResolvedValue(new Headers({ [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: '1' }))
+      const pageModule = await import('@/app/(frontend)/page')
+      const metadata = await pageModule.generateMetadata({
+        searchParams: Promise.resolve({ lang, source: 'language-choice' }),
+      })
+
+      expect(metadata).toMatchObject({
+        alternates: { canonical: '/' },
+        openGraph: { url: 'https://findmydoc.eu/' },
+      })
+      expect(metadata.alternates?.languages).toBeUndefined()
+      expect(metadata.robots).toBeUndefined()
+    },
+  )
 
   it('passes resolved locale and language options to temporary landing page', async () => {
     mocks.headersMock.mockResolvedValue(new Headers({ [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: '1' }))

@@ -3,7 +3,9 @@ import { DEFAULT_SITE_DESCRIPTION, SITE_NAME } from '@/utilities/socialPreview'
 import { absoluteUrl, organizationId, websiteId } from './internal'
 import type { JsonLdNode } from './types'
 
-export function buildSiteBaseJsonLd(): JsonLdNode[] {
+export function buildSiteBaseJsonLd({
+  description = DEFAULT_SITE_DESCRIPTION,
+}: { description?: string } = {}): JsonLdNode[] {
   const homeUrl = absoluteUrl('/')
 
   return [
@@ -18,7 +20,7 @@ export function buildSiteBaseJsonLd(): JsonLdNode[] {
       '@context': 'https://schema.org',
       '@id': websiteId(),
       '@type': 'WebSite',
-      description: DEFAULT_SITE_DESCRIPTION,
+      description,
       name: SITE_NAME,
       publisher: {
         '@id': organizationId(),

@@ -34,7 +34,7 @@ describe('searchIndexing feature', () => {
     ).toBe(false)
   })
 
-  it.each([['a standalone Holding view', { [HOLDING_VIEW_REQUEST_HEADER]: 'standalone' }]] as const)(
+  it.each([['an explicit noindex decision', { 'x-search-indexing': 'noindex' }]] as const)(
     'blocks indexing when the request carries %s',
     (_view, requestHeaders) => {
       expect(
@@ -49,4 +49,13 @@ describe('searchIndexing feature', () => {
       ).toBe(true)
     },
   )
+
+  it('keeps standalone presentation independent of Production indexability', () => {
+    expect(
+      shouldBlockSearchIndexingForRequest({
+        env: { NODE_ENV: 'production', VERCEL_ENV: 'production' },
+        headers: new Headers({ [HOLDING_VIEW_REQUEST_HEADER]: 'standalone' }),
+      }),
+    ).toBe(false)
+  })
 })

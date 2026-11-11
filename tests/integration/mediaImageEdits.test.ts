@@ -153,6 +153,13 @@ describe('media image editing through Payload and cloud storage', () => {
       overrideAccess: false,
     })
     expect(stored.filename).toBe(updated.filename)
+    const image = await handleEndpoints({
+      config,
+      request: new Request(new URL(stored.url!, payload.config.serverURL)),
+    })
+    expect(image.status).toBe(200)
+    const imageMetadata = await sharp(Buffer.from(await image.arrayBuffer())).metadata()
+    expect(imageMetadata).toMatchObject({ width: 50, height: 40 })
   })
 
   it('retains an existing zero focal point when cropping again', async () => {
@@ -216,6 +223,7 @@ describe('media image editing through Payload and cloud storage', () => {
     const rejectMetadata: CollectionBeforeChangeHook = ({ req, data }) => {
       if (req.context.skipCloudStorage) {
         internalRequest = req
+        // Cloud storage restores the outer query after this metadata operation.
         expect(req.query.uploadEdits).toBeUndefined()
         expect(req.query.locale).toBe('en')
         throw new Error('Metadata persistence failed')

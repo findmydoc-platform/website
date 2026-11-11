@@ -4,11 +4,13 @@ The five media collections normalize unchanged admin image edits before Payload 
 
 ## Internal storage updates
 
-The shared `beforeOperationNormalizeImageEdits` hook consumes `uploadEdits` when `skipCloudStorage` identifies an internal metadata update. At that point the file has already been processed. The hook replaces the query object without modifying the original query object or other parameters; authentication and transaction context remain intact. Consumed image edits are not restored onto the request, including on failure. A retry is a new user operation with its own edit parameters.
+The shared `beforeOperationNormalizeImageEdits` hook removes `uploadEdits` while `skipCloudStorage` identifies an internal metadata update. At that point the file has already been processed. The hook replaces the query object without modifying the original query object or other parameters; authentication and transaction context remain intact.
+
+Cloud Storage 3.92.1 also removes `uploadEdits` before its nested metadata update and restores the outer query in a `finally` block. The absence of edit parameters is required during the metadata operation, including when it fails. A retained request reference can contain the outer edit parameters again after the operation returns. A retry is a new user operation with its own edit parameters.
 
 Without this boundary, the metadata update can fetch the new filename through a separate HTTP request before its database transaction commits. Prefix-based file access correctly rejects that uncommitted filename. Do not work around this by weakening file access or removing the prefix.
 
-No cloud-storage dependency patch is required. `tests/integration/mediaImageEdits.test.ts` exercises the unmodified Payload/cloud-storage packages against the integration database and S3Mock. Its HTTP transport routes file requests through the actual Payload REST handler. The regression covers a crop, repeated cropping with a zero focal point verified in the generated image pixels, unchanged Apply, metadata failure, and storage failure.
+No cloud-storage dependency patch is required. `tests/integration/mediaImageEdits.test.ts` exercises the unmodified Payload/cloud-storage packages against the integration database and S3Mock. Its HTTP transport routes file requests through the actual Payload REST handler. The regression checks the cropped image's stored dimensions and repeated cropping with a zero focal point verified in the generated image pixels. It also covers unchanged Apply, edit-parameter consumption inside a failing metadata operation, and storage failure.
 
 ## Boundaries
 

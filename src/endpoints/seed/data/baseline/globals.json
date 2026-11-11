@@ -118,11 +118,18 @@
     "data": {
       "enabled": true,
       "consentVersion": 3,
-      "bannerTitle": "Cookies on findmydoc",
-      "bannerDescription": "We use essential cookies to keep the site working and optional cookies to understand usage and improve the experience.",
+      "bannerTitle": "Help us improve findmydoc",
+      "bannerDescription": "With your consent, we analyse page views and clicks, detect technical errors and record browsing sessions. This helps us identify where findmydoc is difficult to use. You can use the website without this analysis and change your choice at any time in Cookie settings.",
       "acceptLabel": "Accept all",
       "rejectLabel": "Reject all",
-      "customizeLabel": "Customize",
+      "customizeLabel": "Settings",
+      "germanPrompt": {
+        "bannerTitle": "Hilf uns, findmydoc zu verbessern",
+        "bannerDescription": "Mit deiner Einwilligung werten wir Seitenaufrufe und Klicks aus, erkennen technische Fehler und zeichnen Nutzungssitzungen auf. So erkennen wir, wo findmydoc schwer zu bedienen ist. Du kannst die Website auch ohne diese Auswertung nutzen und deine Auswahl jederzeit in den Cookie-Einstellungen ändern.",
+        "acceptLabel": "Alle akzeptieren",
+        "rejectLabel": "Alle ablehnen",
+        "customizeLabel": "Einstellungen"
+      },
       "settingsTitle": "Cookie settings",
       "settingsDescription": "Choose which optional cookies you allow. Essential cookies are always active.",
       "essentialLabel": "Essential cookies",

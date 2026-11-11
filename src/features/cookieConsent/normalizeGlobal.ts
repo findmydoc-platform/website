@@ -1,20 +1,16 @@
 import type { CookieConsent as CookieConsentGlobal } from '@/payload-types'
+import { REQUIRED_LEGAL_FOOTER_LINKS } from '@/utilities/legalPages'
 
 import { DEFAULT_COOKIE_CONSENT_CATEGORIES, normalizeCookieConsentCategories } from './categories'
 import { COOKIE_CONSENT_DEFAULT_VERSION } from './constants'
 import type { CookieConsentConfig } from './types'
+import { APPROVED_COOKIE_CONSENT_PROMPT } from './promptCopy'
+import { COOKIE_CONSENT_TOOL_REGISTRY } from './toolConsent'
 
 const defaultConfig: CookieConsentConfig = {
   enabled: true,
   consentVersion: COOKIE_CONSENT_DEFAULT_VERSION,
-  banner: {
-    title: 'Cookies on findmydoc',
-    description:
-      'We use essential cookies to keep the site working and optional cookies to understand usage and improve the experience.',
-    acceptLabel: 'Accept all',
-    rejectLabel: 'Reject all',
-    customizeLabel: 'Customize',
-  },
+  banner: APPROVED_COOKIE_CONSENT_PROMPT.en,
   settings: {
     title: 'Cookie settings',
     description: 'Choose which optional cookies you allow. Essential cookies are always active.',
@@ -23,10 +19,33 @@ const defaultConfig: CookieConsentConfig = {
     cancelLabel: 'Cancel',
     saveLabel: 'Save preferences',
   },
-  categories: DEFAULT_COOKIE_CONSENT_CATEGORIES.map(({ enabled: _enabled, ...category }) => category),
+  categories: withServiceDetails(
+    DEFAULT_COOKIE_CONSENT_CATEGORIES.map(({ enabled: _enabled, ...category }) => category),
+  ),
   privacyPolicyLabel: 'Privacy Policy',
   privacyPolicyHref: '/privacy-policy',
   reopenLabel: 'Cookie settings',
+  imprintLink: REQUIRED_LEGAL_FOOTER_LINKS.find((link) => link.href === '/imprint'),
+}
+
+function withServiceDetails(categories: CookieConsentConfig['categories']): CookieConsentConfig['categories'] {
+  return categories.map((category) => {
+    const services = category.tools
+      .filter((tool) => categories.filter((entry) => entry.tools.includes(tool)).length === 1)
+      .map((tool) => ({
+        name: COOKIE_CONSENT_TOOL_REGISTRY[tool].label,
+        description: COOKIE_CONSENT_TOOL_REGISTRY[tool].description,
+        privacyHref: COOKIE_CONSENT_TOOL_REGISTRY[tool].privacyHref,
+      }))
+    return {
+      ...category,
+      description:
+        services.length === 0
+          ? 'No services are assigned to this category with an active, unambiguous assignment. Selecting it does not enable optional processing.'
+          : category.description,
+      services,
+    }
+  })
 }
 
 function normalizeText(value: unknown, fallback: string): string {
@@ -47,10 +66,12 @@ function normalizeCategories(
 ): CookieConsentConfig['categories'] {
   const normalizedCategories = normalizeCookieConsentCategories(value, DEFAULT_COOKIE_CONSENT_CATEGORIES)
 
-  return normalizedCategories
-    .filter((category) => category.enabled)
-    .map(({ enabled: _enabled, ...category }) => category)
-    .slice(0, fallback.length)
+  return withServiceDetails(
+    normalizedCategories
+      .filter((category) => category.enabled)
+      .map(({ enabled: _enabled, ...category }) => category)
+      .slice(0, fallback.length),
+  )
 }
 
 function normalizePrivacyPolicyHref(value: unknown): string | null {
@@ -103,6 +124,7 @@ export function normalizeCookieConsentGlobal(
     privacyPolicyLabel: normalizeText(global.privacyPolicyLabel, defaultConfig.privacyPolicyLabel),
     privacyPolicyHref: normalizePrivacyPolicyHref(global.privacyPolicyPage),
     reopenLabel: normalizeText(global.reopenLabel, defaultConfig.reopenLabel),
+    imprintLink: defaultConfig.imprintLink,
   }
 }
 

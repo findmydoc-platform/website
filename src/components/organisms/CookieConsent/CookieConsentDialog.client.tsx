@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { useId } from 'react'
 
 import { Button } from '@/components/atoms/button'
@@ -13,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/atoms/dialog'
+import { UiLink } from '@/components/molecules/Link'
 import { Label } from '@/components/atoms/label'
 import type { CookieConsentCategoryKey, CookieConsentCategoryMap, CookieConsentConfig } from '@/features/cookieConsent'
 import { cn } from '@/utilities/ui'
@@ -57,13 +57,23 @@ export function CookieConsentDialog({
                   Read the page that explains how we handle optional cookies and third-party services.
                 </p>
               </div>
-              <Link
+              <UiLink
                 className="inline-flex shrink-0 items-center rounded-full border border-border/70 bg-background px-3 py-1 text-xs font-semibold tracking-wide text-primary transition-colors hover:border-primary/40 hover:bg-primary/5 hover:underline focus-visible:underline"
                 href={config.privacyPolicyHref}
+                newTab
               >
                 {config.privacyPolicyLabel}
-              </Link>
+              </UiLink>
             </div>
+          ) : null}
+
+          {config.imprintLink ? (
+            <UiLink
+              href={config.imprintLink.href}
+              label={config.imprintLink.label}
+              className="text-sm text-primary underline"
+              newTab
+            />
           ) : null}
 
           <div className="rounded-2xl border border-border/70 bg-muted/30 p-4">
@@ -99,6 +109,20 @@ export function CookieConsentDialog({
                         {category.label}
                       </Label>
                       <p className="text-sm text-muted-foreground">{category.description}</p>
+                      {category.services && category.services.length > 0 ? (
+                        <p className="text-sm text-muted-foreground">
+                          Selecting this category permits all services listed below.
+                        </p>
+                      ) : null}
+                      {category.services?.map((service) => (
+                        <div key={service.name} className="space-y-1 border-t border-border/70 pt-3 text-sm">
+                          <p className="font-semibold">{service.name}</p>
+                          <p className="text-muted-foreground">{service.description}</p>
+                          <UiLink className="text-primary underline" href={service.privacyHref} newTab>
+                            {service.name} privacy notice
+                          </UiLink>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>

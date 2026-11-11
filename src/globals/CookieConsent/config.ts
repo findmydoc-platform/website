@@ -5,6 +5,7 @@ import {
   COOKIE_CONSENT_TOOL_SELECT_OPTIONS,
   DEFAULT_COOKIE_CONSENT_CATEGORY_SETTINGS,
 } from '@/features/cookieConsent'
+import { APPROVED_COOKIE_CONSENT_PROMPT } from '@/features/cookieConsent/promptCopy'
 import { MANAGED_LEGAL_PAGE_SLUGS } from '@/utilities/legalPages'
 import { revalidateCookieConsent } from './hooks/revalidateCookieConsent'
 import { validateCookieConsentToolAssignments } from './validateCookieConsent'
@@ -34,7 +35,8 @@ export const CookieConsent: GlobalConfig = {
           defaultValue: 3,
           required: true,
           admin: {
-            description: 'Increase this number when the consent wording or behavior changes.',
+            description:
+              'Increase this number when changed processing purposes or service scope require renewed consent. Copy or layout changes alone do not require a new version.',
             width: '25%',
           },
         },
@@ -58,15 +60,14 @@ export const CookieConsent: GlobalConfig = {
                   type: 'text',
                   label: 'Title',
                   required: true,
-                  defaultValue: 'Cookies on findmydoc',
+                  defaultValue: APPROVED_COOKIE_CONSENT_PROMPT.en.title,
                 },
                 {
                   name: 'bannerDescription',
                   type: 'textarea',
                   label: 'Description',
                   required: true,
-                  defaultValue:
-                    'We use essential cookies to keep the site working and optional cookies to understand usage and improve the experience.',
+                  defaultValue: APPROVED_COOKIE_CONSENT_PROMPT.en.description,
                 },
               ],
             },
@@ -108,9 +109,50 @@ export const CookieConsent: GlobalConfig = {
                       admin: {
                         width: '33.33%',
                       },
-                      defaultValue: 'Customize',
+                      defaultValue: APPROVED_COOKIE_CONSENT_PROMPT.en.customizeLabel,
                     },
                   ],
+                },
+              ],
+            },
+            {
+              name: 'germanPrompt',
+              type: 'group',
+              label: 'German prompt copy',
+              admin: {
+                description:
+                  'German translation stored independently. The public consent prompt uses the English fields above.',
+              },
+              fields: [
+                {
+                  name: 'bannerTitle',
+                  type: 'text',
+                  label: 'Title',
+                  defaultValue: APPROVED_COOKIE_CONSENT_PROMPT.de.title,
+                },
+                {
+                  name: 'bannerDescription',
+                  type: 'textarea',
+                  label: 'Description',
+                  defaultValue: APPROVED_COOKIE_CONSENT_PROMPT.de.description,
+                },
+                {
+                  name: 'acceptLabel',
+                  type: 'text',
+                  label: 'Accept button label',
+                  defaultValue: APPROVED_COOKIE_CONSENT_PROMPT.de.acceptLabel,
+                },
+                {
+                  name: 'rejectLabel',
+                  type: 'text',
+                  label: 'Reject button label',
+                  defaultValue: APPROVED_COOKIE_CONSENT_PROMPT.de.rejectLabel,
+                },
+                {
+                  name: 'customizeLabel',
+                  type: 'text',
+                  label: 'Settings button label',
+                  defaultValue: APPROVED_COOKIE_CONSENT_PROMPT.de.customizeLabel,
                 },
               ],
             },

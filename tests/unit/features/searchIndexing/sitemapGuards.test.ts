@@ -56,6 +56,7 @@ describe('sitemap indexing guards', () => {
 
     expect(posthogMocks.createPostHogHoldingEvaluationContext).toHaveBeenCalledWith({
       url: new URL('https://findmydoc.eu/posts-sitemap.xml'),
+      env: { NODE_ENV: 'production', VERCEL_ENV: 'production' },
     })
     expect(posthogMocks.resolvePostHogHoldingFlagActor).toHaveBeenCalledWith({
       feature_flag_site_host: 'findmydoc.eu',

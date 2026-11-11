@@ -247,7 +247,7 @@ describe('cookie consent helpers', () => {
         key: 'marketing',
         label: 'Marketing cookies',
         description:
-          'No services are assigned to this category with an active, unambiguous assignment. Selecting it does not enable optional processing.',
+          'No services are currently available in this category. Selecting it does not enable optional processing.',
         tools: [],
       },
     ])

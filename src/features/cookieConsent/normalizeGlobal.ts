@@ -41,7 +41,7 @@ function withServiceDetails(categories: CookieConsentConfig['categories']): Cook
       ...category,
       description:
         services.length === 0
-          ? 'No services are assigned to this category with an active, unambiguous assignment. Selecting it does not enable optional processing.'
+          ? 'No services are currently available in this category. Selecting it does not enable optional processing.'
           : category.description,
       services,
     }

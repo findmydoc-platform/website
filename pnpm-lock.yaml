@@ -26,6 +26,9 @@ patchedDependencies:
   '@payloadcms/drizzle@3.92.1':
     hash: 364372c92ec1a96a9ce173b696b5bb0f3bb2dff160c3d9e6a6acb0afb8ece8b6
     path: patches/@payloadcms__drizzle@3.92.1.patch
+  '@payloadcms/plugin-mcp@3.92.1':
+    hash: 6a78f7e050e44d0a478af5334fcade8400ca6b94e533b94aae5c5a3da0aad64d
+    path: patches/@payloadcms__plugin-mcp@3.92.1.patch
   payload@3.92.1:
     hash: d619cc7564394fe89688c3152c13ddc08799351b056167a6237675201daea2b6
     path: patches/payload@3.92.1.patch
@@ -60,7 +63,7 @@ importers:
         version: 3.92.1(@payloadcms/ui@3.92.1(@types/react@19.3.0)(monaco-editor@0.52.2)(next@16.4.5(@babel/core@7.29.13)(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(@types/node@24.19.2)(babel-plugin-macros@3.1.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(sass@1.77.4))(payload@3.92.1(patch_hash=d619cc7564394fe89688c3152c13ddc08799351b056167a6237675201daea2b6)(graphql@16.15.0)(typescript@7.0.2))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@7.0.2))(payload@3.92.1(patch_hash=d619cc7564394fe89688c3152c13ddc08799351b056167a6237675201daea2b6)(graphql@16.15.0)(typescript@7.0.2))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@payloadcms/plugin-mcp':
         specifier: 3.92.1
-        version: 3.92.1(next@16.4.5(@babel/core@7.29.13)(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(@types/node@24.19.2)(babel-plugin-macros@3.1.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(sass@1.77.4))(payload@3.92.1(patch_hash=d619cc7564394fe89688c3152c13ddc08799351b056167a6237675201daea2b6)(graphql@16.15.0)(typescript@7.0.2))
+        version: 3.92.1(patch_hash=6a78f7e050e44d0a478af5334fcade8400ca6b94e533b94aae5c5a3da0aad64d)(next@16.4.5(@babel/core@7.29.13)(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(@types/node@24.19.2)(babel-plugin-macros@3.1.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(sass@1.77.4))(payload@3.92.1(patch_hash=d619cc7564394fe89688c3152c13ddc08799351b056167a6237675201daea2b6)(graphql@16.15.0)(typescript@7.0.2))
       '@payloadcms/plugin-nested-docs':
         specifier: 3.92.1
         version: 3.92.1(payload@3.92.1(patch_hash=d619cc7564394fe89688c3152c13ddc08799351b056167a6237675201daea2b6)(graphql@16.15.0)(typescript@7.0.2))
@@ -10349,7 +10352,7 @@ snapshots:
       - react
       - react-dom
 
-  '@payloadcms/plugin-mcp@3.92.1(next@16.4.5(@babel/core@7.29.13)(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(@types/node@24.19.2)(babel-plugin-macros@3.1.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(sass@1.77.4))(payload@3.92.1(patch_hash=d619cc7564394fe89688c3152c13ddc08799351b056167a6237675201daea2b6)(graphql@16.15.0)(typescript@7.0.2))':
+  '@payloadcms/plugin-mcp@3.92.1(patch_hash=6a78f7e050e44d0a478af5334fcade8400ca6b94e533b94aae5c5a3da0aad64d)(next@16.4.5(@babel/core@7.29.13)(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(@types/node@24.19.2)(babel-plugin-macros@3.1.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(sass@1.77.4))(payload@3.92.1(patch_hash=d619cc7564394fe89688c3152c13ddc08799351b056167a6237675201daea2b6)(graphql@16.15.0)(typescript@7.0.2))':
     dependencies:
       '@modelcontextprotocol/sdk': 1.32.2(zod@4.6.7)
       '@types/json-schema': 7.0.15

@@ -7,7 +7,7 @@ import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
-import { cleanupTrackedDocs } from '../fixtures/cleanupTrackedDocs'
+import { cleanupTrackedDocs, clearTrackedDoctorImageReferences } from '../fixtures/cleanupTrackedDocs'
 import { createTinyPngFile } from '../fixtures/mediaFile'
 import { buildRichText } from '../fixtures/richText'
 import { approveClinicStaff, asStaffPayloadUser, createClinicStaffFixture } from '../fixtures/clinicUserFixtures'
@@ -57,6 +57,7 @@ describe('Medical network defaultPopulate', () => {
   }, 60000)
 
   afterEach(async () => {
+    await clearTrackedDoctorImageReferences(payload, createdDoctorMediaIds)
     await cleanupTrackedDocs(payload, [
       { collection: 'doctortreatments', ids: createdDoctorTreatmentIds },
       { collection: 'clinictreatments', ids: createdClinicTreatmentIds },

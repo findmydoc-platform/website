@@ -27,12 +27,14 @@ import {
 import { beforeChangeValidatePublishedClinicMedia } from './publicationStatus'
 import { beforeDeleteRejectReferencedClinicMedia } from './deletionGuard'
 import { revalidateClinicMediaChange } from '@/hooks/revalidateClinicSurfaces'
+import { platformClinicGalleryAppendHandler } from '@/endpoints/platformClinicGallery'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
 export const ClinicMedia: CollectionConfig = {
   slug: 'clinicMedia',
+  endpoints: [{ path: '/:id/profile-gallery', method: 'post', handler: platformClinicGalleryAppendHandler }],
   admin: {
     group: 'Clinics',
     description: 'Clinic images and files',
@@ -84,6 +86,11 @@ export const ClinicMedia: CollectionConfig = {
     stableIdField(),
     buildMediaAltField({ required: false }),
     buildMediaCaptionField(),
+    {
+      name: 'addToClinicGallery',
+      type: 'ui',
+      admin: { components: { Field: '@/app/(payload)/components/ClinicMediaGalleryAction#ClinicMediaGalleryAction' } },
+    },
     {
       name: 'status',
       type: 'select',

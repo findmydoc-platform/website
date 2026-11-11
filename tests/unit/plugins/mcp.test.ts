@@ -68,4 +68,59 @@ describe('MCP principal authorization', () => {
     expect(mcpReadCollectionSlugs).not.toContain('clinicGalleryEntries')
     expect(mcpReadCollectionSlugs).not.toContain('clinicGalleryMedia')
   })
+
+  it('requires an explicit key grant for the clinic trash tool', async () => {
+    const config = await createMcpPlugin()({ collections: [] } as unknown as Config)
+    const collection = config.collections?.find(({ slug }) => slug === 'payload-mcp-api-keys')
+    expect(collection?.fields).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          fields: expect.arrayContaining([
+            expect.objectContaining({
+              name: 'payload-mcp-tool',
+              fields: expect.arrayContaining([
+                expect.objectContaining({ name: 'trashClinic', defaultValue: false }),
+                expect.objectContaining({ name: 'trashDoctor', defaultValue: false }),
+                expect.objectContaining({ name: 'deleteClinicTreatment', defaultValue: false }),
+                expect.objectContaining({ name: 'deleteDoctorTreatment', defaultValue: false }),
+                expect.objectContaining({ name: 'deleteDoctorSpecialty', defaultValue: false }),
+                expect.objectContaining({ name: 'publishClinicGalleryImage', defaultValue: false }),
+                expect.objectContaining({ name: 'uploadClinicGalleryImage', defaultValue: false }),
+                expect.objectContaining({ name: 'readClinicGallery', defaultValue: false }),
+                expect.objectContaining({ name: 'saveClinicGallery', defaultValue: false }),
+                expect.objectContaining({ name: 'uploadDoctorImage', defaultValue: false }),
+                expect.objectContaining({ name: 'updateDoctorImage', defaultValue: false }),
+                expect.objectContaining({ name: 'deleteDoctorImage', defaultValue: false }),
+                expect.objectContaining({ name: 'deleteClinicImage', defaultValue: false }),
+              ]),
+            }),
+          ]),
+        }),
+      ]),
+    )
+  })
+
+  it.each(['clinics', 'doctors', 'clinictreatments', 'doctortreatments', 'doctorspecialties'])(
+    'offers %s create and update permissions that are disabled by default for each MCP key',
+    async (slug) => {
+      const config = await createMcpPlugin()({ collections: [] } as unknown as Config)
+      const collection = config.collections?.find(({ slug }) => slug === 'payload-mcp-api-keys')
+
+      expect(collection?.fields).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            fields: expect.arrayContaining([
+              expect.objectContaining({
+                name: slug,
+                fields: expect.arrayContaining([
+                  expect.objectContaining({ name: 'create', defaultValue: false }),
+                  expect.objectContaining({ name: 'update', defaultValue: false }),
+                ]),
+              }),
+            ]),
+          }),
+        ]),
+      )
+    },
+  )
 })

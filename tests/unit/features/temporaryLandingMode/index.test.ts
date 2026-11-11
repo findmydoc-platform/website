@@ -47,7 +47,8 @@ describe('temporaryLandingMode feature', () => {
     expect(isTemporaryLandingPublicExemptPath('/posts/page/2/extra')).toBe(false)
   })
 
-  it('keeps the indexable surface limited to blog and its discovery files', () => {
+  it('keeps the indexable surface limited to root, blog, and their discovery files', () => {
+    expect(isTemporaryLandingIndexablePath('/')).toBe(true)
     expect(isTemporaryLandingIndexablePath('/posts')).toBe(true)
     expect(isTemporaryLandingIndexablePath('/posts/example')).toBe(true)
     expect(isTemporaryLandingIndexablePath('/posts/page/2')).toBe(true)
@@ -56,7 +57,10 @@ describe('temporaryLandingMode feature', () => {
     expect(isTemporaryLandingIndexablePath('/posts-sitemap.xml')).toBe(true)
     expect(isTemporaryLandingIndexablePath('/contact')).toBe(false)
     expect(isTemporaryLandingIndexablePath('/sitemap.xml')).toBe(false)
-    expect(isTemporaryLandingPublicDiscoveryPath('/llms.txt')).toBe(false)
+    expect(isTemporaryLandingPublicDiscoveryPath('/llms.txt')).toBe(true)
+    expect(isTemporaryLandingPublicDiscoveryPath('/.well-known/llms.txt')).toBe(true)
+    expect(isTemporaryLandingPublicDiscoveryPath('/.well-known/private')).toBe(false)
+    expect(isTemporaryLandingPublicDiscoveryPath('/llms.txt/private')).toBe(false)
   })
 
   it('recognizes temporary landing root paths', () => {

@@ -66,9 +66,38 @@ analytics consent is absent; only PostHog event capture is skipped.
 
 The repository registers the server-side PostHog flag `temporary-landing-mode` for public Holding mode.
 It is evaluated through `evaluatePostHogFlags()` with a stable host actor and the `feature_flag_site_host`
-person property. An evaluated boolean selects Holding or Full. Unavailable or invalid evaluation uses
+person property. The `feature_flag_environment` person property uses the existing server runtime classification:
+`production`, `preview`, `development`, or `test`. `VERCEL_ENV` takes precedence over `DEPLOYMENT_ENVIRONMENT`;
+without a recognized deployment environment, `NODE_ENV=test` selects `test` and other values select `development`.
+The request hostname does not determine the environment. Both properties are available without analytics consent.
+With valid analytics consent, request evaluation also supplies the existing browser distinct ID as `feature_flag_browser_id`, the verified Supabase user ID as `feature_flag_user_id`, and the verified `app_metadata.user_type` as `feature_flag_user_type`. Missing or ineligible attributes are empty strings. The user types are `patient`, `clinic`, and `platform`; client-controlled user metadata is not used. An evaluated boolean selects Holding or Full. Unavailable or invalid evaluation uses
 `PUBLIC_SITE_FALLBACK_MODE`; missing or invalid fallback configuration selects Holding. Browser-side
 feature-flag evaluation is disabled.
+
+For an environment-specific Holding condition, add `feature_flag_environment` with operator **equals** and one of
+the supported values alongside the host condition. The condition then applies only when both properties match.
+Keep existing host conditions unchanged when no environment restriction is intended. The actor remains host-based,
+so adding the environment property alone does not change existing host rollout assignments. Public discovery uses
+these host and environment properties without browser or user selection on all canonical discovery paths.
+
+To release a browser on a Holding host, first obtain its distinct ID from its own browser after allowing analytics.
+In DevTools, inspect the `ph_phc_*_posthog` cookie and copy `distinct_id` from its decoded JSON. The first
+request before the SDK creates this cookie still uses the host decision. Do not share the cookie or its other contents.
+
+Edit the existing `temporary-landing-mode` boolean flag in PostHog. In each Holding condition for the relevant host,
+add the person property `feature_flag_browser_id` with operator **is not** and the selected ID or list of IDs. Keep
+the host condition and its existing rollout percentage. This excludes selected browsers from that Holding condition,
+so they receive false (Full), while other browsers and requests without an ID still match the host condition. Conditions
+are ORed: another matching Holding condition can override the exclusion, so update each applicable condition. Local
+evaluation requires properties supplied by the application; remote person profiles and unsupported rules cannot be
+assumed available. Keep the host actor and avoid changing rollout percentages, which would change existing assignments.
+
+To release signed-in users, add `feature_flag_user_id` **is not** with the selected verified Supabase user IDs to each applicable Holding condition. To release a user category, add `feature_flag_user_type` **is not** with the selected types. Add these properties to the same condition as the browser exclusion: all properties in that condition must match, so any selected browser, user ID, or user type receives Full. Other matching Holding conditions still take precedence. User selection requires analytics consent and successful server-side authentication. It works without a browser identifier; an eligible browser remains released after sign-in or an authentication outage. Signing out ends user selection, and the existing logout identity reset replaces the browser identifier.
+
+Verify the selected browser after a new request, and check a separate browser without the ID on the same host. Verify
+that withdrawing consent restores the host mode. Check a selected signed-in user and an unmatched user, then sign out and check again. Remove an ID or type from every applicable exclusion to revoke its release.
+Definition changes normally take several minutes to propagate; an outage can extend use of older definitions. Existing
+open pages do not update automatically. A flag is not an authorization mechanism.
 
 ### Browser consent lifecycle
 

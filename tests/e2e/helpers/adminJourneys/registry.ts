@@ -1,5 +1,6 @@
 import type { AdminJourneyDefinition } from './types'
 import { clinicApprovalJourney, clinicCreateDraftJourney } from './journeys/clinics'
+import { clinicGalleryJourney } from './journeys/clinicGallery'
 import { clinicApplicationLifecycleJourney, clinicStaffLifecycleJourney } from './journeys/clinicLifecycle'
 import { reviewPatientValidationJourney } from './journeys/reviews'
 import { relationshipEligibilityJourney } from './journeys/relationshipEligibility'
@@ -25,6 +26,7 @@ export const adminJourneyRegistry = {
   'admin.clinic-staff.lifecycle-guidance': clinicStaffLifecycleJourney,
   'admin.clinics.approve-pending': clinicApprovalJourney,
   'admin.clinics.create-draft': clinicCreateDraftJourney,
+  'admin.clinic-media.add-to-gallery': clinicGalleryJourney,
   'admin.clinictreatments.create-link': clinicTreatmentLinkJourney,
   'admin.doctorspecialties.create-link': doctorSpecialtyLinkJourney,
   'admin.doctortreatments.create-link': doctorTreatmentLinkJourney,

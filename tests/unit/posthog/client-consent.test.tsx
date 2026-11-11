@@ -198,7 +198,7 @@ describe('browser consent with the installed PostHog SDK', () => {
         <CookieConsentClientAdapter config={DEFAULT_COOKIE_CONSENT_CONFIG} initialConsent={null} />
       </React.StrictMode>,
     )
-    fireEvent.click(screen.getAllByRole('button', { name: 'Choose Treatment' })[0]!)
+    expect(screen.queryByRole('button', { name: 'Choose Treatment' })).not.toBeInTheDocument()
     expect(events).toEqual([])
     fireEvent.click(screen.getByRole('button', { name: 'Accept all' }))
     expect(events.filter((name) => name === 'clinic_profile_viewed')).toHaveLength(1)

@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { readAdminCredentialsFromEnv, toFixedAdminAccessError } from '../helpers/adminSession'
 import { createBrowserIssueCollector, expectNoBrowserIssues, loginToAdmin } from '../helpers/adminUI'
+import { setCookieConsent } from '../helpers/cookieConsent'
 import { E2E_ADMIN_SESSION_FILE } from '../helpers/paths'
 import { ensurePlatformAdminPayloadUser } from '../helpers/platformAdminPayloadUser'
 
@@ -9,6 +10,7 @@ test('records reusable admin session state for the fixed platform admin @smoke',
   const issues = createBrowserIssueCollector(page)
 
   try {
+    await setCookieConsent(page.context())
     await ensurePlatformAdminPayloadUser(credentials)
     await loginToAdmin(page, credentials)
     await expect(page.getByRole('link', { name: 'Clinics' }).first()).toBeVisible()

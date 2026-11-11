@@ -99,6 +99,18 @@ export const Banner: Story = {
     config: DEFAULT_COOKIE_CONSENT_CONFIG,
     initialConsent: null,
   },
+  play: async ({ canvasElement }) => {
+    const body = within(canvasElement.ownerDocument.body)
+    const settings = body.getByRole('button', { name: /^(Settings|Einstellungen)$/ })
+    await expect(settings.innerText).toBe('')
+    for (let step = 0; step < 8 && settings !== canvasElement.ownerDocument.activeElement; step += 1) {
+      await userEvent.tab()
+    }
+    await expect(settings).toHaveFocus()
+    await expect(body.getByRole('tooltip')).toBeVisible()
+    await userEvent.tab()
+    await expect(body.queryByRole('tooltip')).not.toBeInTheDocument()
+  },
   render: () => (
     <CookieConsentBanner
       ready

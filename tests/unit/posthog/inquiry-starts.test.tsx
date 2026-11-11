@@ -73,7 +73,12 @@ async function mountInquiry(phoneNumber?: string) {
       <CookieConsentClientAdapter config={DEFAULT_COOKIE_CONSENT_CONFIG} initialConsent={null} />
     </>,
   )
-  return { starts, sdk, view, form: within(screen.getByRole('form', { name: 'Clinic appointment request' })) }
+  return {
+    starts,
+    sdk,
+    view,
+    form: within(screen.getByRole('form', { name: 'Clinic appointment request', hidden: true })),
+  }
 }
 
 describe('inquiry starts through the rendered clinic form and installed SDK', () => {
@@ -214,7 +219,7 @@ describe('inquiry starts through the rendered clinic form and installed SDK', ()
 
   it('does not replay edits after consent and keeps later-period edits on the mounted browser', async () => {
     const { form, starts, sdk } = await mountInquiry()
-    const message = form.getByRole('textbox', { name: 'Message' })
+    const message = form.getByRole('textbox', { name: 'Message', hidden: true })
     fireEvent.input(message, { target: { value: 'before consent' }, inputType: 'insertText' })
     fireEvent.click(screen.getByRole('button', { name: 'Accept all' }))
     expect(starts).toHaveLength(0)

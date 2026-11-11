@@ -108,6 +108,7 @@ import * as migration_20261107_123538_settle_inquiry_attempts from './20261107_1
 import * as migration_20261108_230722_clinic_profile_mcp_permissions from './20261108_230722_clinic_profile_mcp_permissions'
 import * as migration_20261109_005746_clinic_group_mcp_read from './20261109_005746_clinic_group_mcp_read'
 import * as migration_20261109_100853_read_doctor_image_mcp from './20261109_100853_read_doctor_image_mcp'
+import * as migration_20261111_092853_align_localized_parent_indexes from './20261111_092853_align_localized_parent_indexes'
 
 export const migrations = [
   {
@@ -659,5 +660,10 @@ export const migrations = [
     up: migration_20261109_100853_read_doctor_image_mcp.up,
     down: migration_20261109_100853_read_doctor_image_mcp.down,
     name: '20261109_100853_read_doctor_image_mcp',
+  },
+  {
+    up: migration_20261111_092853_align_localized_parent_indexes.up,
+    down: migration_20261111_092853_align_localized_parent_indexes.down,
+    name: '20261111_092853_align_localized_parent_indexes',
   },
 ]

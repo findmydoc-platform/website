@@ -83,7 +83,7 @@ test('legal pages open before consent without a modal trap and ordinary routes s
     await legal.waitForLoadState('domcontentloaded')
     await expect(legal.getByRole('button', { name: 'Cookie settings', exact: true })).toBeVisible()
     await expect(legal.getByRole('dialog')).toBeHidden()
-    await expect(legal.getByRole('heading', { level: 1 }).first()).toBeVisible()
+    await expect(legal.getByRole('heading', { name: label, exact: true })).toBeVisible()
     expect((await context.cookies()).find((cookie) => cookie.name === COOKIE_CONSENT_COOKIE_NAME)).toBeUndefined()
     await legal.goto('/login/patient')
     await expect(legal.getByRole('dialog', { name: promptTitle })).toBeVisible()

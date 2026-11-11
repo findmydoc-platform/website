@@ -7,6 +7,7 @@ import { CookieConsentDialog } from '@/components/organisms/CookieConsent/Cookie
 import { CookieConsentLauncher } from '@/components/organisms/CookieConsent/CookieConsentLauncher.client'
 import { CookieConsentManager } from '@/components/organisms/CookieConsent/CookieConsentManager.client'
 import { DEFAULT_COOKIE_CONSENT_CONFIG, type CookieConsentState } from '@/features/cookieConsent'
+import { APPROVED_COOKIE_CONSENT_PROMPT } from '@/features/cookieConsent/promptCopy'
 import { withViewportStory } from '@/stories/utils/viewportMatrix'
 
 function PersistentConsentManager(props: React.ComponentProps<typeof CookieConsentManager>) {
@@ -105,6 +106,19 @@ export const Banner: Story = {
       onAcceptAll={() => {}}
       onCustomize={() => {}}
       onRejectAll={() => {}}
+    />
+  ),
+}
+
+export const BannerGermanCopy: Story = {
+  ...Banner,
+  render: () => (
+    <CookieConsentBanner
+      ready
+      config={{ ...DEFAULT_COOKIE_CONSENT_CONFIG, banner: APPROVED_COOKIE_CONSENT_PROMPT.de }}
+      onAcceptAll={fn()}
+      onCustomize={fn()}
+      onRejectAll={fn()}
     />
   ),
 }

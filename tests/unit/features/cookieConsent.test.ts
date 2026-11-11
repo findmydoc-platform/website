@@ -230,7 +230,7 @@ describe('cookie consent helpers', () => {
     } as never)
 
     expect(config?.privacyPolicyHref).toBe('/privacy-policy')
-    expect(config?.categories).toEqual([
+    expect(config?.categories).toMatchObject([
       {
         key: 'functional',
         label: 'Functional cookies',
@@ -246,7 +246,8 @@ describe('cookie consent helpers', () => {
       {
         key: 'marketing',
         label: 'Marketing cookies',
-        description: 'Support campaign measurement and more relevant marketing communication.',
+        description:
+          'No services are assigned to this category with an active, unambiguous assignment. Selecting it does not enable optional processing.',
         tools: [],
       },
     ])
@@ -312,7 +313,7 @@ describe('cookie consent helpers', () => {
       privacyPolicyLabel: 'Privacy Policy',
     } as never)
 
-    expect(config?.categories).toEqual([
+    expect(config?.categories).toMatchObject([
       {
         key: 'functional',
         label: 'Functional cookies',

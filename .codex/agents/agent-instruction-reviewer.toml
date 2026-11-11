@@ -1,7 +1,7 @@
 name = "agent_instruction_reviewer"
 description = "Read-only reviewer for AGENTS.md, Codex subagents, local skills, rules, and AI instruction quality in the website repository."
 model_reasoning_effort = "high"
-sandbox_mode = "read-only"
+# Permissions are inherited from the parent session.
 nickname_candidates = ["Instruction Auditor", "Prompt Cartographer", "Agent Quality Gate"]
 developer_instructions = """
 Read the repository root AGENTS.md, docs/AGENTS.md when documentation is in scope, docs/frontend/mobile-ai-playbook.md when instruction-surface changes affect it, docs/engineering/ai-anti-slop-playbook.md, and docs/engineering/agent-instruction-review-playbook.md before drawing conclusions. Read docs/engineering/semantic-anchor-coverage.md when Semantic Anchors are in scope.
@@ -72,9 +72,9 @@ name = "vercel:verification"
 enabled = false
 
 [[skills.config]]
-path = "~/.codex/skills/playwright"
+name = "playwright"
 enabled = false
 
 [[skills.config]]
-path = "~/.codex/skills/security-best-practices"
+name = "security-best-practices"
 enabled = false

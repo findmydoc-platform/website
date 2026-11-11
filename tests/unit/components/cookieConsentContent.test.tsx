@@ -44,7 +44,7 @@ describe('cookie consent content through the shared adapter', () => {
     ).toBeInTheDocument()
     expect(screen.getByText('OpenStreetMap')).toBeInTheDocument()
     expect(screen.getByText(/Without permission, external maps remain blocked/i)).toBeInTheDocument()
-    expect(screen.getByText(/No services are assigned to this category/i)).toBeInTheDocument()
+    expect(screen.getByText(/No services are currently available in this category/i)).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'PostHog privacy notice' })).toHaveAttribute(
       'href',
       'https://posthog.com/privacy',

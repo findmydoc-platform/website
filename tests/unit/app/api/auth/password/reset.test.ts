@@ -10,7 +10,11 @@ vi.mock('payload', async (load) => ({
 vi.mock('@/auth/actions/passwordRecoveryRequests', () => ({ requestPasswordRecovery: mocks.request }))
 vi.mock('@/auth/actions/recoveryContext', () => ({ websiteRecoveryContext: mocks.context }))
 function request(body: unknown) {
-  return new NextRequest('https://example.test/api/auth/password/reset', { method: 'POST', body: JSON.stringify(body) })
+  return new NextRequest('https://example.test/api/auth/password/reset', {
+    method: 'POST',
+    headers: { Cookie: 'synthetic-context=origin' },
+    body: JSON.stringify(body),
+  })
 }
 beforeEach(() => {
   vi.resetAllMocks()
@@ -26,7 +30,11 @@ describe('Website recovery public response', () => {
     expect(response.status).toBe(200)
     expect(response.headers.get('cache-control')).toBe('no-store')
     expect(await response.json()).toEqual({ success: true })
-    expect(mocks.request).toHaveBeenCalledWith({ user: null }, { email: 'person@example.test', context })
+    expect(mocks.request).toHaveBeenCalledWith(expect.objectContaining({ user: null, headers: expect.any(Headers) }), {
+      email: 'person@example.test',
+      context,
+    })
+    expect(mocks.request.mock.calls[0]?.[0].headers.get('cookie')).toBe('synthetic-context=origin')
   })
   it.each(['missing', 'limited', 'inactive', 'private infrastructure detail'])(
     'acknowledges %s without account disclosure',

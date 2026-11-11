@@ -101,6 +101,7 @@ export interface Config {
     inquiryLegalHolds: InquiryLegalHold;
     inquiryDeletionProofs: InquiryDeletionProof;
     inquiryCommandLocks: InquiryCommandLock;
+    inquiryPreparations: InquiryPreparation;
     clinicNotificationOccurrences: ClinicNotificationOccurrence;
     clinicNotificationReadReceipts: ClinicNotificationReadReceipt;
     clinicNotificationControls: ClinicNotificationControl;
@@ -188,6 +189,7 @@ export interface Config {
     inquiryLegalHolds: InquiryLegalHoldsSelect<false> | InquiryLegalHoldsSelect<true>;
     inquiryDeletionProofs: InquiryDeletionProofsSelect<false> | InquiryDeletionProofsSelect<true>;
     inquiryCommandLocks: InquiryCommandLocksSelect<false> | InquiryCommandLocksSelect<true>;
+    inquiryPreparations: InquiryPreparationsSelect<false> | InquiryPreparationsSelect<true>;
     clinicNotificationOccurrences: ClinicNotificationOccurrencesSelect<false> | ClinicNotificationOccurrencesSelect<true>;
     clinicNotificationReadReceipts: ClinicNotificationReadReceiptsSelect<false> | ClinicNotificationReadReceiptsSelect<true>;
     clinicNotificationControls: ClinicNotificationControlsSelect<false> | ClinicNotificationControlsSelect<true>;
@@ -1427,7 +1429,7 @@ export interface ClinicStaff {
    */
   assignmentScope?: ('local' | 'group' | 'unassigned') | null;
   /**
-   * Group for group scope. Clear the clinic when selecting a group.
+   * Required for group scope. Clear the clinic when selecting a group.
    */
   group?: (number | null) | ClinicGroup;
   personalGroupInvitation?: {
@@ -3229,6 +3231,83 @@ export interface InquiryCommandLock {
   key: string;
 }
 /**
+ * Private authorized inquiries awaiting account completion.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "inquiryPreparations".
+ */
+export interface InquiryPreparation {
+  id: number;
+  environment: 'local' | 'test' | 'ci' | 'preview' | 'production';
+  reference: string;
+  submissionKey: string;
+  originAttemptKey: string;
+  groupBinding: string;
+  authorizedAt: string;
+  expiresAt: string;
+  firstAttemptAt?: string | null;
+  lastAttemptKey?: string | null;
+  lastAttemptSettledAt?: string | null;
+  passwordEstablishedAt?: string | null;
+  subject?: string | null;
+  patient?: (number | null) | Patient;
+  authAction?: (number | null) | AuthAction;
+  submittedInquiry?: (number | null) | PatientClinicInquiry;
+  clinic?: (number | null) | Clinic;
+  doctor?: (number | null) | Doctor;
+  treatment?: (number | null) | Treatment;
+  firstName?: string | null;
+  lastName?: string | null;
+  email?: string | null;
+  phoneNumber?: string | null;
+  message?: string | null;
+  preferredContactWindow?: string | null;
+  treatmentTimeline?: string | null;
+  consentText?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Read-only authentication lifecycle diagnostics without credentials or recipient content.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "authActions".
+ */
+export interface AuthAction {
+  id: number;
+  actionType:
+    'patient-verification' | 'clinic-invitation' | 'patient-recovery' | 'clinic-recovery' | 'platform-recovery';
+  environment: 'local' | 'test' | 'ci' | 'preview' | 'production';
+  state: 'pending' | 'active' | 'confirmed' | 'completed' | 'superseded' | 'expired' | 'revoked';
+  expiresAt: string;
+  terminalAt?: string | null;
+  outcomeCode?: ('ineligible' | 'source-unavailable' | 'recipient-changed' | 'superseded') | null;
+  supabaseTokenType: 'magiclink' | 'invite' | 'recovery';
+  principal?:
+    | ({
+        relationTo: 'patients';
+        value: number | Patient;
+      } | null)
+    | ({
+        relationTo: 'clinicStaff';
+        value: number | ClinicStaff;
+      } | null)
+    | ({
+        relationTo: 'platformStaff';
+        value: number | PlatformStaff;
+      } | null);
+  principalBoundAt?: string | null;
+  supabaseSubject?: string | null;
+  subjectBoundAt?: string | null;
+  correlationDigest?: string | null;
+  correlationKeyVersion?: string | null;
+  callbackDestination: 'website-auth-callback' | 'clinic-dashboard-auth-callback';
+  completionRoute: '/patient/inquiries' | '/auth/invite/complete' | '/auth/password/reset/complete';
+  finalDestination: 'patient-inquiries' | 'clinic-dashboard' | 'platform-administration';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Immutable clinic events with independent ninety-day retention
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -3584,46 +3663,6 @@ export interface ReviewAppeal {
   createdAt: string;
 }
 /**
- * Read-only authentication lifecycle diagnostics without credentials or recipient content.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "authActions".
- */
-export interface AuthAction {
-  id: number;
-  actionType:
-    'patient-verification' | 'clinic-invitation' | 'patient-recovery' | 'clinic-recovery' | 'platform-recovery';
-  environment: 'local' | 'test' | 'ci' | 'preview' | 'production';
-  state: 'pending' | 'active' | 'confirmed' | 'completed' | 'superseded' | 'expired' | 'revoked';
-  expiresAt: string;
-  terminalAt?: string | null;
-  outcomeCode?: ('ineligible' | 'source-unavailable' | 'recipient-changed' | 'superseded') | null;
-  supabaseTokenType: 'magiclink' | 'invite' | 'recovery';
-  principal?:
-    | ({
-        relationTo: 'patients';
-        value: number | Patient;
-      } | null)
-    | ({
-        relationTo: 'clinicStaff';
-        value: number | ClinicStaff;
-      } | null)
-    | ({
-        relationTo: 'platformStaff';
-        value: number | PlatformStaff;
-      } | null);
-  principalBoundAt?: string | null;
-  supabaseSubject?: string | null;
-  subjectBoundAt?: string | null;
-  correlationDigest?: string | null;
-  correlationKeyVersion?: string | null;
-  callbackDestination: 'website-auth-callback' | 'clinic-dashboard-auth-callback';
-  completionRoute: '/patient/inquiries' | '/auth/invite/complete' | '/auth/password/reset/complete';
-  finalDestination: 'patient-inquiries' | 'clinic-dashboard' | 'platform-administration';
-  updatedAt: string;
-  createdAt: string;
-}
-/**
  * Short-lived private abuse counters for password recovery. No recipient or IP content.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -3800,10 +3839,44 @@ export interface PayloadMcpApiKey {
      * Allow clients to find clinics.
      */
     find?: boolean | null;
+    /**
+     * Allow clients to create clinics.
+     */
+    create?: boolean | null;
+    /**
+     * Allow clients to update clinics.
+     */
+    update?: boolean | null;
+  };
+  clinicGroups?: {
+    /**
+     * Allow clients to find clinicGroups.
+     */
+    find?: boolean | null;
   };
   doctors?: {
     /**
      * Allow clients to find doctors.
+     */
+    find?: boolean | null;
+    /**
+     * Allow clients to create doctors.
+     */
+    create?: boolean | null;
+    /**
+     * Allow clients to update doctors.
+     */
+    update?: boolean | null;
+  };
+  clinicMedia?: {
+    /**
+     * Allow clients to find clinicMedia.
+     */
+    find?: boolean | null;
+  };
+  doctorMedia?: {
+    /**
+     * Allow clients to find doctorMedia.
      */
     find?: boolean | null;
   };
@@ -3902,24 +3975,106 @@ export interface PayloadMcpApiKey {
      * Allow clients to find clinictreatments.
      */
     find?: boolean | null;
+    /**
+     * Allow clients to create clinictreatments.
+     */
+    create?: boolean | null;
+    /**
+     * Allow clients to update clinictreatments.
+     */
+    update?: boolean | null;
   };
   doctortreatments?: {
     /**
      * Allow clients to find doctortreatments.
      */
     find?: boolean | null;
+    /**
+     * Allow clients to create doctortreatments.
+     */
+    create?: boolean | null;
+    /**
+     * Allow clients to update doctortreatments.
+     */
+    update?: boolean | null;
   };
   doctorspecialties?: {
     /**
      * Allow clients to find doctorspecialties.
      */
     find?: boolean | null;
+    /**
+     * Allow clients to create doctorspecialties.
+     */
+    create?: boolean | null;
+    /**
+     * Allow clients to update doctorspecialties.
+     */
+    update?: boolean | null;
   };
   reviews?: {
     /**
      * Allow clients to find reviews.
      */
     find?: boolean | null;
+  };
+  'payload-mcp-tool'?: {
+    /**
+     * Move one Clinic to the trash using the current staff member’s access rights.
+     */
+    trashClinic?: boolean | null;
+    /**
+     * Move one Doctor to the trash using the current staff member’s access rights.
+     */
+    trashDoctor?: boolean | null;
+    /**
+     * Delete one Clinic treatment link using the current staff member’s access rights.
+     */
+    deleteClinicTreatment?: boolean | null;
+    /**
+     * Delete one Doctor treatment link using the current staff member’s access rights.
+     */
+    deleteDoctorTreatment?: boolean | null;
+    /**
+     * Delete one Doctor specialty link using the current staff member’s access rights.
+     */
+    deleteDoctorSpecialty?: boolean | null;
+    /**
+     * Add one owned clinic image to its clinic profile gallery.
+     */
+    publishClinicGalleryImage?: boolean | null;
+    /**
+     * Upload a clinic-owned draft image for its profile gallery.
+     */
+    uploadClinicGalleryImage?: boolean | null;
+    /**
+     * Upload an image owned by one doctor.
+     */
+    uploadDoctorImage?: boolean | null;
+    /**
+     * Read a doctor-owned image as base64 bytes and a MIME type.
+     */
+    readDoctorImage?: boolean | null;
+    /**
+     * Update the alternative text of a doctor-owned image.
+     */
+    updateDoctorImage?: boolean | null;
+    /**
+     * Permanently delete one unreferenced image using the current staff member’s access rights.
+     */
+    deleteClinicImage?: boolean | null;
+    /**
+     * Permanently delete one unreferenced image using the current staff member’s access rights.
+     */
+    deleteDoctorImage?: boolean | null;
+    /**
+     * Read the ordered gallery and revision, or pass a gallery media ID to receive its base64 image and MIME type.
+     */
+    readClinicGallery?: boolean | null;
+    /**
+     * Save the ordered clinic gallery using its current revision.
+     */
+    saveClinicGallery?: boolean | null;
   };
   updatedAt: string;
   createdAt: string;
@@ -5637,6 +5792,40 @@ export interface InquiryCommandLocksSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "inquiryPreparations_select".
+ */
+export interface InquiryPreparationsSelect<T extends boolean = true> {
+  environment?: T;
+  reference?: T;
+  submissionKey?: T;
+  originAttemptKey?: T;
+  groupBinding?: T;
+  authorizedAt?: T;
+  expiresAt?: T;
+  firstAttemptAt?: T;
+  lastAttemptKey?: T;
+  lastAttemptSettledAt?: T;
+  passwordEstablishedAt?: T;
+  subject?: T;
+  patient?: T;
+  authAction?: T;
+  submittedInquiry?: T;
+  clinic?: T;
+  doctor?: T;
+  treatment?: T;
+  firstName?: T;
+  lastName?: T;
+  email?: T;
+  phoneNumber?: T;
+  message?: T;
+  preferredContactWindow?: T;
+  treatmentTimeline?: T;
+  consentText?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "clinicNotificationOccurrences_select".
  */
 export interface ClinicNotificationOccurrencesSelect<T extends boolean = true> {
@@ -6373,8 +6562,27 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
     | T
     | {
         find?: T;
+        create?: T;
+        update?: T;
+      };
+  clinicGroups?:
+    | T
+    | {
+        find?: T;
       };
   doctors?:
+    | T
+    | {
+        find?: T;
+        create?: T;
+        update?: T;
+      };
+  clinicMedia?:
+    | T
+    | {
+        find?: T;
+      };
+  doctorMedia?:
     | T
     | {
         find?: T;
@@ -6430,21 +6638,45 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
     | T
     | {
         find?: T;
+        create?: T;
+        update?: T;
       };
   doctortreatments?:
     | T
     | {
         find?: T;
+        create?: T;
+        update?: T;
       };
   doctorspecialties?:
     | T
     | {
         find?: T;
+        create?: T;
+        update?: T;
       };
   reviews?:
     | T
     | {
         find?: T;
+      };
+  'payload-mcp-tool'?:
+    | T
+    | {
+        trashClinic?: T;
+        trashDoctor?: T;
+        deleteClinicTreatment?: T;
+        deleteDoctorTreatment?: T;
+        deleteDoctorSpecialty?: T;
+        publishClinicGalleryImage?: T;
+        uploadClinicGalleryImage?: T;
+        uploadDoctorImage?: T;
+        readDoctorImage?: T;
+        updateDoctorImage?: T;
+        deleteClinicImage?: T;
+        deleteDoctorImage?: T;
+        readClinicGallery?: T;
+        saveClinicGallery?: T;
       };
   updatedAt?: T;
   createdAt?: T;
@@ -7672,6 +7904,7 @@ export interface TaskCreateCollectionExport {
       | 'inquiryLegalHolds'
       | 'inquiryDeletionProofs'
       | 'inquiryCommandLocks'
+      | 'inquiryPreparations'
       | 'clinicNotificationOccurrences'
       | 'clinicNotificationReadReceipts'
       | 'clinicNotificationControls'

@@ -13,6 +13,11 @@
 
 - Stable command guardrails live in `.codex/rules/`; Codex hooks are intentionally not part of the v1 repo-local Codex setup.
 
+## Documentation scope
+
+- Document supported behavior and durable technical decisions in the repository. Keep task plans, investigation reports, execution chronology and cleanup evidence in the relevant issue or pull request; commit such documentation only when the user explicitly requests an exception.
+- This rule does not remove Git history, product audit data, reusable tooling or durable regression tests.
+
 ## Engineering Method Anchors
 
 Use these public methods only for the stated concern. Repository-specific rules in this instruction hierarchy remain authoritative.
@@ -109,7 +114,7 @@ For review outputs:
 - Open or reuse a GitHub Issue before creating a PR.
 - Write the Issue as an existing problem, need, or opportunity; avoid future-tense implementation wording.
 - Use the matching repository issue template as the body skeleton for every new issue and for any issue rewrite.
-- Keep issue bodies lightweight and template-shaped; move deeper implementation detail into a linked doc instead of expanding the issue.
+- Keep issue bodies lightweight and template-shaped. Put task-specific implementation details in issue comments or pull requests; link repository documentation for supported behavior and durable technical decisions.
 - Prefer `.github/ISSUE_TEMPLATE/bug_report.yml` and `.github/ISSUE_TEMPLATE/feature.yml` as the source of truth for section order and wording.
 - Link the Issue in the PR `Development` section before requesting review or merge.
 - Strategic parent planning issues usually live in `findmydoc-platform/management`; implementation issues usually live in `findmydoc-platform/website`; for cross-repository parent/child links, use the global `gh-issue-relationships` skill to set and verify the real GitHub Issue Relationship instead of relying on a body-only link.

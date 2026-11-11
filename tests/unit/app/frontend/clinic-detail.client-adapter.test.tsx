@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import React from 'react'
+import { locks } from 'node:worker_threads'
 import { render } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import type {
   ClinicContactRequestPayload,
@@ -12,10 +13,9 @@ import { ClinicContactRequestError } from '@/features/clinicDetail/contracts'
 
 const mocks = vi.hoisted(() => ({
   clinicDetailComponent: vi.fn((_props: unknown) => null),
-  getConsentedPostHogSessionId: vi.fn(),
   postHogBrowserEvents: {
-    clinicCtaClicked: vi.fn(),
     clinicProfileViewed: vi.fn(),
+    clinicInquiryStarted: vi.fn(() => true),
   },
 }))
 
@@ -24,7 +24,7 @@ vi.mock('@/components/templates/ClinicDetailConcepts', () => ({
 }))
 
 vi.mock('@/posthog/client-api', () => ({
-  getConsentedPostHogSessionId: mocks.getConsentedPostHogSessionId,
+  usePostHogAnalyticsReady: () => true,
   postHogBrowserEvents: mocks.postHogBrowserEvents,
 }))
 
@@ -34,6 +34,9 @@ import {
 } from '@/app/(frontend)/clinics/[slug]/ClinicDetailClientAdapter.client'
 
 const originalFetch = global.fetch
+
+beforeAll(() => Object.defineProperty(navigator, 'locks', { configurable: true, value: locks }))
+afterAll(() => Reflect.deleteProperty(navigator, 'locks'))
 
 const requestPayload: ClinicContactRequestPayload = {
   clinicId: '42',
@@ -55,7 +58,6 @@ describe('ClinicDetailClientAdapter', () => {
     const componentProps = mocks.clinicDetailComponent.mock.calls.at(0)?.[0] as
       | {
           analytics?: {
-            onCtaClicked: (event: Record<string, unknown>) => void
             onProfileViewed: (event: Record<string, unknown>) => void
           }
         }
@@ -69,16 +71,6 @@ describe('ClinicDetailClientAdapter', () => {
       pagePath: '/clinics/test-clinic',
       verificationTier: 'silver',
     })
-    componentProps?.analytics?.onCtaClicked({
-      clinicId: '42',
-      clinicSlug: 'test-clinic',
-      ctaId: 'contact_doctor',
-      ctaLabel: 'Contact Doctor',
-      ctaLocation: 'doctor_card',
-      doctorId: '7',
-      pagePath: '/clinics/test-clinic',
-    })
-
     expect(mocks.postHogBrowserEvents.clinicProfileViewed).toHaveBeenCalledWith({
       clinic_id: '42',
       clinic_slug: 'test-clinic',
@@ -88,20 +80,14 @@ describe('ClinicDetailClientAdapter', () => {
       source_route: 'clinic_detail',
       verification_tier: 'silver',
     })
-    expect(mocks.postHogBrowserEvents.clinicCtaClicked).toHaveBeenCalledWith({
-      clinic_id: '42',
-      clinic_slug: 'test-clinic',
-      cta_id: 'contact_doctor',
-      cta_label: 'Contact Doctor',
-      cta_location: 'doctor_card',
-      doctor_id: '7',
-      page_path: '/clinics/test-clinic',
-      source_route: 'clinic_detail',
-    })
   })
 
   it.each([
-    [false, '/api/clinic-contact-requests', { id: 42 }],
+    [
+      false,
+      '/api/patient/inquiry-preparations',
+      { status: 'saved-not-sent', reference: '42', expiresAt: '2026-11-14T12:00:00.000Z' },
+    ],
     [true, '/api/patient/inquiries', { inquiry: { id: 43 } }],
   ])('submits through the route-owned endpoint for authenticated=%s', async (authenticated, endpoint, responseBody) => {
     const fetchMock = vi.fn(
@@ -124,24 +110,12 @@ describe('ClinicDetailClientAdapter', () => {
 
     await expect(submitContactRequest(requestPayload, authenticated)).resolves.toEqual({
       id: authenticated ? '43' : '42',
+      ...(!authenticated ? { preparation: { reference: '42', expiresAt: '2026-11-14T12:00:00.000Z' } } : {}),
     })
     expect(fetchMock).toHaveBeenCalledWith(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestPayload),
-    })
-  })
-
-  it('sends the bounded session correlation only when consent made it available', async () => {
-    mocks.getConsentedPostHogSessionId.mockReturnValueOnce('session_42')
-    global.fetch = vi.fn(async () => new Response(JSON.stringify({ id: 42 }), { status: 200 }))
-
-    await submitClinicContactRequest(requestPayload, false)
-
-    expect(global.fetch).toHaveBeenCalledWith('/api/clinic-contact-requests', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...requestPayload, session_id: 'session_42' }),
     })
   })
 
@@ -191,7 +165,7 @@ describe('ClinicDetailClientAdapter', () => {
     const result = submitClinicContactRequest(requestPayload, false)
 
     await expect(result).rejects.toMatchObject({
-      message: 'Could not confirm your clinic request.',
+      message: 'Could not confirm your saved inquiry.',
       requiresReauthentication: false,
     } satisfies Partial<ClinicContactRequestError>)
   })

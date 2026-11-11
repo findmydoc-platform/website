@@ -25,6 +25,7 @@ export type CookieConsentController = {
   settingsOpen: boolean
   isBannerVisible: boolean
   isLauncherVisible: boolean
+  isReady: boolean
   acceptAllCategories: CookieConsentCategoryMap
   rejectAllCategories: CookieConsentCategoryMap
   openSettings: () => void
@@ -38,6 +39,7 @@ type UseCookieConsentControllerOptions = {
   initialConsent: CookieConsentState | null
   onAnalyticsConsentChange: (enabled: boolean) => void
   onPersistConsent: (consent: CookieConsentState) => void
+  readConsent: (expectedVersion: number) => CookieConsentState | null
 }
 
 export function useCookieConsentController({
@@ -45,25 +47,40 @@ export function useCookieConsentController({
   initialConsent,
   onAnalyticsConsentChange,
   onPersistConsent,
+  readConsent,
 }: UseCookieConsentControllerOptions): CookieConsentController {
-  const [consent, setConsent] = React.useState<CookieConsentState | null>(initialConsent)
+  const [clientState, setClientState] = React.useState<{
+    version: number | undefined
+    consent: CookieConsentState | null
+  } | null>(null)
+  const isReady = clientState !== null && clientState.version === config?.consentVersion
+  const consent = clientState === null ? initialConsent : isReady ? clientState.consent : null
   const [categoryDrafts, setCategoryDrafts] = React.useState<CookieConsentCategoryMap>(() =>
     buildCategoryDraft(config?.categories ?? [], initialConsent?.categories),
   )
   const [settingsOpen, setSettingsOpen] = React.useState(false)
+  const persistenceFailed = React.useRef(false)
 
   React.useEffect(() => {
-    setConsent(initialConsent)
-    setCategoryDrafts(buildCategoryDraft(config?.categories ?? [], initialConsent?.categories))
-  }, [config?.categories, initialConsent])
+    let currentConsent: CookieConsentState | null = null
+    try {
+      currentConsent = config?.enabled && !persistenceFailed.current ? readConsent(config.consentVersion) : null
+    } catch {
+      // Browser storage can be unavailable. Optional tools remain disabled.
+    }
+    setClientState({ version: config?.consentVersion, consent: currentConsent })
+    setCategoryDrafts(buildCategoryDraft(config?.categories ?? [], currentConsent?.categories))
+  }, [config?.categories, config?.consentVersion, config?.enabled, readConsent])
 
   React.useEffect(() => {
-    onAnalyticsConsentChange(isCookieConsentToolAllowed('posthog', config, consent?.categories))
-  }, [config, consent, onAnalyticsConsentChange])
+    // Reconcile storage before applying a decision, including when the manager remounts.
+    if (clientState === null) return
+    onAnalyticsConsentChange(isReady && isCookieConsentToolAllowed('posthog', config, consent?.categories))
+  }, [clientState, config, consent, isReady, onAnalyticsConsentChange])
 
   const persistConsent = React.useCallback(
     (choice: CookieConsentState['choice'], categories: CookieConsentCategoryMap) => {
-      if (!config?.enabled) {
+      if (!config?.enabled || !isReady) {
         return
       }
 
@@ -73,12 +90,22 @@ export function useCookieConsentController({
         version: config.consentVersion,
       })
 
-      onPersistConsent(nextConsent)
-      setConsent(nextConsent)
-      setCategoryDrafts(buildCategoryDraft(config.categories, nextConsent.categories))
+      let persistedConsent: CookieConsentState | null = null
+      try {
+        onPersistConsent(nextConsent)
+        const storedConsent = readConsent(config.consentVersion)
+        if (JSON.stringify(storedConsent) === JSON.stringify(nextConsent)) {
+          persistedConsent = storedConsent
+        }
+      } catch {
+        // A failed write or read must not enable optional tools.
+      }
+      persistenceFailed.current = persistedConsent === null
+      setClientState({ version: config.consentVersion, consent: persistedConsent })
+      setCategoryDrafts(buildCategoryDraft(config.categories, persistedConsent?.categories))
       setSettingsOpen(false)
     },
-    [config, onPersistConsent],
+    [config, isReady, onPersistConsent, readConsent],
   )
 
   const openSettings = React.useCallback(() => {
@@ -109,6 +136,7 @@ export function useCookieConsentController({
 
   return {
     consent,
+    isReady,
     categoryDrafts,
     settingsOpen,
     isBannerVisible: Boolean(config?.enabled && !consent),

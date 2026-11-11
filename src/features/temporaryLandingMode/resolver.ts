@@ -2,6 +2,7 @@ import {
   createPostHogHoldingEvaluationContext,
   evaluatePostHogFlags,
   resolvePostHogHoldingFlagActor,
+  resolvePostHogHoldingRequestContext,
   type PostHogFlagEvaluation,
 } from '@/posthog/api'
 import { fallbackConsoleLogger } from '@/utilities/logging/consoleLogger'
@@ -71,9 +72,13 @@ const resolveEvaluation = (evaluation: PostHogFlagEvaluation): HoldingModeDecisi
 export const resolveHoldingMode = async (
   url: Pick<URL, 'hostname' | 'href' | 'pathname'>,
   env: HoldingModeEnvironment = process.env,
+  headers?: Headers,
+  getVerifiedUser?: () => Promise<{ id: string; app_metadata: Record<string, unknown> } | null>,
 ): Promise<HoldingModeDecision> => {
-  const context = createPostHogHoldingEvaluationContext({ url })
-  const actor = resolvePostHogHoldingFlagActor(context)
+  const hostContext = createPostHogHoldingEvaluationContext({ url, env })
+  const { actor, context } = headers
+    ? await resolvePostHogHoldingRequestContext({ context: hostContext, headers, getVerifiedUser })
+    : { actor: resolvePostHogHoldingFlagActor(hostContext), context: hostContext }
 
   try {
     const flags = await evaluatePostHogFlags(actor, [FALLBACK_FLAG_KEY], { context })

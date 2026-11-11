@@ -7,9 +7,14 @@ import { Card, CardContent, CardDescription, CardHeader } from '@/components/ato
 import { Heading } from '@/components/atoms/Heading'
 import { UiLink } from '@/components/molecules/Link'
 
-export type PatientVerificationState = 'idle' | 'pending' | 'invalid' | 'retry' | 'completed'
-export function PatientVerificationForm({ csrf }: Readonly<{ csrf: string | null }>) {
-  const [state, setState] = useState<PatientVerificationState>(csrf ? 'idle' : 'invalid')
+export type PatientVerificationState = 'idle' | 'pending' | 'invalid' | 'retry' | 'completed' | 'inquiry-continuation'
+export function PatientVerificationForm({
+  csrf,
+  inquiryContinuationPending = false,
+}: Readonly<{ csrf: string | null; inquiryContinuationPending?: boolean }>) {
+  const [state, setState] = useState<PatientVerificationState>(
+    csrf ? (inquiryContinuationPending ? 'inquiry-continuation' : 'idle') : 'invalid',
+  )
   async function confirm() {
     setState('pending')
     try {
@@ -22,8 +27,11 @@ export function PatientVerificationForm({ csrf }: Readonly<{ csrf: string | null
       })
       const body = await response.json().catch(() => null)
       if (response.ok && body?.redirectTo === '/patient/inquiries') {
-        setState('completed')
-        window.location.assign('/patient/inquiries')
+        if (body.inquiryContinuationPending) setState('inquiry-continuation')
+        else {
+          setState('completed')
+          window.location.assign('/patient/inquiries')
+        }
       } else setState(response.status === 503 ? 'retry' : 'invalid')
     } catch {
       setState('retry')
@@ -62,6 +70,12 @@ export function PatientVerificationView({
             We could not finish right now. Try again here. If your email was confirmed, you do not need another link.
           </Alert>
         ) : null}
+        {state === 'inquiry-continuation' ? (
+          <Alert variant="success" role="status">
+            Your email is verified. Your account is ready. Saved inquiries could not be connected yet. Continue here to
+            resume them.
+          </Alert>
+        ) : null}
         {state === 'completed' ? (
           <Alert variant="success" role="status">
             Your email is verified. Opening your inquiries...
@@ -69,7 +83,13 @@ export function PatientVerificationView({
         ) : null}
         {state !== 'invalid' && state !== 'completed' ? (
           <Button className="w-full" disabled={state === 'pending'} onClick={onConfirm}>
-            {state === 'pending' ? 'Confirming...' : state === 'retry' ? 'Try again' : 'Confirm email'}
+            {state === 'pending'
+              ? 'Confirming...'
+              : state === 'retry'
+                ? 'Try again'
+                : state === 'inquiry-continuation'
+                  ? 'Continue saved inquiries'
+                  : 'Confirm email'}
           </Button>
         ) : null}
         <UiLink

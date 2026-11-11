@@ -48,13 +48,24 @@ async function reconcile(admin: Admin, email: string): Promise<User> {
 /** Internal preparation only. The trusted Auth caller authorizes resends before entering this boundary. */
 export function bindPendingPatientVerification(
   req: PayloadRequest,
-  options: Parameters<typeof bindAuthActions>[1] & { admin: Admin },
+  options: Parameters<typeof bindAuthActions>[1] & {
+    admin: Admin
+    onPasswordEstablished?: (
+      action: Awaited<ReturnType<ReturnType<typeof bindAuthActions>['bindSubject']>>,
+    ) => Promise<void>
+    onSubjectEstablished?: (
+      action: Awaited<ReturnType<ReturnType<typeof bindAuthActions>['bindSubject']>>,
+    ) => Promise<void>
+  },
 ) {
   const actions = bindAuthActions(req, options)
   return Object.freeze({
     async prepareResend(input: { email: string }) {
       const email = normalizeEmail(input.email)
-      const current = await actions.reservePatientVerification({ email })
+      let fresh = false
+      const current = await actions.reservePatientVerification({ email }, () => {
+        fresh = true
+      })
       if (!['pending', 'active'].includes(current.state)) unavailable()
       // Email-only requests never create an identity or replace its password.
       let user: User
@@ -64,19 +75,33 @@ export function bindPendingPatientVerification(
         user = result.data.user
       } else user = await reconcile(options.admin, email).catch(() => unavailable())
       if (current.supabaseSubject && current.supabaseSubject !== user.id) unavailable()
-      if (!current.supabaseSubject && current.state === 'pending')
-        return actions.bindSubject({ id: current.id, supabaseSubject: user.id })
+      if (!current.supabaseSubject && current.state === 'pending') {
+        const bound = await actions.bindSubject({ id: current.id, supabaseSubject: user.id })
+        if (fresh) await options.onSubjectEstablished?.(bound)
+        return bound
+      }
       const action = await actions.reservePatientVerification({ email, resendOf: current.id })
-      return actions.bindSubject({ id: action.id, supabaseSubject: user.id })
+      const bound = await actions.bindSubject({ id: action.id, supabaseSubject: user.id })
+      await options.onSubjectEstablished?.(bound)
+      return bound
     },
     async prepare(input: z.infer<typeof commandSchema>) {
       const parsed = commandSchema.safeParse(input)
       if (!parsed.success) throw new APIError('invalid-command', 400)
       const { password, resendOf } = parsed.data
       const email = normalizeEmail(parsed.data.email)
-      const action = await actions.reservePatientVerification({ email, ...(resendOf == null ? {} : { resendOf }) })
-      if (action.supabaseSubject) return action
+      let fresh = false
+      const action = await actions.reservePatientVerification(
+        { email, ...(resendOf == null ? {} : { resendOf }) },
+        () => {
+          fresh = true
+        },
+      )
+      if (action.supabaseSubject) {
+        return action
+      }
       let user: User | null = null
+      let passwordEstablished = false
       // External identity effects must never run inside an automatically retried database transaction.
       try {
         const result = await options.admin.createUser({
@@ -89,7 +114,10 @@ export function bindPendingPatientVerification(
             ...(parsed.data.lastName ? { last_name: parsed.data.lastName } : {}),
           },
         })
-        if (!result.error && result.data.user && eligible(result.data.user, email)) user = result.data.user
+        if (!result.error && result.data.user && eligible(result.data.user, email)) {
+          user = result.data.user
+          passwordEstablished = true
+        }
       } catch {
         // A missing response does not prove that creation failed. Reconcile without replacing a password.
       }
@@ -101,7 +129,10 @@ export function bindPendingPatientVerification(
         }
       }
       if (!user) unavailable()
-      return actions.bindSubject({ id: action.id, supabaseSubject: user.id })
+      const bound = await actions.bindSubject({ id: action.id, supabaseSubject: user.id })
+      if (passwordEstablished) await options.onPasswordEstablished?.(bound)
+      if (fresh) await options.onSubjectEstablished?.(bound)
+      return bound
     },
   })
 }

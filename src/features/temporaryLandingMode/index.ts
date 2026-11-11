@@ -1,12 +1,25 @@
 export const TEMPORARY_LANDING_MODE_REQUEST_HEADER = 'x-temporary-landing-mode'
 export const PUBLIC_SITE_MODE_REQUEST_HEADER = 'x-public-site-mode'
+export const HOLDING_VIEW_REQUEST_HEADER = 'x-holding-view'
+
+export const readHoldingViewRequestHeader = (headers: Headers): 'standalone' | 'public' | null => {
+  const view = headers.get(HOLDING_VIEW_REQUEST_HEADER)
+  return view === 'standalone' || view === 'public' ? view : null
+}
+
 export const readPublicSiteModeRequestHeader = (headers: Headers): 'full' | 'holding' | null => {
   const mode = headers.get(PUBLIC_SITE_MODE_REQUEST_HEADER)
   return mode === 'full' || mode === 'holding' ? mode : null
 }
 
 const TEMPORARY_LANDING_PUBLIC_EXEMPT_PATHS = new Set(['/privacy-policy', '/imprint', '/contact'])
-const TEMPORARY_LANDING_PUBLIC_DISCOVERY_PATHS = new Set(['/robots.txt', '/pages-sitemap.xml', '/posts-sitemap.xml'])
+const TEMPORARY_LANDING_PUBLIC_DISCOVERY_PATHS = new Set([
+  '/robots.txt',
+  '/pages-sitemap.xml',
+  '/posts-sitemap.xml',
+  '/llms.txt',
+  '/.well-known/llms.txt',
+])
 const TEMPORARY_LANDING_EXEMPT_PATHS = new Set(['/admin', ...TEMPORARY_LANDING_PUBLIC_EXEMPT_PATHS])
 const TEMPORARY_LANDING_EXEMPT_PREFIXES = new Set(['/admin', '/auth', '/login', '/logout', '/register'])
 
@@ -63,6 +76,7 @@ export const isTemporaryLandingIndexablePath = (pathname: string): boolean => {
   }
 
   return (
+    normalizedPath === '/' ||
     normalizedPath === '/posts' ||
     /^\/posts\/page\/[1-9]\d*$/.test(normalizedPath) ||
     /^\/posts\/[^/]+$/.test(normalizedPath)

@@ -2,7 +2,7 @@
 
 import '@testing-library/jest-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 
 import {
   COOKIE_CONSENT_COOKIE_NAME,
@@ -10,8 +10,12 @@ import {
   createCookieConsentState,
   normalizeCookieConsentGlobal,
   parseCookieConsentState,
+  serializeCookieConsentState,
   type CookieConsentConfig,
 } from '@/features/cookieConsent'
+import { renderToString } from 'react-dom/server'
+import { hydrateRoot } from 'react-dom/client'
+
 import { CookieConsentClientAdapter } from '@/features/cookieConsent/CookieConsentClientAdapter.client'
 
 const posthogClientMocks = vi.hoisted(() => ({
@@ -20,10 +24,19 @@ const posthogClientMocks = vi.hoisted(() => ({
 
 vi.mock('@/posthog/client-api', () => ({
   setPostHogAnalyticsConsent: posthogClientMocks.setPostHogAnalyticsConsent,
+  usePostHogAnalyticsReady: () => false,
+  getPostHogBrowserDiagnostics: () => ({
+    analyticsAllowed: false,
+    sdkReady: false,
+    sessionAvailable: false,
+    reason: 'consent_required',
+  }),
 }))
 
+const navigation = vi.hoisted(() => ({ pathname: '/' }))
+
 vi.mock('next/navigation', () => ({
-  usePathname: () => '/',
+  usePathname: () => navigation.pathname,
 }))
 
 const config: CookieConsentConfig = DEFAULT_COOKIE_CONSENT_CONFIG
@@ -34,7 +47,11 @@ function clearConsentCookie() {
 
 describe('CookieConsentManager', () => {
   afterEach(() => {
+    cleanup()
+    vi.restoreAllMocks()
+    Reflect.deleteProperty(document, 'cookie')
     clearConsentCookie()
+    navigation.pathname = '/'
     vi.clearAllMocks()
   })
 
@@ -67,6 +84,103 @@ describe('CookieConsentManager', () => {
     expect(screen.queryByText('Cookies on findmydoc')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Cookie settings' })).toBeInTheDocument()
   })
+
+  it('keeps the current cookie authoritative when server props are refreshed after acceptance', async () => {
+    const view = render(<CookieConsentClientAdapter config={config} initialConsent={null} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Accept all' }))
+    expect(posthogClientMocks.setPostHogAnalyticsConsent).toHaveBeenLastCalledWith(true)
+
+    view.rerender(
+      <CookieConsentClientAdapter
+        config={{ ...config, categories: config.categories.map((category) => ({ ...category })) }}
+        initialConsent={null}
+      />,
+    )
+
+    expect(posthogClientMocks.setPostHogAnalyticsConsent).toHaveBeenLastCalledWith(true)
+    expect(screen.getByRole('button', { name: 'Cookie settings' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Accept all' })).not.toBeInTheDocument()
+  })
+
+  it('requires a new choice when the configured consent version changes', () => {
+    const view = render(<CookieConsentClientAdapter config={config} initialConsent={null} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Accept all' }))
+    view.rerender(<CookieConsentClientAdapter config={{ ...config, consentVersion: 4 }} initialConsent={null} />)
+    expect(posthogClientMocks.setPostHogAnalyticsConsent).toHaveBeenLastCalledWith(false)
+    expect(screen.getByRole('button', { name: 'Accept all' })).toBeEnabled()
+    fireEvent.click(screen.getByRole('button', { name: 'Accept all' }))
+    expect(posthogClientMocks.setPostHogAnalyticsConsent).toHaveBeenLastCalledWith(true)
+    expect(screen.getByRole('button', { name: 'Cookie settings' })).toBeEnabled()
+  })
+
+  it.each(['ignored', 'throws'] as const)('keeps analytics closed when cookie persistence %s', (failure) => {
+    render(<CookieConsentClientAdapter config={config} initialConsent={null} />)
+    vi.spyOn(document, 'cookie', 'set').mockImplementation(() => {
+      if (failure === 'throws') throw new Error('synthetic cookie write failure')
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Accept all' }))
+    expect(posthogClientMocks.setPostHogAnalyticsConsent).toHaveBeenLastCalledWith(false)
+    expect(screen.getByRole('button', { name: 'Accept all' })).toBeInTheDocument()
+  })
+
+  it('keeps analytics closed after a failed withdrawal even when server props refresh', () => {
+    const view = render(<CookieConsentClientAdapter config={config} initialConsent={null} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Accept all' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Cookie settings' }))
+    const failedWrite = vi.spyOn(document, 'cookie', 'set').mockImplementation(() => {})
+    fireEvent.click(screen.getByRole('button', { name: 'Reject all' }))
+    expect(posthogClientMocks.setPostHogAnalyticsConsent).toHaveBeenLastCalledWith(false)
+    view.rerender(
+      <CookieConsentClientAdapter config={{ ...config, categories: [...config.categories] }} initialConsent={null} />,
+    )
+    expect(posthogClientMocks.setPostHogAnalyticsConsent).toHaveBeenLastCalledWith(false)
+    failedWrite.mockRestore()
+    fireEvent.click(screen.getByRole('button', { name: 'Accept all' }))
+    expect(posthogClientMocks.setPostHogAnalyticsConsent).toHaveBeenLastCalledWith(true)
+  })
+
+  it('discards an accepted HTML snapshot when the current cookie is absent', () => {
+    render(
+      <CookieConsentClientAdapter
+        config={config}
+        initialConsent={createCookieConsentState({ choice: 'accepted', categories: { analytics: true }, version: 3 })}
+      />,
+    )
+    expect(posthogClientMocks.setPostHogAnalyticsConsent).not.toHaveBeenCalledWith(true)
+    expect(screen.getByRole('button', { name: 'Accept all' })).toBeEnabled()
+  })
+
+  it.each([
+    ['/', null],
+    ['/login/patient', null],
+    ['/', createCookieConsentState({ choice: 'accepted', categories: { analytics: true }, version: 3 })],
+    ['/login/patient', createCookieConsentState({ choice: 'accepted', categories: { analytics: true }, version: 3 })],
+  ] as const)(
+    'disables server-rendered consent actions until hydration reconciles the cookie on %s, snapshot=%s',
+    async (pathname, initialConsent) => {
+      navigation.pathname = pathname
+      if (initialConsent) {
+        document.cookie = `${COOKIE_CONSENT_COOKIE_NAME}=${serializeCookieConsentState(initialConsent)}; Path=/`
+      }
+      const element = <CookieConsentClientAdapter config={config} initialConsent={initialConsent} />
+      const host = document.createElement('div')
+      host.innerHTML = renderToString(element)
+      document.body.append(host)
+      const buttons = host.querySelectorAll('button')
+      expect(buttons.length).toBe(initialConsent ? 1 : 3)
+      for (const button of buttons) expect(button).toBeDisabled()
+      buttons[0]!.click()
+      expect(posthogClientMocks.setPostHogAnalyticsConsent).not.toHaveBeenCalled()
+
+      let root: ReturnType<typeof hydrateRoot> | undefined
+      await act(async () => {
+        root = hydrateRoot(host, element)
+      })
+      for (const button of host.querySelectorAll('button')) expect(button).toBeEnabled()
+      await act(async () => root?.unmount())
+      host.remove()
+    },
+  )
 
   it('shows the privacy policy link in the settings dialog', async () => {
     render(<CookieConsentClientAdapter config={config} initialConsent={null} />)
@@ -192,6 +306,7 @@ describe('CookieConsentManager', () => {
       decidedAt: '2026-03-31T10:00:00.000Z',
     })
 
+    document.cookie = `${COOKIE_CONSENT_COOKIE_NAME}=${serializeCookieConsentState(initialConsent)}; Path=/`
     render(<CookieConsentClientAdapter config={disabledAnalyticsConfig} initialConsent={initialConsent} />)
 
     await waitFor(() => {

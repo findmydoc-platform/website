@@ -36,6 +36,10 @@ vi.mock('posthog-node', async (importOriginal) => ({
   ...posthogNodeMocks,
 }))
 
+vi.mock('@/posthog/serverConsent', () => ({
+  postHogServerConsent: { resolveAnalyticsConsent: vi.fn(async () => ({ isAllowed: true })) },
+}))
+
 vi.mock('@/auth/utilities/jwtValidation', () => ({
   extractSupabaseUserData: vi.fn(),
 }))
@@ -82,6 +86,18 @@ describe('PostHog API facade', () => {
     process.env = oldEnv
   })
 
+  it('uses an eligible browser identifier for request targeting while keeping the host actor', async () => {
+    const { createPostHogHoldingEvaluationContext, resolvePostHogHoldingRequestContext } = await import('@/posthog/api')
+    const context = createPostHogHoldingEvaluationContext({ url: new URL('https://findmydoc.eu') })
+    const cookie = encodeURIComponent(JSON.stringify({ distinct_id: 'selected-browser' }))
+    const result = await resolvePostHogHoldingRequestContext({
+      context,
+      headers: new Headers({ cookie: `ph_phc_test_posthog=${cookie}` }),
+    })
+    expect(result.actor.distinctId).toBe('holding:findmydoc.eu')
+    expect(result.context.feature_flag_browser_id).toBe('selected-browser')
+  })
+
   it('resolves authenticated actors with stable person and group properties', async () => {
     const { resolvePostHogActor } = await import('@/posthog/api')
 
@@ -101,25 +117,6 @@ describe('PostHog API facade', () => {
         user_type: 'clinic',
       },
       userType: 'clinic',
-    })
-  })
-
-  it('resolves site flag actors without client-controlled cookie identity', async () => {
-    const { resolvePostHogSiteFlagActor } = await import('@/posthog/api')
-
-    const actor = resolvePostHogSiteFlagActor({
-      feature_flag_site_host: 'findmydoc.eu',
-      feature_flag_site_path: '/posts/example',
-    })
-
-    expect(actor).toEqual({
-      distinctId: 'site:findmydoc.eu:/posts/example',
-      isAuthenticated: false,
-      personProperties: {
-        is_authenticated: 'false',
-        user_type: 'anonymous',
-      },
-      userType: 'anonymous',
     })
   })
 
@@ -161,19 +158,19 @@ describe('PostHog API facade', () => {
 
   it('creates stable host-only identity and context for Holding evaluations', async () => {
     const { createPostHogHoldingEvaluationContext, resolvePostHogHoldingFlagActor } = await import('@/posthog/api')
-    const context = createPostHogHoldingEvaluationContext({ url: new URL('https://FindMyDoc.eu/posts/example?x=1') })
-
-    expect(context).toEqual({ feature_flag_site_host: 'findmydoc.eu' })
-    expect(resolvePostHogHoldingFlagActor(context).distinctId).toBe('holding:findmydoc.eu')
-  })
-
-  it('normalizes site flag context paths before PostHog targeting', async () => {
-    const { createPostHogFlagEvaluationContext } = await import('@/posthog/api')
-
-    expect(createPostHogFlagEvaluationContext({ url: new URL('https://FindMyDoc.eu/admin/') })).toEqual({
-      feature_flag_site_host: 'findmydoc.eu',
-      feature_flag_site_path: '/admin',
+    const context = createPostHogHoldingEvaluationContext({
+      url: new URL('https://FindMyDoc.eu/posts/example?x=1'),
+      env: { NODE_ENV: 'test' },
     })
+
+    expect(context).toEqual({
+      feature_flag_site_host: 'findmydoc.eu',
+      feature_flag_environment: 'test',
+      feature_flag_browser_id: '',
+      feature_flag_user_id: '',
+      feature_flag_user_type: '',
+    })
+    expect(resolvePostHogHoldingFlagActor(context).distinctId).toBe('holding:findmydoc.eu')
   })
 
   it('uses code defaults when local evaluation is not configured', async () => {
@@ -181,25 +178,15 @@ describe('PostHog API facade', () => {
 
     const { evaluatePostHogFlags, resolvePostHogActor } = await import('@/posthog/api')
     const actor = await resolvePostHogActor({ authData })
-    const flags = await evaluatePostHogFlags(actor, ['temporary-landing-mode', 'preview-guard-enabled'])
+    const flags = await evaluatePostHogFlags(actor, ['temporary-landing-mode'])
 
     expect(flags.isEnabled('temporary-landing-mode')).toBe(false)
-    expect(flags.isEnabled('preview-guard-enabled')).toBe(false)
     expect(flags.getEvaluation('temporary-landing-mode')).toEqual({
       status: 'unavailable',
       reason: 'not-configured',
     })
     expect(fakeClient.evaluateFlags).not.toHaveBeenCalled()
     expect(fakeClient.getAllFlagsAndPayloads).not.toHaveBeenCalled()
-  })
-
-  it('registers preview guard with a safe default', async () => {
-    const { POSTHOG_FLAG_REGISTRY } = await import('@/posthog/api')
-
-    expect(POSTHOG_FLAG_REGISTRY['preview-guard-enabled']).toEqual({
-      defaultValue: false,
-      description: 'Controls preview deployment access guard behavior in server-side proxy code.',
-    })
   })
 
   it('evaluates requested flags locally and exposes a stable snapshot', async () => {
@@ -236,23 +223,21 @@ describe('PostHog API facade', () => {
     const { evaluatePostHogFlags, resolvePostHogActor } = await import('@/posthog/api')
     const actor = await resolvePostHogActor({ authData })
 
-    await evaluatePostHogFlags(actor, ['temporary-landing-mode', 'preview-guard-enabled'], {
+    await evaluatePostHogFlags(actor, ['temporary-landing-mode'], {
       context: {
         feature_flag_site_host: 'preview.findmydoc.eu',
-        feature_flag_site_path: '/posts/example',
       },
     })
 
     expect(fakeClient.getAllFlagsAndPayloads).toHaveBeenCalledWith('user-123', {
       disableGeoip: true,
-      flagKeys: ['temporary-landing-mode', 'preview-guard-enabled'],
+      flagKeys: ['temporary-landing-mode'],
       groupProperties: undefined,
       groups: undefined,
       onlyEvaluateLocally: true,
       personProperties: {
         email: 'clinic@example.com',
         feature_flag_site_host: 'preview.findmydoc.eu',
-        feature_flag_site_path: '/posts/example',
         first_name: 'Ada',
         is_authenticated: 'true',
         last_name: 'Lovelace',
@@ -261,7 +246,7 @@ describe('PostHog API facade', () => {
     })
   })
 
-  it('separates in-flight flag evaluations by request context', async () => {
+  it('separates in-flight flag evaluations by host context', async () => {
     const pendingResolutions: Array<
       (value: { featureFlagPayloads: Record<string, unknown>; featureFlags: Record<string, unknown> }) => void
     > = []
@@ -277,13 +262,11 @@ describe('PostHog API facade', () => {
     const firstEvaluation = evaluatePostHogFlags(actor, ['temporary-landing-mode'], {
       context: {
         feature_flag_site_host: 'findmydoc.eu',
-        feature_flag_site_path: '/posts/example',
       },
     })
     const secondEvaluation = evaluatePostHogFlags(actor, ['temporary-landing-mode'], {
       context: {
-        feature_flag_site_host: 'findmydoc.eu',
-        feature_flag_site_path: '/posts/other',
+        feature_flag_site_host: 'preview.findmydoc.eu',
       },
     })
 
@@ -363,12 +346,8 @@ describe('PostHog API facade', () => {
         Object.hasOwn(POSTHOG_EVENT_REGISTRY, eventName),
       ),
     ).toBe(true)
-    expect(CLINIC_DASHBOARD_REPORTING_QUERY_CATALOG.ctaIds).toEqual(
-      POSTHOG_EVENT_REGISTRY.clinic_cta_clicked.allowedPropertyValues.cta_id,
-    )
     expect(Object.isFrozen(CLINIC_DASHBOARD_REPORTING_QUERY_CATALOG)).toBe(true)
     expect(Object.isFrozen(CLINIC_DASHBOARD_REPORTING_QUERY_CATALOG.events)).toBe(true)
-    expect(Object.isFrozen(CLINIC_DASHBOARD_REPORTING_QUERY_CATALOG.ctaIds)).toBe(true)
   })
 
   it('captures server events through the typed event interface with the already evaluated flag snapshot', async () => {
@@ -381,21 +360,20 @@ describe('PostHog API facade', () => {
       await import('@/posthog/api')
     const actor = await resolvePostHogActor({ authData })
     const flags = await evaluatePostHogFlags(actor, ['temporary-landing-mode'])
-    const patientInquiryEvent = Object.entries(POSTHOG_EVENT_REGISTRY).find(([, definition]) =>
-      definition.description.includes('patient contact request'),
+    const onboardingEvent = Object.entries(POSTHOG_EVENT_REGISTRY).find(([, definition]) =>
+      definition.description.includes('clinic partner contact request'),
     )?.[0]
 
-    await postHogServerEvents.patientInquiryCreated({
+    await postHogServerEvents.clinicOnboardingInterestCreated({
       actor,
       analyticsConsent: { isAllowed: true },
       flush: true,
       flagKeys: ['temporary-landing-mode'],
       flags,
       properties: {
-        clinic_id: '42',
-        clinic_slug: 'berlin-health-clinic',
         form_slug: 'public-contact',
-        source_route: 'clinic_detail',
+        page_path: '/partners/clinics',
+        source_route: 'clinic_partners',
       },
     })
 
@@ -406,14 +384,13 @@ describe('PostHog API facade', () => {
     })
     expect(fakeClient.capture).toHaveBeenCalledWith({
       distinctId: 'user-123',
-      event: patientInquiryEvent,
+      event: onboardingEvent,
       flags: capturedFlags,
       groups: undefined,
       properties: {
-        clinic_id: '42',
-        clinic_slug: 'berlin-health-clinic',
         form_slug: 'public-contact',
-        source_route: 'clinic_detail',
+        page_path: '/partners/clinics',
+        source_route: 'clinic_partners',
       },
     })
     expect(fakeClient.flush).toHaveBeenCalledTimes(1)
@@ -423,15 +400,14 @@ describe('PostHog API facade', () => {
     const { postHogServerEvents, resolvePostHogActor } = await import('@/posthog/api')
     const actor = await resolvePostHogActor({ authData })
 
-    await postHogServerEvents.patientInquiryCreated({
+    await postHogServerEvents.clinicOnboardingInterestCreated({
       actor,
       analyticsConsent: { isAllowed: false },
       flush: true,
       properties: {
-        clinic_id: '42',
-        clinic_slug: 'berlin-health-clinic',
         form_slug: 'public-contact',
-        source_route: 'clinic_detail',
+        page_path: '/partners/clinics',
+        source_route: 'clinic_partners',
       },
     })
 

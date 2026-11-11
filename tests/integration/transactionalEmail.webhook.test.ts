@@ -257,8 +257,8 @@ describe('Lettermint webhook Next.js request boundary', () => {
       body: options.method === 'GET' ? undefined : (options.stream ?? new Uint8Array(Buffer.from(body))),
       headers,
     })
-    const guarded = await proxy(request)
-    if (guarded.headers.get('x-middleware-next') !== '1') return guarded
+    const routed = await proxy(request)
+    if (routed.headers.get('x-middleware-next') !== '1') return routed
     const renderOpts: NonNullable<Parameters<typeof route.handle>[1]['renderOpts']> & {
       onInstrumentationRequestError: (error: unknown) => Promise<void>
     } = {
@@ -2550,15 +2550,5 @@ describe('Lettermint webhook Next.js request boundary', () => {
     }
     expect((await send({ headers })).status).toBe(200)
     expect((await send({ headers, signature: null })).status).toBe(401)
-  })
-
-  it.each([
-    '/api/internal/transactional-email/lettermint/preview/other',
-    '/api/internal/transactional-email/lettermint/production/other',
-    '/api/internal/transactional-email/lettermint/unknown',
-    '/api/internal/transactional-email/other',
-  ])('retains the Preview session guard for neighboring path %s', async (path) => {
-    const response = await proxy(new NextRequest(`https://webhook.example.test${path}`, { method: 'POST' }))
-    expect(response.status).toBe(401)
   })
 })

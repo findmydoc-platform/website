@@ -32,6 +32,28 @@ All rights are reserved by findmydoc. See [LICENSE.md](./LICENSE.md) for the ful
 - Local Development Setup: see [Setup Docs](docs/setup.md#local-development)
 - UI atoms: all shadcn/ui primitives live in `src/components/atoms` and must be imported via `@/components/atoms/<component>`; run shadcn CLI commands only after confirming the alias still points to that folder in `components.json`.
 
+### Type checking and compiler API compatibility
+
+Run `pnpm typecheck` for route type generation and the complete project type check. `pnpm check` includes this
+command alongside lint, native authorization checks, test structure checks, and generated Payload type validation.
+The required CI Static Checks job also runs it when path routing omits the application build. Documentation-only
+omissions retain their existing policy.
+
+The project compiler is pinned to TypeScript 7.0.2. The type-check command calls its local CLI explicitly.
+Next.js 16.4 uses the same project-local compiler CLI during `pnpm build`, with type errors blocking the build.
+Production builds retain the [webpack fallback](./docs/adrs/024-adr-production-build-webpack-fallback.md).
+
+TypeScript 7 does not provide the JavaScript compiler API used by ESLint, Storybook docgen, dependency-cruiser,
+Payload MCP schema conversion, and repository source-analysis checks. `typescript-legacy` pins that API to 5.9.3.
+Repository checks import this alias explicitly. The named compatibility list in `.pnpmfile.cjs` binds third-party
+API consumers to a direct TypeScript 5.9.3 dependency instead of a peer resolved against the project compiler.
+For ad hoc `ts-node` use, select the API explicitly with
+`pnpm exec ts-node --compiler typescript-legacy`. Add a package to the list only after verifying its compiler API use.
+
+Use the pinned pnpm version from `packageManager` and `pnpm install --frozen-lockfile` to reproduce both versions.
+With pnpm 10.28.2, duplicate bins from the two packages select the higher `typescript` version, so `pnpm exec tsc
+--version` reports 7.0.2. The required command and Next.js resolve the root compiler directly.
+
 ## Quality Gates
 
 AI anti-slop and quality hygiene are enforced through local and CI lanes:

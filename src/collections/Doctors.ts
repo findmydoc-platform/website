@@ -12,6 +12,7 @@ import { languageOptions } from './common/selectionOptions'
 import { generateFullName } from '@/utilities/nameUtils'
 import { computedOnlyFieldAccess } from '@/access/fieldAccess'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
+import { guardMcpTrash } from '@/access/mcpTrashAccess'
 import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'
 import { revalidateDoctorChange, revalidateDoctorDelete } from '@/hooks/revalidateClinicSurfaces'
 import { beforeChangeValidateDoctorProfileImage } from '@/hooks/doctorProfileImageOwnership'
@@ -57,7 +58,7 @@ export const Doctors: CollectionConfig<'doctors'> = {
     delete: isPlatformStaff, // Only Platform can delete
   },
   hooks: {
-    beforeOperation: [guardDoctorOperation],
+    beforeOperation: [guardMcpTrash<'doctors'>('doctors'), guardDoctorOperation],
     afterOperation: [
       async (args) => {
         await verifyDoctorOperation({ ...args, result: args.result as unknown })

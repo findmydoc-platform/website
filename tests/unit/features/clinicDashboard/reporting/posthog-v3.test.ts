@@ -1,0 +1,321 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { readPostHogClinicDashboardReportingV3 } from '@/features/clinicDashboard/reporting/posthog-v3'
+import { executeReportingQuery } from '../../../../helpers/reportingClickHouse'
+
+import type { ReportingCaptureStarts } from '@/features/clinicDashboard/reporting/config'
+
+const { captureStartsByProject } = vi.hoisted(() => ({
+  captureStartsByProject: {} as Record<string, ReportingCaptureStarts>,
+}))
+vi.mock('@/features/clinicDashboard/reporting/config', () => ({
+  REPORTING_CAPTURE_STARTS_BY_PROJECT: captureStartsByProject,
+}))
+beforeEach(() => {
+  for (const project of Object.keys(captureStartsByProject)) delete captureStartsByProject[project]
+  captureStartsByProject['synthetic-project'] = {
+    clinic_profile_viewed: null,
+    clinic_search_result_viewed: null,
+  }
+})
+
+const current = { days: 7 as const, from: '2026-10-25T21:00:00.000Z', to: '2026-11-01T12:00:00.000Z' }
+const comparison = { days: 7 as const, from: '2026-10-18T21:00:00.000Z', to: '2026-10-25T12:00:00.000Z' }
+
+const configure = () => {
+  vi.stubEnv('POSTHOG_QUERY_API_KEY', 'synthetic-query-key')
+  vi.stubEnv('POSTHOG_QUERY_PROJECT_ID', 'synthetic-project')
+  vi.stubEnv('POSTHOG_QUERY_RETENTION_DAYS', '365')
+  captureStartsByProject['synthetic-project']!.clinic_profile_viewed = '2026-01-01T00:00:00.000Z'
+}
+
+afterEach(() => {
+  vi.unstubAllEnvs()
+  vi.unstubAllGlobals()
+  vi.useRealTimers()
+})
+
+describe('four-count reporting source', () => {
+  it.runIf(Boolean(process.env.REPORTING_CLICKHOUSE_CONTAINER))(
+    'counts three views as one browser across sessions through the emitted production query',
+    async () => {
+      configure()
+      vi.stubGlobal('fetch', async (_url: unknown, init: RequestInit) => {
+        const query = JSON.parse(String(init.body)).query.query as string
+        const result = executeReportingQuery(query, [
+          {
+            timestamp: current.from,
+            event: 'clinic_profile_viewed',
+            distinct_id: 'browser-one',
+            properties: { clinic_id: '31', $session_id: 'session-a', submission_id: 'unrelated-inquiry' },
+          },
+          {
+            timestamp: '2026-10-27T09:00:00.000Z',
+            event: 'clinic_profile_viewed',
+            distinct_id: 'browser-one',
+            properties: { clinic_id: '31', $session_id: 'session-b' },
+          },
+          {
+            timestamp: current.to,
+            event: 'clinic_profile_viewed',
+            distinct_id: 'browser-one',
+            properties: { clinic_id: '31', $session_id: 'session-c' },
+          },
+          {
+            timestamp: current.from,
+            event: 'clinic_profile_viewed',
+            distinct_id: 'other-browser',
+            properties: { clinic_id: '99' },
+          },
+          {
+            timestamp: comparison.from,
+            event: 'clinic_profile_viewed',
+            distinct_id: 'browser-two',
+            properties: { clinic_id: '31' },
+          },
+        ])
+        return Response.json(result)
+      })
+      const result = await readPostHogClinicDashboardReportingV3({ clinicId: '31', comparison, current })
+      expect(result.profileViews).toMatchObject({
+        current: { value: 3, state: 'available' },
+        comparison: { value: 1, state: 'available', absoluteDelta: 2 },
+      })
+      expect(result.uniqueVisitors).toMatchObject({
+        current: { value: 1, state: 'available' },
+        comparison: { value: 1, state: 'available', absoluteDelta: 0 },
+      })
+      expect(result.impressions.current).toEqual({ value: null, state: 'partial_coverage' })
+    },
+  )
+
+  it.runIf(Boolean(process.env.REPORTING_CLICKHOUSE_CONTAINER)).each([
+    {
+      period: 'current',
+      timestamp: current.from,
+      visitors: {
+        current: { state: 'partial_coverage', value: null },
+        comparison: { state: 'available', value: 1, absoluteDelta: null, relativeDeltaPercent: null },
+      },
+      views: {
+        current: { state: 'available', value: 2 },
+        comparison: { state: 'available', value: 1, absoluteDelta: 1, relativeDeltaPercent: 100 },
+      },
+    },
+    {
+      period: 'comparison',
+      timestamp: comparison.from,
+      visitors: {
+        current: { state: 'available', value: 1 },
+        comparison: { state: 'partial_coverage', value: null, absoluteDelta: null, relativeDeltaPercent: null },
+      },
+      views: {
+        current: { state: 'available', value: 1 },
+        comparison: { state: 'available', value: 2, absoluteDelta: -1, relativeDeltaPercent: -50 },
+      },
+    },
+  ])('makes only $period visitors partial when a profile view has no browser identity', async (fixture) => {
+    configure()
+    captureStartsByProject['synthetic-project']!.clinic_search_result_viewed = '2026-01-01T00:00:00.000Z'
+    vi.stubGlobal('fetch', async (_url: unknown, init: RequestInit) =>
+      Response.json(
+        executeReportingQuery(JSON.parse(String(init.body)).query.query, [
+          ...[current.from, comparison.from].flatMap((timestamp) =>
+            ['clinic_profile_viewed', 'clinic_search_result_viewed'].map((event) => ({
+              timestamp,
+              event,
+              distinct_id: 'recognized-browser',
+              properties: { clinic_id: '31' },
+            })),
+          ),
+          {
+            timestamp: fixture.timestamp,
+            event: 'clinic_profile_viewed',
+            distinct_id: '',
+            properties: { clinic_id: '31', $session_id: 'valid-session', submission_id: 'valid-inquiry' },
+          },
+        ]),
+      ),
+    )
+    const result = await readPostHogClinicDashboardReportingV3({ clinicId: '31', comparison, current })
+    expect(result.uniqueVisitors).toEqual({ source: 'posthog', ...fixture.visitors })
+    expect(result.profileViews).toEqual({ source: 'posthog', ...fixture.views })
+    expect(result.impressions).toEqual({
+      source: 'posthog',
+      current: { state: 'available', value: 1 },
+      comparison: { state: 'available', value: 1, absoluteDelta: 0, relativeDeltaPercent: 0 },
+    })
+  })
+
+  it.runIf(Boolean(process.env.REPORTING_CLICKHOUSE_CONTAINER)).each([
+    [7, '2026-03-27T21:00:00.000Z', '2026-04-03T09:15:30.123Z', '2026-04-03T21:00:00.000Z'],
+    [30, '2026-02-09T21:00:00.000Z', '2026-03-11T09:15:30.123Z', '2026-03-11T21:00:00.000Z'],
+    [90, '2025-10-12T21:00:00.000Z', '2026-01-10T09:15:30.123Z', '2026-01-10T21:00:00.000Z'],
+  ] as const)(
+    'applies every current/comparison and clinic boundary for %i days',
+    async (days, previousFrom, previousTo, from) => {
+      configure()
+      captureStartsByProject['synthetic-project']!.clinic_profile_viewed = '2025-01-01T00:00:00.000Z'
+      const to = '2026-04-10T09:15:30.123Z'
+      const event = (timestamp: string, distinct_id: string, clinic_id = '31') => ({
+        timestamp,
+        event: 'clinic_profile_viewed',
+        distinct_id,
+        properties: { clinic_id },
+      })
+      vi.stubGlobal('fetch', async (_url: unknown, init: RequestInit) =>
+        Response.json(
+          executeReportingQuery(JSON.parse(String(init.body)).query.query, [
+            event(previousFrom, 'old-one'),
+            event(previousFrom, 'old-one'),
+            event(previousTo, 'excluded-comparison-end'),
+            event(from, 'one'),
+            event(from, 'one'),
+            event(to, 'one'),
+            event(to, 'two'),
+            event(new Date(Date.parse(previousFrom) - 1).toISOString(), 'too-old'),
+            event(new Date(Date.parse(to) + 1).toISOString(), 'too-new'),
+            event(to, 'different-clinic', '99'),
+          ]),
+        ),
+      )
+      const result = await readPostHogClinicDashboardReportingV3({
+        clinicId: '31',
+        current: { from, to, days },
+        comparison: { from: previousFrom, to: previousTo, days },
+      })
+      expect(result.profileViews).toMatchObject({ current: { value: 4 }, comparison: { value: 2 } })
+      expect(result.uniqueVisitors).toMatchObject({ current: { value: 2 }, comparison: { value: 1 } })
+    },
+  )
+
+  it.runIf(Boolean(process.env.REPORTING_CLICKHOUSE_CONTAINER))(
+    'keeps measured zero, new capture and retention-limited comparison distinct',
+    async () => {
+      configure()
+      captureStartsByProject['synthetic-project']!.clinic_profile_viewed = current.from
+      vi.stubGlobal('fetch', async (_url: unknown, init: RequestInit) =>
+        Response.json(executeReportingQuery(JSON.parse(String(init.body)).query.query, [])),
+      )
+      const result = await readPostHogClinicDashboardReportingV3({ clinicId: '31', comparison, current })
+      expect(result.uniqueVisitors.current).toEqual({ value: 0, state: 'available' })
+      expect(result.uniqueVisitors.comparison).toEqual({
+        value: null,
+        state: 'partial_coverage',
+        absoluteDelta: null,
+        relativeDeltaPercent: null,
+      })
+      expect(result.impressions.current).toEqual({ value: null, state: 'partial_coverage' })
+      captureStartsByProject['synthetic-project']!.clinic_profile_viewed = '2025-01-01T00:00:00.000Z'
+      vi.stubEnv('POSTHOG_QUERY_RETENTION_DAYS', '8')
+      const retained = await readPostHogClinicDashboardReportingV3({ clinicId: '31', comparison, current })
+      expect(retained.profileViews.current).toEqual({ value: 0, state: 'available' })
+      expect(retained.profileViews.comparison.state).toBe('partial_coverage')
+    },
+  )
+
+  it.runIf(Boolean(process.env.REPORTING_CLICKHOUSE_CONTAINER))(
+    'uses capture starts from the queried project and preserves independent event history',
+    async () => {
+      configure()
+      captureStartsByProject['second-project'] = {
+        clinic_profile_viewed: current.from,
+        clinic_search_result_viewed: null,
+      }
+      const source = vi.fn(async (_url: unknown, init: RequestInit) =>
+        Response.json(executeReportingQuery(JSON.parse(String(init.body)).query.query, [])),
+      )
+      vi.stubGlobal('fetch', source)
+      const first = await readPostHogClinicDashboardReportingV3({ clinicId: '31', comparison, current })
+      expect(first.profileViews.comparison).toMatchObject({ state: 'available', value: 0 })
+      vi.stubEnv('POSTHOG_QUERY_PROJECT_ID', 'second-project')
+      const second = await readPostHogClinicDashboardReportingV3({ clinicId: '31', comparison, current })
+      expect(second.profileViews.current).toEqual({ state: 'available', value: 0 })
+      expect(second.uniqueVisitors.current).toEqual({ state: 'available', value: 0 })
+      expect(second.profileViews.comparison).toEqual({
+        state: 'partial_coverage',
+        value: null,
+        absoluteDelta: null,
+        relativeDeltaPercent: null,
+      })
+      expect(second.uniqueVisitors.comparison).toEqual(second.profileViews.comparison)
+      expect(second.impressions.current).toEqual({ state: 'partial_coverage', value: null })
+      expect(second.impressions.comparison.state).toBe('partial_coverage')
+      expect(source).toHaveBeenLastCalledWith(
+        'https://eu.posthog.com/api/projects/second-project/query/',
+        expect.anything(),
+      )
+    },
+  )
+
+  it.runIf(Boolean(process.env.REPORTING_CLICKHOUSE_CONTAINER))(
+    'keeps every analytics count partial for a project without verified capture starts',
+    async () => {
+      configure()
+      vi.stubEnv('POSTHOG_QUERY_PROJECT_ID', 'unknown-project')
+      vi.stubGlobal('fetch', async (_url: unknown, init: RequestInit) =>
+        Response.json(executeReportingQuery(JSON.parse(String(init.body)).query.query, [])),
+      )
+      const result = await readPostHogClinicDashboardReportingV3({ clinicId: '31', comparison, current })
+      for (const metric of Object.values(result)) {
+        expect(metric.current).toEqual({ state: 'partial_coverage', value: null })
+        expect(metric.comparison).toEqual({
+          state: 'partial_coverage',
+          value: null,
+          absoluteDelta: null,
+          relativeDeltaPercent: null,
+        })
+      }
+    },
+  )
+
+  it
+    .runIf(Boolean(process.env.REPORTING_CLICKHOUSE_CONTAINER))
+    .each(['unverified', '2026-10-25T21:00:00Z', '2026-13-99T21:00:00.000Z'])(
+    'keeps invalid configured UTC capture history partial: %s',
+    async (start) => {
+      configure()
+      captureStartsByProject['synthetic-project']!.clinic_profile_viewed = start
+      vi.stubGlobal('fetch', async (_url: unknown, init: RequestInit) =>
+        Response.json(executeReportingQuery(JSON.parse(String(init.body)).query.query, [])),
+      )
+      const result = await readPostHogClinicDashboardReportingV3({ clinicId: '31', comparison, current })
+      expect(result.profileViews.current).toEqual({ state: 'partial_coverage', value: null })
+      expect(result.uniqueVisitors.comparison).toEqual({
+        state: 'partial_coverage',
+        value: null,
+        absoluteDelta: null,
+        relativeDeltaPercent: null,
+      })
+    },
+  )
+
+  it('ends a source outage after one request without stale values or retry', async () => {
+    configure()
+    const fetcher = vi.fn().mockRejectedValue(new Error('synthetic outage'))
+    vi.stubGlobal('fetch', fetcher)
+    const result = await readPostHogClinicDashboardReportingV3({ clinicId: '31', comparison, current })
+    expect(result.uniqueVisitors.current).toEqual({ value: null, state: 'source_unavailable' })
+    expect(result.profileViews.current).toEqual({ value: null, state: 'source_unavailable' })
+    expect(fetcher).toHaveBeenCalledTimes(1)
+    expect(fetcher).toHaveBeenCalledWith(
+      'https://eu.posthog.com/api/projects/synthetic-project/query/',
+      expect.objectContaining({ method: 'POST', cache: 'no-store' }),
+    )
+  })
+
+  it('bounds an unresponsive source to three seconds without retry', async () => {
+    configure()
+    vi.useFakeTimers()
+    const fetcher = vi.fn(
+      (_url: unknown, init: RequestInit) =>
+        new Promise<Response>((_resolve, reject) =>
+          init.signal?.addEventListener('abort', () => reject(new Error('aborted'))),
+        ),
+    )
+    vi.stubGlobal('fetch', fetcher)
+    const result = readPostHogClinicDashboardReportingV3({ clinicId: '31', comparison, current })
+    await vi.advanceTimersByTimeAsync(3_000)
+    expect((await result).uniqueVisitors.current).toEqual({ state: 'source_unavailable', value: null })
+    expect(fetcher).toHaveBeenCalledTimes(1)
+  })
+})

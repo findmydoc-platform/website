@@ -3,6 +3,8 @@ import { createClient } from '@/auth/utilities/supaBaseServer'
 import { getSupabaseLogger } from '@/auth/utilities/supabaseLogger'
 import { z } from 'zod'
 import { toLoggedError } from '@/utilities/logging/shared'
+import { readPreparationBinding } from '@/features/inquiryPreparations/context'
+import { continueInquiryPreparationAfterPasswordSignIn } from '@/auth/actions/inquiryPreparationSignIn'
 
 const loginSchema = z.object({
   email: z.string(),
@@ -11,6 +13,8 @@ const loginSchema = z.object({
 })
 
 export async function POST(request: NextRequest) {
+  if (readPreparationBinding(request.headers) && request.headers.get('origin') !== new URL(request.url).origin)
+    return NextResponse.json({ error: 'Request rejected.' }, { status: 403 })
   const logger = await getSupabaseLogger({
     headers: request.headers,
     request,
@@ -62,6 +66,18 @@ export async function POST(request: NextRequest) {
 
     // Determine redirect URL based on user type
     const redirectUrl = tokenUserType === 'patient' ? '/patient/inquiries' : '/admin'
+
+    if (tokenUserType === 'patient' && authData.session) {
+      try {
+        await continueInquiryPreparationAfterPasswordSignIn(request.headers, authData.user)
+      } catch {
+        // A completed password sign-in is never repeated or undone because preparation persistence failed.
+        logger.warn(
+          { event: 'auth.inquiry_preparation.continuation_unavailable' },
+          'Prepared inquiry continuation is unavailable.',
+        )
+      }
+    }
 
     return NextResponse.json({
       success: true,

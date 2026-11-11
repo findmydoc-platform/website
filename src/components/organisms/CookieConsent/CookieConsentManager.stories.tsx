@@ -6,12 +6,22 @@ import { CookieConsentBanner } from '@/components/organisms/CookieConsent/Cookie
 import { CookieConsentDialog } from '@/components/organisms/CookieConsent/CookieConsentDialog.client'
 import { CookieConsentLauncher } from '@/components/organisms/CookieConsent/CookieConsentLauncher.client'
 import { CookieConsentManager } from '@/components/organisms/CookieConsent/CookieConsentManager.client'
-import { DEFAULT_COOKIE_CONSENT_CONFIG } from '@/features/cookieConsent'
+import { DEFAULT_COOKIE_CONSENT_CONFIG, type CookieConsentState } from '@/features/cookieConsent'
 import { withViewportStory } from '@/stories/utils/viewportMatrix'
 
-const managerPorts = {
-  onAnalyticsConsentChange: fn(),
-  onPersistConsent: fn(),
+function PersistentConsentManager(props: React.ComponentProps<typeof CookieConsentManager>) {
+  const storedConsent = React.useRef<CookieConsentState | null>(props.initialConsent)
+  const ports = React.useMemo(
+    () => ({
+      onAnalyticsConsentChange: fn(),
+      onPersistConsent: (consent: CookieConsentState) => {
+        storedConsent.current = consent
+      },
+      readConsent: (version: number) => (storedConsent.current?.version === version ? storedConsent.current : null),
+    }),
+    [],
+  )
+  return <CookieConsentManager {...props} {...ports} />
 }
 
 const denseCookieConsentConfig = {
@@ -61,8 +71,11 @@ const meta = {
   args: {
     config: DEFAULT_COOKIE_CONSENT_CONFIG,
     initialConsent: null,
-    ...managerPorts,
+    onAnalyticsConsentChange: fn(),
+    onPersistConsent: fn(),
+    readConsent: fn(() => null),
   },
+  render: (args) => <PersistentConsentManager {...args} />,
   tags: ['autodocs', 'domain:shared', 'layer:organism', 'status:stable', 'used-in:shared'],
   parameters: {
     layout: 'fullscreen',
@@ -87,6 +100,7 @@ export const Banner: Story = {
   },
   render: () => (
     <CookieConsentBanner
+      ready
       config={DEFAULT_COOKIE_CONSENT_CONFIG}
       onAcceptAll={() => {}}
       onCustomize={() => {}}
@@ -100,7 +114,83 @@ export const Launcher: Story = {
     config: DEFAULT_COOKIE_CONSENT_CONFIG,
     initialConsent: null,
   },
-  render: () => <CookieConsentLauncher label={DEFAULT_COOKIE_CONSENT_CONFIG.reopenLabel} onOpenSettings={() => {}} />,
+  render: () => (
+    <CookieConsentLauncher ready label={DEFAULT_COOKIE_CONSENT_CONFIG.reopenLabel} onOpenSettings={() => {}} />
+  ),
+}
+
+export const InitializingBanner: Story = {
+  render: () => (
+    <CookieConsentBanner
+      ready={false}
+      config={DEFAULT_COOKIE_CONSENT_CONFIG}
+      onAcceptAll={fn()}
+      onCustomize={fn()}
+      onRejectAll={fn()}
+    />
+  ),
+  play: async ({ canvasElement }) => {
+    for (const button of within(canvasElement).getAllByRole('button')) await expect(button).toBeDisabled()
+  },
+}
+
+export const InitializingCompactBanner: Story = {
+  ...InitializingBanner,
+  render: () => (
+    <CookieConsentBanner
+      compact
+      ready={false}
+      config={DEFAULT_COOKIE_CONSENT_CONFIG}
+      onAcceptAll={fn()}
+      onCustomize={fn()}
+      onRejectAll={fn()}
+    />
+  ),
+}
+
+export const InitializingLauncher: Story = {
+  render: () => (
+    <CookieConsentLauncher ready={false} label={DEFAULT_COOKIE_CONSENT_CONFIG.reopenLabel} onOpenSettings={fn()} />
+  ),
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByRole('button', { name: 'Cookie settings' })).toBeDisabled()
+  },
+}
+
+function ConsentCycle() {
+  const storedConsent = React.useRef<CookieConsentState | null>(null)
+  const ports = React.useMemo(
+    () => ({
+      onAnalyticsConsentChange: fn(),
+      onPersistConsent: (consent: CookieConsentState) => {
+        storedConsent.current = consent
+      },
+      readConsent: (version: number) => (storedConsent.current?.version === version ? storedConsent.current : null),
+    }),
+    [],
+  )
+  return <CookieConsentManager config={DEFAULT_COOKIE_CONSENT_CONFIG} initialConsent={null} {...ports} />
+}
+
+export const ConsentLifecycle: Story = {
+  render: () => <ConsentCycle />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const body = within(canvasElement.ownerDocument.body)
+    await userEvent.click(canvas.getByRole('button', { name: 'Accept all' }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Cookie settings' }))
+    await expect(body.getByRole('checkbox', { name: 'Analytics cookies' })).toBeChecked()
+    await userEvent.click(body.getByRole('button', { name: 'Reject all' }))
+    await expect(body.queryByRole('dialog')).not.toBeInTheDocument()
+    await userEvent.click(canvas.getByRole('button', { name: 'Cookie settings' }))
+    await expect(body.getByRole('checkbox', { name: 'Analytics cookies' })).not.toBeChecked()
+    await userEvent.click(body.getByRole('checkbox', { name: 'Analytics cookies' }))
+    await userEvent.click(body.getByRole('button', { name: 'Save preferences' }))
+    await expect(body.queryByRole('dialog')).not.toBeInTheDocument()
+    await userEvent.click(canvas.getByRole('button', { name: 'Cookie settings' }))
+    await expect(body.getByRole('checkbox', { name: 'Analytics cookies' })).toBeChecked()
+    await userEvent.click(body.getByRole('button', { name: 'Cancel' }))
+  },
 }
 
 export const Dialog: Story = {
@@ -139,6 +229,7 @@ export const Dialog: Story = {
 }
 
 export const Manager: Story = {
+  play: ConsentLifecycle.play,
   args: {
     config: DEFAULT_COOKIE_CONSENT_CONFIG,
     initialConsent: null,
@@ -152,6 +243,7 @@ export const BannerLongCopy: Story = {
   },
   render: () => (
     <CookieConsentBanner
+      ready
       config={denseCookieConsentConfig}
       onAcceptAll={() => {}}
       onCustomize={() => {}}
@@ -172,10 +264,10 @@ const authCompactBannerBase: Story = {
       },
     },
   },
-  render: () => {
+  render: (args) => {
     return (
       <div className="min-h-screen bg-background pb-28">
-        <CookieConsentManager config={authRouteCookieConsentConfig} initialConsent={null} {...managerPorts} />
+        <PersistentConsentManager {...args} />
       </div>
     )
   },
@@ -189,6 +281,13 @@ const authCompactBannerBase: Story = {
     await userEvent.click(documentBody.getByRole('button', { name: /cancel/i }))
     await expect(documentBody.queryByRole('dialog', { name: /cookie settings/i })).not.toBeInTheDocument()
     await expect(canvas.getByRole('button', { name: /choose settings/i })).toBeInTheDocument()
+    await userEvent.click(canvas.getByRole('button', { name: 'Accept all' }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Cookie settings' }))
+    await expect(documentBody.getByRole('checkbox', { name: /analytics cookies/i })).toBeChecked()
+    await userEvent.click(documentBody.getByRole('button', { name: 'Reject all' }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Cookie settings' }))
+    await expect(documentBody.getByRole('checkbox', { name: /analytics cookies/i })).not.toBeChecked()
+    await userEvent.click(documentBody.getByRole('button', { name: /cancel/i }))
   },
 }
 
@@ -204,10 +303,10 @@ const authDialogBase: Story = {
       },
     },
   },
-  render: () => {
+  render: (args) => {
     return (
       <div className="min-h-screen bg-background">
-        <CookieConsentManager config={authRouteCookieConsentConfig} initialConsent={null} {...managerPorts} />
+        <PersistentConsentManager {...args} />
       </div>
     )
   },
@@ -218,7 +317,10 @@ const authDialogBase: Story = {
     await expect(documentBody.getByRole('dialog', { name: /cookie settings/i })).toBeInTheDocument()
     await userEvent.click(documentBody.getByRole('checkbox', { name: /analytics cookies/i }))
     await expect(documentBody.getByRole('checkbox', { name: /analytics cookies/i })).toBeChecked()
-    await expect(documentBody.getByRole('button', { name: /save auth settings/i })).toBeInTheDocument()
+    await userEvent.click(documentBody.getByRole('button', { name: /save auth settings/i }))
+    await expect(documentBody.queryByRole('dialog')).not.toBeInTheDocument()
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Cookie settings' }))
+    await expect(documentBody.getByRole('checkbox', { name: /analytics cookies/i })).toBeChecked()
   },
 }
 

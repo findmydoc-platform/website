@@ -1,4 +1,3 @@
-import { PREVIEW_GUARD_LOCK_REQUEST_HEADER } from '@/features/previewGuard'
 import { isPreviewRuntime } from '@/features/runtimePolicy'
 
 export type SearchIndexingEnvInput = {
@@ -9,6 +8,7 @@ export type SearchIndexingEnvInput = {
 
 export const SEARCH_ROBOTS_HEADER = 'X-Robots-Tag'
 export const SEARCH_ROBOTS_HEADER_VALUE = 'noindex, nofollow, noarchive'
+export const SEARCH_INDEXING_REQUEST_HEADER = 'x-search-indexing'
 
 export const shouldBlockSearchIndexing = (env: SearchIndexingEnvInput = process.env): boolean => {
   return isPreviewRuntime(env)
@@ -21,7 +21,7 @@ export const shouldBlockSearchIndexingForRequest = ({
   env?: SearchIndexingEnvInput
   headers: Headers
 }): boolean => {
-  return headers.get(PREVIEW_GUARD_LOCK_REQUEST_HEADER) === '1' || shouldBlockSearchIndexing(env)
+  return headers.get(SEARCH_INDEXING_REQUEST_HEADER) === 'noindex' || shouldBlockSearchIndexing(env)
 }
 
 export * from './listingComparison'

@@ -26,6 +26,7 @@ export type ListingComparisonProps = {
   resultsContext?: React.ReactNode
   resultsFooter?: React.ReactNode
   renderResultCornerAction?: (data: ListingCardData) => React.ReactNode
+  onResultElement?: (id: string | number, element: HTMLElement | null) => void
 }
 
 export function ListingComparison({
@@ -39,6 +40,7 @@ export function ListingComparison({
   resultsContext,
   resultsFooter,
   renderResultCornerAction,
+  onResultElement,
 }: ListingComparisonProps) {
   const filtersContainerId = 'listing-comparison-filters'
   const visibleCount = results.length
@@ -92,7 +94,12 @@ export function ListingComparison({
                 {defaultHeader}
                 {results.length > 0
                   ? results.map((data) => (
-                      <ListingCard key={data.id} data={data} cornerAction={renderResultCornerAction?.(data)} />
+                      <ListingCard
+                        key={data.id}
+                        data={data}
+                        cornerAction={renderResultCornerAction?.(data)}
+                        articleRef={onResultElement ? (element) => onResultElement(data.id, element) : undefined}
+                      />
                     ))
                   : (emptyState ?? null)}
                 {resultsFooter}

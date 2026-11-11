@@ -1028,7 +1028,10 @@ export function bindAuthActions(
         return { deleted: due.docs.length }
       })
     },
-    async reservePatientVerification(input: { email: string; resendOf?: number }) {
+    async reservePatientVerification(
+      input: { email: string; resendOf?: number },
+      onCreated?: (action: AuthAction) => void,
+    ) {
       const command = parsed(z.object({ email: z.string(), resendOf: idSchema.optional() }).strict(), input)
       let correlations: ReturnType<typeof verificationCorrelations>
       try {
@@ -1036,7 +1039,7 @@ export function bindAuthActions(
       } catch {
         throw new AuthActionError('invalid-command')
       }
-      return transaction(async (internalReq, scope) => {
+      const reservation = await transaction(async (internalReq, scope) => {
         const missingVersion = await req.payload.find({
           collection: 'authActions',
           req: internalReq,
@@ -1095,7 +1098,7 @@ export function bindAuthActions(
           (!current || current.id !== command.resendOf || !['pending', 'active'].includes(current.state))
         )
           throw new AuthActionError('invalid-transition')
-        if (current && command.resendOf == null) return current
+        if (current && command.resendOf == null) return { action: current, created: false }
         const recent = matches.docs.filter(
           (action) => Date.parse(action.createdAt) > scope.now - verificationCorrelationWindowMs,
         )
@@ -1109,8 +1112,13 @@ export function bindAuthActions(
             await transition(internalReq, scope, { id: action.id, to: 'expired' })
         }
         if (current) await transition(internalReq, scope, { id: current.id, to: 'superseded' })
-        return createPending(internalReq, scope, { actionType: 'patient-verification' }, correlations[0])
+        return {
+          action: await createPending(internalReq, scope, { actionType: 'patient-verification' }, correlations[0]),
+          created: true,
+        }
       })
+      if (reservation.created) onCreated?.(reservation.action)
+      return reservation.action
     },
     read(id: number) {
       return transaction((internalReq) => find(internalReq, parsed(idSchema, id)))

@@ -144,7 +144,6 @@ describe('media image editing through Payload and cloud storage', () => {
     expect(updated.focalX).toBe(0)
     expect(updated.focalY).toBe(0)
     expect(fileReads).toHaveLength(1)
-    expect(req.query.uploadEdits).toBeUndefined()
     expect(req.query.locale).toBe('en')
     expect(query.uploadEdits.widthInPixels).toBe(50)
     const stored = await payload.findByID({
@@ -154,6 +153,13 @@ describe('media image editing through Payload and cloud storage', () => {
       overrideAccess: false,
     })
     expect(stored.filename).toBe(updated.filename)
+    const image = await handleEndpoints({
+      config,
+      request: new Request(new URL(stored.url!, payload.config.serverURL)),
+    })
+    expect(image.status).toBe(200)
+    const imageMetadata = await sharp(Buffer.from(await image.arrayBuffer())).metadata()
+    expect(imageMetadata).toMatchObject({ width: 50, height: 40 })
   })
 
   it('retains an existing zero focal point when cropping again', async () => {
@@ -210,13 +216,14 @@ describe('media image editing through Payload and cloud storage', () => {
     expect(pixels[1]).toBeLessThan(20)
   })
 
-  it('keeps image edits consumed when internal metadata persistence fails', async () => {
+  it('does not reprocess image edits when internal metadata persistence fails', async () => {
     const doc = await createImage()
     const hooks = payload.collections.platformContentMedia.config.hooks.beforeChange
     let internalRequest: PayloadRequest | undefined
     const rejectMetadata: CollectionBeforeChangeHook = ({ req, data }) => {
       if (req.context.skipCloudStorage) {
         internalRequest = req
+        // Cloud storage restores the outer query after this metadata operation.
         expect(req.query.uploadEdits).toBeUndefined()
         expect(req.query.locale).toBe('en')
         throw new Error('Metadata persistence failed')
@@ -245,7 +252,6 @@ describe('media image editing through Payload and cloud storage', () => {
           },
         }),
       ).rejects.toThrow('Metadata persistence failed')
-      expect(internalRequest?.query.uploadEdits).toBeUndefined()
       expect(internalRequest?.query.locale).toBe('en')
       expect(internalRequest?.context.skipCloudStorage).toBeUndefined()
       expect(fileReads).toHaveLength(1)

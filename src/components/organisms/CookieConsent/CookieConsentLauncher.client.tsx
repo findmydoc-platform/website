@@ -6,11 +6,12 @@ import { Button } from '@/components/atoms/button'
 
 type CookieConsentLauncherProps = {
   compact?: boolean
+  ready: boolean
   label: string
   onOpenSettings: () => void
 }
 
-export function CookieConsentLauncher({ compact = false, label, onOpenSettings }: CookieConsentLauncherProps) {
+export function CookieConsentLauncher({ compact = false, ready, label, onOpenSettings }: CookieConsentLauncherProps) {
   return (
     <div
       className={
@@ -25,6 +26,7 @@ export function CookieConsentLauncher({ compact = false, label, onOpenSettings }
         size="clear"
         aria-label={label}
         className="group inline-flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-border/80 bg-background/95 px-0 text-sm font-medium shadow-lg backdrop-blur-md transition-[width,box-shadow,background-color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] sm:h-12 sm:w-12 sm:justify-start sm:px-3 sm:hover:w-[10.25rem] sm:focus-visible:w-[10.25rem]"
+        disabled={!ready}
         onClick={onOpenSettings}
       >
         <Cookie className="size-4 shrink-0 text-primary" aria-hidden="true" />

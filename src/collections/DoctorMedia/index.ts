@@ -1,4 +1,5 @@
 import { beforeOperationNormalizeImageEdits } from '@/hooks/media/normalizeImageEdits'
+import { revalidateDoctorMediaChange } from '@/hooks/revalidateClinicSurfaces'
 import type { CollectionConfig } from 'payload'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -13,6 +14,7 @@ import {
 } from '@/features/doctorProfiles/authorization'
 import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
 import { beforeChangeDoctorMedia } from './hooks/beforeChangeDoctorMedia'
+import { beforeDeleteRejectReferencedDoctorMedia } from './deletionGuard'
 import { afterErrorLogMediaUploadError, beforeOperationCaptureMediaUpload } from '@/hooks/media/uploadLogging'
 import { beforeOperationPrepareUploadFilename } from '@/hooks/media/prepareUploadFilename'
 import { beforeOperationValidateMediaUpload } from '@/hooks/media/validateMediaUpload'
@@ -48,8 +50,10 @@ export const DoctorMedia: CollectionConfig = {
   },
   trash: true,
   hooks: {
+    afterChange: [revalidateDoctorMediaChange],
     afterError: [afterErrorLogMediaUploadError],
     beforeChange: [stableIdBeforeChangeHook, guardDoctorChange, beforeChangeDoctorMedia],
+    beforeDelete: [beforeDeleteRejectReferencedDoctorMedia],
     afterOperation: [verifyDoctorOperation],
     beforeOperation: [
       guardDoctorOperation,

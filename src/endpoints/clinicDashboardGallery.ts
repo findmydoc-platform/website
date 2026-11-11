@@ -299,10 +299,15 @@ export const clinicDashboardGalleryImageGetHandler: PayloadHandler = async (req)
       mediaId,
       size as 'original' | 'thumbnail',
     )
+    // The service has validated the stored origin/path and current clinic access.
+    const deploymentToken = req.headers.get('x-vercel-oidc-token')
     const upstream = await fetch(source, {
       cache: 'no-store',
       redirect: 'error',
-      headers: { Authorization: req.headers.get('authorization') ?? '' },
+      headers: {
+        Authorization: req.headers.get('authorization') ?? '',
+        ...(deploymentToken ? { 'x-vercel-trusted-oidc-idp-token': deploymentToken } : {}),
+      },
       signal: AbortSignal.timeout(12_000),
     })
     if (upstream.status >= 500) throw new Error('The gallery image service is unavailable.')

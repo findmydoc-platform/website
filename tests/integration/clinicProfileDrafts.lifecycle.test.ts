@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { createLocalReq, getPayload, type Payload, type PayloadRequest } from 'payload'
 import { revalidatePath, revalidateTag } from 'next/cache'
+import sharp from 'sharp'
 
 import config from '@payload-config'
 import type { Clinic } from '@/payload-types'
@@ -129,6 +130,64 @@ describe('clinic profile draft lifecycle', () => {
       where: { clinic: { equals: clinic.id } },
     })
     await payload.delete({ collection: 'clinics', id: clinic.id, overrideAccess: true })
+  })
+
+  it('invalidates the public clinic page when its doctor portrait changes', async () => {
+    const doctor = await payload.create({
+      collection: 'doctors',
+      overrideAccess: true,
+      data: {
+        firstName: 'Cache',
+        lastName: 'Doctor',
+        fullName: 'Cache Doctor',
+        active: true,
+        gender: 'female',
+        clinic: clinic.id,
+        qualifications: ['Test'],
+        languages: ['english'],
+        slug: `${slug}-doctor`,
+      },
+    })
+    const bytes = await sharp({ create: { width: 320, height: 240, channels: 3, background: '#778899' } })
+      .png()
+      .toBuffer()
+    const media = await payload.create({
+      collection: 'doctorMedia',
+      overrideAccess: true,
+      data: { doctor: doctor.id, clinic: clinic.id, alt: 'Original portrait' },
+      file: { name: `${slug}-doctor.png`, data: bytes, size: bytes.length, mimetype: 'image/png' },
+    } as Parameters<Payload['create']>[0])
+    try {
+      await payload.update({
+        collection: 'doctors',
+        id: doctor.id,
+        data: { profileImage: media.id },
+        overrideAccess: true,
+      })
+      vi.clearAllMocks()
+      await payload.update({
+        collection: 'doctorMedia',
+        id: media.id,
+        data: { alt: 'Updated portrait' },
+        overrideAccess: true,
+      })
+      expect(vi.mocked(revalidatePath)).toHaveBeenCalledWith(`/clinics/${slug}`)
+      expect(vi.mocked(revalidateTag)).toHaveBeenCalledWith(`surface:clinic-detail:${clinic.id}`, { expire: 0 })
+      await payload.update({ collection: 'doctors', id: doctor.id, data: { profileImage: null }, overrideAccess: true })
+      vi.clearAllMocks()
+      await payload.update({
+        collection: 'doctorMedia',
+        id: media.id,
+        data: { alt: 'Unreferenced portrait' },
+        overrideAccess: true,
+      })
+      expect(revalidatePath).not.toHaveBeenCalled()
+      expect(revalidateTag).not.toHaveBeenCalled()
+    } finally {
+      await payload.update({ collection: 'doctors', id: doctor.id, data: { profileImage: null }, overrideAccess: true })
+      await payload.delete({ collection: 'doctorMedia', id: media.id, overrideAccess: true, trash: true })
+      await payload.delete({ collection: 'doctors', id: doctor.id, overrideAccess: true, trash: true })
+    }
   })
 
   it('saves, conflicts, discards, and atomically publishes only the owned fields', async () => {

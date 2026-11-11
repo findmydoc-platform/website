@@ -1,7 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn, userEvent, within } from 'storybook/test'
+import { expect, fn, mocked, userEvent, within } from 'storybook/test'
 
 import { ClinicDetail } from '@/components/templates/ClinicDetailConcepts'
+import type { ClinicContactRequestSubmitter } from '@/features/clinicDetail/contracts'
 import {
   clinicDetailFixture,
   clinicDetailLongResponseFixture,
@@ -17,11 +18,19 @@ const meta = {
   component: ClinicDetail,
   args: {
     analytics: {
-      onCtaClicked: fn(),
-      onProfileViewed: fn(),
+      isReady: true,
+      onProfileViewed: fn(() => true),
+      onInquiryStarted: fn(() => true),
     },
     data: clinicDetailFixture,
-    onSubmitContactRequest: fn(async () => ({ id: 'story-inquiry' })),
+    onSubmitContactRequest: fn<ClinicContactRequestSubmitter>(async (_payload, authenticated) =>
+      authenticated
+        ? { id: 'story-inquiry' }
+        : {
+            id: 'story-preparation',
+            preparation: { reference: 'story-preparation', expiresAt: '2026-11-14T12:00:00.000Z' },
+          },
+    ),
   },
   parameters: {
     layout: 'fullscreen',
@@ -137,9 +146,6 @@ export const Main_InitialReviewSummary: Story = {
 }
 
 export const Behavior_GuestContactSubmission: Story = {
-  args: {
-    onSubmitContactRequest: fn(async () => ({ id: 'story-inquiry' })),
-  },
   render: (args) => <ClinicDetail {...args} />,
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement)
@@ -155,8 +161,9 @@ export const Behavior_GuestContactSubmission: Story = {
       contactForm.getByRole('textbox', { name: 'Message' }),
       'Please contact me about an appointment.',
     )
-    await userEvent.click(contactForm.getByRole('checkbox'))
-    await userEvent.click(contactForm.getByRole('button', { name: 'Submit Contact Request' }))
+    await userEvent.click(contactForm.getByRole('checkbox', { name: /process my contact details/i }))
+    await userEvent.click(contactForm.getByRole('checkbox', { name: /authorize creation/i }))
+    await userEvent.click(contactForm.getByRole('button', { name: 'Save inquiry and create account' }))
 
     await expect(args.onSubmitContactRequest).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -164,14 +171,16 @@ export const Behavior_GuestContactSubmission: Story = {
         consent: true,
         doctorId: 'doctor-1',
         email: 'ada@example.com',
-        fullName: 'Ada Lovelace',
+        firstName: 'Ada',
+        lastName: 'Lovelace',
+        accountAuthorization: true,
         message: 'Please contact me about an appointment.',
         phoneNumber: '+49 30 123456',
       }),
       false,
     )
-    await expect(contactForm.getByRole('status')).toHaveTextContent('Your clinic request has been sent successfully.')
-    await expect(contactForm.getByRole('button', { name: 'Request sent' })).toBeDisabled()
+    await expect(contactForm.getByRole('status')).toHaveTextContent('Your inquiry is saved but not sent.')
+    await expect(contactForm.getByRole('button', { name: 'Inquiry saved, not sent' })).toBeDisabled()
   },
 }
 
@@ -450,3 +459,79 @@ export const ReviewsPartiallyLoaded1280: Story = withViewportStory(
   'public1280',
   'Reviews partially loaded / 1280',
 )
+
+export const InquiryStarts: Story = {
+  render: (args) => <ClinicDetail {...args} />,
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement)
+    const form = within(canvas.getByRole('form', { name: 'Clinic appointment request' }))
+    await userEvent.click(canvas.getAllByRole('button', { name: 'Choose Treatment' })[0]!)
+    await userEvent.click(canvas.getAllByRole('button', { name: 'Select Dr. Amelia Carter' })[0]!)
+    await userEvent.click(form.getByRole('checkbox', { name: /process my contact details/i }))
+    form.getByRole('textbox', { name: 'Email' }).focus()
+    await expect(args.analytics.onInquiryStarted).not.toHaveBeenCalled()
+    await userEvent.keyboard('x')
+    await expect(args.analytics.onInquiryStarted).toHaveBeenCalledWith({ clinicId: String(args.data.clinicId) })
+    await expect(args.analytics.onInquiryStarted).toHaveBeenCalledTimes(1)
+    await userEvent.selectOptions(form.getByRole('combobox', { name: 'Doctor' }), 'doctor-2')
+    await expect(args.analytics.onInquiryStarted).toHaveBeenCalledTimes(2)
+    await userEvent.type(form.getByRole('textbox', { name: 'Message' }), 'Synthetic test content')
+    const callsBeforeClear = mocked(args.analytics.onInquiryStarted).mock.calls.length
+    await userEvent.clear(form.getByRole('textbox', { name: 'Message' }))
+    await expect(args.analytics.onInquiryStarted).toHaveBeenCalledTimes(callsBeforeClear + 1)
+    await expect(args.analytics.onInquiryStarted).toHaveBeenLastCalledWith({ clinicId: String(args.data.clinicId) })
+  },
+}
+
+export const InquiryStartsAuthenticatedMissingPhone: Story = {
+  args: {
+    inquiryCreation: {
+      kind: 'authenticated',
+      loginHref: '/login/patient',
+      account: {
+        firstName: 'Synthetic',
+        lastName: 'Patient',
+        email: 'synthetic@example.test',
+        phoneNumber: '',
+      },
+    },
+  },
+  render: (args) => <ClinicDetail {...args} />,
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement)
+    const form = within(canvas.getByRole('form', { name: 'Clinic appointment request' }))
+    await expect(args.analytics.onInquiryStarted).not.toHaveBeenCalled()
+    await userEvent.click(canvas.getAllByRole('button', { name: 'Choose Treatment' })[0]!)
+    await userEvent.click(form.getByRole('checkbox', { name: /process my contact details/i }))
+    await expect(args.analytics.onInquiryStarted).not.toHaveBeenCalled()
+    form.getByRole('textbox', { name: 'Phone Number' }).focus()
+    await userEvent.keyboard('1')
+    await expect(args.analytics.onInquiryStarted).toHaveBeenCalledWith({ clinicId: String(args.data.clinicId) })
+    await userEvent.selectOptions(form.getByRole('combobox', { name: 'Doctor' }), 'doctor-2')
+    await expect(args.analytics.onInquiryStarted).toHaveBeenCalledTimes(2)
+  },
+}
+export const InquiryStartsAuthenticatedPrefilled: Story = {
+  args: {
+    inquiryCreation: {
+      kind: 'authenticated',
+      loginHref: '/login/patient',
+      account: {
+        firstName: 'Synthetic',
+        lastName: 'Patient',
+        email: 'synthetic@example.test',
+        phoneNumber: '+49 30 123456',
+      },
+    },
+  },
+  render: (args) => <ClinicDetail {...args} />,
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement)
+    const form = within(canvas.getByRole('form', { name: 'Clinic appointment request' }))
+    await expect(form.queryByRole('textbox', { name: 'Email' })).not.toBeInTheDocument()
+    await expect(args.analytics.onInquiryStarted).not.toHaveBeenCalled()
+    form.getByRole('textbox', { name: 'Message' }).focus()
+    await userEvent.keyboard('a')
+    await expect(args.analytics.onInquiryStarted).toHaveBeenCalledWith({ clinicId: String(args.data.clinicId) })
+  },
+}

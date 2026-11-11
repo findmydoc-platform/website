@@ -64,7 +64,7 @@ describe('submitFormData', () => {
     })
   })
 
-  it('uses the incoming origin and forwards only request authentication to the internal API', async () => {
+  it('keeps server-prepared deployment access and application authentication on the same origin', async () => {
     process.env.NEXT_PUBLIC_SERVER_URL = 'https://configured.example.com'
     mockFetch.mockResolvedValue({
       ok: true,
@@ -78,6 +78,7 @@ describe('submitFormData', () => {
         headers: {
           authorization: 'Bearer verified-token',
           cookie: 'sb-project-auth-token=verified-session',
+          'x-vercel-trusted-oidc-idp-token': 'website-current-invocation',
         },
       },
       values: { name: 'Jane Doe' },
@@ -85,10 +86,12 @@ describe('submitFormData', () => {
 
     expect(mockFetch).toHaveBeenCalledWith('https://generated-preview.vercel.app/api/form-submissions', {
       method: 'POST',
+      redirect: 'error',
       headers: {
         Authorization: 'Bearer verified-token',
         'Content-Type': 'application/json',
         Cookie: 'sb-project-auth-token=verified-session',
+        'x-vercel-trusted-oidc-idp-token': 'website-current-invocation',
       },
       body: JSON.stringify({
         form: 'contact-form-id',

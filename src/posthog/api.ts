@@ -1,5 +1,11 @@
+import { postHogServerConsent } from './serverConsent'
 import type { AuthData } from '@/auth/types/authTypes'
 import { extractSupabaseUserData } from '@/auth/utilities/jwtValidation'
+import {
+  resolveServerRuntimeEnvironment,
+  type RuntimeEnvironment,
+  type ServerRuntimeEnvInput,
+} from '@/features/runtimePolicy'
 import { fallbackConsoleLogger } from '@/utilities/logging/consoleLogger'
 import { createScopedLogger, toLoggedError, type ServerLogger } from '@/utilities/logging/shared'
 import { FeatureFlagEvaluations, type FeatureFlagEvaluations as PostHogFeatureFlagEvaluations } from 'posthog-node'
@@ -23,16 +29,9 @@ import {
   type PostHogEventPropertiesByName,
   type PostHogScalarProperty,
 } from './events'
-import { readClinicInquirySessionId } from './inquirySessionCorrelation'
 
 export { CLINIC_DASHBOARD_REPORTING_QUERY_CATALOG, POSTHOG_EVENT_REGISTRY }
-export type {
-  ClinicDashboardReportingCtaId,
-  PostHogEventDefinition,
-  PostHogEventName,
-  PostHogScalarProperty,
-} from './events'
-export { readClinicInquirySessionId }
+export type { PostHogEventDefinition, PostHogEventName, PostHogScalarProperty } from './events'
 
 export type PostHogActorType = 'anonymous' | 'patient' | 'clinic' | 'platform'
 
@@ -53,10 +52,6 @@ export type PostHogFlagDefinition = {
 }
 
 export const POSTHOG_FLAG_REGISTRY = {
-  'preview-guard-enabled': {
-    defaultValue: false,
-    description: 'Controls preview deployment access guard behavior in server-side proxy code.',
-  },
   'temporary-landing-mode': {
     defaultValue: false,
     description: 'Controls temporary public landing-mode rendering in server-side code.',
@@ -79,19 +74,19 @@ export type PostHogFlagEvaluation =
 
 export type PostHogFlagEvaluationContext = {
   feature_flag_site_host: string
-  feature_flag_site_path?: string
+  feature_flag_environment?: RuntimeEnvironment
+  feature_flag_browser_id?: string
+  feature_flag_user_id?: string
+  feature_flag_user_type?: string
 }
 
 export type PostHogServerAnalyticsConsent = {
   isAllowed: boolean
 }
 
-type CreatePostHogFlagEvaluationContextInput = {
-  url: Pick<URL, 'hostname' | 'pathname'>
-}
-
 type CreatePostHogHoldingEvaluationContextInput = {
   url: Pick<URL, 'hostname'>
+  env?: ServerRuntimeEnvInput
 }
 
 type InternalPostHogFlagSnapshot = PostHogFlagSnapshot & {
@@ -133,6 +128,7 @@ const identifiedActors = new Set<string>()
 
 const silentPostHogFlagEvaluationHost: ConstructorParameters<typeof FeatureFlagEvaluations>[0]['host'] = {
   captureFlagCalledEventIfNeeded: () => undefined,
+  resolveSendFeatureFlagEvents: () => false,
   logWarning(message: string): void {
     logger.warn(
       {
@@ -145,36 +141,54 @@ const silentPostHogFlagEvaluationHost: ConstructorParameters<typeof FeatureFlagE
 
 const isNodeRuntime = (): boolean => process.env.NEXT_RUNTIME !== 'edge'
 
-const normalizeFeatureFlagSitePath = (pathname: string): string => {
-  if (!pathname) return '/'
-  if (pathname === '/') return pathname
-
-  const prefixed = pathname.startsWith('/') ? pathname : `/${pathname}`
-  return prefixed.endsWith('/') ? prefixed.slice(0, -1) : prefixed
-}
-
-export const createPostHogFlagEvaluationContext = ({
-  url,
-}: CreatePostHogFlagEvaluationContextInput): PostHogFlagEvaluationContext => ({
-  feature_flag_site_host: url.hostname.trim().toLowerCase(),
-  feature_flag_site_path: normalizeFeatureFlagSitePath(url.pathname),
-})
-
 export const createPostHogHoldingEvaluationContext = ({
   url,
+  env,
 }: CreatePostHogHoldingEvaluationContextInput): PostHogFlagEvaluationContext => ({
   feature_flag_site_host: url.hostname.trim().toLowerCase(),
+  feature_flag_environment: resolveServerRuntimeEnvironment(env),
+  feature_flag_browser_id: '',
+  feature_flag_user_id: '',
+  feature_flag_user_type: '',
 })
-
-export const resolvePostHogSiteFlagActor = (context: PostHogFlagEvaluationContext): PostHogActor =>
-  toAnonymousPostHogActor({
-    fallbackAnonymousId: `site:${context.feature_flag_site_host}:${context.feature_flag_site_path}`,
-  })
 
 export const resolvePostHogHoldingFlagActor = (context: PostHogFlagEvaluationContext): PostHogActor =>
   toAnonymousPostHogActor({
     fallbackAnonymousId: `holding:${context.feature_flag_site_host}`,
   })
+
+export const resolvePostHogHoldingRequestContext = async ({
+  context,
+  headers,
+  getVerifiedUser,
+}: {
+  context: PostHogFlagEvaluationContext
+  headers: Headers
+  getVerifiedUser?: () => Promise<{ id: string; app_metadata: Record<string, unknown> } | null>
+}): Promise<{ actor: PostHogActor; context: PostHogFlagEvaluationContext }> => {
+  const actor = resolvePostHogHoldingFlagActor(context)
+  const browserId = extractPostHogDistinctIdFromCookieHeader(headers.get('cookie'))?.trim()
+  const consent = await postHogServerConsent.resolveAnalyticsConsent({ headers })
+  if (!consent.isAllowed) return { actor, context }
+  let user: Awaited<ReturnType<NonNullable<typeof getVerifiedUser>>> = null
+  try {
+    user = (await getVerifiedUser?.()) ?? null
+  } catch {
+    // Browser targeting remains available when authentication is unavailable.
+  }
+  const userId = typeof user?.id === 'string' ? user.id.trim() : ''
+  const userType = user?.app_metadata?.user_type
+  const trustedType = userType === 'patient' || userType === 'clinic' || userType === 'platform' ? userType : ''
+  return {
+    actor,
+    context: {
+      ...context,
+      feature_flag_browser_id: browserId ?? '',
+      feature_flag_user_id: userId,
+      feature_flag_user_type: userId ? trustedType : '',
+    },
+  }
+}
 
 const normalizeIdentifier = (value: number | string | null | undefined): string | undefined => {
   if (typeof value === 'number' && Number.isFinite(value)) return String(value)
@@ -492,7 +506,6 @@ async function capturePostHogServerEvent<Name extends PostHogEventName>({
 
 export interface PostHogServerEventInterface {
   clinicOnboardingInterestCreated(input: PostHogServerEventInput<'clinic_onboarding_interest_created'>): Promise<void>
-  patientInquiryCreated(input: PostHogServerEventInput<'patient_inquiry_created'>): Promise<void>
   registerClinicSubmitted(input: PostHogServerEventInput<'register_clinic_submitted'>): Promise<void>
 }
 
@@ -502,11 +515,6 @@ export const postHogServerEvents: PostHogServerEventInterface = {
       ...input,
       event: 'clinic_onboarding_interest_created',
     }),
-  patientInquiryCreated: (input) =>
-    capturePostHogServerEvent({
-      ...input,
-      event: 'patient_inquiry_created',
-    }),
   registerClinicSubmitted: (input) =>
     capturePostHogServerEvent({
       ...input,
@@ -515,13 +523,6 @@ export const postHogServerEvents: PostHogServerEventInterface = {
 }
 
 export { postHogServerConsent, type PostHogServerConsentInterface } from './serverConsent'
-
-export const captureStoredPatientInquiryPostHogEvent = async (
-  input: import('./inquiry').StoredPatientInquiryPostHogCaptureInput,
-): Promise<void> => {
-  const { captureStoredPatientInquiryPostHogEvent: capture } = await import('./inquiry')
-  await capture(input)
-}
 
 export async function identifyPostHogActor(actor: PostHogActor): Promise<void> {
   if (!actor.isAuthenticated || identifiedActors.has(actor.distinctId) || !isNodeRuntime()) {

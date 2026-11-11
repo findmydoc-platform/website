@@ -2,87 +2,29 @@ import { createServerClient } from '@supabase/ssr'
 import type { User } from '@supabase/supabase-js'
 import { type NextRequest, NextResponse } from 'next/server'
 
+import { isPlatformUser } from '@/auth/utilities/supabaseAuthPolicy'
+import { isPreviewRuntime } from '@/features/runtimePolicy'
 import {
-  extractTokenFromHeader,
-  isTemporarySupabaseAuthError,
-  validateSupabaseUser,
-} from '@/auth/utilities/supabaseAuthPolicy'
-import {
-  buildPreviewGuardLoginRedirect,
-  buildPreviewGuardPatientLoginRedirect,
-  classifyPreviewGuardPagePath,
-  isAllowedPreviewPatient,
-  isAllowedPreviewUser,
-  isPreviewDeployment,
-  isPreviewGuardAnonymousApiPath,
-  isPreviewGuardEndpointAuthApiPath,
-  isPreviewGuardPatientRegistrationApiPath,
-  isPreviewGuardScannerPath,
-  PREVIEW_GUARD_ACTIVE_REQUEST_HEADER,
-  PREVIEW_GUARD_LOCK_REQUEST_HEADER,
-  PREVIEW_GUARD_PATIENT_REGISTRATION_API_PATH,
-  resolveDeploymentEnvironment,
-} from '@/features/previewGuard'
-import {
+  HOLDING_VIEW_REQUEST_HEADER,
   isTemporaryLandingModeExemptPath,
   isTemporaryLandingIndexablePath,
   isTemporaryLandingPublicExemptPath,
+  isTemporaryLandingPublicDiscoveryPath,
   isTemporaryLandingRootPath,
   TEMPORARY_LANDING_MODE_REQUEST_HEADER,
   PUBLIC_SITE_MODE_REQUEST_HEADER,
 } from '@/features/temporaryLandingMode'
 import { resolveHoldingMode, type PublicSiteMode } from '@/features/temporaryLandingMode/resolver'
-import { SEARCH_ROBOTS_HEADER, SEARCH_ROBOTS_HEADER_VALUE } from '@/features/searchIndexing'
 import {
-  createPostHogFlagEvaluationContext,
-  evaluatePostHogFlags,
-  resolvePostHogSiteFlagActor,
-  type PostHogFlagKey,
-} from '@/posthog/api'
+  SEARCH_INDEXING_REQUEST_HEADER,
+  SEARCH_ROBOTS_HEADER,
+  SEARCH_ROBOTS_HEADER_VALUE,
+} from '@/features/searchIndexing'
 import { logCrawlerRequest } from '@/features/publicDiscovery/crawlerMonitoring'
+import { PUBLIC_DISCOVERY_SURFACE_PATHS } from '@/features/publicDiscovery/site'
 
-const GUARD_FLAG_KEYS = ['preview-guard-enabled'] as const satisfies readonly PostHogFlagKey[]
 const NON_PAGE_PATHS = new Set(['/next/exit-preview', '/next/preview'])
-const PUBLIC_ASSET_PATHS = new Set([
-  '/favicon.ico',
-  '/favicon.png',
-  '/favicon.svg',
-  '/findmydoc-og.jpg',
-  '/findmydoc-og.webp',
-  '/images/avatar-patient-female-placeholder.svg',
-  '/images/avatar-patient-male-placeholder.svg',
-  '/images/avatar-placeholder.svg',
-  '/images/blog-header-clinic-reception.webp',
-  '/images/blog-placeholder-1600-900.svg',
-  '/images/clinic-detail/contact-fallback-home-image30.jpg',
-  '/images/clinic-detail/clinic-location-placeholder-map.webp',
-  '/images/clinic-registration-funnel-panel.webp',
-  '/images/holding-page/E105NVPR.jpg',
-  '/images/holding-page/immersive-hero-loop.mp4',
-  '/images/our-process-gradient.png',
-  '/images/placeholders/clinic-placeholder.webp',
-  '/images/placeholders/author-neutral-placeholder.webp',
-  '/images/placeholders/doctor-female-placeholder.webp',
-  '/images/placeholders/doctor-male-placeholder.webp',
-  '/images/placeholders/doctor-neutral-placeholder.webp',
-  '/images/process-step-1.svg',
-  '/images/process-step-2.svg',
-  '/images/process-step-3.svg',
-  '/images/process-step-4.svg',
-  '/fmd-icon-1-dark.png',
-  '/fmd-icon-1-white.png',
-  '/fmd-logo-1-dark.png',
-  '/fmd-logo-1-dark.svg',
-  '/fmd-logo-1-white.png',
-  '/social/findmydoc-square.jpg',
-  '/social/findmydoc-wide.jpg',
-  '/stories/flower.mp4',
-  '/stories/immersive-hero-loop.mp4',
-])
-
-const isPublicAssetPath = (pathname: string): boolean => {
-  return PUBLIC_ASSET_PATHS.has(pathname)
-}
+const PUBLIC_DISCOVERY_PATHS = new Set<string>(PUBLIC_DISCOVERY_SURFACE_PATHS)
 
 const isPathFamily = (pathname: string, prefix: string): boolean =>
   pathname === prefix || pathname.startsWith(`${prefix}/`)
@@ -92,61 +34,42 @@ const shouldBypassProxy = (pathname: string): boolean => {
 
   if (isPathFamily(pathname, '/_next')) return true
   if (NON_PAGE_PATHS.has(normalizedPath)) return true
-  if (isPublicAssetPath(pathname)) return true
+  // Next replaces this inventory with the actual public asset URLs during compilation.
+  const publicStaticAssetPaths: string[] = JSON.parse(process.env.PUBLIC_STATIC_ASSET_PATHS ?? '[]')
+  if (publicStaticAssetPaths.includes(pathname)) return true
   return false
 }
 
-const hasSupabaseSessionCookie = (request: NextRequest): boolean =>
-  request.cookies.getAll().some(({ name }) => name.startsWith('sb-') && name.includes('-auth-token'))
-
-type PreviewUserLookup = {
-  error: unknown
-  unavailable: boolean
-  user: User | null
-}
-
-const lookupPreviewUser = async (request: NextRequest, accessToken?: string): Promise<PreviewUserLookup> => {
+const getHoldingRequestUser = async (request: NextRequest): Promise<User | null> => {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!supabaseUrl || !supabaseAnonKey) {
-    return { error: null, unavailable: true, user: null }
-  }
-
-  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      getAll() {
-        return request.cookies.getAll()
-      },
-      setAll() {
-        // Proxy only needs a session check for routing decisions.
-      },
-    },
-  })
+  if (!supabaseUrl || !supabaseAnonKey) return null
 
   try {
+    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+      cookies: {
+        getAll: () => request.cookies.getAll(),
+        setAll() {
+          // Holding only reads the server-validated session for its platform staff exception.
+        },
+      },
+    })
     const {
       data: { user },
       error,
-    } = accessToken ? await supabase.auth.getUser(accessToken) : await supabase.auth.getUser()
-
-    return {
-      error,
-      unavailable: isTemporarySupabaseAuthError(error),
-      user: error ? null : user,
-    }
-  } catch (error) {
-    return { error, unavailable: true, user: null }
+    } = await supabase.auth.getUser()
+    return error ? null : user
+  } catch {
+    return null
   }
 }
 
-const getPreviewUser = async (request: NextRequest): Promise<User | null> => (await lookupPreviewUser(request)).user
-
 const nextWithRequestHeaders = (request: NextRequest, headersToSet: Record<string, string | null>): NextResponse => {
   const requestHeaders = new Headers(request.headers)
-  requestHeaders.delete(PREVIEW_GUARD_ACTIVE_REQUEST_HEADER)
-  requestHeaders.delete(PREVIEW_GUARD_LOCK_REQUEST_HEADER)
   requestHeaders.delete(PUBLIC_SITE_MODE_REQUEST_HEADER)
   requestHeaders.delete(TEMPORARY_LANDING_MODE_REQUEST_HEADER)
+  requestHeaders.delete(HOLDING_VIEW_REQUEST_HEADER)
+  requestHeaders.delete(SEARCH_INDEXING_REQUEST_HEADER)
   Object.entries(headersToSet).forEach(([key, value]) => {
     if (value === null) {
       requestHeaders.delete(key)
@@ -163,28 +86,12 @@ const withSearchRobotsHeader = (response: NextResponse): NextResponse => {
   return response
 }
 
-const nextWithGuardActiveHeader = (request: NextRequest, publicMode?: PublicSiteMode): NextResponse =>
-  nextWithRequestHeaders(request, {
-    [PREVIEW_GUARD_ACTIVE_REQUEST_HEADER]: '1',
-    [PREVIEW_GUARD_LOCK_REQUEST_HEADER]: null,
-    [PUBLIC_SITE_MODE_REQUEST_HEADER]: publicMode ?? null,
-    [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: null,
-  })
-
-const nextWithGuardLockHeader = (request: NextRequest, publicMode?: PublicSiteMode): NextResponse =>
-  nextWithRequestHeaders(request, {
-    [PREVIEW_GUARD_ACTIVE_REQUEST_HEADER]: '1',
-    [PREVIEW_GUARD_LOCK_REQUEST_HEADER]: '1',
-    [PUBLIC_SITE_MODE_REQUEST_HEADER]: publicMode ?? null,
-    [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: null,
-  })
-
 const nextWithTemporaryLandingHeaders = (request: NextRequest, publicMode: PublicSiteMode = 'holding'): NextResponse =>
   nextWithRequestHeaders(request, {
-    [PREVIEW_GUARD_ACTIVE_REQUEST_HEADER]: null,
-    [PREVIEW_GUARD_LOCK_REQUEST_HEADER]: '1',
+    [HOLDING_VIEW_REQUEST_HEADER]: 'standalone',
     [PUBLIC_SITE_MODE_REQUEST_HEADER]: publicMode,
     [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: publicMode === 'holding' ? '1' : null,
+    [SEARCH_INDEXING_REQUEST_HEADER]: isTemporaryLandingIndexablePath(request.nextUrl.pathname) ? null : 'noindex',
   })
 
 const nextWithTemporaryLandingPublicHeaders = (
@@ -192,86 +99,19 @@ const nextWithTemporaryLandingPublicHeaders = (
   publicMode: PublicSiteMode = 'holding',
 ): NextResponse =>
   nextWithRequestHeaders(request, {
-    [PREVIEW_GUARD_ACTIVE_REQUEST_HEADER]: null,
-    [PREVIEW_GUARD_LOCK_REQUEST_HEADER]: null,
+    [HOLDING_VIEW_REQUEST_HEADER]: 'public',
     [PUBLIC_SITE_MODE_REQUEST_HEADER]: publicMode,
     [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: publicMode === 'holding' ? '1' : null,
   })
 
-const nextWithoutGuardHeaders = (request: NextRequest, publicMode?: PublicSiteMode): NextResponse =>
+const nextWithPublicMode = (request: NextRequest, publicMode?: PublicSiteMode): NextResponse =>
   nextWithRequestHeaders(request, {
-    [PREVIEW_GUARD_ACTIVE_REQUEST_HEADER]: null,
-    [PREVIEW_GUARD_LOCK_REQUEST_HEADER]: null,
     [PUBLIC_SITE_MODE_REQUEST_HEADER]: publicMode ?? null,
     [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: null,
   })
 
-const previewApiError = (message: string, status: 401 | 503): NextResponse => {
-  const response = NextResponse.json({ error: message }, { status })
-  response.headers.set('Cache-Control', 'private, no-store')
-  response.headers.set('Vary', 'Authorization, Cookie')
-  return response
-}
-
-const handlePreviewApiRequest = async (request: NextRequest): Promise<NextResponse> => {
-  const { pathname } = request.nextUrl
-
-  if (isPreviewGuardPatientRegistrationApiPath(pathname)) {
-    if (pathname !== PREVIEW_GUARD_PATIENT_REGISTRATION_API_PATH) return nextWithGuardActiveHeader(request)
-
-    const authorization = request.headers.get('authorization')
-    const accessToken = extractTokenFromHeader(request.headers)
-    if (
-      (authorization !== null && accessToken === undefined) ||
-      (authorization === null && !hasSupabaseSessionCookie(request))
-    ) {
-      return nextWithGuardActiveHeader(request)
-    }
-
-    const { unavailable, user } = await lookupPreviewUser(request, accessToken)
-    if (unavailable || !validateSupabaseUser(user) || !isAllowedPreviewUser(user)) {
-      return nextWithGuardActiveHeader(request)
-    }
-
-    return nextWithoutGuardHeaders(request)
-  }
-
-  if (isPreviewGuardAnonymousApiPath(pathname) || isPreviewGuardEndpointAuthApiPath(pathname)) {
-    return nextWithGuardActiveHeader(request)
-  }
-
-  const authorization = request.headers.get('authorization')
-  const accessToken = extractTokenFromHeader(request.headers)
-  if (
-    (authorization !== null && accessToken === undefined) ||
-    (authorization === null && !hasSupabaseSessionCookie(request))
-  ) {
-    return previewApiError('Unauthorized', 401)
-  }
-
-  const { unavailable, user } = await lookupPreviewUser(request, accessToken)
-  if (unavailable) return previewApiError('Authentication service unavailable', 503)
-  if (!validateSupabaseUser(user)) return previewApiError('Unauthorized', 401)
-
-  return nextWithGuardActiveHeader(request)
-}
-
-const evaluateGuardFlagsForRequest = async (request: NextRequest) => {
-  const flagContext = createPostHogFlagEvaluationContext({ url: request.nextUrl })
-  const actor = resolvePostHogSiteFlagActor(flagContext)
-  const flags = await evaluatePostHogFlags(actor, GUARD_FLAG_KEYS, { context: flagContext })
-
-  return {
-    previewGuardFlagEnabled: flags.isEnabled('preview-guard-enabled'),
-  }
-}
-
 export async function proxy(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl
-
-  if (isPreviewGuardScannerPath(pathname)) {
-    return withSearchRobotsHeader(new NextResponse(null, { status: 404 }))
-  }
 
   if (request.method === 'OPTIONS' && isPathFamily(pathname, '/api')) {
     return nextWithRequestHeaders(request, {})
@@ -281,95 +121,52 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     return nextWithRequestHeaders(request, {})
   }
 
-  if (isPathFamily(pathname, '/api')) {
-    if (!isPreviewDeployment()) {
-      if (!isPreviewGuardPatientRegistrationApiPath(pathname)) return nextWithRequestHeaders(request, {})
-
-      const { previewGuardFlagEnabled } = await evaluateGuardFlagsForRequest(request)
-      const previewGuardEnabled = resolveDeploymentEnvironment() !== 'development' && previewGuardFlagEnabled
-      return previewGuardEnabled ? nextWithGuardActiveHeader(request) : nextWithoutGuardHeaders(request)
-    }
-
-    return handlePreviewApiRequest(request)
-  }
+  if (isPathFamily(pathname, '/api')) return nextWithRequestHeaders(request, {})
 
   logCrawlerRequest(request)
 
-  const pagePathClassification = classifyPreviewGuardPagePath(pathname)
-  if (pagePathClassification === 'not-found') {
-    return withSearchRobotsHeader(new NextResponse(null, { status: 404 }))
+  const previewDeployment = isPreviewRuntime()
+  const discovery =
+    PUBLIC_DISCOVERY_PATHS.has(pathname) ||
+    isTemporaryLandingPublicDiscoveryPath(pathname) ||
+    pathname.endsWith('-sitemap.xml')
+  let verifiedUser: Promise<User | null> | undefined
+  const getVerifiedUser = () => (verifiedUser ??= getHoldingRequestUser(request))
+  const holdingMode = (
+    await resolveHoldingMode(request.nextUrl, process.env, discovery ? undefined : request.headers, getVerifiedUser)
+  ).mode
+  const privateResponse = (response: NextResponse): NextResponse => {
+    if (!discovery) response.headers.set('Cache-Control', 'private, no-store')
+    return response
   }
 
-  const previewDeployment = isPreviewDeployment()
-  let previewGuardFlagEnabled = false
-
-  if (!previewDeployment) {
-    const flagState = await evaluateGuardFlagsForRequest(request)
-    previewGuardFlagEnabled = flagState.previewGuardFlagEnabled
-  }
-  const holdingMode = (await resolveHoldingMode(request.nextUrl)).mode
-
-  const previewGuardEnabled =
-    previewDeployment || (resolveDeploymentEnvironment() !== 'development' && previewGuardFlagEnabled)
-
-  if (!previewGuardEnabled && holdingMode === 'full') {
-    return nextWithoutGuardHeaders(request, holdingMode)
+  if (holdingMode === 'full') {
+    const response = nextWithPublicMode(request, holdingMode)
+    return privateResponse(previewDeployment ? withSearchRobotsHeader(response) : response)
   }
 
-  if (previewGuardEnabled && pagePathClassification === 'exempt') {
-    return withSearchRobotsHeader(nextWithGuardLockHeader(request, holdingMode))
-  }
+  const platformUser = isPlatformUser(await getVerifiedUser())
 
-  if (previewGuardEnabled && pagePathClassification === 'dynamic-content' && !hasSupabaseSessionCookie(request)) {
-    return withSearchRobotsHeader(new NextResponse(null, { status: 404 }))
-  }
-
-  const user = await getPreviewUser(request)
-  const isPlatformUser = isAllowedPreviewUser(user)
-  const isPatientUser = isAllowedPreviewPatient(user)
-  const isPatientPath = pagePathClassification === 'patient'
-
-  if (previewGuardEnabled) {
-    if (isPlatformUser) {
-      return withSearchRobotsHeader(nextWithGuardActiveHeader(request, holdingMode))
-    }
-
-    if (isPatientPath) {
-      if (isPatientUser) {
-        return withSearchRobotsHeader(nextWithGuardActiveHeader(request, holdingMode))
-      }
-
-      const redirectTarget = user
-        ? buildPreviewGuardLoginRedirect(request.nextUrl)
-        : buildPreviewGuardPatientLoginRedirect(request.nextUrl)
-      return withSearchRobotsHeader(NextResponse.redirect(new URL(redirectTarget, request.url)))
-    }
-
-    if (pagePathClassification === 'dynamic-content') {
-      return withSearchRobotsHeader(new NextResponse(null, { status: 404 }))
-    }
-
-    const redirectTarget = buildPreviewGuardLoginRedirect(request.nextUrl)
-    return withSearchRobotsHeader(NextResponse.redirect(new URL(redirectTarget, request.url)))
-  }
-
-  if (holdingMode === 'holding' && !isPlatformUser) {
+  if (holdingMode === 'holding' && !platformUser) {
     if (isTemporaryLandingRootPath(pathname) || isTemporaryLandingPublicExemptPath(pathname)) {
       if (isTemporaryLandingIndexablePath(pathname)) {
-        return nextWithTemporaryLandingPublicHeaders(request, holdingMode)
+        const response = isTemporaryLandingRootPath(pathname)
+          ? nextWithTemporaryLandingHeaders(request, holdingMode)
+          : nextWithTemporaryLandingPublicHeaders(request, holdingMode)
+        return privateResponse(previewDeployment ? withSearchRobotsHeader(response) : response)
       }
 
-      return withSearchRobotsHeader(nextWithTemporaryLandingHeaders(request, holdingMode))
+      return privateResponse(withSearchRobotsHeader(nextWithTemporaryLandingHeaders(request, holdingMode)))
     }
 
     if (isTemporaryLandingModeExemptPath(pathname)) {
-      return withSearchRobotsHeader(nextWithTemporaryLandingHeaders(request, holdingMode))
+      return privateResponse(withSearchRobotsHeader(nextWithTemporaryLandingHeaders(request, holdingMode)))
     }
 
-    return withSearchRobotsHeader(new NextResponse('Not Found', { status: 404 }))
+    return privateResponse(withSearchRobotsHeader(new NextResponse('Not Found', { status: 404 })))
   }
 
-  return withSearchRobotsHeader(nextWithoutGuardHeaders(request, holdingMode))
+  return privateResponse(withSearchRobotsHeader(nextWithPublicMode(request, holdingMode)))
 }
 
 export const config = {

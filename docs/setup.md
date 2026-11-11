@@ -81,12 +81,9 @@ This command sets:
 
 Result:
 - Preview-specific runtime policy applies, including search-index blocking and preview admin recovery.
-- Preview Guard login redirects are controlled by the server-side PostHog flag `preview-guard-enabled`.
-- Missing PostHog local flag evaluation keeps Preview Guard disabled because the code default is `false`.
 
 See also:
 - [Features: Preview Access Policy](./features.md#preview-access-policy)
-- [Preview Guard Technical Notes](../src/features/previewGuard/README.md)
 
 ### Mobile Testing Over LAN or VPN
 
@@ -164,6 +161,15 @@ Payload’s REST API is served by the catch‑all route under [src/app/(payload)
 
 If you need custom Next.js API endpoints, use non‑conflicting paths (e.g. `/api/auth/**`, `/api/form-bridge/**`). Only shadow Payload’s routes with a clear, documented rationale and verify the admin UI still resolves relationship fields correctly.
 
+
+Form Bridge prepares deployment access in its server route after validating the request origin. Its explicit
+request context carries same-origin cookies, application authorization, and the current Function's
+`x-vercel-oidc-token` as `x-vercel-trusted-oidc-idp-token` to the forms lookup and submission APIs. These inner
+requests reject redirects. The shared form utilities read no server credentials, so browser imports remain safe.
+Incoming trusted-source credentials from another project are not reused as the Website's workload identity.
+Vercel OIDC Federation and the Website's effective Trusted Sources policy must permit these self-calls before
+native deployment protection is activated. See [Vercel OIDC](https://vercel.com/docs/oidc) and
+[Trusted Sources](https://vercel.com/docs/deployment-protection/methods-to-bypass-deployment-protection/trusted-sources).
 
 ### Platform Admin Users
 

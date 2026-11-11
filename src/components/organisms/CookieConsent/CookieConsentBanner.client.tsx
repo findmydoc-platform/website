@@ -6,6 +6,7 @@ import type { CookieConsentConfig } from '@/features/cookieConsent'
 
 type CookieConsentBannerProps = {
   compact?: boolean
+  ready: boolean
   config: CookieConsentConfig
   onAcceptAll: () => void
   onRejectAll: () => void
@@ -14,6 +15,7 @@ type CookieConsentBannerProps = {
 
 export function CookieConsentBanner({
   compact = false,
+  ready,
   config,
   onAcceptAll,
   onRejectAll,
@@ -48,6 +50,7 @@ export function CookieConsentBanner({
                       type="button"
                       variant="primary"
                       className="h-8 w-full rounded-full px-1 text-[10px] whitespace-nowrap sm:text-xs"
+                      disabled={!ready}
                       onClick={onAcceptAll}
                     >
                       {config.banner.acceptLabel}
@@ -56,6 +59,7 @@ export function CookieConsentBanner({
                       type="button"
                       variant="secondary"
                       className="h-8 w-full rounded-full px-1 text-[10px] whitespace-nowrap sm:text-xs"
+                      disabled={!ready}
                       onClick={onRejectAll}
                     >
                       {config.banner.rejectLabel}
@@ -64,6 +68,7 @@ export function CookieConsentBanner({
                       type="button"
                       variant="ghost"
                       className="h-8 w-full rounded-full px-1 text-[10px] whitespace-nowrap sm:text-xs"
+                      disabled={!ready}
                       onClick={onCustomize}
                     >
                       {config.banner.customizeLabel}
@@ -92,6 +97,7 @@ export function CookieConsentBanner({
                     type="button"
                     variant="primary"
                     className="h-10 w-full rounded-full px-4 text-sm sm:h-10 sm:w-auto sm:px-6"
+                    disabled={!ready}
                     onClick={onAcceptAll}
                   >
                     {config.banner.acceptLabel}
@@ -100,6 +106,7 @@ export function CookieConsentBanner({
                     type="button"
                     variant="secondary"
                     className="h-10 w-full rounded-full px-4 text-sm sm:h-10 sm:w-auto sm:px-6"
+                    disabled={!ready}
                     onClick={onRejectAll}
                   >
                     {config.banner.rejectLabel}
@@ -108,6 +115,7 @@ export function CookieConsentBanner({
                     type="button"
                     variant="ghost"
                     className="col-span-2 h-9 w-full rounded-full px-4 text-sm sm:col-auto sm:h-10 sm:w-auto sm:px-6"
+                    disabled={!ready}
                     onClick={onCustomize}
                   >
                     {config.banner.customizeLabel}

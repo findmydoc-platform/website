@@ -10,6 +10,12 @@ Public discovery includes both automated search indexing and user-directed AI re
 
 `/llms.txt` is a curated agent-context file for public findmydoc orientation. It points agents to canonical public URLs and citation boundaries; it is not a content export, crawler policy, private capability registry, or substitute for public page citations.
 
+`/llms.txt` and `/.well-known/llms.txt` share one document builder and the resolved public host mode. Production Holding orientation covers only the existing home page, published blog, and their direct pages and posts sitemaps. It does not recommend clinic profiles, comparison, About, contact, legal pages, or internal interfaces. Full retains its broader public-page orientation. Preview returns no public agent-context content. Platform staff access and visitor-supplied mode markers do not expand this host-wide scope.
+
+The request-dependent mode decision and llms response envelope stay live. Both successful documents and blocked responses use `Cache-Control: private, no-store` so shared HTTP caches cannot reuse Full content for Holding or Preview. The existing public-content and sitemap data caches keep their policy, tags, and invalidation owners. These static orientation documents have no per-article list or CMS dependency; new articles are discovered through the published blog and posts sitemap.
+
+Changes to host-mode selection or the llms response envelope require a bounded HTTP check of both paths across Full, Holding, and Preview on a running production build. Content-cache or publication changes also require the existing bounded sitemap freshness check through the application process.
+
 Public discovery work supports three outcomes:
 
 - Search engines can discover stable, crawlable, canonical URLs.
@@ -36,9 +42,19 @@ Doctors, treatments, locations, specialties, tags, and query-filter combinations
 
 Public canonical URLs should prefer readable slug routes over query URLs. Query variants remain useful for users, filters, saved links, sorting, and pagination, but they should be canonicalized or marked `noindex` unless they become dedicated landing pages.
 
+Material changes to content caching or publication behavior require a bounded check on a running production build with isolated test database and storage. Prewarm the anonymous posts sitemap, publish a synthetic draft through the authenticated application process, verify anonymous article and sitemap inclusion, then unpublish through the same process and verify exclusion without restarting or clearing caches. Mocked cache contracts do not prove runtime invalidation. Use the existing test admin and record setup, resolved host mode, observations, and cleanup.
+
 Sitemap entries should use real content timestamps when available. Request-time timestamps must not be used as freshness signals because they imply content freshness that did not happen.
 
-Preview, draft, unpublished, private, and admin-only states stay out of public sitemap discovery. Temporary landing mode is the narrow exception: it exposes only the public blog index, positive-integer pagination, published post details, `robots.txt`, and the pages and posts sitemaps. Its pages sitemap contains only `/posts`; its posts sitemap keeps the published-status filter. The landing page, sitemap index, `llms.txt`, and all other discovery routes remain excluded.
+Preview, draft, unpublished, private, and admin-only states stay out of public sitemap discovery. Production Holding exposes the home page, public blog index, positive-integer pagination, published post details, `robots.txt`, the pages and posts sitemaps, and the scoped llms orientation paths. Its pages sitemap contains exactly the canonical root `/` and `/posts`, without language variants or invented timestamps. Its posts sitemap keeps the published-status filter and discovers all eligible published posts, including future publications. The sitemap index and all other discovery routes remain excluded. Generated Production `robots.txt` announces only the direct pages and posts sitemaps. Preview announces no sitemap, including the generated index. Search and user-directed AI retrieval remain separate from the existing model-training blocks.
+
+The Production Holding home page is indexable while retaining its standalone presentation, existing navigation, and contact access. Standalone presentation and search exclusion are separate decisions. Contact and legal pages keep their existing indexing exclusions, and Preview remains excluded independently of the public host mode.
+
+English remains the default Holding language, with the existing German and Turkish choices. The home page canonical is `https://findmydoc.eu/` without query parameters, including for `lang=en`, `lang=de`, and `lang=tr`. These choices do not create additional canonical language routes or sitemap entries. Existing titles, descriptions, and visible page text remain the source for localized content.
+
+Holding base structured data identifies only the Organization and WebSite. Its description uses the existing English Holding status and visible blog description. The platform vision does not supply claims about available clinic offers, ratings, reviews, verification, or medical quality.
+
+Material changes to Holding presentation, navigation, or the composition of HTTP headers and page metadata require a bounded browser check on a running production build. Check the standalone page, allowed navigation and contact access, language choice, HTTP robots header, canonical, robots and Googlebot metadata, and JSON-LD together.
 
 findmydoc observes public discovery traffic only as operational visibility. Platform logs may record recognized crawler classes, the requested public path, platform timestamp, runtime environment, and coarse response context so the team can detect crawl problems, sitemap errors, and agent-discovery drift. This is not product analytics or user behavior tracking. Logs must not capture private content, draft content, admin-only surfaces, cookies, authentication data, contact details, medical free text, IP-based user profiles, or individual user identities.
 
@@ -71,6 +87,7 @@ Use an ADR when a decision changes the architecture of public discovery, such as
 Relevant docs:
 
 - [ADR 018 - Native Payload CMS localization strategy](./adrs/018-adr-native-payload-localization-strategy.md)
+- [ADR 038 - Native Payload locale publication without aggregate readiness gates](./adrs/038-adr-native-payload-locale-publication.md)
 - [Trust claim process requirements](../trust-claim-process-requirements-task.md)
 - [Trust claim review evidence requirements](../trust-claim-review-evidence-requirements-task.md)
 

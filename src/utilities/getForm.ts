@@ -5,6 +5,7 @@ type SameOriginRequestContext = {
   headers: {
     authorization?: string
     cookie?: string
+    'x-vercel-trusted-oidc-idp-token'?: string
   }
   origin: string
 }
@@ -33,10 +34,12 @@ export async function getForm(slug: string, requestContext?: SameOriginRequestCo
   if (requestContext?.headers.authorization) authHeaders.Authorization = requestContext.headers.authorization
   if (requestContext?.headers.cookie) authHeaders.Cookie = requestContext.headers.cookie
 
-  const response =
-    Object.keys(authHeaders).length > 0
-      ? await fetch(requestURL.toString(), { cache: 'no-store', headers: authHeaders })
-      : await fetch(requestURL.toString())
+  const deploymentToken = requestContext?.headers['x-vercel-trusted-oidc-idp-token']
+  if (deploymentToken) authHeaders['x-vercel-trusted-oidc-idp-token'] = deploymentToken
+
+  const response = requestContext
+    ? await fetch(requestURL.toString(), { cache: 'no-store', headers: authHeaders, redirect: 'error' })
+    : await fetch(requestURL.toString())
 
   if (!response.ok) {
     throw new Error('Could not load form')

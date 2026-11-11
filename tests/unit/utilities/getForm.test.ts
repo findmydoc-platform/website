@@ -38,7 +38,7 @@ describe('getForm', () => {
     expect(result).toEqual(form)
   })
 
-  it('uses the incoming origin and forwards only request authentication to the internal API', async () => {
+  it('keeps server-prepared deployment access and application authentication on the same origin', async () => {
     process.env.NEXT_PUBLIC_SERVER_URL = 'https://configured.example.com'
     mockFetch.mockResolvedValue({
       ok: true,
@@ -51,6 +51,7 @@ describe('getForm', () => {
       headers: {
         authorization: 'Bearer verified-token',
         cookie: 'sb-project-auth-token=verified-session',
+        'x-vercel-trusted-oidc-idp-token': 'website-current-invocation',
       },
     })
 
@@ -58,9 +59,11 @@ describe('getForm', () => {
       'https://generated-preview.vercel.app/api/forms?where%5Bslug%5D%5Bequals%5D=public-contact&limit=1&depth=0',
       {
         cache: 'no-store',
+        redirect: 'error',
         headers: {
           Authorization: 'Bearer verified-token',
           Cookie: 'sb-project-auth-token=verified-session',
+          'x-vercel-trusted-oidc-idp-token': 'website-current-invocation',
         },
       },
     )

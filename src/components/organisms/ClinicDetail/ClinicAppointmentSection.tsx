@@ -31,6 +31,7 @@ type ClinicAppointmentSectionProps = {
   isPhoneLocked: boolean
   requiresReauthentication: boolean
   submittedInquiryHref: string | null
+  preparationRegistrationHref?: string | null
   selectedDoctorId: string
   selectedTreatmentId: string
   doctors: ClinicDetailDoctor[]
@@ -42,7 +43,11 @@ type ClinicAppointmentSectionProps = {
   isSubmitting: boolean
   isSubmitted: boolean
   feedbackRef: React.RefObject<HTMLDivElement | null>
-  onFieldChange: <K extends keyof ContactFormFields>(field: K, value: ContactFormFields[K]) => void
+  onFieldChange: <K extends keyof ContactFormFields>(
+    field: K,
+    value: ContactFormFields[K],
+    isUserEdit?: boolean,
+  ) => void
   onDoctorChange: (doctorId: string) => void
   onTreatmentChange: (treatmentId: string) => void
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void
@@ -53,6 +58,17 @@ const inputClassName =
 const textAreaClassName =
   'min-h-32 w-full rounded-[24px] border border-primary/45 bg-background px-4 py-3 text-sm text-secondary outline-hidden transition-colors placeholder:text-secondary/45 focus:border-primary focus:ring-2 focus:ring-primary/20 aria-invalid:border-destructive/70 aria-invalid:focus:ring-destructive/15'
 
+const isAutofilled = (element: Element): boolean => {
+  for (const selector of [':autofill', ':-webkit-autofill']) {
+    try {
+      if (element.matches(selector)) return true
+    } catch {
+      // An engine can support only one of the standard and prefixed selectors.
+    }
+  }
+  return false
+}
+
 export function ClinicAppointmentSection({
   sectionId,
   sectionRef,
@@ -61,6 +77,7 @@ export function ClinicAppointmentSection({
   isPhoneLocked,
   requiresReauthentication,
   submittedInquiryHref,
+  preparationRegistrationHref,
   selectedDoctorId,
   selectedTreatmentId,
   doctors,
@@ -90,6 +107,7 @@ export function ClinicAppointmentSection({
   const treatmentSelectRef = React.useRef<HTMLSelectElement | null>(null)
   const formValidation = usePublicFormValidation({
     messages: {
+      accountAuthorization: { valueMissing: 'Authorize account creation and this inquiry submission.' },
       consent: { valueMissing: 'Confirm that we may process your contact details.' },
       email: {
         typeMismatch: 'Enter a valid email address.',
@@ -137,7 +155,17 @@ export function ClinicAppointmentSection({
       event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
     ) => {
       formValidation.handleFieldChange(event)
-      onFieldChange(field, event.target.value)
+      const nativeEvent = event.nativeEvent
+      const isUserEdit =
+        event.target instanceof HTMLSelectElement ||
+        (nativeEvent instanceof InputEvent &&
+          Boolean(nativeEvent.inputType) &&
+          !isAutofilled(event.target) &&
+          (nativeEvent.inputType !== 'insertReplacementText' ||
+            // Accepted spelling/writing suggestions replace text in the active field.
+            // Native autofill can use the same inputType, with no replacement data.
+            (event.target === document.activeElement && nativeEvent.data !== null)))
+      onFieldChange(field, event.target.value, isUserEdit)
     },
     [formValidation, onFieldChange],
   )
@@ -471,6 +499,33 @@ export function ClinicAppointmentSection({
             </FieldError>
           </Field>
 
+          {inquiryCreation.kind === 'guest' ? (
+            <Field data-invalid={formValidation.getFieldError('accountAuthorization') ? true : undefined}>
+              <label className="flex items-start gap-3 rounded-2xl border border-primary/20 bg-background px-4 py-3 text-sm leading-6 text-secondary">
+                <input
+                  type="checkbox"
+                  name="accountAuthorization"
+                  className="mt-1 size-4 shrink-0"
+                  checked={fields.accountAuthorization ?? false}
+                  onChange={(event) => {
+                    formValidation.handleFieldChange(event)
+                    onFieldChange('accountAuthorization', event.target.checked)
+                  }}
+                  required
+                  {...formValidation.getFieldProps('accountAuthorization')}
+                />
+                <span>
+                  I authorize creation of my patient account and submission of this inquiry after I set my password and
+                  confirm my email. The inquiry is saved privately for seven days and is not sent before account
+                  completion.
+                </span>
+              </label>
+              <FieldError id={formValidation.getFieldErrorId('accountAuthorization')}>
+                {formValidation.getFieldError('accountAuthorization')}
+              </FieldError>
+            </Field>
+          ) : null}
+
           <Alert
             id={feedbackId}
             ref={formBlocked ? undefined : feedbackRef}
@@ -480,6 +535,14 @@ export function ClinicAppointmentSection({
             className={message && !formBlocked ? 'text-left break-words' : 'sr-only'}
           >
             {!formBlocked ? (message ?? '') : ''}
+            {message && !formBlocked && preparationRegistrationHref ? (
+              <UiLink
+                href={preparationRegistrationHref}
+                label="Continue account creation"
+                appearance="inline"
+                className="mt-2 inline-flex font-medium text-secondary underline underline-offset-4"
+              />
+            ) : null}
             {message && !formBlocked && submittedInquiryHref ? (
               <UiLink
                 href={submittedInquiryHref}
@@ -495,7 +558,17 @@ export function ClinicAppointmentSection({
             className="w-full rounded-full px-8 sm:w-auto"
             disabled={formBlocked || isSubmitting || isSubmitted}
           >
-            {isSubmitting ? 'Sending Request...' : isSubmitted ? 'Request sent' : 'Submit Contact Request'}
+            {isSubmitting
+              ? inquiryCreation.kind === 'guest'
+                ? 'Saving request...'
+                : 'Sending Request...'
+              : isSubmitted
+                ? preparationRegistrationHref
+                  ? 'Inquiry saved, not sent'
+                  : 'Request sent'
+                : inquiryCreation.kind === 'guest'
+                  ? 'Save inquiry and create account'
+                  : 'Submit Contact Request'}
           </Button>
         </form>
       </div>

@@ -4,6 +4,10 @@ import * as React from 'react'
 
 import { Heading } from '@/components/atoms/Heading'
 import { Button } from '@/components/atoms/button'
+import {
+  InquiryPreparationNotices,
+  type InquiryPreparationNoticesProps,
+} from '@/components/organisms/InquiryPreparationNotices/Component'
 import type { InquiryListItemDTO, PatientInquiryQueueDTO } from '@/features/inquiryCommunication/contracts'
 import type { PatientInquiryFilter } from '@/features/patientInquiries/model'
 import { cn } from '@/utilities/ui'
@@ -22,6 +26,7 @@ type PatientInquiryQueueProps = {
   refreshError?: string
   selectedInquiryId?: string
   status: 'error' | 'idle' | 'loading' | 'ready'
+  preparations?: InquiryPreparationNoticesProps & { announcement?: string }
 }
 
 const getInitials = (name: string): string =>
@@ -76,7 +81,7 @@ const InquiryRow = ({
       aria-current={selected ? 'page' : undefined}
       data-inquiry-id={item.id}
       className={cn(
-        'grid w-full grid-cols-[3.75rem_minmax(0,1fr)_auto] gap-3 border-b border-border/70 px-4 py-5 text-left transition-colors last:border-b-0 hover:bg-muted/35 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-hidden sm:grid-cols-[4.25rem_minmax(0,1fr)_auto]',
+        'grid min-h-48 w-full grid-cols-[3.75rem_minmax(0,1fr)_auto] gap-3 border-b border-border/70 px-4 py-5 text-left transition-colors last:border-b-0 hover:bg-muted/35 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-hidden sm:grid-cols-[4.25rem_minmax(0,1fr)_auto] lg:min-h-40',
         selected && 'bg-primary/5 shadow-[inset_3px_0_0_hsl(var(--primary))]',
       )}
       onClick={(event) => {
@@ -156,14 +161,19 @@ export function PatientInquiryQueue({
   refreshError,
   selectedInquiryId,
   status,
+  preparations,
 }: PatientInquiryQueueProps) {
+  const preparedItems = preparations?.items ?? []
+  const preparedInquiryIds = new Set(preparedItems.flatMap((item) => (item.inquiryId ? [item.inquiryId] : [])))
+  const unsubmittedCount = preparedItems.filter((item) => item.status !== 'submitted').length
+  const submittedCount = preparedItems.length - unsubmittedCount
   const tabs: Array<{ count: number; label: string; value: PatientInquiryFilter }> = [
-    { count: data?.counts.all ?? 0, label: 'All', value: 'all' },
+    { count: Math.max(data?.counts.all ?? 0, submittedCount) + unsubmittedCount, label: 'All', value: 'all' },
     { count: data?.counts.open ?? 0, label: 'Open', value: 'open' },
     { count: data?.counts.closed ?? 0, label: 'Closed', value: 'closed' },
   ]
 
-  const items = data?.items ?? []
+  const items = (data?.items ?? []).filter((item) => filter !== 'all' || !preparedInquiryIds.has(item.id))
   const openItems = items.filter((item) => item.lifecycle === 'open')
   const closedItems = items.filter((item) => item.lifecycle === 'closed')
   const groups =
@@ -202,6 +212,24 @@ export function PatientInquiryQueue({
         ))}
       </div>
 
+      {preparations ? (
+        <p className="sr-only" role="status" aria-atomic="true">
+          {preparations.announcement}
+        </p>
+      ) : null}
+      {filter === 'all' && preparations ? (
+        <InquiryPreparationNotices
+          {...preparations}
+          items={preparedItems}
+          renderSubmitted={(prepared) => {
+            const item = data?.items.find((entry) => entry.id === prepared.inquiryId)
+            return item ? (
+              <InquiryRow item={item} now={now} onSelect={onSelect} selected={item.id === selectedInquiryId} />
+            ) : null
+          }}
+        />
+      ) : null}
+
       {refreshError ? (
         <div
           role="status"
@@ -214,7 +242,7 @@ export function PatientInquiryQueue({
         </div>
       ) : null}
 
-      {status === 'loading' || status === 'idle' ? <QueueSkeleton /> : null}
+      {(status === 'loading' || status === 'idle') && !preparedItems.length ? <QueueSkeleton /> : null}
 
       {status === 'error' ? (
         <div className="flex min-h-80 flex-col items-center justify-center px-6 py-12 text-center">
@@ -229,7 +257,7 @@ export function PatientInquiryQueue({
         </div>
       ) : null}
 
-      {status === 'ready' && items.length === 0 ? (
+      {status === 'ready' && items.length === 0 && !(filter === 'all' && preparedItems.length) ? (
         <div className="flex min-h-80 flex-col items-center justify-center px-6 py-12 text-center">
           <span className="mb-5 flex size-20 items-center justify-center rounded-full bg-primary/10 text-primary">
             <Inbox className="size-9" aria-hidden="true" />
@@ -243,7 +271,7 @@ export function PatientInquiryQueue({
         </div>
       ) : null}
 
-      {status === 'ready' && items.length > 0 ? (
+      {status === 'ready' && (items.length > 0 || Boolean(data?.nextCursor)) ? (
         <div className="lg:rounded-xl lg:border lg:border-border lg:bg-card lg:shadow-xs">
           {groups.map(([label, group]) =>
             group.length > 0 ? (

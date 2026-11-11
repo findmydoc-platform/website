@@ -121,6 +121,12 @@ import { InquiryModerationEvents } from './collections/InquiryModerationEvents'
 import { InquiryRetentionPolicies } from './collections/InquiryRetentionPolicies'
 import { InquiryLegalHolds } from './collections/InquiryLegalHolds'
 import { InquiryDeletionProofs } from './collections/InquiryDeletionProofs'
+import { InquiryPreparations } from './collections/InquiryPreparations'
+import {
+  preparationGetHandler,
+  preparationPostHandler,
+  preparationSubmitHandler,
+} from './endpoints/inquiryPreparations'
 import { InquiryCommandLocks } from './collections/InquiryCommandLocks'
 import { ClinicNotificationOccurrences } from './collections/ClinicNotificationOccurrences'
 import { ClinicNotificationReadReceipts } from './collections/ClinicNotificationReadReceipts'
@@ -211,6 +217,9 @@ export default buildConfig({
     preserveExtension: true,
   },
   endpoints: [
+    { path: '/patient/inquiry-preparations', method: 'get', handler: preparationGetHandler },
+    { path: '/patient/inquiry-preparations', method: 'post', handler: preparationPostHandler },
+    { path: '/patient/inquiry-preparations/submit', method: 'post', handler: preparationSubmitHandler },
     ...clinicDashboardDoctorEndpoints,
     { path: '/internal/clinic-notifications/capture', method: 'get', handler: clinicNotificationCaptureGetHandler },
     { path: '/internal/clinic-notifications/capture', method: 'post', handler: clinicNotificationCapturePostHandler },
@@ -643,6 +652,7 @@ export default buildConfig({
     InquiryLegalHolds,
     InquiryDeletionProofs,
     InquiryCommandLocks,
+    InquiryPreparations,
     ClinicNotificationOccurrences,
     ClinicNotificationReadReceipts,
     ClinicNotificationControls,

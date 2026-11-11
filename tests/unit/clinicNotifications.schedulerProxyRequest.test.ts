@@ -18,7 +18,10 @@ vi.mock('payload', async (importOriginal) => ({
 }))
 
 vi.mock('@payload-config', () => ({ default: {} }))
-vi.mock('@/posthog/api', () => ({ sendPostHogException: vi.fn() }))
+vi.mock('@/posthog/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/posthog/api')>()),
+  sendPostHogException: vi.fn(),
+}))
 import { proxy } from '@/proxy'
 import { GET, HEAD, POST } from '@/app/api/internal/clinic-notifications/preview-retention/route'
 
@@ -107,20 +110,6 @@ describe('Preview scheduler request through the proxy and worker', () => {
     expect(response.status).toBe(405)
     await expect(response.text()).resolves.toBe('')
     expect(mocks.createServerClient).not.toHaveBeenCalled()
-    expect(mocks.getPayload).not.toHaveBeenCalled()
-  })
-
-  it.each([
-    '/api/internal/clinic-notifications',
-    '/api/internal/clinic-notifications/retention',
-    '/api/internal/clinic-notifications/preview-retention/extra',
-    '/api/internal/clinic-notifications/preview-retention-other',
-  ])('keeps the Preview guard on neighboring path %s', async (path) => {
-    const response = await proxy(new NextRequest(`https://preview.findmydoc.eu${path}`))
-
-    expect(response.status).toBe(401)
-    await expect(response.json()).resolves.toEqual({ error: 'Unauthorized' })
-    expect(response.headers.get('x-middleware-next')).toBeNull()
     expect(mocks.getPayload).not.toHaveBeenCalled()
   })
 })

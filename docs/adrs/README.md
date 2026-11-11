@@ -17,6 +17,7 @@ This repository contains the Architecture Decision Records (ADRs) for the projec
    - Problem Description
    - Considerations (alternatives and evaluation criteria)
    - Final Decision with rationale
+   - Consequences (positive and negative effects)
    - Technical Debt (if any)
    - Risks (optional)
    - Deprecated or Superseded sections (if applicable)
@@ -82,15 +83,15 @@ When adding a new ADR:
 - [018 — Native Payload CMS localization strategy](./018-adr-native-payload-localization-strategy.md)
 - [019 — PostHog event taxonomy and usage governance](./019-adr-posthog-event-taxonomy-and-usage-governance.md)
 - [020 — Database migration quality gate](./020-adr-database-migration-quality-gate.md)
-- [021 — Localization source, ownership, and readiness governance](./021-adr-localization-source-ownership-and-readiness-governance.md)
-- [022 — Public localization routing, SEO, and domain strategy](./022-adr-public-localization-routing-seo-and-domain-strategy.md)
+- [021 — Localization source, ownership, and readiness governance](./021-adr-localization-source-ownership-and-readiness-governance.md) _(publication-readiness rules superseded by ADR 038; canonical UI Copy format specified by ADR 039; other decisions remain in force)_
+- [022 — Public localization routing, SEO, and domain strategy](./022-adr-public-localization-routing-seo-and-domain-strategy.md) _(aggregate readiness condition superseded by ADR 038; other decisions remain in force)_
 - [023 — Public website cache and revalidation strategy](./023-adr-public-website-cache-and-revalidation-strategy.md)
 - [024 — Production build webpack fallback](./024-adr-production-build-webpack-fallback.md)
 - [025 — Direct staff authentication collections](./025-adr-direct-staff-auth-collections.md)
 - [026 — Standalone Clinic Dashboard BFF architecture](https://github.com/findmydoc-platform/platform-architecture/blob/main/decisions/026-adr-standalone-clinic-dashboard-bff-architecture.md) _(migrated to the shared platform catalog; [former path](./026-adr-standalone-clinic-dashboard-bff-architecture.md) redirects; GitHub access required)_
 - [027 — Database runtime connection modes](./027-adr-database-runtime-connection-modes.md)
 - [028 — Lettermint for transactional email](./028-adr-lettermint-for-transactional-email.md) _(superseded by ADR 031)_
-- [029 — Tenant-safe Clinic Dashboard reporting contract](./029-adr-tenant-safe-clinic-dashboard-reporting.md)
+- [029 — Tenant-safe Clinic Dashboard reporting contract](./029-adr-tenant-safe-clinic-dashboard-reporting.md) _(superseded by ADR 040)_
 - [030 — Bound transactional email webhook processing](./030-adr-bound-transactional-email-webhook-processing.md)
 - [031 — Transactional email technical activation gates](./031-adr-transactional-email-technical-activation-gates.md)
 - [032 — Supabase native-mail suppression](./032-adr-supabase-native-mail-suppression.md) _(narrow exception to ADR 028's hook rejection; ADR 031 remains in force)_
@@ -98,3 +99,8 @@ When adding a new ADR:
 - [034 — Bounded Website recovery execution exclusion](./034-adr-website-recovery-execution-exclusion.md)
 - [035 — Notification acknowledgement decision time](./035-adr-notification-acknowledgement-decision-time.md)
 - [036 — Order of clinic access changes and business writes](./036-adr-clinic-authorization-mutation-ordering.md) _(approved on 17.10.2026)_
+- [037 — Focused mutation testing for critical business logic](https://github.com/findmydoc-platform/platform-architecture/blob/cdf782c2d654241529b6bc20ecb5493787d2dbbf/decisions/037-adr-focused-mutation-testing.md) _(Draft platform decision; Website adoption remains open; GitHub access required)_
+- [038 — Native Payload locale publication without aggregate readiness gates](./038-adr-native-payload-locale-publication.md)
+- [039 — Canonical ARB catalogs for Product UI Copy](./039-adr-canonical-arb-ui-copy-catalogs.md)
+- [040 — Four-count Clinic Dashboard reporting V3](./040-adr-four-count-clinic-dashboard-reporting.md)
+- [041 — Shared UI Copy source, delivery, and fallback](./041-adr-shared-ui-copy-source-and-fallback.md)

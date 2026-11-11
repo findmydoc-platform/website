@@ -139,13 +139,16 @@ export type ClinicContactRequestPayload = {
   consent: boolean
   email?: string
   fullName?: string
+  firstName?: string
+  lastName?: string
+  accountAuthorization?: boolean
   phoneNumber?: string
 }
 
 export type ClinicContactRequestSubmitter = (
   payload: ClinicContactRequestPayload,
   authenticated: boolean,
-) => Promise<{ id: string }>
+) => Promise<{ id: string; preparation?: { reference: string; expiresAt: string } }>
 
 export type ClinicDetailProfileViewedEvent = {
   clinicId: string
@@ -156,20 +159,10 @@ export type ClinicDetailProfileViewedEvent = {
   verificationTier: ClinicVerificationTier
 }
 
-export type ClinicDetailCtaClickedEvent = {
-  clinicId: string
-  clinicSlug: string
-  ctaId: 'choose_treatment' | 'contact' | 'contact_doctor'
-  ctaLabel: string
-  ctaLocation: 'doctor_card' | 'further_treatments' | 'location_card' | 'map_overlay' | 'treatment_strip'
-  doctorId?: string
-  pagePath: string
-  treatmentId?: string
-}
-
 export type ClinicDetailAnalyticsPort = {
-  onCtaClicked: (event: ClinicDetailCtaClickedEvent) => void
-  onProfileViewed: (event: ClinicDetailProfileViewedEvent) => void
+  isReady: boolean
+  onInquiryStarted: (event: { clinicId: string }) => boolean
+  onProfileViewed: (event: ClinicDetailProfileViewedEvent) => boolean
 }
 
 export class ClinicContactRequestError extends Error {

@@ -32,7 +32,10 @@ describe('Holding mode resolver', () => {
       mode: 'holding',
       source: 'posthog',
     })
-    expect(posthogMocks.createPostHogHoldingEvaluationContext).toHaveBeenCalledWith({ url })
+    expect(posthogMocks.createPostHogHoldingEvaluationContext).toHaveBeenCalledWith({
+      url,
+      env: { PUBLIC_SITE_FALLBACK_MODE: 'full' },
+    })
     expect(posthogMocks.evaluatePostHogFlags).toHaveBeenCalledWith(
       expect.objectContaining({ distinctId: 'holding:findmydoc.eu' }),
       ['temporary-landing-mode'],

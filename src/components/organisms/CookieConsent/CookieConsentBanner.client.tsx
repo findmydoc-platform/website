@@ -92,10 +92,10 @@ export function CookieConsentBanner({
           <div className="group relative col-start-2 row-start-3 justify-self-end lg:col-start-3 lg:row-start-4 lg:self-center">
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
               size="icon"
               aria-label={config.banner.customizeLabel}
-              className="size-11 rounded-lg bg-muted text-foreground hover:bg-muted"
+              className="size-11 rounded-lg text-foreground hover:bg-muted"
               disabled={!ready}
               onClick={onCustomize}
             >

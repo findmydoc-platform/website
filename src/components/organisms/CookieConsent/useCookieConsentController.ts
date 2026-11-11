@@ -139,7 +139,7 @@ export function useCookieConsentController({
     isReady,
     categoryDrafts,
     settingsOpen,
-    isBannerVisible: Boolean(config?.enabled && !consent),
+    isBannerVisible: Boolean(config?.enabled && !consent && !settingsOpen),
     isLauncherVisible: Boolean(config?.enabled && consent),
     acceptAllCategories,
     rejectAllCategories,

@@ -57,7 +57,7 @@ export function CookieConsentBanner({
           >
             {config.banner.title}
           </DialogTitle>
-          <DialogDescription className="text-base leading-6 whitespace-pre-line">
+          <DialogDescription className="text-base leading-6 whitespace-pre-line text-foreground">
             {config.banner.description}
           </DialogDescription>
         </DialogHeader>

@@ -66,15 +66,15 @@ export function CookieConsentDialog({
           <DialogTitle ref={titleRef} tabIndex={-1} className="pr-8 leading-tight focus-visible:outline-none">
             {config.settings.title}
           </DialogTitle>
-          <DialogDescription>{config.settings.description}</DialogDescription>
+          <DialogDescription className="text-foreground">{config.settings.description}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           {config.privacyPolicyHref ? (
             <div className="flex flex-col items-start gap-4 rounded-2xl border border-border/70 bg-muted/25 px-4 py-3 sm:flex-row sm:justify-between">
               <div className="space-y-1">
-                <p className="text-xs tracking-wide text-muted-foreground uppercase">Privacy policy</p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs tracking-wide text-foreground uppercase">Privacy policy</p>
+                <p className="text-sm text-foreground">
                   Read the page that explains how we handle optional cookies and third-party services.
                 </p>
               </div>
@@ -104,7 +104,7 @@ export function CookieConsentDialog({
                 <Label className="text-sm font-semibold" htmlFor={essentialCookieCheckboxId}>
                   {config.settings.essentialLabel}
                 </Label>
-                <p className="text-sm text-muted-foreground">{config.settings.essentialDescription}</p>
+                <p className="text-sm text-foreground">{config.settings.essentialDescription}</p>
               </div>
             </div>
           </div>
@@ -129,16 +129,16 @@ export function CookieConsentDialog({
                       <Label className="text-sm font-semibold" htmlFor={checkboxId}>
                         {category.label}
                       </Label>
-                      <p className="text-sm text-muted-foreground">{category.description}</p>
+                      <p className="text-sm text-foreground">{category.description}</p>
                       {category.services && category.services.length > 0 ? (
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-sm text-foreground">
                           Selecting this category permits all services listed below.
                         </p>
                       ) : null}
                       {category.services?.map((service) => (
                         <div key={service.name} className="space-y-1 border-t border-border/70 pt-3 text-sm">
                           <p className="font-semibold">{service.name}</p>
-                          <p className="text-muted-foreground">{service.description}</p>
+                          <p className="text-foreground">{service.description}</p>
                           <UiLink className="text-primary underline" href={service.privacyHref} newTab>
                             {service.name} privacy notice
                           </UiLink>

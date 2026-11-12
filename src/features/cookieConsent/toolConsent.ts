@@ -47,7 +47,7 @@ export function normalizeCookieConsentToolKeys(
   })
 }
 
-function findActiveConsentCategory(
+export function findActiveConsentCategory(
   categories: CookieConsentConfig['categories'] | null | undefined,
   tool: CookieConsentToolKey,
 ): CookieConsentCategoryKey | null {

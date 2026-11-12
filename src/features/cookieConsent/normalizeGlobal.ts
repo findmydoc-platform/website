@@ -5,7 +5,7 @@ import { DEFAULT_COOKIE_CONSENT_CATEGORIES, normalizeCookieConsentCategories } f
 import { COOKIE_CONSENT_DEFAULT_VERSION } from './constants'
 import type { CookieConsentConfig } from './types'
 import { APPROVED_COOKIE_CONSENT_PROMPT } from './promptCopy'
-import { COOKIE_CONSENT_TOOL_REGISTRY } from './toolConsent'
+import { COOKIE_CONSENT_TOOL_REGISTRY, findActiveConsentCategory } from './toolConsent'
 
 const defaultConfig: CookieConsentConfig = {
   enabled: true,
@@ -31,7 +31,7 @@ const defaultConfig: CookieConsentConfig = {
 function withServiceDetails(categories: CookieConsentConfig['categories']): CookieConsentConfig['categories'] {
   return categories.map((category) => {
     const services = category.tools
-      .filter((tool) => categories.filter((entry) => entry.tools.includes(tool)).length === 1)
+      .filter((tool) => findActiveConsentCategory(categories, tool) === category.key)
       .map((tool) => ({
         name: COOKIE_CONSENT_TOOL_REGISTRY[tool].label,
         description: COOKIE_CONSENT_TOOL_REGISTRY[tool].description,

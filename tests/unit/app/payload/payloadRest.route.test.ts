@@ -1,3 +1,4 @@
+import { setImmediate } from 'node:timers/promises'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const routeMocks = vi.hoisted(() => {
@@ -64,6 +65,43 @@ describe('Payload REST route database availability', () => {
 
     expect(response).toBe(payloadResponse)
     expect(routeMocks.payloadHandler).toHaveBeenCalledWith(request, context)
+  })
+
+  it('keeps an MCP POST open until its complete tool response is available', async () => {
+    const result = 'data: {"jsonrpc":"2.0","id":1,"result":{}}\n\n'
+    let finish!: () => void
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        finish = () => {
+          controller.enqueue(new TextEncoder().encode(result))
+          controller.close()
+        }
+      },
+    })
+    routeMocks.payloadHandler.mockResolvedValueOnce(
+      new Response(body, { headers: { 'content-type': 'text/event-stream', 'cache-control': 'no-cache' } }),
+    )
+    const route = await import('@/app/(payload)/api/[...slug]/route')
+    const request = new Request('https://preview.findmydoc.eu/api/mcp', { method: 'POST' })
+    const mcpContext = { params: Promise.resolve({ slug: ['mcp'] }) }
+    let returned = false
+    const pending = route.POST(request, mcpContext).then((response) => {
+      returned = true
+      return response
+    })
+
+    try {
+      await setImmediate()
+      expect(routeMocks.payloadHandler).toHaveBeenCalledWith(request, mcpContext)
+      expect(returned).toBe(false)
+    } finally {
+      finish()
+    }
+
+    const response = await pending
+    expect(await response.text()).toBe(result)
+    expect(response.headers.get('content-type')).toBe('text/event-stream')
+    expect(response.headers.get('cache-control')).toBe('no-cache')
   })
 
   it('rethrows a non-database initialization error without invoking Payload a second time', async () => {

@@ -5,6 +5,7 @@ import {
   readClinicOpenInquiryInventory,
   readClinicInquiryDetail,
   updateClinicInquiryReadPosition,
+  updateClinicInquiryState,
 } from '@/features/inquiryCommunication/service'
 import { changeClinicGroup } from '@/features/clinicGroups/membership'
 import { replaceClinicStaffAssignment } from '@/features/clinicGroups/staffAssignments'
@@ -73,6 +74,9 @@ describe('authorized open inquiry inventory', () => {
   }, 60_000)
 
   afterAll(async () => {
+    for (const collection of ['inquiryAuditEvents', 'inquiryConversations'] as const) {
+      await payload.delete({ collection, overrideAccess: true, where: { inquiry: { in: createdInquiryIds } } })
+    }
     await payload.delete({
       collection: 'inquiryReadPositions',
       overrideAccess: true,
@@ -192,6 +196,52 @@ describe('authorized open inquiry inventory', () => {
       await replaceClinicStaffAssignment(operator, staffId, { scope: 'local', clinicId })
       await payload.delete({ collection: 'clinicGroups', id: group.id, overrideAccess: false, req: operator })
     }
+  })
+
+  it('reflects newly stored, closed and reopened inquiries on the next authorized summary read', async () => {
+    const before = await readClinicOpenInquiryInventory(clinicReqA)
+    const inquiry = await payload.create({
+      collection: 'patientClinicInquiries',
+      context: { inquiryCommunicationCommand: true },
+      overrideAccess: true,
+      data: {
+        clinic: clinicId,
+        fullName: 'Synthetic refresh inquiry',
+        email: 'refresh@example.invalid',
+        phoneNumber: '+493000000001',
+        message: 'Synthetic current inventory transition.',
+        status: 'submitted',
+        handlingStatus: 'submitted',
+        lifecycle: 'open',
+        revision: 0,
+        activitySequence: 1,
+        externalSequence: 0,
+        clinicNotificationSequence: 1,
+        clinicUnreadEpoch: 0,
+        clinicUnreadFloor: 0,
+        lastActivityAt: '2020-01-01T00:00:00.000Z',
+        consent: { accepted: true, acceptedAt: '2020-01-01T00:00:00.000Z', text: 'Synthetic consent.' },
+      },
+    })
+    const inquiryId = String(inquiry.id)
+    createdInquiryIds.push(inquiryId)
+    expect(await readClinicOpenInquiryInventory(clinicReqA)).toEqual({ count: before.count + 1 })
+    const detail = await readClinicInquiryDetail(clinicReqA, { inquiryId })
+    const closed = await updateClinicInquiryState(clinicReqA, {
+      action: 'close',
+      inquiryId,
+      expectedRevision: detail.inquiry.revision,
+    })
+    expect(await readClinicOpenInquiryInventory(clinicReqA)).toEqual(before)
+    await updateClinicInquiryState(clinicReqA, {
+      action: 'reopen',
+      inquiryId,
+      expectedRevision: closed.inquiry.revision,
+    })
+    expect(await readClinicOpenInquiryInventory(clinicReqA)).toEqual({ count: before.count + 1 })
+    const after = await readClinicInquiryDetail(clinicReqA, { inquiryId })
+    expect(after.inquiry.handlingStatus).toBe('submitted')
+    expect(after.inquiry.unread).toEqual(detail.inquiry.unread)
   })
 
   it('fails closed when the native source cannot establish a complete count', async () => {

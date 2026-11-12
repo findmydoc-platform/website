@@ -37,6 +37,12 @@ or Content Manager users. Key creation binds the owner to the administrator crea
 
 ## Clinic profiles and media
 
+The `POST /api/mcp` route awaits the complete tool response before returning to Next.js. Collection and global hooks
+can therefore register their cache revalidations before the request is finalized. The adapter preserves the SDK's
+status, headers and response bytes, including its event-stream framing. Existing hooks and the cache planner retain
+invalidation ownership. This completion adapter addresses [Payload issue #18490](https://github.com/payloadcms/payload/issues/18490)
+and can be removed when the upstream endpoint itself awaits tool completion.
+
 Enable each collection operation and custom tool needed by the key. Custom tools are disabled by default and still use
 the key owner's current platform role and Payload access rules. `createClinics` and `createDoctors` generate the slug
 when it is omitted. `trashClinic` and `trashDoctor` move one profile to the trash. The

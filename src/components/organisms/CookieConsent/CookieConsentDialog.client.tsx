@@ -1,7 +1,6 @@
 'use client'
 
-import Link from 'next/link'
-import { useId } from 'react'
+import { useId, useRef } from 'react'
 
 import { Button } from '@/components/atoms/button'
 import { Checkbox } from '@/components/atoms/checkbox'
@@ -13,11 +12,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/atoms/dialog'
+import { UiLink } from '@/components/molecules/Link'
 import { Label } from '@/components/atoms/label'
 import type { CookieConsentCategoryKey, CookieConsentCategoryMap, CookieConsentConfig } from '@/features/cookieConsent'
 import { cn } from '@/utilities/ui'
 
 type CookieConsentDialogProps = {
+  onClose?: () => void
   open: boolean
   config: CookieConsentConfig
   categoryDrafts: CookieConsentCategoryMap
@@ -30,6 +31,7 @@ type CookieConsentDialogProps = {
 
 export function CookieConsentDialog({
   open,
+  onClose,
   config,
   categoryDrafts,
   onOpenChange,
@@ -39,31 +41,60 @@ export function CookieConsentDialog({
   onSave,
 }: CookieConsentDialogProps) {
   const essentialCookieCheckboxId = useId()
+  const titleRef = useRef<HTMLHeadingElement>(null)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[calc(100svh-2rem)] overflow-y-auto p-5 sm:max-w-2xl sm:p-6">
+      <DialogContent
+        aria-modal="true"
+        className="max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] overflow-y-auto overscroll-contain rounded-2xl p-5 sm:max-w-2xl sm:p-6"
+        onOpenAutoFocus={(event) => {
+          event.preventDefault()
+          titleRef.current?.focus()
+        }}
+        onCloseAutoFocus={
+          onClose
+            ? (event) => {
+                event.preventDefault()
+                onClose()
+              }
+            : undefined
+        }
+        onPointerDownOutside={(event) => event.preventDefault()}
+      >
         <DialogHeader>
-          <DialogTitle>{config.settings.title}</DialogTitle>
-          <DialogDescription>{config.settings.description}</DialogDescription>
+          <DialogTitle ref={titleRef} tabIndex={-1} className="pr-8 leading-tight focus-visible:outline-none">
+            {config.settings.title}
+          </DialogTitle>
+          <DialogDescription className="text-foreground">{config.settings.description}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           {config.privacyPolicyHref ? (
             <div className="flex flex-col items-start gap-4 rounded-2xl border border-border/70 bg-muted/25 px-4 py-3 sm:flex-row sm:justify-between">
               <div className="space-y-1">
-                <p className="text-xs tracking-wide text-muted-foreground uppercase">Privacy policy</p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs tracking-wide text-foreground uppercase">Privacy policy</p>
+                <p className="text-sm text-foreground">
                   Read the page that explains how we handle optional cookies and third-party services.
                 </p>
               </div>
-              <Link
+              <UiLink
                 className="inline-flex shrink-0 items-center rounded-full border border-border/70 bg-background px-3 py-1 text-xs font-semibold tracking-wide text-primary transition-colors hover:border-primary/40 hover:bg-primary/5 hover:underline focus-visible:underline"
                 href={config.privacyPolicyHref}
+                newTab
               >
                 {config.privacyPolicyLabel}
-              </Link>
+              </UiLink>
             </div>
+          ) : null}
+
+          {config.imprintLink ? (
+            <UiLink
+              href={config.imprintLink.href}
+              label={config.imprintLink.label}
+              className="text-sm text-primary underline"
+              newTab
+            />
           ) : null}
 
           <div className="rounded-2xl border border-border/70 bg-muted/30 p-4">
@@ -73,7 +104,7 @@ export function CookieConsentDialog({
                 <Label className="text-sm font-semibold" htmlFor={essentialCookieCheckboxId}>
                   {config.settings.essentialLabel}
                 </Label>
-                <p className="text-sm text-muted-foreground">{config.settings.essentialDescription}</p>
+                <p className="text-sm text-foreground">{config.settings.essentialDescription}</p>
               </div>
             </div>
           </div>
@@ -98,7 +129,21 @@ export function CookieConsentDialog({
                       <Label className="text-sm font-semibold" htmlFor={checkboxId}>
                         {category.label}
                       </Label>
-                      <p className="text-sm text-muted-foreground">{category.description}</p>
+                      <p className="text-sm text-foreground">{category.description}</p>
+                      {category.services && category.services.length > 0 ? (
+                        <p className="text-sm text-foreground">
+                          Selecting this category permits all services listed below.
+                        </p>
+                      ) : null}
+                      {category.services?.map((service) => (
+                        <div key={service.name} className="space-y-1 border-t border-border/70 pt-3 text-sm">
+                          <p className="font-semibold">{service.name}</p>
+                          <p className="text-foreground">{service.description}</p>
+                          <UiLink className="text-primary underline" href={service.privacyHref} newTab>
+                            {service.name} privacy notice
+                          </UiLink>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>

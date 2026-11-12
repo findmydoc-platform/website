@@ -6895,7 +6895,7 @@ export interface CookieConsent {
   id: number;
   enabled?: boolean | null;
   /**
-   * Increase this number when the consent wording or behavior changes.
+   * Increase this number when changed processing purposes or service scope require renewed consent. Copy or layout changes alone do not require a new version.
    */
   consentVersion: number;
   bannerTitle: string;
@@ -6903,6 +6903,16 @@ export interface CookieConsent {
   acceptLabel: string;
   rejectLabel: string;
   customizeLabel: string;
+  /**
+   * German translation stored independently. The public consent prompt uses the English fields above.
+   */
+  germanPrompt?: {
+    bannerTitle?: string | null;
+    bannerDescription?: string | null;
+    acceptLabel?: string | null;
+    rejectLabel?: string | null;
+    customizeLabel?: string | null;
+  };
   cancelLabel: string;
   saveLabel: string;
   reopenLabel: string;
@@ -7474,6 +7484,15 @@ export interface CookieConsentSelect<T extends boolean = true> {
   acceptLabel?: T;
   rejectLabel?: T;
   customizeLabel?: T;
+  germanPrompt?:
+    | T
+    | {
+        bannerTitle?: T;
+        bannerDescription?: T;
+        acceptLabel?: T;
+        rejectLabel?: T;
+        customizeLabel?: T;
+      };
   cancelLabel?: T;
   saveLabel?: T;
   reopenLabel?: T;

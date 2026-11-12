@@ -3,6 +3,11 @@ import { execFileSync } from 'node:child_process'
 import { expect, test, type Page, type Route } from '@playwright/test'
 
 import { createBrowserIssueCollector, expectNoBrowserIssues } from '../helpers/browserIssues'
+import { setCookieConsent } from '../helpers/cookieConsent'
+
+test.beforeEach(async ({ context }) => {
+  await setCookieConsent(context)
+})
 
 const patientTestPassword = 'PatientPass123' // pragma: allowlist secret
 

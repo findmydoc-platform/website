@@ -105,6 +105,11 @@ import * as migration_20261017_091316_clinic_staff_group_assignment from './2026
 import * as migration_20261017_101649_personal_group_invitation from './20261017_101649_personal_group_invitation'
 import * as migration_20261107_091935_inquiry_preparations from './20261107_091935_inquiry_preparations'
 import * as migration_20261107_123538_settle_inquiry_attempts from './20261107_123538_settle_inquiry_attempts'
+import * as migration_20261108_230722_clinic_profile_mcp_permissions from './20261108_230722_clinic_profile_mcp_permissions'
+import * as migration_20261109_005746_clinic_group_mcp_read from './20261109_005746_clinic_group_mcp_read'
+import * as migration_20261109_100853_read_doctor_image_mcp from './20261109_100853_read_doctor_image_mcp'
+import * as migration_20261111_092853_align_localized_parent_indexes from './20261111_092853_align_localized_parent_indexes'
+import * as migration_20261111_145406_cookie_consent_approved_prompt from './20261111_145406_cookie_consent_approved_prompt'
 
 export const migrations = [
   {
@@ -641,5 +646,30 @@ export const migrations = [
     up: migration_20261107_123538_settle_inquiry_attempts.up,
     down: migration_20261107_123538_settle_inquiry_attempts.down,
     name: '20261107_123538_settle_inquiry_attempts',
+  },
+  {
+    up: migration_20261108_230722_clinic_profile_mcp_permissions.up,
+    down: migration_20261108_230722_clinic_profile_mcp_permissions.down,
+    name: '20261108_230722_clinic_profile_mcp_permissions',
+  },
+  {
+    up: migration_20261109_005746_clinic_group_mcp_read.up,
+    down: migration_20261109_005746_clinic_group_mcp_read.down,
+    name: '20261109_005746_clinic_group_mcp_read',
+  },
+  {
+    up: migration_20261109_100853_read_doctor_image_mcp.up,
+    down: migration_20261109_100853_read_doctor_image_mcp.down,
+    name: '20261109_100853_read_doctor_image_mcp',
+  },
+  {
+    up: migration_20261111_092853_align_localized_parent_indexes.up,
+    down: migration_20261111_092853_align_localized_parent_indexes.down,
+    name: '20261111_092853_align_localized_parent_indexes',
+  },
+  {
+    up: migration_20261111_145406_cookie_consent_approved_prompt.up,
+    down: migration_20261111_145406_cookie_consent_approved_prompt.down,
+    name: '20261111_145406_cookie_consent_approved_prompt',
   },
 ]

@@ -1,8 +1,32 @@
 import { expect, test } from '@playwright/test'
 import { getAdminJourneyDefinition, executeAdminJourney } from '../helpers/adminJourneys'
 import { createBrowserIssueCollector, expectNoBrowserIssues, getAdminFieldRoot, openAdminTab } from '../helpers/adminUI'
+import { createClinicGalleryFixture, removeClinicGalleryFixture } from '../helpers/clinicGalleryFixture'
 
 test.describe.configure({ mode: 'serial' })
+
+test('platform staff can add an image to a clinic gallery @regression', async ({ page }, testInfo) => {
+  test.setTimeout(180_000)
+  const fixture = await createClinicGalleryFixture(page.request)
+  const issues = createBrowserIssueCollector(page)
+  try {
+    await executeAdminJourney(getAdminJourneyDefinition('admin.clinic-media.add-to-gallery'), {
+      initialState: { mediaId: fixture.mediaId },
+      mode: 'regression',
+      page,
+      persona: 'admin',
+      request: page.request,
+    })
+    for (const width of [320, 375, 640, 768, 1024, 1280]) {
+      await page.setViewportSize({ width, height: 900 })
+      await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+      await page.screenshot({ path: testInfo.outputPath(`clinic-gallery-${width}.png`) })
+    }
+    await expectNoBrowserIssues(issues)
+  } finally {
+    await removeClinicGalleryFixture(page.request, fixture)
+  }
+})
 
 test('platform staff can publish and unpublish a complete article @regression @temporary-landing', async ({ page }) => {
   test.setTimeout(180_000)

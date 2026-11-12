@@ -205,12 +205,17 @@ jobs:
         id: lint
         run: pnpm lint
 
+      - name: Type check
+        id: typecheck
+        run: pnpm typecheck
+
       - name: Generate job summary
         if: always()
         run: |
           {
             echo "## Static Checks Summary"
             echo "- **Lint**: ${{ steps.lint.outcome }}"
+            echo "- **Type check**: ${{ steps.typecheck.outcome }}"
           } >> "$GITHUB_STEP_SUMMARY"
 
   unit-tests:

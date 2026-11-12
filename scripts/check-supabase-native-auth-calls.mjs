@@ -1,7 +1,7 @@
 import { readFile, readdir } from 'node:fs/promises'
 import { resolve, relative } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import ts from 'typescript'
+import ts from 'typescript-legacy'
 
 const nativeMethods = new Set(['signUp', 'resetPasswordForEmail', 'inviteUserByEmail'])
 const flowStates = new Set(['unreplaced', 'replaced', 'excluded'])

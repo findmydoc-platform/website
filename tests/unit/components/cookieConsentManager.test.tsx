@@ -55,10 +55,90 @@ describe('CookieConsentManager', () => {
     vi.clearAllMocks()
   })
 
+  it('offers a named modal with visible explanation and dismisses without optional consent', async () => {
+    render(<CookieConsentClientAdapter config={config} initialConsent={null} />)
+
+    const prompt = screen.getByRole('dialog', { name: config.banner.title })
+    expect(prompt).toHaveAttribute('aria-modal', 'true')
+    expect(screen.getByText(config.banner.description)).toBeVisible()
+    expect(screen.getByRole('heading', { name: config.banner.title })).toHaveFocus()
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(parseCookieConsentState(document.cookie.split('=')[1], config.consentVersion)).toMatchObject({
+      choice: 'rejected',
+      categories: { analytics: false, functional: false, marketing: false },
+    })
+    expect(posthogClientMocks.setPostHogAnalyticsConsent).toHaveBeenLastCalledWith(false)
+  })
+
+  it('rejects optional categories with Escape and keeps that choice after remount', () => {
+    const view = render(<CookieConsentClientAdapter config={config} initialConsent={null} />)
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    const storedCookie = document.cookie
+    view.unmount()
+    render(<CookieConsentClientAdapter config={config} initialConsent={null} />)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(document.cookie).toBe(storedCookie)
+    expect(screen.getByRole('button', { name: config.reopenLabel })).toBeEnabled()
+    expect(posthogClientMocks.setPostHogAnalyticsConsent).toHaveBeenLastCalledWith(false)
+  })
+
+  it('returns to the first prompt after cancelling initial settings without saving', () => {
+    render(<CookieConsentClientAdapter config={config} initialConsent={null} />)
+    fireEvent.click(screen.getByRole('button', { name: config.banner.customizeLabel }))
+    expect(screen.queryByRole('button', { name: config.banner.acceptLabel })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Analytics cookies' }))
+    fireEvent.click(screen.getByRole('button', { name: config.settings.cancelLabel }))
+    expect(screen.getByRole('dialog', { name: config.banner.title })).toBeInTheDocument()
+    expect(document.cookie).not.toContain(COOKIE_CONSENT_COOKIE_NAME)
+    expect(posthogClientMocks.setPostHogAnalyticsConsent).toHaveBeenLastCalledWith(false)
+  })
+
+  it.each(['Cancel', 'Close', 'Escape'])('preserves accepted consent when later settings close with %s', (action) => {
+    render(<CookieConsentClientAdapter config={config} initialConsent={null} />)
+    fireEvent.click(screen.getByRole('button', { name: config.banner.acceptLabel }))
+    const acceptedCookie = document.cookie
+    fireEvent.click(screen.getByRole('button', { name: config.reopenLabel }))
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Analytics cookies' }))
+    if (action === 'Escape') fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
+    else fireEvent.click(screen.getByRole('button', { name: action }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(document.cookie).toBe(acceptedCookie)
+    expect(posthogClientMocks.setPostHogAnalyticsConsent).toHaveBeenLastCalledWith(true)
+    fireEvent.click(screen.getByRole('button', { name: config.reopenLabel }))
+    expect(screen.getByRole('checkbox', { name: 'Analytics cookies' })).toBeChecked()
+  })
+
+  it('starts settings on the title and returns focus to the initial prompt after cancel', () => {
+    render(<CookieConsentClientAdapter config={config} initialConsent={null} />)
+    fireEvent.click(screen.getByRole('button', { name: config.banner.customizeLabel }))
+    expect(screen.getByRole('heading', { name: config.settings.title })).toHaveFocus()
+    fireEvent.click(screen.getByRole('button', { name: config.settings.cancelLabel }))
+    expect(screen.getByRole('heading', { name: config.banner.title })).toHaveFocus()
+  })
+
+  it.each(['/privacy-policy', '/imprint'])('keeps %s readable before a decision and still offers settings', (path) => {
+    navigation.pathname = path
+    const view = render(<CookieConsentClientAdapter config={config} initialConsent={null} />)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(document.cookie).not.toContain(COOKIE_CONSENT_COOKIE_NAME)
+    expect(posthogClientMocks.setPostHogAnalyticsConsent).toHaveBeenLastCalledWith(false)
+    fireEvent.click(screen.getByRole('button', { name: config.reopenLabel }))
+    expect(screen.getByRole('dialog', { name: config.settings.title })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: config.settings.cancelLabel }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    navigation.pathname = '/login/patient'
+    view.rerender(<CookieConsentClientAdapter config={config} initialConsent={null} />)
+    expect(screen.getByRole('dialog', { name: config.banner.title })).toBeInTheDocument()
+    expect(document.cookie).not.toContain(COOKIE_CONSENT_COOKIE_NAME)
+  })
+
   it('stores acceptance and enables analytics', async () => {
     render(<CookieConsentClientAdapter config={config} initialConsent={null} />)
 
-    expect(screen.queryByRole('link', { name: 'Privacy Policy' })).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Privacy Policy/ })).toHaveAttribute('target', '_blank')
 
     fireEvent.click(screen.getByRole('button', { name: 'Accept all' }))
 
@@ -81,7 +161,7 @@ describe('CookieConsentManager', () => {
       },
       version: 3,
     })
-    expect(screen.queryByText('Cookies on findmydoc')).not.toBeInTheDocument()
+    expect(screen.queryByText(config.banner.title)).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Cookie settings' })).toBeInTheDocument()
   })
 
@@ -167,9 +247,9 @@ describe('CookieConsentManager', () => {
       host.innerHTML = renderToString(element)
       document.body.append(host)
       const buttons = host.querySelectorAll('button')
-      expect(buttons.length).toBe(initialConsent ? 1 : 3)
+      expect(buttons.length).toBe(initialConsent ? 1 : 0)
       for (const button of buttons) expect(button).toBeDisabled()
-      buttons[0]!.click()
+      buttons[0]?.click()
       expect(posthogClientMocks.setPostHogAnalyticsConsent).not.toHaveBeenCalled()
 
       let root: ReturnType<typeof hydrateRoot> | undefined
@@ -185,7 +265,7 @@ describe('CookieConsentManager', () => {
   it('shows the privacy policy link in the settings dialog', async () => {
     render(<CookieConsentClientAdapter config={config} initialConsent={null} />)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Customize' }))
+    fireEvent.click(screen.getByRole('button', { name: config.banner.customizeLabel }))
 
     expect(screen.getByRole('dialog', { name: 'Cookie settings' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Privacy Policy' })).toHaveAttribute('href', '/privacy-policy')
@@ -230,7 +310,7 @@ describe('CookieConsentManager', () => {
   it('opens settings, stores a customized preference, and disables analytics', async () => {
     render(<CookieConsentClientAdapter config={config} initialConsent={null} />)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Customize' }))
+    fireEvent.click(screen.getByRole('button', { name: config.banner.customizeLabel }))
 
     expect(screen.getByRole('dialog', { name: 'Cookie settings' })).toBeInTheDocument()
 

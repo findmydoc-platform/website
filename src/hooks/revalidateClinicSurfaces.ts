@@ -493,6 +493,36 @@ export const revalidateDoctorChange: CollectionAfterChangeHook = async ({ doc, p
   })
 }
 
+export const revalidateDoctorMediaChange: CollectionAfterChangeHook = async ({ doc, operation, req }) => {
+  if (operation !== 'update' || isRevalidationDisabled(req)) return doc
+
+  const media = doc as RevalidatableDoc
+  const doctorId = extractRelationId(media.doctor)
+  if (doctorId === null) return doc
+
+  const {
+    docs: [doctor],
+  } = await req.payload.find({
+    collection: 'doctors',
+    where: { id: { equals: doctorId } },
+    limit: 1,
+    depth: 0,
+    overrideAccess: true,
+    req,
+    select: { clinic: true, active: true, profileImage: true },
+  })
+  if (!doctor?.active || String(extractRelationId(doctor.profileImage)) !== String(media.id)) return doc
+
+  await revalidateRelatedClinicSurface({
+    collection: 'doctors',
+    currentClinics: [await resolveClinicIdentity(req, doctor.clinic)].filter(isClinicIdentity),
+    doc: doctor,
+    operation: 'related-update',
+    req,
+  })
+  return doc
+}
+
 export const revalidateDoctorDelete: CollectionAfterDeleteHook = async ({ doc, req }) => {
   if (isRevalidationDisabled(req)) return doc
 

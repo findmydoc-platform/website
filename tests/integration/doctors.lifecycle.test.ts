@@ -5,7 +5,7 @@ import config from '@payload-config'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
-import { cleanupTrackedDocs } from '../fixtures/cleanupTrackedDocs'
+import { cleanupTrackedDocs, clearTrackedDoctorImageReferences } from '../fixtures/cleanupTrackedDocs'
 import { createTinyPngFile } from '../fixtures/mediaFile'
 import { testSlug } from '../fixtures/testSlug'
 import {
@@ -58,6 +58,7 @@ describe('Doctors lifecycle integration', () => {
   }, 60000)
 
   afterEach(async () => {
+    await clearTrackedDoctorImageReferences(payload, createdMediaIds)
     await cleanupTrackedDocs(payload, [{ collection: 'doctorMedia', ids: createdMediaIds }])
     await cleanupTrackedUsers(payload, { staffIds: createdStaffIds })
 

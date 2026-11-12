@@ -3,7 +3,11 @@ import { unstable_doesMiddlewareMatch } from 'next/experimental/testing/server'
 import { NextRequest } from 'next/server'
 import nextConfig from '../../../../next.config.js'
 
-import { SEARCH_ROBOTS_HEADER, SEARCH_ROBOTS_HEADER_VALUE } from '@/features/searchIndexing'
+import {
+  SEARCH_INDEXING_REQUEST_HEADER,
+  SEARCH_ROBOTS_HEADER,
+  SEARCH_ROBOTS_HEADER_VALUE,
+} from '@/features/searchIndexing'
 import {
   HOLDING_VIEW_REQUEST_HEADER,
   PUBLIC_SITE_MODE_REQUEST_HEADER,
@@ -69,7 +73,7 @@ describe('public site mode proxy', () => {
     process.env = originalEnv
   })
 
-  it.each(['/posts', '/posts/article', '/posts/page/2'])(
+  it.each(['/', '/posts', '/posts/article', '/posts/page/2'])(
     'marks anonymous Preview Holding content on %s',
     async (pathname) => {
       process.env.VERCEL_ENV = 'preview'
@@ -77,8 +81,21 @@ describe('public site mode proxy', () => {
       const response = await proxy(new NextRequest(`https://preview.findmydoc.eu${pathname}`))
       expect(response.status).toBe(200)
       expect(response.headers.get(`x-middleware-request-${PUBLIC_SITE_MODE_REQUEST_HEADER}`)).toBe('holding')
+      expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
     },
   )
+
+  it('keeps browser-specific page responses private and forwards request cookies to the decision', async () => {
+    const request = new NextRequest('https://findmydoc.eu/clinics', { headers: { cookie: 'test=browser' } })
+    const response = await proxy(request)
+    expect(mocks.resolveHoldingMode).toHaveBeenCalledWith(
+      request.nextUrl,
+      process.env,
+      request.headers,
+      expect.any(Function),
+    )
+    expect(response.headers.get('cache-control')).toBe('private, no-store')
+  })
 
   it('overwrites visitor-supplied public and viewer mode markers', async () => {
     process.env.VERCEL_ENV = 'production'
@@ -87,6 +104,8 @@ describe('public site mode proxy', () => {
       headers: {
         [PUBLIC_SITE_MODE_REQUEST_HEADER]: 'full',
         [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: '1',
+        [HOLDING_VIEW_REQUEST_HEADER]: 'standalone',
+        [SEARCH_INDEXING_REQUEST_HEADER]: 'noindex',
       },
     })
 
@@ -94,6 +113,8 @@ describe('public site mode proxy', () => {
 
     expect(response.headers.get(`x-middleware-request-${PUBLIC_SITE_MODE_REQUEST_HEADER}`)).toBe('holding')
     expect(response.headers.get(`x-middleware-request-${TEMPORARY_LANDING_MODE_REQUEST_HEADER}`)).toBe('1')
+    expect(response.headers.get(`x-middleware-request-${HOLDING_VIEW_REQUEST_HEADER}`)).toBe('public')
+    expect(response.headers.get(`x-middleware-request-${SEARCH_INDEXING_REQUEST_HEADER}`)).toBeNull()
   })
 
   it('logs public discovery crawlers before leaving access to the route contract', async () => {
@@ -141,16 +162,25 @@ describe('public site mode proxy', () => {
     expect(mocks.createServerClient).not.toHaveBeenCalled()
   })
 
-  it('marks root requests for temporary landing mode', async () => {
+  it('keeps the Production Holding root standalone and indexable', async () => {
+    process.env.VERCEL_ENV = 'production'
     mockHoldingMode('holding')
-    const request = new NextRequest('https://findmydoc.eu/')
+    const request = new NextRequest('https://findmydoc.eu/', {
+      headers: {
+        [HOLDING_VIEW_REQUEST_HEADER]: 'public',
+        [PUBLIC_SITE_MODE_REQUEST_HEADER]: 'full',
+        [SEARCH_INDEXING_REQUEST_HEADER]: 'noindex',
+      },
+    })
 
     const response = await proxy(request)
 
     expect(response.status).toBe(200)
     expect(response.headers.get(`x-middleware-request-${TEMPORARY_LANDING_MODE_REQUEST_HEADER}`)).toBe('1')
     expect(response.headers.get(`x-middleware-request-${HOLDING_VIEW_REQUEST_HEADER}`)).toBe('standalone')
-    expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
+    expect(response.headers.get(`x-middleware-request-${PUBLIC_SITE_MODE_REQUEST_HEADER}`)).toBe('holding')
+    expect(response.headers.get(`x-middleware-request-${SEARCH_INDEXING_REQUEST_HEADER}`)).toBeNull()
+    expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBeNull()
   })
 
   it('returns 404 for non-root routes in temporary landing mode', async () => {
@@ -195,6 +225,7 @@ describe('public site mode proxy', () => {
       expect(response.headers.get('location')).toBeNull()
       expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBeNull()
       expect(response.headers.get(`x-middleware-request-${TEMPORARY_LANDING_MODE_REQUEST_HEADER}`)).toBe('1')
+      expect(response.headers.get(`x-middleware-request-${SEARCH_INDEXING_REQUEST_HEADER}`)).toBeNull()
       expect(response.headers.get(`x-middleware-request-${HOLDING_VIEW_REQUEST_HEADER}`)).toBe('public')
     }
 
@@ -210,14 +241,12 @@ describe('public site mode proxy', () => {
     mockHoldingMode('holding')
 
     const indexableResponses = await Promise.all(
-      ['/robots.txt', '/pages-sitemap.xml', '/posts-sitemap.xml'].map((path) =>
+      ['/robots.txt', '/pages-sitemap.xml', '/posts-sitemap.xml', '/llms.txt', '/.well-known/llms.txt'].map((path) =>
         proxy(new NextRequest(`https://findmydoc.eu${path}`)),
       ),
     )
     const blockedResponses = await Promise.all(
-      ['/sitemap.xml', '/llms.txt', '/.well-known/llms.txt'].map((path) =>
-        proxy(new NextRequest(`https://findmydoc.eu${path}`)),
-      ),
+      ['/sitemap.xml', '/.well-known/private'].map((path) => proxy(new NextRequest(`https://findmydoc.eu${path}`))),
     )
 
     expect(indexableResponses.every((response) => response.status === 200)).toBe(true)
@@ -249,6 +278,7 @@ describe('public site mode proxy', () => {
       expect(response.status).toBe(200)
       expect(response.headers.get(`x-middleware-request-${HOLDING_VIEW_REQUEST_HEADER}`)).toBe('standalone')
       expect(response.headers.get(`x-middleware-request-${TEMPORARY_LANDING_MODE_REQUEST_HEADER}`)).toBe('1')
+      expect(response.headers.get(`x-middleware-request-${SEARCH_INDEXING_REQUEST_HEADER}`)).toBe('noindex')
       expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
     }
   })
@@ -258,7 +288,9 @@ describe('public site mode proxy', () => {
 
     const privacyRequest = new NextRequest('https://findmydoc.eu/privacy-policy')
     const imprintRequest = new NextRequest('https://findmydoc.eu/imprint')
-    const contactRequest = new NextRequest('https://findmydoc.eu/contact')
+    const contactRequest = new NextRequest('https://findmydoc.eu/contact', {
+      headers: { [SEARCH_INDEXING_REQUEST_HEADER]: 'index' },
+    })
 
     const privacyResponse = await proxy(privacyRequest)
     const imprintResponse = await proxy(imprintRequest)
@@ -275,6 +307,9 @@ describe('public site mode proxy', () => {
     expect(privacyResponse.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
     expect(imprintResponse.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
     expect(contactResponse.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
+    for (const response of [privacyResponse, imprintResponse, contactResponse]) {
+      expect(response.headers.get(`x-middleware-request-${SEARCH_INDEXING_REQUEST_HEADER}`)).toBe('noindex')
+    }
   })
 
   it('allows platform users to bypass temporary landing mode', async () => {
@@ -297,11 +332,13 @@ describe('public site mode proxy', () => {
     const response = await proxy(
       new NextRequest('https://preview.findmydoc.eu/api/forms', {
         method: 'OPTIONS',
+        headers: { [SEARCH_INDEXING_REQUEST_HEADER]: 'noindex' },
       }),
     )
 
     expect(response.status).toBe(200)
     expect(response.headers.get('location')).toBeNull()
+    expect(response.headers.get(`x-middleware-request-${SEARCH_INDEXING_REQUEST_HEADER}`)).toBeNull()
     expect(mocks.createServerClient).not.toHaveBeenCalled()
   })
 

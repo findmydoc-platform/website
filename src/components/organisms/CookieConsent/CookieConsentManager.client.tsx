@@ -1,6 +1,6 @@
 'use client'
 
-import { usePathname } from 'next/navigation'
+import { useRef } from 'react'
 
 import type { CookieConsentConfig, CookieConsentState } from '@/features/cookieConsent'
 import { CookieConsentBanner } from './CookieConsentBanner.client'
@@ -11,21 +11,22 @@ import { useCookieConsentController } from './useCookieConsentController'
 export type CookieConsentManagerProps = {
   config: CookieConsentConfig | null
   initialConsent: CookieConsentState | null
+  deferInitialPrompt?: boolean
   onAnalyticsConsentChange: (enabled: boolean) => void
   onPersistConsent: (consent: CookieConsentState) => void
   readConsent: (expectedVersion: number) => CookieConsentState | null
 }
 
-const compactBannerRoutes = new Set(['/login/patient', '/register/patient', '/register/clinic', '/admin/login'])
-
 export function CookieConsentManager({
   config,
   initialConsent,
+  deferInitialPrompt = false,
   onAnalyticsConsentChange,
   onPersistConsent,
   readConsent,
 }: CookieConsentManagerProps) {
-  const pathname = usePathname()
+  const launcherRef = useRef<HTMLButtonElement>(null)
+  const restoreLauncherFocus = () => launcherRef.current?.focus()
   const controller = useCookieConsentController({
     config,
     initialConsent,
@@ -33,7 +34,6 @@ export function CookieConsentManager({
     onPersistConsent,
     readConsent,
   })
-  const useCompactBanner = pathname ? compactBannerRoutes.has(pathname) : false
 
   if (!config?.enabled) {
     return null
@@ -41,10 +41,10 @@ export function CookieConsentManager({
 
   return (
     <>
-      {controller.isBannerVisible ? (
+      {controller.isBannerVisible && !deferInitialPrompt ? (
         <CookieConsentBanner
-          compact={useCompactBanner}
           ready={controller.isReady}
+          onClose={restoreLauncherFocus}
           config={config}
           onAcceptAll={() => controller.persistConsent('accepted', controller.acceptAllCategories)}
           onCustomize={controller.openSettings}
@@ -52,9 +52,9 @@ export function CookieConsentManager({
         />
       ) : null}
 
-      {controller.isLauncherVisible ? (
+      {controller.isLauncherVisible || deferInitialPrompt ? (
         <CookieConsentLauncher
-          compact={useCompactBanner}
+          buttonRef={launcherRef}
           ready={controller.isReady}
           label={config.reopenLabel}
           onOpenSettings={controller.openSettings}
@@ -63,6 +63,7 @@ export function CookieConsentManager({
 
       <CookieConsentDialog
         open={controller.settingsOpen}
+        onClose={restoreLauncherFocus}
         config={config}
         categoryDrafts={controller.categoryDrafts}
         onOpenChange={(open) => {

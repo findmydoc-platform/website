@@ -4,11 +4,15 @@ import type { CookieConsentCategoryMap, CookieConsentConfig } from './types'
 export const COOKIE_CONSENT_TOOL_REGISTRY = {
   posthog: {
     label: 'PostHog',
-    description: 'Analytics and product telemetry.',
+    description:
+      'With permission for this category, PostHog analyses page views, clicks, technical errors and browsing session recordings, and consent-dependent server-side product events. Without permission, this analysis and session recording remain off. The website remains usable.',
+    privacyHref: 'https://posthog.com/privacy',
   },
   openstreetmap: {
     label: 'OpenStreetMap',
-    description: 'Interactive maps and location embeds.',
+    description:
+      'With permission for this category, OpenStreetMap loads external maps to show clinic locations. Without permission, external maps remain blocked and a placeholder is shown.',
+    privacyHref: 'https://osmfoundation.org/wiki/Privacy_Policy',
   },
 } as const
 
@@ -43,7 +47,7 @@ export function normalizeCookieConsentToolKeys(
   })
 }
 
-function findActiveConsentCategory(
+export function findActiveConsentCategory(
   categories: CookieConsentConfig['categories'] | null | undefined,
   tool: CookieConsentToolKey,
 ): CookieConsentCategoryKey | null {

@@ -1,11 +1,13 @@
 import { createRequire } from 'node:module'
 import path from 'node:path'
+import { pathToFileURL } from 'node:url'
+import type { IConfig } from 'next-sitemap'
 import { afterEach, describe, expect, it } from 'vitest'
 
 const require = createRequire(import.meta.url)
 const configPath = path.resolve(process.cwd(), 'next-sitemap.config.cjs')
 
-const loadConfig = (): {
+const loadConfig = (): IConfig & {
   robotsTxtOptions: {
     additionalSitemaps: string[]
     policies: Array<{ allow?: string; disallow: string | string[]; userAgent: string }>
@@ -13,6 +15,25 @@ const loadConfig = (): {
 } => {
   delete require.cache[require.resolve(configPath)]
   return require(configPath)
+}
+
+const generateRobots = async (config: IConfig): Promise<string> => {
+  const builderUrl = pathToFileURL(
+    path.join(path.dirname(require.resolve('next-sitemap')), '../esm/builders/exportable-builder.js'),
+  )
+  const { ExportableBuilder } = await import(builderUrl.href)
+  const builder = new ExportableBuilder(
+    { ...config, generateIndexSitemap: true, outDir: 'public' },
+    {
+      SITEMAP_INDEX_FILE: 'sitemap.xml',
+      SITEMAP_INDEX_URL: `${config.siteUrl}/sitemap.xml`,
+    },
+  )
+  await builder.registerIndexSitemap()
+  await builder.registerRobotsTxt()
+  return (
+    builder.exportableList.find((item: { type: string; content: string }) => item.type === 'robots.txt')?.content ?? ''
+  )
 }
 
 const publicDiscoveryUserAgents = [
@@ -36,7 +57,7 @@ describe('next-sitemap config', () => {
     process.env = originalEnv
   })
 
-  it('includes sitemap references outside preview runtime', () => {
+  it('announces only the reachable direct sitemaps in generated Production robots', async () => {
     process.env = {
       ...originalEnv,
       DEPLOYMENT_ENVIRONMENT: undefined,
@@ -45,6 +66,11 @@ describe('next-sitemap config', () => {
     }
 
     const config = loadConfig()
+    const robots = await generateRobots(config)
+    expect(robots.split('\n').filter((line) => line.startsWith('Sitemap:'))).toEqual([
+      'Sitemap: https://findmydoc.eu/pages-sitemap.xml',
+      'Sitemap: https://findmydoc.eu/posts-sitemap.xml',
+    ])
 
     for (const userAgent of publicDiscoveryUserAgents) {
       expect(config.robotsTxtOptions.policies).toContainEqual({
@@ -82,7 +108,7 @@ describe('next-sitemap config', () => {
     }
   })
 
-  it('blocks robots and hides sitemap references in Vercel preview runtime', () => {
+  it('blocks robots and hides all generated sitemap references in Vercel preview runtime', async () => {
     process.env = {
       ...originalEnv,
       DEPLOYMENT_ENVIRONMENT: undefined,
@@ -92,6 +118,7 @@ describe('next-sitemap config', () => {
 
     const config = loadConfig()
 
+    expect(await generateRobots(config)).not.toMatch(/^Sitemap:/m)
     expect(config.robotsTxtOptions.policies).toEqual([{ disallow: '/', userAgent: '*' }])
     expect(config.robotsTxtOptions.additionalSitemaps).toEqual([])
   })

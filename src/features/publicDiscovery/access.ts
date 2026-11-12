@@ -40,13 +40,7 @@ export const resolvePublicDiscoveryAccessForRequest = async (
   if (!runtimeAccess.allowed) return runtimeAccess
 
   const requestMode = readPublicSiteModeRequestHeader(request.headers)
-  const mode =
-    requestMode ??
-    (
-      await resolveHoldingMode(new URL(request.url), {
-        PUBLIC_SITE_FALLBACK_MODE: env.PUBLIC_SITE_FALLBACK_MODE,
-      })
-    ).mode
+  const mode = requestMode ?? (await resolveHoldingMode(new URL(request.url), env)).mode
 
   if (mode === 'holding') {
     if (isTemporaryLandingPublicDiscoveryPath(new URL(request.url).pathname)) {

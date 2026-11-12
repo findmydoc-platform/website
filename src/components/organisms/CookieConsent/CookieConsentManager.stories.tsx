@@ -7,6 +7,7 @@ import { CookieConsentDialog } from '@/components/organisms/CookieConsent/Cookie
 import { CookieConsentLauncher } from '@/components/organisms/CookieConsent/CookieConsentLauncher.client'
 import { CookieConsentManager } from '@/components/organisms/CookieConsent/CookieConsentManager.client'
 import { DEFAULT_COOKIE_CONSENT_CONFIG, type CookieConsentState } from '@/features/cookieConsent'
+import { APPROVED_COOKIE_CONSENT_PROMPT } from '@/features/cookieConsent/promptCopy'
 import { withViewportStory } from '@/stories/utils/viewportMatrix'
 
 function PersistentConsentManager(props: React.ComponentProps<typeof CookieConsentManager>) {
@@ -98,6 +99,26 @@ export const Banner: Story = {
     config: DEFAULT_COOKIE_CONSENT_CONFIG,
     initialConsent: null,
   },
+  play: async ({ canvasElement }) => {
+    const body = within(canvasElement.ownerDocument.body)
+    const settings = body.getByRole('button', { name: /^(Settings|Einstellungen)$/ })
+    await expect(settings.innerText).toBe('')
+    for (let step = 0; step < 8 && settings !== canvasElement.ownerDocument.activeElement; step += 1) {
+      await userEvent.tab()
+    }
+    await expect(settings).toHaveFocus()
+    await expect(body.getByRole('tooltip')).toBeVisible()
+    await userEvent.keyboard('{Escape}')
+    await expect(body.queryByRole('tooltip')).not.toBeInTheDocument()
+    await expect(body.getByRole('dialog')).toBeVisible()
+    await userEvent.tab()
+    await expect(body.queryByRole('tooltip')).not.toBeInTheDocument()
+    await userEvent.hover(settings)
+    const tooltip = body.getByRole('tooltip')
+    await expect(tooltip).toBeVisible()
+    await userEvent.hover(tooltip)
+    await expect(tooltip).toBeVisible()
+  },
   render: () => (
     <CookieConsentBanner
       ready
@@ -105,6 +126,19 @@ export const Banner: Story = {
       onAcceptAll={() => {}}
       onCustomize={() => {}}
       onRejectAll={() => {}}
+    />
+  ),
+}
+
+export const BannerGermanCopy: Story = {
+  ...Banner,
+  render: () => (
+    <CookieConsentBanner
+      ready
+      config={{ ...DEFAULT_COOKIE_CONSENT_CONFIG, banner: APPROVED_COOKIE_CONSENT_PROMPT.de }}
+      onAcceptAll={fn()}
+      onCustomize={fn()}
+      onRejectAll={fn()}
     />
   ),
 }
@@ -130,22 +164,11 @@ export const InitializingBanner: Story = {
     />
   ),
   play: async ({ canvasElement }) => {
-    for (const button of within(canvasElement).getAllByRole('button')) await expect(button).toBeDisabled()
+    const body = within(canvasElement.ownerDocument.body)
+    for (const label of ['Accept all', 'Reject all', DEFAULT_COOKIE_CONSENT_CONFIG.banner.customizeLabel]) {
+      await expect(body.getByRole('button', { name: label })).toBeDisabled()
+    }
   },
-}
-
-export const InitializingCompactBanner: Story = {
-  ...InitializingBanner,
-  render: () => (
-    <CookieConsentBanner
-      compact
-      ready={false}
-      config={DEFAULT_COOKIE_CONSENT_CONFIG}
-      onAcceptAll={fn()}
-      onCustomize={fn()}
-      onRejectAll={fn()}
-    />
-  ),
 }
 
 export const InitializingLauncher: Story = {
@@ -177,7 +200,7 @@ export const ConsentLifecycle: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     const body = within(canvasElement.ownerDocument.body)
-    await userEvent.click(canvas.getByRole('button', { name: 'Accept all' }))
+    await userEvent.click(body.getByRole('button', { name: 'Accept all' }))
     await userEvent.click(canvas.getByRole('button', { name: 'Cookie settings' }))
     await expect(body.getByRole('checkbox', { name: 'Analytics cookies' })).toBeChecked()
     await userEvent.click(body.getByRole('button', { name: 'Reject all' }))
@@ -190,6 +213,7 @@ export const ConsentLifecycle: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Cookie settings' }))
     await expect(body.getByRole('checkbox', { name: 'Analytics cookies' })).toBeChecked()
     await userEvent.click(body.getByRole('button', { name: 'Cancel' }))
+    await expect(canvas.getByRole('button', { name: 'Cookie settings' })).toHaveFocus()
   },
 }
 
@@ -252,7 +276,7 @@ export const BannerLongCopy: Story = {
   ),
 }
 
-const authCompactBannerBase: Story = {
+const authPromptBase: Story = {
   args: {
     config: authRouteCookieConsentConfig,
     initialConsent: null,
@@ -275,13 +299,14 @@ const authCompactBannerBase: Story = {
     const documentBody = within(canvasElement.ownerDocument.body)
     const canvas = within(canvasElement)
 
-    await expect(canvas.getByRole('button', { name: /choose settings/i })).toBeInTheDocument()
-    await userEvent.click(canvas.getByRole('button', { name: /choose settings/i }))
+    await expect(documentBody.getByRole('heading', { name: authRouteCookieConsentConfig.banner.title })).toHaveFocus()
+    await expect(documentBody.getByRole('button', { name: /choose settings/i })).toBeInTheDocument()
+    await userEvent.click(documentBody.getByRole('button', { name: /choose settings/i }))
     await expect(documentBody.getByRole('dialog', { name: /cookie settings/i })).toBeInTheDocument()
     await userEvent.click(documentBody.getByRole('button', { name: /cancel/i }))
     await expect(documentBody.queryByRole('dialog', { name: /cookie settings/i })).not.toBeInTheDocument()
-    await expect(canvas.getByRole('button', { name: /choose settings/i })).toBeInTheDocument()
-    await userEvent.click(canvas.getByRole('button', { name: 'Accept all' }))
+    await expect(documentBody.getByRole('button', { name: /choose settings/i })).toBeInTheDocument()
+    await userEvent.click(documentBody.getByRole('button', { name: 'Accept all' }))
     await userEvent.click(canvas.getByRole('button', { name: 'Cookie settings' }))
     await expect(documentBody.getByRole('checkbox', { name: /analytics cookies/i })).toBeChecked()
     await userEvent.click(documentBody.getByRole('button', { name: 'Reject all' }))
@@ -313,7 +338,7 @@ const authDialogBase: Story = {
   play: async ({ canvasElement }) => {
     const documentBody = within(canvasElement.ownerDocument.body)
 
-    await userEvent.click(within(canvasElement).getByRole('button', { name: /choose settings/i }))
+    await userEvent.click(documentBody.getByRole('button', { name: /choose settings/i }))
     await expect(documentBody.getByRole('dialog', { name: /cookie settings/i })).toBeInTheDocument()
     await userEvent.click(documentBody.getByRole('checkbox', { name: /analytics cookies/i }))
     await expect(documentBody.getByRole('checkbox', { name: /analytics cookies/i })).toBeChecked()
@@ -324,41 +349,13 @@ const authDialogBase: Story = {
   },
 }
 
-export const AuthCompactBanner320: Story = withViewportStory(
-  authCompactBannerBase,
-  'public320',
-  'Auth compact banner / 320',
-)
-export const AuthCompactBanner375: Story = withViewportStory(
-  authCompactBannerBase,
-  'public375',
-  'Auth compact banner / 375',
-)
-export const AuthCompactBanner640: Story = withViewportStory(
-  authCompactBannerBase,
-  'public640',
-  'Auth compact banner / 640',
-)
-export const AuthCompactBanner768: Story = withViewportStory(
-  authCompactBannerBase,
-  'public768',
-  'Auth compact banner / 768',
-)
-export const AuthCompactBanner1024: Story = withViewportStory(
-  authCompactBannerBase,
-  'public1024',
-  'Auth compact banner / 1024',
-)
-export const AuthCompactBanner1280: Story = withViewportStory(
-  authCompactBannerBase,
-  'public1280',
-  'Auth compact banner / 1280',
-)
-export const AuthCompactBanner375Short: Story = withViewportStory(
-  authCompactBannerBase,
-  'public375Short',
-  'Auth compact banner / 375 short',
-)
+export const AuthPrompt320: Story = withViewportStory(authPromptBase, 'public320', 'Auth prompt / 320')
+export const AuthPrompt375: Story = withViewportStory(authPromptBase, 'public375', 'Auth prompt / 375')
+export const AuthPrompt640: Story = withViewportStory(authPromptBase, 'public640', 'Auth prompt / 640')
+export const AuthPrompt768: Story = withViewportStory(authPromptBase, 'public768', 'Auth prompt / 768')
+export const AuthPrompt1024: Story = withViewportStory(authPromptBase, 'public1024', 'Auth prompt / 1024')
+export const AuthPrompt1280: Story = withViewportStory(authPromptBase, 'public1280', 'Auth prompt / 1280')
+export const AuthPrompt375Short: Story = withViewportStory(authPromptBase, 'public375Short', 'Auth prompt / 375 short')
 
 export const AuthDialog320: Story = withViewportStory(authDialogBase, 'public320', 'Auth dialog / 320')
 export const AuthDialog375: Story = withViewportStory(authDialogBase, 'public375', 'Auth dialog / 375')
@@ -371,7 +368,7 @@ export const AuthDialog375Short: Story = {
   play: async ({ canvasElement }) => {
     const documentBody = within(canvasElement.ownerDocument.body)
 
-    await userEvent.click(within(canvasElement).getByRole('button', { name: /choose settings/i }))
+    await userEvent.click(documentBody.getByRole('button', { name: /choose settings/i }))
     await expect(documentBody.getByRole('dialog', { name: /cookie settings/i })).toBeInTheDocument()
     await userEvent.click(documentBody.getByRole('checkbox', { name: /analytics cookies/i }))
 

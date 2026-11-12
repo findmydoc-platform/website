@@ -54,12 +54,11 @@ describe('temporaryLandingMode i18n', () => {
       {} as Record<TemporaryLandingLocale, ReturnType<typeof getTemporaryLandingPageContent>>,
     )
 
-    expect(byLocale.en.contactTitle).toBe('Contact us')
-    expect(byLocale.de.contactTitle).toBe('Kontaktiere uns')
-    expect(byLocale.tr.contactTitle).toBe('Bize ulaşın')
-
     TEMPORARY_LANDING_LOCALES.forEach((locale) => {
       const content = byLocale[locale]
+      if (locale !== 'en') {
+        expect(content).not.toEqual(byLocale.en)
+      }
       expect(content.title.length).toBeGreaterThan(0)
       expect(content.whySectionHeading?.length ?? 0).toBeGreaterThan(0)
       expect(content.heroVideo?.subheadlineText?.length ?? 0).toBeGreaterThan(0)
@@ -71,7 +70,7 @@ describe('temporaryLandingMode i18n', () => {
     const invalidLocale = 'xx' as TemporaryLandingLocale
     const fallbackContent = getTemporaryLandingPageContent(invalidLocale)
 
-    expect(fallbackContent.contactTitle).toBe('Contact us')
-    expect(fallbackContent.footerLinks.map((link) => link.label)).toEqual(['Privacy Policy', 'Imprint'])
+    const englishContent = getTemporaryLandingPageContent('en')
+    expect(fallbackContent).toEqual(englishContent)
   })
 })

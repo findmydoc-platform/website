@@ -326,7 +326,7 @@ export const permissionMatrix: PermissionMatrix = {
         },
       },
       notes:
-        'Platform RWDA; clinic RWA current eligible local/group clinics including inactive doctors; public active doctors; averageRating is computed-only',
+        'Platform RWDA, including targetless permanent cleanup of trashed clinicless doctors in an active native transaction; clinic RWA current eligible local/group clinics including inactive doctors; public active doctors; averageRating is computed-only; native deletion dependencies remain enforced',
     },
     clinicGroups: {
       slug: 'clinicGroups',

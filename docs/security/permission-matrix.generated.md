@@ -79,7 +79,7 @@
 - **Patients**: Patients can update own profile; no self-create/delete
 - **Posts**: Blog content - platform write, published content readable by all
 - **Pages**: Static pages - platform write, published content readable by all
-- **Doctors**: Platform RWDA; clinic RWA current eligible local/group clinics including inactive doctors; public active doctors; averageRating is computed-only
+- **Doctors**: Platform RWDA, including targetless permanent cleanup of trashed clinicless doctors in an active native transaction; clinic RWA current eligible local/group clinics including inactive doctors; public active doctors; averageRating is computed-only; native deletion dependencies remain enforced
 - **ClinicGroups**: Private group metadata; only persisted platform admin/support roles manage groups. Clinic references block deletion.
 - **Clinics**: Platform admin/support create, platform read/update/delete, clinic RW current eligible assignment, patients/anonymous R approved; averageRating is computed-only
 - **DoctorSpecialties**: Platform RWDA, clinic RWA own clinic, patients/anonymous R

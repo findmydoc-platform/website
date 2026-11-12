@@ -1,5 +1,12 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
-import { createLocalReq, getPayload, type Payload, type PayloadRequest } from 'payload'
+import {
+  createLocalReq,
+  getPayload,
+  initTransaction,
+  killTransaction,
+  type Payload,
+  type PayloadRequest,
+} from 'payload'
 import config from '@payload-config'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
@@ -419,6 +426,142 @@ describe('Current clinic doctor source permissions and native ordering', () => {
     await expect(
       payload.findByID({ collection: 'doctorMedia', id: portrait.id, overrideAccess: true }),
     ).rejects.toThrow()
+  })
+  it.each(['bulk', 'by-id'] as const)(
+    'permanently removes a trashed clinicless doctor through native %s deletion',
+    async (mode) => {
+      const f = await fixtures()
+      await payload.update({
+        collection: 'doctors',
+        id: f.foreign.doctor.id,
+        data: { deletedAt: new Date().toISOString() },
+        req: operator,
+        overrideAccess: false,
+      })
+      await payload.delete({
+        collection: 'clinics',
+        id: f.foreign.clinic.id,
+        trash: true,
+        req: operator,
+        overrideAccess: false,
+      })
+      clinics.splice(clinics.indexOf(f.foreign.clinic.id), 1)
+      const orphan = await payload.findByID({
+        collection: 'doctors',
+        id: f.foreign.doctor.id,
+        trash: true,
+        depth: 0,
+        req: operator,
+        overrideAccess: false,
+      })
+      expect(orphan.clinic).toBeNull()
+      expect(orphan.deletedAt).toBeTruthy()
+
+      await expect(
+        payload.delete({
+          collection: 'doctors',
+          id: orphan.id,
+          trash: true,
+          req: await createLocalReq({ user: f.user }, payload),
+          overrideAccess: true,
+        }),
+      ).rejects.toMatchObject({ status: 403 })
+      await expect(
+        payload.delete({
+          collection: 'doctors',
+          id: orphan.id,
+          trash: true,
+          req: await createLocalReq(
+            { user: operator.user!, req: { routeParams: { clinicId: String(f.first.clinic.id) } } },
+            payload,
+          ),
+          overrideAccess: false,
+        }),
+      ).rejects.toMatchObject({ status: 403 })
+      await expect(
+        payload.delete({
+          collection: 'doctors',
+          id: orphan.id,
+          trash: true,
+          req: await createLocalReq({ user: operator.user! }, payload),
+          overrideAccess: false,
+          disableTransaction: true,
+        }),
+      ).rejects.toThrow(/active native transaction/)
+      await expect(
+        payload.update({
+          collection: 'doctors',
+          id: orphan.id,
+          trash: true,
+          data: { clinic: f.first.clinic.id, biography: 'Forbidden orphan reassignment' },
+          req: await createLocalReq({ user: operator.user! }, payload),
+          overrideAccess: false,
+        }),
+      ).rejects.toMatchObject({ status: 403 })
+
+      const deletionReq = await createLocalReq({ user: operator.user! }, payload)
+      if (mode === 'bulk') {
+        const removed = await payload.delete({
+          collection: 'doctors',
+          where: { id: { equals: orphan.id } },
+          trash: true,
+          req: deletionReq,
+          overrideAccess: false,
+        })
+        expect(removed.errors).toEqual([])
+        expect(removed.docs.map(({ id }) => id)).toEqual([orphan.id])
+      } else {
+        const removed = await payload.delete({
+          collection: 'doctors',
+          id: orphan.id,
+          trash: true,
+          req: deletionReq,
+          overrideAccess: false,
+        })
+        expect(removed.id).toBe(orphan.id)
+      }
+      doctors.splice(doctors.indexOf(orphan.id), 1)
+      await expect(
+        payload.findByID({ collection: 'doctors', id: orphan.id, trash: true, overrideAccess: true }),
+      ).rejects.toMatchObject({ status: 404 })
+    },
+  )
+  it('keeps permanent deletion of a live clinicless doctor forbidden', async () => {
+    const f = await fixtures()
+    const request = await createLocalReq({ user: operator.user! }, payload)
+    await initTransaction(request)
+    try {
+      await payload.delete({
+        collection: 'clinics',
+        id: f.foreign.clinic.id,
+        trash: true,
+        req: request,
+        overrideAccess: false,
+      })
+      const orphan = await payload.findByID({
+        collection: 'doctors',
+        id: f.foreign.doctor.id,
+        depth: 0,
+        req: request,
+        overrideAccess: false,
+      })
+      expect(orphan.clinic).toBeNull()
+      expect(orphan.deletedAt).toBeFalsy()
+      await expect(
+        payload.delete({
+          collection: 'doctors',
+          id: orphan.id,
+          trash: true,
+          req: request,
+          overrideAccess: false,
+        }),
+      ).rejects.toMatchObject({ status: 403 })
+    } finally {
+      await killTransaction(request)
+    }
+    expect((await payload.findByID({ collection: 'clinics', id: f.foreign.clinic.id, overrideAccess: true })).id).toBe(
+      f.foreign.clinic.id,
+    )
   })
   it.each(['doctors', 'doctorspecialties', 'doctorMedia'] as const)(
     'fails closed without a native transaction owner for %s',

@@ -1,7 +1,7 @@
 name = "cache_architecture_reviewer"
 description = "Read-only reviewer for cache policy, revalidation ownership, and public freshness boundaries in this repository."
 model_reasoning_effort = "high"
-sandbox_mode = "read-only"
+# Permissions are inherited from the parent session.
 nickname_candidates = ["Cache Cartographer", "Freshness Auditor", "Invalidation Gate"]
 developer_instructions = """
 Read the repository root AGENTS.md and the closest path-local AGENTS.md files before drawing conclusions. Read docs/engineering/cache-revalidation-runtime.md, ADR 023, and the relevant cachePolicy/cacheRevalidation modules when cache behavior is in scope.

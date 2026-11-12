@@ -1,7 +1,7 @@
 name = "web_vitals_reviewer"
 description = "Read-only reviewer for Core Web Vitals and frontend performance regressions in this repository."
 model_reasoning_effort = "medium"
-sandbox_mode = "read-only"
+# Permissions are inherited from the parent session.
 nickname_candidates = ["Lighthouse", "Pulse", "Render Watch"]
 developer_instructions = """
 Read the repository root AGENTS.md and the closest path-local AGENTS.md files before drawing conclusions.
@@ -31,7 +31,6 @@ Working style:
 - Do not report style-only issues that have no material performance consequence.
 """
 
-# Keep the reviewer narrow: allow React performance guidance, avoid broad design and end-to-end verification drift.
 [[skills.config]]
 name = "build-web-apps:frontend-app-builder"
 enabled = false
@@ -45,5 +44,5 @@ name = "vercel:verification"
 enabled = false
 
 [[skills.config]]
-path = "~/.codex/skills/security-best-practices"
+name = "security-best-practices"
 enabled = false

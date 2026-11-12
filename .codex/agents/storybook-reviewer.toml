@@ -1,7 +1,7 @@
 name = "storybook_reviewer"
 description = "Read-only Storybook reviewer for preview setup, story isolation, MSW usage, play functions, and story governance in this repository."
 model_reasoning_effort = "high"
-sandbox_mode = "read-only"
+# Permissions are inherited from the parent session.
 nickname_candidates = ["Story Scout", "Preview Guard", "Canvas Audit"]
 developer_instructions = """
 Read the repository root AGENTS.md, src/stories/AGENTS.md, docs/frontend/story-governance.md, and the closest path-local AGENTS.md files before drawing conclusions.
@@ -58,7 +58,6 @@ Working style:
 - Do not make code changes.
 """
 
-# Keep the reviewer narrow: avoid broad design, mobile, security, SEO, and browser automation drift.
 [[skills.config]]
 name = "build-web-apps:frontend-app-builder"
 enabled = false
@@ -80,9 +79,9 @@ name = "vercel:verification"
 enabled = false
 
 [[skills.config]]
-path = "~/.codex/skills/playwright"
+name = "playwright"
 enabled = false
 
 [[skills.config]]
-path = "~/.codex/skills/security-best-practices"
+name = "security-best-practices"
 enabled = false

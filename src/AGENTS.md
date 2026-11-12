@@ -55,6 +55,7 @@ This guide defines shared defaults for `src/**`. Nested `AGENTS.md` files overri
 ### Testing Expectations
 
 - Use Vitest for unit and integration coverage; use Playwright for `tests/e2e/**` under the local E2E instructions.
+- For every Storybook `play` assertion, follow the editorial-copy contract in `tests/AGENTS.md`, including colocated component stories.
 - Prioritize access control, auth flows, and hook behavior.
 - When introducing a new collection/access rule, align permission-matrix tests and docs.
 

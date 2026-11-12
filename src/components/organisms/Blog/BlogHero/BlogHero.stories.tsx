@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, within } from 'storybook/test'
 
 import { BlogHero } from '@/components/organisms/Blog/BlogHero'
-import { withViewportStory } from '../utils/viewportMatrix'
+import { withViewportStory } from '@/stories/utils/viewportMatrix'
 
 const blogBreadcrumbs = [
   { label: 'Home', href: '/' },
@@ -38,9 +38,8 @@ export const Default: Story = {
   args: {},
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    const heading = canvas.getByRole('heading', { name: 'Our Blog' })
+    const heading = canvas.getByRole('heading', { level: 1 })
     await expect(heading).toBeInTheDocument()
-    await expect(canvas.getByText(/Expert insights, practical guidance/)).toBeInTheDocument()
 
     const hero = heading.closest('section')
     await expect(hero).not.toBeNull()
@@ -91,7 +90,7 @@ export const WithBreadcrumbs: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     const breadcrumb = canvas.getByRole('navigation', { name: 'Breadcrumb' })
-    const heading = canvas.getByRole('heading', { name: 'Our Blog' })
+    const heading = canvas.getByRole('heading', { level: 1 })
     const hero = heading.closest('section')
 
     await expect(breadcrumb).toBeInTheDocument()
@@ -118,7 +117,7 @@ const desktopLeftBase: Story = {
   args: {},
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    const heading = canvas.getByRole('heading', { name: 'Our Blog' })
+    const heading = canvas.getByRole('heading', { level: 1 })
     await expect(heading).toBeInTheDocument()
     await expect(getComputedStyle(heading).textAlign).toBe('left')
 
@@ -144,7 +143,7 @@ const tabletCenteredBase: Story = {
   args: {},
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    const heading = canvas.getByRole('heading', { name: 'Our Blog' })
+    const heading = canvas.getByRole('heading', { level: 1 })
     await expect(heading).toBeInTheDocument()
     await expect(getComputedStyle(heading).textAlign).toBe('center')
 

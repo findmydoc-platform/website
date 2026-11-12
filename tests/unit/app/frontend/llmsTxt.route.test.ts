@@ -73,15 +73,7 @@ describe('llms.txt routes', () => {
     expect(response.status).toBe(200)
     expect(response.headers.get('Content-Type')).toContain('text/markdown')
     expect(response.headers.get('Cache-Control')).toBe('private, no-store')
-    expectIncludesAll(body, [
-      '# findmydoc',
-      '## Key URLs',
-      '## Public Data Types',
-      '## Citation Guidance',
-      '## Freshness Policy',
-      '## Medical Disclaimer',
-      '## Contact Path',
-    ])
+    expect(body).toContain('https://findmydoc.eu/')
   })
 
   it('serves the same content from the optional well-known alias', async () => {
@@ -164,9 +156,6 @@ describe('llms.txt routes', () => {
       'https://findmydoc.eu/posts',
       'https://findmydoc.eu/pages-sitemap.xml',
       'https://findmydoc.eu/posts-sitemap.xml',
-      '## Citation Guidance',
-      '## Freshness Policy',
-      'Published public posts',
     ])
     expectIncludesNone(body, [
       '/clinics',
@@ -177,7 +166,6 @@ describe('llms.txt routes', () => {
       '/imprint',
       '/api',
       'preview.findmydoc.eu',
-      '## Contact Path',
     ])
     expect(aliasResponse.status).toBe(200)
     expect(aliasResponse.headers.get('Cache-Control')).toBe('private, no-store')
@@ -219,7 +207,6 @@ describe('llms.txt routes', () => {
         const body = await response.text()
 
         expect(response.status).toBe(200)
-        expect(body).toContain('This Holding-mode orientation covers the existing home page and published blog.')
         expectIncludesNone(body, ['/clinics', '/listing-comparison', '/about', '/contact', '/api'])
         expect(response.headers.get('Cache-Control')).toBe('private, no-store')
       }

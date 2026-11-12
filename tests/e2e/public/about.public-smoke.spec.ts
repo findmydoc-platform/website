@@ -15,12 +15,12 @@ const viewportMatrix = [
 ] as const
 
 const expectedSectionOrder = [
-  /The team behind clearer clinic decisions\.|About findmydoc/,
-  /Why we exist|Why findmydoc exists/,
-  /findmydoc trust system scroll story/i,
-  /The people accountable for the system/,
-  /What we keep transparent|What stays transparent/,
-  /Continue with clearer clinic context\./,
+  'H1',
+  'about-signal-context-heading',
+  'about-trust-system-story-heading',
+  'about-accountability-heading',
+  'about-boundary-heading',
+  'about-closing-actions-heading',
 ] as const
 
 test.beforeEach(async ({ context }) => {
@@ -40,26 +40,12 @@ async function expectNoHorizontalOverflow(page: Page, viewportName: string) {
 }
 
 async function expectAboutSectionsInOrder(page: Page, viewportName: string) {
+  const selector = expectedSectionOrder.map((id) => (id === 'H1' ? 'h1' : `h2#${id}`)).join(', ')
   const sectionOrder = await page
-    .locator('h1, h2, section[aria-label="findmydoc trust system scroll story"]')
-    .evaluateAll((nodes) =>
-      nodes
-        .map((node) => (node.getAttribute('aria-label') ?? node.textContent ?? '').replace(/\s+/g, ' ').trim())
-        .filter(Boolean),
-    )
+    .locator(selector)
+    .evaluateAll((nodes) => nodes.map((node) => (node.tagName === 'H1' ? 'H1' : node.id)))
 
-  let previousIndex = -1
-
-  for (const expectedSection of expectedSectionOrder) {
-    const nextIndex = sectionOrder.findIndex((section, index) => index > previousIndex && expectedSection.test(section))
-
-    expect(
-      nextIndex,
-      `${viewportName} section order should include ${String(expectedSection)} after index ${previousIndex}: ${sectionOrder.join(' -> ')}`,
-    ).toBeGreaterThan(previousIndex)
-
-    previousIndex = nextIndex
-  }
+  expect(sectionOrder, `${viewportName} should preserve the About section order`).toEqual(expectedSectionOrder)
 }
 
 async function scrollTrustStoryToProgress(page: Page, progress: number) {
@@ -83,9 +69,8 @@ test('about page keeps its section order without horizontal overflow across publ
     await page.setViewportSize({ width: viewport.width, height: viewport.height })
     await page.goto('/about', { waitUntil: 'domcontentloaded' })
 
-    await expect(
-      page.getByRole('heading', { name: /The team behind clearer clinic decisions\.|About findmydoc/i }),
-    ).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1 })).toHaveAccessibleName(/\S/)
     await expectAboutSectionsInOrder(page, viewport.name)
     await expectNoHorizontalOverflow(page, viewport.name)
   }
@@ -119,12 +104,10 @@ test('about page exposes the trust story, team controls, and closing actions @sm
   await volkanTab.press('End')
   await expect(sebastianTab).toHaveAttribute('aria-selected', 'true')
 
-  const closingCta = page.getByRole('region', { name: 'Continue with clearer clinic context.' })
-  await expect(closingCta.getByRole('link', { name: 'Compare clinics' })).toHaveAttribute('href', '/listing-comparison')
-  await expect(closingCta.getByRole('link', { name: 'Register your clinic' })).toHaveAttribute(
-    'href',
-    '/partners/clinics',
-  )
+  const closingCta = page.locator('section[aria-labelledby="about-closing-actions-heading"]')
+  await expect(closingCta.getByRole('link')).toHaveCount(2)
+  await expect(closingCta.locator('a[href="/listing-comparison"]')).toHaveAccessibleName(/\S/)
+  await expect(closingCta.locator('a[href="/partners/clinics"]')).toHaveAccessibleName(/\S/)
   await expectNoHorizontalOverflow(page, '375 interactive states')
   await expectNoBrowserIssues(issues)
 })

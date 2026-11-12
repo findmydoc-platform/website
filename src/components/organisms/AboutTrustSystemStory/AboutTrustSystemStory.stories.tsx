@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, waitFor, within } from 'storybook/test'
 
 import { AboutTrustSystemStory } from '@/components/organisms/AboutTrustSystemStory'
-import { withViewportStory } from '../utils/viewportMatrix'
+import { withViewportStory } from '@/stories/utils/viewportMatrix'
 
 const meta = {
   title: 'Domain/Landing/Organisms/AboutTrustSystemStory',
@@ -33,30 +33,16 @@ export const Default: Story = {
     const firstCard = story.querySelector<HTMLElement>('[data-card="0"]')
 
     await expect(canvas.getByRole('region', { name: /findmydoc trust system scroll story/i })).toBeInTheDocument()
-    await expect(canvas.getByRole('heading', { name: 'Patients start with uncertainty.' })).toBeInTheDocument()
-    await expect(
-      canvas.getByRole('heading', { name: 'We turn trust signals into clearer decisions.' }),
-    ).toBeInTheDocument()
-    await expect(
-      canvas.getByRole('heading', { name: 'A clearer path forward for patients and clinics.' }),
-    ).toBeInTheDocument()
-    expect(canvas.getAllByText(/Choosing care abroad often means piecing together clinics/i).length).toBeGreaterThan(0)
-    expect(
-      canvas.getAllByText(/findmydoc organizes provider information into comparable signals/i).length,
-    ).toBeGreaterThan(0)
-    expect(canvas.getAllByText(/Patients can understand their options with more confidence/i).length).toBeGreaterThan(0)
-    expect(canvas.getAllByText(/This is why we build findmydoc/i).length).toBeGreaterThan(0)
-    expect(canvas.getAllByText(/To make trust easier to understand before care begins/i).length).toBeGreaterThan(0)
-    expect(canvas.getAllByText(/Patient\s*Confidence/).length).toBeGreaterThan(0)
-    expect(canvas.getAllByText(/Trust at the core/i).length).toBeGreaterThan(0)
-    await expect(canvas.queryByText(/Reusable argumentation/i)).not.toBeInTheDocument()
-    expect(canvas.getAllByRole('heading', { name: 'Patients start with uncertainty.' })).toHaveLength(1)
+    const summaryHeadings = canvas.getAllByRole('heading', { level: 3 })
+    expect(summaryHeadings).toHaveLength(3)
+    for (const heading of summaryHeadings) {
+      await expect(heading).toHaveAccessibleName(/\S/)
+    }
     expect(canvas.getAllByRole('listitem')).toHaveLength(6)
     expect(firstCard).not.toBeNull()
     if (!firstCard) return
 
-    await expect(within(firstCard).getByText('Patients start with uncertainty.')).toBeInTheDocument()
-    await expect(within(firstCard).getByText(/Choosing care abroad often means/i)).toBeInTheDocument()
+    await expect(firstCard.closest('[aria-hidden]')).toHaveAttribute('aria-hidden', 'true')
     await expect(firstCard).toHaveAttribute('data-active', 'true')
   },
 }

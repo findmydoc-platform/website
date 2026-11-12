@@ -22,21 +22,17 @@ describe('frontend contact page route', () => {
   it('sets metadata for the canonical contact route', async () => {
     const pageModule = await import('@/app/(frontend)/contact/page')
 
-    expect(pageModule.metadata).toEqual({
-      title: 'Contact',
-      description:
-        'Send us your request about clinic comparisons, patient support, clinic partnerships, or platform questions.',
+    expect(pageModule.metadata).toMatchObject({
       path: '/contact',
       alternates: {
         canonical: '/contact',
       },
     })
-    expect(mocks.createSiteMetadataMock).toHaveBeenCalledWith({
-      title: 'Contact',
-      description:
-        'Send us your request about clinic comparisons, patient support, clinic partnerships, or platform questions.',
-      path: '/contact',
-    })
+    expect(mocks.createSiteMetadataMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: '/contact',
+      }),
+    )
   })
 
   it('renders the shared contact form with an h1 and allowed submission metadata', async () => {
@@ -53,7 +49,6 @@ describe('frontend contact page route', () => {
     expect(result.type).toBe('main')
     expect(result.props.children.type).toBe(mocks.publicContactSectionComponent)
     expect(result.props.children.props).toMatchObject({
-      title: 'Contact findmydoc',
       headingAs: 'h1',
       submissionMetadata: {
         clinic: 'berlin-health-clinic',

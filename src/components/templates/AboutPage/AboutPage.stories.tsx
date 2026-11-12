@@ -3,8 +3,8 @@ import { expect, userEvent, waitFor, within } from 'storybook/test'
 
 import { AboutPage, type AboutPageProps } from '@/components/templates/AboutPage/Component'
 import { getStoryImageSrc, storyClinicImages, storyPortraits } from '@/stories/fixtures/assets'
-import { withMockRouter } from '../utils/routerDecorator'
-import { withViewportStory } from '../utils/viewportMatrix'
+import { withMockRouter } from '@/stories/utils/routerDecorator'
+import { withViewportStory } from '@/stories/utils/viewportMatrix'
 
 const aboutPageArgs: AboutPageProps = {
   hero: {
@@ -99,9 +99,9 @@ export const Default: Story = {
     await expect(canvas.getByRole('heading', { name: 'About findmydoc' })).toBeInTheDocument()
     const whyHeading = canvas.getByRole('heading', { name: 'Why findmydoc exists' })
     const trustStory = canvas.getByRole('region', { name: /findmydoc trust system scroll story/i })
-    const teamHeading = canvas.getByRole('heading', { name: 'The people accountable for the system' })
+    const teamHeading = canvasElement.querySelector<HTMLElement>('#about-accountability-heading')!
     const transparencyHeading = canvas.getByRole('heading', { name: 'What stays transparent' })
-    const closingHeading = canvas.getByRole('heading', { name: 'Continue with clearer clinic context.' })
+    const closingHeading = canvasElement.querySelector<HTMLElement>('#about-closing-actions-heading')!
     const finalCard = trustStory.querySelector<HTMLElement>('[data-card="2"]')
     const finalLabel = trustStory.querySelector<HTMLElement>('[data-ring-label="2"]')
     const progressBar = trustStory.querySelector<HTMLElement>('[data-progress-bar]')
@@ -119,31 +119,19 @@ export const Default: Story = {
     expect(teamHeading.compareDocumentPosition(transparencyHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(transparencyHeading.compareDocumentPosition(closingHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     await expect(canvas.getByText(/Profile claims, qualifications, reviews, prices/i)).toBeInTheDocument()
-    await expect(canvas.getByText('Scattered information')).toBeInTheDocument()
-    await expect(canvas.getByText('Comparison context')).toBeInTheDocument()
-    await expect(canvas.getByRole('heading', { name: 'Decision boundary' })).toBeInTheDocument()
-    expect(canvas.getAllByText(/Patients start with uncertainty\./).length).toBeGreaterThan(0)
-    expect(canvas.getAllByText(/We turn trust signals into clearer decisions\./).length).toBeGreaterThan(0)
-    expect(canvas.getAllByText(/A clearer path forward for patients and clinics\./).length).toBeGreaterThan(0)
-    expect(canvas.getAllByText(/Patient\s*Confidence/).length).toBeGreaterThan(0)
     if (name === 'Default' && win && finalCard && finalLabel && progressBar) {
       const nextFrames = () =>
         new Promise<void>((resolve) => {
           win.requestAnimationFrame(() => win.requestAnimationFrame(() => resolve()))
         })
-      const storyTop = win.scrollY + trustStory.getBoundingClientRect().top
-      const maxScroll = Math.max(1, trustStory.getBoundingClientRect().height - win.innerHeight)
-      const scrollTargets = [0.84, 0.9, 0.96, 1]
-
-      for (const target of scrollTargets) {
-        win.scrollTo(0, storyTop + maxScroll * target)
+      await waitFor(async () => {
+        const storyTop = win.scrollY + trustStory.getBoundingClientRect().top
+        const maxScroll = Math.max(1, trustStory.getBoundingClientRect().height - win.innerHeight)
+        win.scrollTo(0, storyTop + maxScroll * 0.96)
         win.dispatchEvent(new win.Event('scroll'))
         await nextFrames()
-
-        if (finalCard.getAttribute('data-active') === 'true') break
-      }
-
-      await waitFor(() => expect(finalCard).toHaveAttribute('data-active', 'true'))
+        expect(finalCard).toHaveAttribute('data-active', 'true')
+      })
       await waitFor(() => expect(finalLabel).toHaveAttribute('data-visible'))
       expect(Number.parseFloat(progressBar.style.width)).toBeGreaterThan(80)
     }
@@ -151,7 +139,6 @@ export const Default: Story = {
 
     expect(teamSpotlight).not.toBeNull()
     await expect(within(teamSpotlight!).getByRole('heading', { name: 'Volkan Kablan' })).toBeInTheDocument()
-    await expect(within(teamSpotlight!).getByText(/Sets the standards for partner relationships/i)).toBeInTheDocument()
     await expect(within(teamSpotlight!).getByRole('link', { name: 'Volkan Kablan on LinkedIn' })).toBeInTheDocument()
     await expect(within(teamSpotlight!).getByRole('link', { name: 'Contact' })).toBeInTheDocument()
     const volkanTab = canvas.getByRole('tab', { name: /Volkan Kablan/i })
@@ -159,8 +146,6 @@ export const Default: Story = {
 
     await expect(canvas.getByRole('tablist', { name: /Team accountability roles/i })).toBeInTheDocument()
     await expect(volkanTab).toHaveAttribute('aria-selected', 'true')
-    expect(canvas.getAllByText('Partner standards').length).toBeGreaterThan(0)
-    await expect(canvas.getByText('Platform reliability')).toBeInTheDocument()
     await userEvent.click(sebastianTab)
     await waitFor(() => {
       const activeSpotlight = canvasElement.querySelector<HTMLElement>('[data-about-team-spotlight]')
@@ -180,12 +165,15 @@ export const Default: Story = {
       expect(volkanTab).toHaveAttribute('aria-selected', 'true')
     })
     await expect(canvas.getByText(/Clinics remain accountable/i)).toBeInTheDocument()
-    await expect(canvas.getByText('Medical-advice separation')).toBeInTheDocument()
-    expect(canvas.getAllByRole('link', { name: /compare clinics/i })).toHaveLength(2)
-    await expect(canvas.getByRole('link', { name: /for clinics/i })).toBeInTheDocument()
-    await expect(canvas.getByRole('link', { name: /register your clinic/i })).toBeInTheDocument()
-    await expect(canvas.queryByRole('heading', { name: /ready to continue/i })).not.toBeInTheDocument()
-    await expect(canvas.queryByRole('link', { name: /meet the team/i })).not.toBeInTheDocument()
+    const heroSection = canvas.getByRole('heading', { level: 1 }).closest('section')!
+    const closingSection = closingHeading.closest('section')!
+    for (const section of [heroSection, closingSection]) {
+      const links = within(section).getAllByRole('link')
+      expect(links).toHaveLength(2)
+      await expect(links[0]).toHaveAttribute('href', '/listing-comparison')
+      await expect(links[1]).toHaveAttribute('href', '/partners/clinics')
+      for (const link of links) await expect(link).toHaveAccessibleName(/\S/)
+    }
   },
 }
 

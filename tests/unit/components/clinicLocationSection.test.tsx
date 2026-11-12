@@ -21,7 +21,6 @@ describe('ClinicLocationSection', () => {
       />,
     )
 
-    expect(screen.getByText('OpenStreetMap is hidden until optional cookies are accepted.')).toBeInTheDocument()
     expect(screen.getByTestId('clinic-location-placeholder-map')).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Directions' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Expand map' })).not.toBeInTheDocument()

@@ -182,8 +182,10 @@ describe('frontend posts index route', () => {
 
     const emptySection = findElementByType(result, 'section')
     expect(emptySection?.props['aria-labelledby']).toBe('empty-posts-heading')
-    expect(getTextContent(emptySection)).toContain('Neue Beiträge sind in Vorbereitung')
-    expect(getTextContent(emptySection)).toContain('praktische Orientierung')
+    expect(getTextContent(emptySection).trim()).not.toBe('')
+    const englishResult = await pageModule.default({ searchParams: Promise.resolve({ locale: 'en' }) })
+    const englishEmptySection = findElementByType(englishResult, 'section')
+    expect(getTextContent(emptySection)).not.toEqual(getTextContent(englishEmptySection))
     expect(mocks.normalizePostMock).not.toHaveBeenCalled()
   })
 })

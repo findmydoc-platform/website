@@ -291,7 +291,11 @@ describe('frontend home page route', () => {
     )
   })
 
-  it('returns seeded homepage metadata when landing request header is missing', async () => {
+  it('returns CMS homepage metadata when landing request header is missing', async () => {
+    const landingPages = cloneBaselineLandingPages()
+    landingPages.home.seo.title = 'Test homepage title'
+    landingPages.home.seo.description = 'Test homepage description'
+    mocks.payloadFindGlobalMock.mockResolvedValueOnce(landingPages)
     const pageModule = await import('@/app/(frontend)/page')
     const metadata = await pageModule.generateMetadata({})
 
@@ -301,9 +305,8 @@ describe('frontend home page route', () => {
       depth: 2,
     })
     expect(metadata).toMatchObject({
-      title: 'Gain International Patients | Global Clinic Visibility Platform | findmydoc',
-      description:
-        'Gain international patients through a trusted comparison platform. Increase clinic reach, visibility, and qualified global patient inquiries.',
+      title: 'Test homepage title | findmydoc',
+      description: 'Test homepage description',
     })
   })
 })

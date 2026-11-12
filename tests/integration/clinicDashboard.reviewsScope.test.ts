@@ -222,6 +222,47 @@ describe('current clinic review source and native workflow authorization', () =>
       status: 400,
     })
   }, 60000)
+  it('reflects submitted responses, moderation decisions and pending revisions on the next workload read', async () => {
+    const before = await readClinicReviewWorkload(await req(first), String(first))
+    const source = await review(first)
+    expect(await readClinicReviewWorkload(await req(first), String(first))).toEqual({
+      ...before,
+      reviewsToAnswerCount: before.reviewsToAnswerCount + 1,
+    })
+    const workflow = await createClinicReviewWorkflow(await req(first), String(first), 'reviewResponses', {
+      review: source.id,
+      pendingResponse: { body: 'Synthetic response for current workload refresh.' },
+    })
+    expect(await readClinicReviewWorkload(await req(first), String(first))).toEqual({
+      ...before,
+      pendingModerationCount: before.pendingModerationCount + 1,
+    })
+    await payload.update({
+      collection: 'reviewResponses',
+      id: workflow.doc.id,
+      req: operator,
+      overrideAccess: false,
+      data: { moderationStatus: 'approved', moderationReason: 'Synthetic current moderation decision.' },
+    })
+    expect(await readClinicReviewWorkload(await req(first), String(first))).toEqual(before)
+    await updateClinicReviewResponse(await req(first), String(first), workflow.doc.id, {
+      pendingResponse: { body: 'Synthetic revision beside the published response.' },
+    })
+    const revision = { ...before, pendingModerationCount: before.pendingModerationCount + 1 }
+    expect(await readClinicReviewWorkload(await req(first), String(first))).toEqual(revision)
+    await updateClinicReviewResponse(await req(first), String(first), workflow.doc.id, {
+      pendingResponse: { body: 'Synthetic repeated revision without duplicate workload.' },
+    })
+    expect(await readClinicReviewWorkload(await req(first), String(first))).toEqual(revision)
+    await payload.update({
+      collection: 'reviewResponses',
+      id: workflow.doc.id,
+      req: operator,
+      overrideAccess: false,
+      data: { moderationStatus: 'rejected', moderationReason: 'Synthetic revision rejection.' },
+    })
+    expect(await readClinicReviewWorkload(await req(first), String(first))).toEqual(before)
+  }, 60000)
   it('rejects an incomplete source instead of returning a plausible partial workload', async () => {
     await review(first)
     const originalFind = payload.find.bind(payload)

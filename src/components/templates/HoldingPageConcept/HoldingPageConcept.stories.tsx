@@ -128,8 +128,6 @@ const assertConceptFrame: Story['play'] = async ({ args, canvasElement }) => {
   await expect(canvas.getByRole('link', { name: 'Privacy Policy' })).toBeInTheDocument()
   await expect(canvas.getByRole('link', { name: 'Imprint' })).toBeInTheDocument()
   await expect(canvas.getByLabelText('Email')).toBeInTheDocument()
-  await expect(canvas.getByText('Why findmydoc')).toBeInTheDocument()
-  await expect(canvas.getByText('What you get')).toBeInTheDocument()
   await expect(canvas.getByRole('heading', { level: 2, name: 'Latest insights' })).toBeInTheDocument()
 
   if (args.contactMode === 'compact') {

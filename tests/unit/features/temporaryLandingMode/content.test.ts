@@ -59,29 +59,29 @@ const expectedLocalizedCopyByLocale = {
       'Ich glaube, medizinische Entscheidungen dürfen nicht vom Bauchgefühl oder von Informationschaos abhängen. Deshalb machen wir Optionen verständlich und vergleichbar – mit klaren Kriterien, echten Fakten und Orientierung. findmydoc hilft Patient:innen aus der DACH-Region, passende Kliniken im Ausland mit mehr Sicherheit zu finden.\n\nIch glaube, Vertrauen entsteht, wenn Erwartungen realistisch sind und nächste Schritte klar werden. Deshalb strukturieren wir Informationen, erklären Unterschiede und geben dir eine klare Vergleichslogik an die Hand. findmydoc macht es einfacher, Kliniken und Behandlungen gezielt zu vergleichen und vorbereitet anzufragen.',
   },
   tr: {
-    eyebrow: 'Türkiye’deki estetik klinikler için',
+    eyebrow: 'Türkiye’deki estetik klinikleri için',
     subheadlineText:
-      'Yapılandırılmış klinik profilleri ve net kalite göstergeleri - böylece klinikler görünür olur ve kendilerine uygun başvurular alır.',
-    title: 'Avrupa’dan daha nitelikli başvurular.',
+      'Yapılandırılmış klinik profilleri ve anlaşılır kalite göstergeleriyle görünür olun, kliniğinize uygun talepler alın.',
+    title: 'Avrupa’dan daha fazla nitelikli talep',
     description:
-      'findmydoc, hasta deneyimlerini ve kalite göstergelerini tek bir yerde toplar - şeffaf, karşılaştırılabilir, anlaşılır.',
-    whatYouGetEyebrow: 'SİZİ NELER BEKLİYOR',
+      'findmydoc, deneyim paylaşımlarını ve kalite göstergelerini tek bir yerde, şeffaf, anlaşılır ve karşılaştırılabilir bir biçimde sunar.',
+    whatYouGetEyebrow: 'Sizi neler bekliyor?',
     signals: [
       {
         title: 'Daha fazla görünürlük',
-        body: 'Hastaların aktif olarak karşılaştırma yaptığı yerde, güven veren bir profille görünür olun.',
+        body: 'Hastaların aktif olarak karşılaştırma yaptığı yerde, güven veren bir profille keşfedilin.',
       },
       {
-        title: 'Dönüşüm sağlayan profil',
+        title: 'Dönüşüm sağlayan bir profil',
         body: 'Standartlaştırılmış bilgiler belirsizlikleri azaltır ve ilk görüşmelerin kalitesini artırır.',
       },
       {
-        title: 'Daha nitelikli başvurular',
-        body: 'Daha uygun hastalar, daha hedefli sorular ve randevuya kadar daha verimli bir süreç.',
+        title: 'Daha nitelikli talepler',
+        body: 'Daha uygun hastalar, daha odaklı sorular ve randevuya kadar daha verimli bir süreç.',
       },
     ],
     narrative:
-      'İyi kliniklerin daha yüksek sesle konuşmak zorunda kalmaması, aksine daha iyi anlaşılması gerektiğine inanıyorum. Bu yüzden kliniklere net bir sahne sunuyoruz: standartlaştırılmış profiller, anlaşılır bilgiler ve güven veren bir sunum. findmydoc, Türkiye’deki kliniklerin DACH bölgesinden kendilerine uygun hastalar tarafından bulunmasına yardımcı olur.\n\nEn iyi eşleşmenin, iki tarafın da en baştan aynı şeyi kastettiği eşleşme olduğuna inanıyorum. Bu yüzden beklenti yönetimini net bilgiler ve daha net bir ilk iletişim ile iyileştiriyoruz. findmydoc, kliniklere daha uygun başvurular ve hastalara doğru seçeneğe giden daha verimli bir yol sunar.',
+      'İyi kliniklerin seslerini yükseltmeye değil, daha iyi anlaşılmaya ihtiyacı olduğuna inanıyorum. Bu yüzden standartlaştırılmış klinik profilleri, açık ve anlaşılır bilgiler ve güven veren bir sunumla kliniklerin kendilerini tanıtabilecekleri bir alan oluşturuyoruz. findmydoc, Türkiye’deki kliniklerin Almanya, Avusturya ve İsviçre’den kendilerine uygun hastalar tarafından bulunmasına yardımcı olur.\n\nEn iyi eşleşmenin, her iki tarafın da en başından birbirini doğru anlamasıyla başladığına inanıyorum. Bu yüzden açık bilgiler ve daha net bir ilk iletişimle beklenti yönetimini iyileştiriyoruz. findmydoc, kliniklere daha uygun talepler, hastalara ise kendilerine uygun seçeneğe ulaşmak için daha verimli bir yol sunar.',
   },
 } satisfies Record<
   TemporaryLandingLocale,
@@ -126,7 +126,7 @@ describe('temporaryLandingMode content', () => {
     expect(getTemporaryLandingPageContent('de').title).toBe(
       'Eine Vergleichs\u00adplattform für Schönheits\u00adkliniken.',
     )
-    expect(getTemporaryLandingPageContent('tr').title).toBe('Avrupa’dan daha nitelikli başvurular.')
+    expect(getTemporaryLandingPageContent('tr').title).toBe('Avrupa’dan daha fazla nitelikli talep')
   })
 
   it('returns the expected locale-specific copy for the visible landing content', () => {

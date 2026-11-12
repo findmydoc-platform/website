@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { Settings2 } from 'lucide-react'
 
 import { Button } from '@/components/atoms/button'
@@ -26,6 +26,10 @@ export function CookieConsentBanner({
   onClose,
 }: CookieConsentBannerProps) {
   const titleRef = useRef<HTMLHeadingElement>(null)
+  const [settingsHovered, setSettingsHovered] = useState(false)
+  const [settingsFocused, setSettingsFocused] = useState(false)
+  const [tooltipDismissed, setTooltipDismissed] = useState(false)
+  const showTooltip = !tooltipDismissed && (settingsHovered || settingsFocused)
 
   return (
     <Dialog
@@ -48,7 +52,10 @@ export function CookieConsentBanner({
         }}
         onPointerDownOutside={(event) => event.preventDefault()}
         onEscapeKeyDown={(event) => {
-          if (!ready) event.preventDefault()
+          if (showTooltip) {
+            event.preventDefault()
+            setTooltipDismissed(true)
+          } else if (!ready) event.preventDefault()
         }}
       >
         <div className="grid grid-cols-[minmax(0,1fr)_2.75rem] items-start gap-x-4 gap-y-6 lg:grid-cols-[14rem_minmax(0,1fr)_2.75rem] lg:gap-x-8">
@@ -89,7 +96,14 @@ export function CookieConsentBanner({
             ) : null}
           </div>
 
-          <div className="group relative col-start-2 row-start-3 justify-self-end lg:col-start-3 lg:row-start-4 lg:self-center">
+          <div
+            className="relative col-start-2 row-start-3 justify-self-end lg:col-start-3 lg:row-start-4 lg:self-center"
+            onPointerEnter={() => {
+              setSettingsHovered(true)
+              setTooltipDismissed(false)
+            }}
+            onPointerLeave={() => setSettingsHovered(false)}
+          >
             <Button
               type="button"
               variant="ghost"
@@ -98,15 +112,21 @@ export function CookieConsentBanner({
               className="size-11 rounded-lg text-foreground hover:bg-muted"
               disabled={!ready}
               onClick={onCustomize}
+              onFocus={() => {
+                setSettingsFocused(true)
+                setTooltipDismissed(false)
+              }}
+              onBlur={() => setSettingsFocused(false)}
             >
               <Settings2 aria-hidden="true" className="size-6 -scale-x-100" />
             </Button>
-            <span
-              role="tooltip"
-              className="pointer-events-none absolute right-0 bottom-full z-10 mb-2 hidden max-w-48 rounded-md bg-secondary px-2 py-1 text-xs text-white group-focus-within:block group-hover:block"
-            >
-              {config.banner.customizeLabel}
-            </span>
+            {showTooltip && (
+              <span className="absolute right-0 bottom-full z-10 pb-2">
+                <span role="tooltip" className="block max-w-48 rounded-md bg-secondary px-2 py-1 text-xs text-white">
+                  {config.banner.customizeLabel}
+                </span>
+              </span>
+            )}
           </div>
 
           <div

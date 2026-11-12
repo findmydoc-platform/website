@@ -108,8 +108,16 @@ export const Banner: Story = {
     }
     await expect(settings).toHaveFocus()
     await expect(body.getByRole('tooltip')).toBeVisible()
+    await userEvent.keyboard('{Escape}')
+    await expect(body.queryByRole('tooltip')).not.toBeInTheDocument()
+    await expect(body.getByRole('dialog')).toBeVisible()
     await userEvent.tab()
     await expect(body.queryByRole('tooltip')).not.toBeInTheDocument()
+    await userEvent.hover(settings)
+    const tooltip = body.getByRole('tooltip')
+    await expect(tooltip).toBeVisible()
+    await userEvent.hover(tooltip)
+    await expect(tooltip).toBeVisible()
   },
   render: () => (
     <CookieConsentBanner

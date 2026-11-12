@@ -75,6 +75,8 @@ describe('landingPageContent normalizers', () => {
     const firstFaq = landingPages.home.faq.items[0]
     if (!firstFaq) throw new Error('Expected baseline home FAQ fixture')
     firstFaq.id = 'payload-row-q1'
+    firstFaq.question = 'Test FAQ question'
+    firstFaq.answer = 'Test FAQ answer'
 
     const content = normalizeHomeLandingContent(landingPages)
 
@@ -87,9 +89,8 @@ describe('landingPageContent normalizers', () => {
     expect('defaultOpenItemId' in content.faq).toBe(false)
     expect(content.faq.items[0]).toEqual({
       id: 'payload-row-q1',
-      question: 'How does this platform help clinics gain international patients?',
-      answer:
-        'By combining global visibility, patient guidance, and quality-focused clinic presentation in one trusted comparison environment.',
+      question: 'Test FAQ question',
+      answer: 'Test FAQ answer',
     })
   })
 
@@ -119,7 +120,15 @@ describe('landingPageContent normalizers', () => {
   })
 
   it('maps about page hero, statements, team responsibilities, and transparency content', () => {
-    const content = normalizeAboutLandingContent(attachRequiredMedia(cloneBaselineLandingPages()))
+    const landingPages = attachRequiredMedia(cloneBaselineLandingPages())
+    const firstMember = landingPages.about.team[0]
+    if (!firstMember) throw new Error('Expected baseline about team fixture')
+    firstMember.name = 'Test Team Member'
+    firstMember.role = 'Test role'
+    firstMember.whatWeDo = 'Test responsibility'
+    landingPages.about.transparency.items = [{ text: 'Test transparency statement' }]
+
+    const content = normalizeAboutLandingContent(landingPages)
 
     expect(content.hero.image).toMatchObject({
       src: '/platform-media/about-hero-large.webp',
@@ -129,20 +138,15 @@ describe('landingPageContent normalizers', () => {
     })
     expect(content.why.items).toHaveLength(3)
     expect(content.team[0]).toMatchObject({
-      name: 'Volkan Kablan',
-      role: 'CEO',
-      whatWeDo:
-        'Sets partner standards so commercial decisions stay transparent and aligned with responsible clinic relationships.',
+      name: 'Test Team Member',
+      role: 'Test role',
+      whatWeDo: 'Test responsibility',
       image: {
         src: '/platform-media/about-Volkan Kablan.webp',
         objectPosition: '50% 38%',
       },
     })
-    expect(content.transparency.items.map((item) => item.text)).toEqual([
-      'Clinics remain accountable for the information shown on their profiles.',
-      'Qualification and evidence signals are reviewed before they are presented as trust context.',
-      'Comparison context stays separate from medical advice, and patients contact clinics directly.',
-    ])
+    expect(content.transparency.items.map((item) => item.text)).toEqual(['Test transparency statement'])
   })
 
   it('uses about team as the central team source for the clinic partner page', () => {
@@ -198,7 +202,13 @@ describe('landingPageContent normalizers', () => {
   })
 
   it('maps clinic partner content while using CMS media', () => {
-    const content = normalizeClinicPartnerLandingContent(attachRequiredMedia(cloneBaselineLandingPages()))
+    const landingPages = attachRequiredMedia(cloneBaselineLandingPages())
+    landingPages.clinicPartners.registrationIntro = {
+      title: 'Test registration title',
+      description: 'Test registration description',
+    }
+    landingPages.clinicPartners.teamCta.buttonText = 'Test team action'
+    const content = normalizeClinicPartnerLandingContent(landingPages)
 
     expect(content.hero.image).toMatchObject({
       src: '/platform-media/clinic-partner-hero-large.webp',
@@ -217,11 +227,11 @@ describe('landingPageContent normalizers', () => {
     })
     expect(content.team[0]?.socials).toBeUndefined()
     expect(content.registrationIntro).toEqual({
-      title: 'Ready for verified visibility?',
-      description: 'Share the key details. We review your request personally and follow up with the next steps.',
+      title: 'Test registration title',
+      description: 'Test registration description',
     })
     expect(content.teamCta).toEqual({
-      buttonText: 'About us',
+      buttonText: 'Test team action',
       buttonLink: '/about',
     })
   })

@@ -18,8 +18,17 @@
 
 ## Test Quality Playbook
 
-- Prefer behavior contracts over implementation mirrors. If a test only repeats constants, classes, or markup fragments, move it to an explicit config/visual/data contract or remove it.
+- Prefer behavior contracts over implementation mirrors. Remove tests that only repeat constants, classes, or markup fragments; retain explicit technical configuration and data contracts where the values determine behavior.
 - Keep product coverage honest: tooling and data-integrity tests must not inflate app unit coverage.
 - For AI-generated tests, reject green tests that define their own subject under test, assert values assigned in the test body, or verify mocked child props without a product-facing behavior.
 - When behavior is removed, delete obsolete tests without replacing them with absence-only tests; cover the surviving behavior and explicit acceptance criteria.
 - Use `pnpm tests:sense-check` after adding or moving tests; hard failures are structure problems, warnings need reviewer judgment.
+
+## Editorial copy
+
+- Production editorial wording must never be the expected behavior asserted by a test.
+- Do not freeze production headings, descriptions, marketing copy, consent explanations, disclaimers, or translations through exact strings, sentence fragments, regular expressions, snapshots, hashes, or duplicated language catalogs. Moving these assertions into fixtures, data-integrity tests, or Storybook does not make them valid.
+- Test observable behavior: use test-owned input text to prove rendering, normalization, metadata propagation, and locale selection or fallback. For fixed production copy, test the relevant structure, accessibility, links, or interaction without prescribing its wording. Delete copy-only assertions when no behavior remains to test.
+- Do not replace a wording assertion with an import of the same production constant, a shorter keyword check, or a mock that only returns its own expected value.
+- Exact text is valid for test-owned inputs, machine-readable contracts, and frozen historical migration data whose identity controls migration behavior. Accessible names used to perform real interactions are valid selectors; asserting unrelated default prose is not.
+- Before finishing, identify the behavior each changed test protects. Remove assertions whose only purpose is to freeze production editorial wording.

@@ -19,22 +19,10 @@ vi.mock('@/posthog/client-api', () => ({
 }))
 vi.mock('next/navigation', () => ({ usePathname: () => '/' }))
 
-const approvedDescription =
-  'With your consent, we analyse page views and clicks, detect technical errors and record browsing sessions. This helps us identify where findmydoc is difficult to use. You can use the website without this analysis and change your choice at any time in Cookie settings.'
-
 describe('cookie consent content through the shared adapter', () => {
   afterEach(cleanup)
 
-  it('shows the approved English default prompt independently of stored German copy', () => {
-    const config = normalizeCookieConsentGlobal({
-      germanPrompt: { bannerTitle: 'Hilf uns, findmydoc zu verbessern' },
-    } as never)
-    render(<CookieConsentClientAdapter config={config} initialConsent={null} />)
-    expect(screen.getByText('Help us improve findmydoc')).toBeInTheDocument()
-    expect(screen.getByText(approvedDescription)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Settings' })).toBeInTheDocument()
-  })
-  it('explains actual assigned services before consent and makes no collection claim for empty marketing', () => {
+  it('lists assigned services and privacy links before consent', () => {
     const config = normalizeCookieConsentGlobal({} as never)
     expect(
       isCookieConsentToolAllowed('posthog', config, { functional: false, analytics: true, marketing: false }),
@@ -45,12 +33,7 @@ describe('cookie consent content through the shared adapter', () => {
     render(<CookieConsentClientAdapter config={config} initialConsent={null} />)
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }))
     expect(screen.getByText('PostHog')).toBeInTheDocument()
-    expect(
-      screen.getByText(/page views, clicks, technical errors and browsing session recordings/i),
-    ).toBeInTheDocument()
     expect(screen.getByText('OpenStreetMap')).toBeInTheDocument()
-    expect(screen.getByText(/Without permission, external maps remain blocked/i)).toBeInTheDocument()
-    expect(screen.getByText(/No services are currently available in this category/i)).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'PostHog privacy notice' })).toHaveAttribute(
       'href',
       'https://posthog.com/privacy',
@@ -65,6 +48,7 @@ describe('cookie consent content through the shared adapter', () => {
     const config = normalizeCookieConsentGlobal({
       bannerTitle: 'Our own title',
       bannerDescription: 'Our own explanation',
+      germanPrompt: { bannerTitle: 'Ignored alternate title', bannerDescription: 'Ignored alternate explanation' },
       customizeLabel: 'Review options',
       privacyPolicyPage: { slug: 'privacy-policy' },
     } as never)

@@ -644,11 +644,12 @@ describe('getClinicDetailServerData (contract)', () => {
     expect(result?.reviews.items[3]).toEqual(
       expect.objectContaining({
         kind: 'placeholder',
-        notice: 'This review was moderated. Its written content is not publicly available.',
+        notice: expect.any(String),
       }),
     )
     expect(result?.reviews.items[3]).not.toHaveProperty('comment')
     expect(result?.reviews.items[3]).not.toHaveProperty('response')
+    expect(result?.reviews.items[3]).not.toHaveProperty('notice', 'Caller-controlled placeholder must be ignored.')
     expect(JSON.stringify(result?.reviews.items)).not.toContain('Original text containing private data')
     expect(JSON.stringify(result?.reviews.items)).not.toContain('Removed review')
     expect(JSON.stringify(result?.reviews.items)).not.toContain('Withdrawn review')

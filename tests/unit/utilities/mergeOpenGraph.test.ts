@@ -19,15 +19,13 @@ describe('mergeOpenGraph', () => {
   it('should return default OpenGraph metadata when no custom data provided', () => {
     const result = mergeOpenGraph()
 
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       type: 'website',
-      description: 'findmydoc connects international patients with vetted clinics and specialist care.',
       images: [
         {
           url: 'https://example.com/findmydoc-og.jpg',
           width: 1200,
           height: 630,
-          alt: 'findmydoc clinic discovery platform preview',
         },
       ],
       siteName: 'findmydoc',
@@ -43,7 +41,7 @@ describe('mergeOpenGraph', () => {
 
     const result = mergeOpenGraph(customOg)
 
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       type: 'website',
       description: 'Custom page description',
       images: [
@@ -51,7 +49,6 @@ describe('mergeOpenGraph', () => {
           url: 'https://example.com/findmydoc-og.jpg',
           width: 1200,
           height: 630,
-          alt: 'findmydoc clinic discovery platform preview',
         },
       ],
       siteName: 'findmydoc',
@@ -101,12 +98,11 @@ describe('mergeOpenGraph', () => {
 
     const result = mergeOpenGraph(customOg)
 
-    expect(result!.images).toEqual([
+    expect(result!.images).toMatchObject([
       {
         url: 'https://example.com/findmydoc-og.jpg',
         width: 1200,
         height: 630,
-        alt: 'findmydoc clinic discovery platform preview',
       },
     ])
   })

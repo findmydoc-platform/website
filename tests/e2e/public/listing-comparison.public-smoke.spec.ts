@@ -27,7 +27,7 @@ test('listing filters preserve the selected specialty when rating changes @smoke
   })
 
   await page.goto('/listing-comparison', { waitUntil: 'domcontentloaded' })
-  await expect(page.getByRole('heading', { name: 'Compare clinic prices' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
   const breadcrumb = page.getByRole('navigation', { name: 'Breadcrumb' })
   await expect(breadcrumb.getByRole('link', { name: 'Home' })).toBeVisible()
   await expect(breadcrumb.getByText('Clinics')).toHaveAttribute('aria-current', 'page')
@@ -62,7 +62,7 @@ test('rating filter rehydrates from the URL across browser navigation @smoke', a
   })
 
   await page.goto('/listing-comparison?ratingMin=4.5', { waitUntil: 'domcontentloaded' })
-  await expect(page.getByRole('heading', { name: 'Compare clinic prices' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
 
   const ratingButton = page.getByRole('button', { name: '4.5+ ★' })
   const allRatingsButton = page.getByRole('button', { name: 'All', exact: true })
@@ -91,7 +91,7 @@ test('clearing the specialty chip also clears any selected treatments from the U
   })
 
   await page.goto('/listing-comparison?specialty=2&treatment=101', { waitUntil: 'domcontentloaded' })
-  await expect(page.getByRole('heading', { name: 'Compare clinic prices' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
   await waitForSearchParam(page, 'specialty', '2')
   await waitForSearchParam(page, 'treatment', '101')
   await expect(page.getByRole('button', { name: /Remove .* specialty filter/ })).toBeVisible()

@@ -279,9 +279,6 @@ describe('frontend post detail route', () => {
       variant: string
       standalone: boolean
     }> | null
-    expect(disclaimerElement?.props.copy).toBe(
-      'This article is for general information only. It is not medical advice.',
-    )
     expect(disclaimerElement?.props.routeLabel).toBe('Blog')
     expect(disclaimerElement?.props.variant).toBe('slim-notice-bar')
     expect(disclaimerElement?.props.standalone).toBe(true)

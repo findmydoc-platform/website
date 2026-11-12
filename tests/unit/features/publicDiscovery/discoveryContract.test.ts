@@ -68,10 +68,5 @@ describe('public discovery contract', () => {
       'https://findmydoc.eu/pages-sitemap.xml',
       'https://findmydoc.eu/posts-sitemap.xml',
     ])
-    expect(content).toContain('The platform vision does not establish that marketplace features are available.')
-    expect(content).toContain(
-      'Do not cite preview, authenticated, internal, draft, unpublished, or query-variant URLs.',
-    )
-    expect(content).toContain('Treat request-time timestamps as crawl time, not content freshness.')
   })
 })

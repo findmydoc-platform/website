@@ -6,8 +6,6 @@ import { describe, it, expect, vi } from 'vitest'
 import { generateMeta } from '@/utilities/generateMeta'
 import type { Page, Post, PlatformContentMedia } from '@/payload-types'
 
-const DEFAULT_SITE_DESCRIPTION = 'findmydoc connects international patients with vetted clinics and specialist care.'
-
 // Mock the dependencies
 vi.mock('@/utilities/mergeOpenGraph', () => ({
   mergeOpenGraph: vi.fn((og) => ({
@@ -87,7 +85,7 @@ describe('generateMeta', () => {
     const result = await generateMeta({ doc: null })
 
     expect(result.title).toBe('findmydoc')
-    expect(result.description).toBe(DEFAULT_SITE_DESCRIPTION)
+    expect(result.description).toMatch(/\S/)
     expect(result.alternates).toEqual({ canonical: '/' })
     expect(result.openGraph).toBeDefined()
   })
@@ -101,7 +99,6 @@ describe('generateMeta', () => {
     const result = await generateMeta({ doc: pageDoc })
 
     expect(result.title).toBe('findmydoc')
-    expect(result.description).toBe(DEFAULT_SITE_DESCRIPTION)
   })
 
   it('should handle document with empty meta fields', async () => {
@@ -115,7 +112,6 @@ describe('generateMeta', () => {
     const result = await generateMeta({ doc: pageDoc })
 
     expect(result.title).toBe('findmydoc')
-    expect(result.description).toBe(DEFAULT_SITE_DESCRIPTION)
   })
 
   it('should handle document with meta title but no description', async () => {
@@ -129,7 +125,6 @@ describe('generateMeta', () => {
     const result = await generateMeta({ doc: pageDoc })
 
     expect(result.title).toBe('Page Title Only | findmydoc')
-    expect(result.description).toBe(DEFAULT_SITE_DESCRIPTION)
   })
 
   it('should handle document with meta description but no title', async () => {

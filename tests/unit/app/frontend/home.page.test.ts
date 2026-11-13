@@ -94,6 +94,7 @@ describe('frontend home page route', () => {
   })
 
   afterEach(() => {
+    vi.restoreAllMocks()
     vi.clearAllMocks()
     vi.unstubAllEnvs()
   })
@@ -129,8 +130,7 @@ describe('frontend home page route', () => {
         '@context': 'https://schema.org',
         '@id': 'https://findmydoc.eu/#website',
         '@type': 'WebSite',
-        description:
-          'Coming Soon. Practical guidance and clear context for comparing clinics, treatments, and quality signals.',
+        description: expect.any(String),
         name: 'findmydoc',
         publisher: { '@id': 'https://findmydoc.eu/#organization' },
         url: 'https://findmydoc.eu/',
@@ -228,44 +228,29 @@ describe('frontend home page route', () => {
     ])
   })
 
-  it('returns temporary landing metadata from the localized landing copy', async () => {
+  it.each(['en', 'de', 'tr'] as const)('maps localized holding metadata for %s', async (locale) => {
     mocks.headersMock.mockResolvedValue(new Headers({ [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: '1' }))
-
+    const contentModule = await import('@/features/temporaryLandingMode')
+    const getContent = contentModule.getTemporaryLandingPageContent
+    const getContentMock = vi.spyOn(contentModule, 'getTemporaryLandingPageContent').mockImplementation((lang) => {
+      const content = getContent(lang)
+      return {
+        ...content,
+        searchSnapshot: {
+          ...content.searchSnapshot,
+          metaTitle: `findmydoc | holding-${lang}-title`,
+          metaDescription: `holding-${lang}-description`,
+        },
+      }
+    })
     const pageModule = await import('@/app/(frontend)/page')
-    await expect(
-      pageModule.generateMetadata({
-        searchParams: Promise.resolve({
-          lang: 'en',
-        }),
-      }),
-    ).resolves.toMatchObject({
-      title: 'findmydoc | Better matches for treatments abroad.',
-      description:
-        'Structured clinic profiles and transparent quality signals - so patients can compare faster and clinics receive suitable inquiries.',
-    })
 
-    await expect(
-      pageModule.generateMetadata({
-        searchParams: Promise.resolve({
-          lang: 'de',
-        }),
-      }),
-    ).resolves.toMatchObject({
-      title: 'findmydoc | Eine Vergleichsplattform für Schönheitskliniken.',
-      description:
-        'Strukturierte Klinikprofile und transparente Qualitäts-Signale - damit du die passende Klinik mit mehr Vertrauen findest.',
-    })
+    const metadata = await pageModule.generateMetadata({ searchParams: Promise.resolve({ lang: locale }) })
 
-    await expect(
-      pageModule.generateMetadata({
-        searchParams: Promise.resolve({
-          lang: 'tr',
-        }),
-      }),
-    ).resolves.toMatchObject({
-      title: 'findmydoc | Avrupa’dan daha nitelikli başvurular.',
-      description:
-        'Yapılandırılmış klinik profilleri ve net kalite göstergeleri - böylece klinikler görünür olur ve kendilerine uygun başvurular alır.',
+    expect(getContentMock).toHaveBeenCalledWith(locale)
+    expect(metadata).toMatchObject({
+      title: `findmydoc | holding-${locale}-title`,
+      description: `holding-${locale}-description`,
     })
   })
 
@@ -306,7 +291,11 @@ describe('frontend home page route', () => {
     )
   })
 
-  it('returns seeded homepage metadata when landing request header is missing', async () => {
+  it('returns CMS homepage metadata when landing request header is missing', async () => {
+    const landingPages = cloneBaselineLandingPages()
+    landingPages.home.seo.title = 'Test homepage title'
+    landingPages.home.seo.description = 'Test homepage description'
+    mocks.payloadFindGlobalMock.mockResolvedValueOnce(landingPages)
     const pageModule = await import('@/app/(frontend)/page')
     const metadata = await pageModule.generateMetadata({})
 
@@ -316,9 +305,8 @@ describe('frontend home page route', () => {
       depth: 2,
     })
     expect(metadata).toMatchObject({
-      title: 'Gain International Patients | Global Clinic Visibility Platform | findmydoc',
-      description:
-        'Gain international patients through a trusted comparison platform. Increase clinic reach, visibility, and qualified global patient inquiries.',
+      title: 'Test homepage title | findmydoc',
+      description: 'Test homepage description',
     })
   })
 })

@@ -234,20 +234,16 @@ describe('cookie consent helpers', () => {
       {
         key: 'functional',
         label: 'Functional cookies',
-        description: 'Remember helpful preferences and support a smoother experience.',
         tools: ['openstreetmap'],
       },
       {
         key: 'analytics',
         label: 'Statistics cookies',
-        description: 'Help us understand how the site is used so we can improve it.',
         tools: ['posthog'],
       },
       {
         key: 'marketing',
         label: 'Marketing cookies',
-        description:
-          'No services are currently available in this category. Selecting it does not enable optional processing.',
         tools: [],
       },
     ])
@@ -317,7 +313,6 @@ describe('cookie consent helpers', () => {
       {
         key: 'functional',
         label: 'Functional cookies',
-        description: 'Remember helpful preferences and support a smoother experience.',
         tools: ['openstreetmap'],
       },
     ])

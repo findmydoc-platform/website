@@ -113,16 +113,26 @@ async function protect(req: PayloadRequest, ids: readonly number[]): Promise<voi
   await guardNotificationAuthorizationSession({ req })
 }
 
-async function allowOrphanMediaDeletion(
+async function allowOrphanDeletion(
   req: PayloadRequest,
   collection: DoctorCollection,
   operation: string,
   record: Record<string, unknown>,
 ): Promise<boolean> {
-  if (collection !== 'doctorMedia' || operation !== 'delete') return false
+  if (operation !== 'delete') return false
+  const trashedDoctor =
+    collection === 'doctors' &&
+    isPlatformStaff({ req }) &&
+    typeof record.deletedAt === 'string' &&
+    record.deletedAt.length > 0
+  if (collection !== 'doctorMedia' && !trashedDoctor) return false
   if (req.user && req.user.collection !== 'platformStaff') return false
   if (req.routeParams && Object.hasOwn(req.routeParams, 'clinicId')) return false
   requireNotificationTransaction(req, await req.transactionID)
+  if (trashedDoctor) {
+    await guardClinicAuthorizationKeys(req, [])
+    return true
+  }
   const remainingClinic = relationId(record.clinic)
   if (remainingClinic) await protect(req, [remainingClinic])
   return true
@@ -167,8 +177,7 @@ export async function guardDoctorOperation({
           throw new APIError('Doctor ownership cannot be changed once set', 403)
         const id = await sourceClinic(req, slug, record as unknown as Record<string, unknown>)
         if (!id) {
-          if (await allowOrphanMediaDeletion(req, slug, operation, record as unknown as Record<string, unknown>))
-            continue
+          if (await allowOrphanDeletion(req, slug, operation, record as unknown as Record<string, unknown>)) continue
           throw denied()
         }
         ids.push(id)
@@ -239,7 +248,7 @@ export async function verifyDoctorOperation<Result>({
     const id = await sourceClinic(req, collection.slug as DoctorCollection, record as Record<string, unknown>)
     if (!id) {
       if (
-        await allowOrphanMediaDeletion(
+        await allowOrphanDeletion(
           req,
           collection.slug as DoctorCollection,
           finalOperation,

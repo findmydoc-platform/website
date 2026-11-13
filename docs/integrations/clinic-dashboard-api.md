@@ -582,6 +582,22 @@ Supabase, database, and storage errors never cross this boundary.
 The Dashboard BFF remains responsible for its same-origin session-bound CSRF guard on mutations. These server-to-server
 Payload endpoints do not add browser CORS access or a second CSRF scheme.
 
+### Current open inquiry inventory
+
+`GET /api/clinic-dashboard/clinics/:clinicId/inquiries/open-inventory` uses the inquiry communication contract and
+`clinic-scope-v1`. It requires the current approved clinic principal and revalidates the exact selected clinic. No
+query parameters are accepted. The complete closed result is `{ count: number }`, a nonnegative safe integer.
+
+The native inquiry read counts the entire authorized open, non-spam population across submitted, in_review and
+contacted handling states. Existing legacy records use the same lifecycle and handling projection as the queue.
+Creation dates, pagination, searches, list restrictions, reporting periods and personal unread positions do not limit
+the inventory. An inquiry preparation is a separate record and never enters this population. Source deletion and
+retention rules continue to own the stored inquiry lifecycle. The read changes neither inquiry status nor read
+positions. Authorization is checked again after the source count; revoked access and source failures return no count.
+
+The endpoint remains private/no-store and uses sanitized inquiry errors. This private read has no public-cache impact,
+shared cache, persistent aggregate, scheduled write or schema migration.
+
 ### Inquiry moderation contract
 
 A clinic or patient participant may report one immutable opposite-party external message, private attachment, or the
@@ -714,6 +730,16 @@ The Website provides the Payload persistence and authorization contract; the Das
 purpose-limited same-origin BFF routes and UI DTOs. The Dashboard browser never calls these collections or endpoints
 directly. The read-only integration for `clinic-dashboard#106` uses private, uncached BFF reads and performs no review
 moderation or withdrawal mutation.
+
+#### Current review workload
+
+`GET /api/clinic-dashboard/clinics/:clinicId/reviews/workload` negotiates `clinic-scope-v1`, reauthorizes the current clinic principal and exact selected clinic, and returns a closed object containing only nonnegative integer `reviewsToAnswerCount` and `pendingModerationCount`. It accepts no query parameters. Responses are private and `no-store`; failures contain only the existing sanitized error code.
+
+Workload and open-inventory reads use the current authorized source on each request. A newly stored inquiry, closure or reopening, response submission, moderation decision or pending response revision changes the next eligible summary read. Reads do not change inquiry handling, lifecycle or personal read positions, and do not submit or revise review responses. No persistent aggregate or shared summary cache is involved.
+
+The producer traverses every authorized approved, non-deleted review and current response workflow through Payload Local API access checks. The main count reuses the public projection, including context, redaction and placeholder presentations and excluding withdrawn and removed reviews. Any pending, approved, rejected or blocked response excludes the review from that count. The second count counts pending current workflows once, including a pending revision alongside a published answer. Response history and edits add no items. Deleted or unapproved review parents do not contribute either figure. Missing pages, changed pagination totals, invalid ownership, source failures or lost access fail the complete result.
+
+These current inventories do not extend the four-count reporting schema and do not accept reporting periods or review-list filters. The read changes no review, response, moderation workflow or receipt.
 
 #### Review states and current reads
 

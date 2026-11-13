@@ -31,6 +31,7 @@ import {
   InquiryCommunicationServiceError,
   readClinicInquiryDetail,
   readClinicInquiryQueue,
+  readClinicOpenInquiryInventory,
   revealClinicInquiryContact,
   sendClinicInquiryMessage,
   sweepExpiredAttachmentDrafts,
@@ -423,6 +424,13 @@ const executeInquiryMutation = async <Value>(
     },
     success,
   )
+
+export const clinicDashboardInquiryOpenInventoryGetHandler: PayloadHandler = async (req) => {
+  const authorization = await authorizeClinic(req, 'clinic-inquiries:view')
+  if (!authorization.ok) return authorization.response
+  if (req.searchParams && Array.from(req.searchParams.keys()).length > 0) return invalidInputResponse()
+  return execute(req, 'open_inventory_read', () => readClinicOpenInquiryInventory(req))
+}
 
 export const clinicDashboardInquiriesGetHandler: PayloadHandler = async (req) => {
   const authorization = await authorizeClinic(req, 'clinic-inquiries:view')

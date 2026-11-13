@@ -42,6 +42,7 @@ import {
 } from './endpoints/clinicDashboardGallery'
 import {
   clinicDashboardInquiriesGetHandler,
+  clinicDashboardInquiryOpenInventoryGetHandler,
   clinicDashboardInquiryAttachmentDiscardPostHandler,
   clinicDashboardInquiryAttachmentDownloadGetHandler,
   clinicDashboardInquiryAttachmentDraftPostHandler,
@@ -136,6 +137,7 @@ import { ReviewDecisionTransitions } from './collections/ReviewDecisionTransitio
 import { clinicDashboardReviewGetHandler } from './endpoints/clinicDashboardReviews'
 import {
   clinicDashboardReviewsGetHandler,
+  clinicDashboardReviewWorkloadGetHandler,
   clinicDashboardReviewRecordGetHandler,
   clinicDashboardReviewHistoryGetHandler,
   clinicDashboardReviewResponsesGetHandler,
@@ -223,6 +225,11 @@ export default buildConfig({
     ...clinicDashboardDoctorEndpoints,
     { path: '/internal/clinic-notifications/capture', method: 'get', handler: clinicNotificationCaptureGetHandler },
     { path: '/internal/clinic-notifications/capture', method: 'post', handler: clinicNotificationCapturePostHandler },
+    {
+      path: '/clinic-dashboard/clinics/:clinicId/reviews/workload',
+      method: 'get',
+      handler: clinicDashboardReviewWorkloadGetHandler,
+    },
     { path: '/clinic-dashboard/clinics/:clinicId/reviews', method: 'get', handler: clinicDashboardReviewsGetHandler },
     {
       path: '/clinic-dashboard/clinics/:clinicId/reviews/:id/record',
@@ -354,6 +361,11 @@ export default buildConfig({
       path: '/clinic-dashboard/clinics/:clinicId/gallery/discard',
       method: 'post',
       handler: clinicDashboardGalleryDiscardPostHandler as PayloadHandler,
+    },
+    {
+      path: '/clinic-dashboard/clinics/:clinicId/inquiries/open-inventory',
+      method: 'get',
+      handler: clinicDashboardInquiryOpenInventoryGetHandler as PayloadHandler,
     },
     {
       path: '/clinic-dashboard/clinics/:clinicId/inquiries',

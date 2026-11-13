@@ -3,6 +3,7 @@ import { createLocalReq, getPayload, type Payload, type PayloadRequest } from 'p
 import config from '@payload-config'
 import type { Review, ReviewAppeal, ReviewResponse } from '@/payload-types'
 import { reviewPublicationHistoryGetHandler } from '@/collections/reviews/endpoints'
+import { readClinicReviewWorkload } from '@/features/clinicDashboard/reviews/workload'
 import { readClinicReviewDetail } from '@/features/clinicDashboard/reviews/service'
 import {
   readClinicReviewPage,
@@ -131,6 +132,151 @@ describe('current clinic review source and native workflow authorization', () =>
   afterAll(async () => {
     await payload?.db.destroy?.()
   })
+  it('returns complete review workload beyond the first page and excludes submitted workflows', async () => {
+    const sources: Review[] = []
+    for (let index = 0; index < 101; index++) sources.push(await review(second))
+    await review(foreign)
+    const response = await createClinicReviewWorkflow(await req(second), String(second), 'reviewResponses', {
+      review: sources[0]!.id,
+      pendingResponse: { body: 'Synthetic first response awaiting moderation.' },
+    })
+    await updateClinicReviewResponse(await req(second), String(second), response.doc.id, {
+      pendingResponse: { body: 'Synthetic repeated pending response edit.' },
+    })
+    expect(await readClinicReviewWorkload(await req(second), String(second))).toEqual({
+      reviewsToAnswerCount: 100,
+      pendingModerationCount: 1,
+    })
+    await expect(readClinicReviewWorkload(await req(foreign), String(foreign))).rejects.toMatchObject({ status: 403 })
+    await expect(readClinicReviewWorkload(local, String(second))).rejects.toMatchObject({ status: 403 })
+  }, 180000)
+  it('uses current public projection and response workflows once, including a pending revision beside published text', async () => {
+    for (const publicMeasure of ['none', 'context', 'redaction', 'placeholder'] as const) {
+      const source = await review(first)
+      if (publicMeasure !== 'none')
+        await payload.update({
+          collection: 'reviews',
+          id: source.id,
+          req: operator,
+          overrideAccess: true,
+          data: {
+            publicMeasure,
+            publicComment: publicMeasure === 'redaction' ? 'Synthetic redacted review.' : undefined,
+            publicNotice: publicMeasure === 'context' ? 'Synthetic moderation context.' : undefined,
+          },
+        })
+    }
+    for (const state of ['withdrawn', 'removed', 'deleted', 'pending'] as const) {
+      const source = await review(first)
+      if (state === 'deleted')
+        await payload.delete({ collection: 'reviews', id: source.id, req: operator, overrideAccess: true })
+      else
+        await payload.update({
+          collection: 'reviews',
+          id: source.id,
+          req: operator,
+          overrideAccess: true,
+          data:
+            state === 'withdrawn'
+              ? { withdrawalState: 'withdrawn' }
+              : state === 'removed'
+                ? { publicMeasure: 'removed' }
+                : { status: 'pending' },
+        })
+    }
+    for (const status of ['pending', 'approved', 'rejected', 'blocked', 'revision'] as const) {
+      const source = await review(first)
+      const workflow = await createClinicReviewWorkflow(await req(first), String(first), 'reviewResponses', {
+        review: source.id,
+        pendingResponse: { body: 'Synthetic submitted clinic response.' },
+      })
+      if (status !== 'pending')
+        await payload.update({
+          collection: 'reviewResponses',
+          id: workflow.doc.id,
+          req: operator,
+          overrideAccess: false,
+          data: {
+            moderationStatus: status === 'revision' || status === 'blocked' ? 'approved' : status,
+            moderationReason: 'Synthetic response moderation decision.',
+          },
+        })
+      if (status === 'blocked')
+        await payload.update({
+          collection: 'reviewResponses',
+          id: workflow.doc.id,
+          req: operator,
+          overrideAccess: false,
+          data: { moderationStatus: 'blocked', moderationReason: 'Synthetic response blocking decision.' },
+        })
+      if (status === 'revision')
+        await updateClinicReviewResponse(await req(first), String(first), workflow.doc.id, {
+          pendingResponse: { body: 'Synthetic pending revision beside published reply.' },
+        })
+    }
+    expect(await readClinicReviewWorkload(await req(first), String(first))).toEqual({
+      reviewsToAnswerCount: 4,
+      pendingModerationCount: 2,
+    })
+    await expect(readClinicReviewWorkload(await req(first, '?rating=5'), String(first))).rejects.toMatchObject({
+      status: 400,
+    })
+  }, 60000)
+  it('reflects submitted responses, moderation decisions and pending revisions on the next workload read', async () => {
+    const before = await readClinicReviewWorkload(await req(first), String(first))
+    const source = await review(first)
+    expect(await readClinicReviewWorkload(await req(first), String(first))).toEqual({
+      ...before,
+      reviewsToAnswerCount: before.reviewsToAnswerCount + 1,
+    })
+    const workflow = await createClinicReviewWorkflow(await req(first), String(first), 'reviewResponses', {
+      review: source.id,
+      pendingResponse: { body: 'Synthetic response for current workload refresh.' },
+    })
+    expect(await readClinicReviewWorkload(await req(first), String(first))).toEqual({
+      ...before,
+      pendingModerationCount: before.pendingModerationCount + 1,
+    })
+    await payload.update({
+      collection: 'reviewResponses',
+      id: workflow.doc.id,
+      req: operator,
+      overrideAccess: false,
+      data: { moderationStatus: 'approved', moderationReason: 'Synthetic current moderation decision.' },
+    })
+    expect(await readClinicReviewWorkload(await req(first), String(first))).toEqual(before)
+    await updateClinicReviewResponse(await req(first), String(first), workflow.doc.id, {
+      pendingResponse: { body: 'Synthetic revision beside the published response.' },
+    })
+    const revision = { ...before, pendingModerationCount: before.pendingModerationCount + 1 }
+    expect(await readClinicReviewWorkload(await req(first), String(first))).toEqual(revision)
+    await updateClinicReviewResponse(await req(first), String(first), workflow.doc.id, {
+      pendingResponse: { body: 'Synthetic repeated revision without duplicate workload.' },
+    })
+    expect(await readClinicReviewWorkload(await req(first), String(first))).toEqual(revision)
+    await payload.update({
+      collection: 'reviewResponses',
+      id: workflow.doc.id,
+      req: operator,
+      overrideAccess: false,
+      data: { moderationStatus: 'rejected', moderationReason: 'Synthetic revision rejection.' },
+    })
+    expect(await readClinicReviewWorkload(await req(first), String(first))).toEqual(before)
+  }, 60000)
+  it('rejects an incomplete source instead of returning a plausible partial workload', async () => {
+    await review(first)
+    const originalFind = payload.find.bind(payload)
+    const intercepted = vi.spyOn(payload, 'find')
+    intercepted.mockImplementation((async (args) => {
+      const result = await originalFind(args)
+      return args.collection === 'reviews' ? { ...result, totalDocs: result.totalDocs + 1 } : result
+    }) as typeof payload.find)
+    try {
+      await expect(readClinicReviewWorkload(await req(first), String(first))).rejects.toMatchObject({ status: 503 })
+    } finally {
+      intercepted.mockRestore()
+    }
+  })
   it('intersects current group and local access with exact source ownership independently of list filters', async () => {
     const a = await review(first)
     const b = await review(second)
@@ -212,6 +358,7 @@ describe('current clinic review source and native workflow authorization', () =>
     await replaceClinicStaffAssignment(operator, Number(manager.user!.id), { scope: 'local', clinicId: first })
     try {
       expect(await readClinicReviewDetail(await req(second), String(source.id), String(second))).toBeNull()
+      await expect(readClinicReviewWorkload(await req(second), String(second))).rejects.toMatchObject({ status: 403 })
       await expect(
         payload.create({
           collection: 'reviewResponses',

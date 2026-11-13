@@ -2,6 +2,7 @@ import { beforeEach, expect, it, vi } from 'vitest'
 import type { PayloadRequest } from 'payload'
 import {
   clinicDashboardReviewsGetHandler,
+  clinicDashboardReviewWorkloadGetHandler,
   clinicDashboardReviewResponsesPostHandler,
 } from '@/endpoints/clinicDashboardReviewOperations'
 const mocks = vi.hoisted(() => ({ authorize: vi.fn(), list: vi.fn(), create: vi.fn() }))
@@ -60,4 +61,18 @@ it('passes a bounded JSON command only to the explicit target operation', async 
   const req = request('POST', JSON.stringify(body))
   expect((await clinicDashboardReviewResponsesPostHandler(req)).status).toBe(200)
   expect(mocks.create).toHaveBeenCalledWith(req, '42', 'reviewResponses', body)
+})
+
+it('sanitizes workload failures and never returns a partial or synthetic number', async () => {
+  const req = request()
+  req.user = { id: 9, collection: 'clinicStaff' } as PayloadRequest['user']
+  req.payload = {
+    find: async () => {
+      throw new Error('Synthetic private upstream details and response text.')
+    },
+  } as unknown as PayloadRequest['payload']
+  const response = await clinicDashboardReviewWorkloadGetHandler(req)
+  expect(response.status).toBe(503)
+  expect(response.headers.get('cache-control')).toBe('private, no-store')
+  expect(await response.json()).toEqual({ error: { code: 'SERVICE_UNAVAILABLE' } })
 })

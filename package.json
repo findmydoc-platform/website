@@ -154,7 +154,7 @@
     "@types/react-dom": "19.3.0",
     "@vitest/browser-playwright": "^4.1.12",
     "@vitest/coverage-v8": "^4.1.12",
-    "@vitest/ui": "4.1.12",
+    "@vitest/ui": "5.0.4",
     "audit-ci": "^7.1.0",
     "copyfiles": "^2.4.1",
     "dependency-cruiser": "^18.7.2",

@@ -202,6 +202,8 @@
     ],
     "overrides": {
       "@modelcontextprotocol/sdk": "1.32.2",
+      "@hono/node-server": "2.1.7",
+      "hono": "4.13.18",
       "@payloadcms/plugin-mcp>zod": "4.6.7",
       "@vercel/cli-config>zod": "4.6.7",
       "@tailwindcss/typography@0.5.20>postcss-selector-parser": "7.1.6",

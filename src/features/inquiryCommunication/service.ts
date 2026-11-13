@@ -301,17 +301,27 @@ const findOne = async (
   return result.docs[0] ? asRecord(result.docs[0]) : null
 }
 
+const inquiryRetentionStateFromEvidence = (
+  inquiry: StoredRecord,
+  hardDeleteBarrier: boolean,
+  anonymizationProof: boolean,
+): 'available' | 'anonymized' | 'hard-deleted' => {
+  if (hardDeleteBarrier) return 'hard-deleted'
+  if (anonymizationProof) return 'anonymized'
+  const stored = text(inquiry.retentionState)
+  return stored === 'anonymized' || stored === 'hard-deleted' ? stored : 'available'
+}
+
 const effectiveInquiryRetentionState = async (
   req: PayloadRequest,
   inquiry: StoredRecord,
 ): Promise<'available' | 'anonymized' | 'hard-deleted'> => {
-  if (await hasInquiryPackageHardDeleteBarrier(req, inquiry.id)) return 'hard-deleted'
+  if (await hasInquiryPackageHardDeleteBarrier(req, inquiry.id))
+    return inquiryRetentionStateFromEvidence(inquiry, true, false)
   const anonymizationProof = await findOne(req, 'inquiryDeletionProofs', {
     tombstoneKey: { equals: inquiryPackageTombstoneKey(inquiry.id, 'anonymized') },
   })
-  if (anonymizationProof) return 'anonymized'
-  const stored = text(inquiry.retentionState)
-  return stored === 'anonymized' || stored === 'hard-deleted' ? stored : 'available'
+  return inquiryRetentionStateFromEvidence(inquiry, false, Boolean(anonymizationProof))
 }
 
 const findMany = async (
@@ -1365,38 +1375,76 @@ export const readClinicInquiryDetail = async (
 export const readClinicOpenInquiryInventory = async (req: PayloadRequest): Promise<{ count: number }> => {
   const actor = await resolveCurrentActor(req)
   if (actor.kind !== 'clinic') throw new InquiryCommunicationServiceError('access-denied', 'Clinic access is required.')
+  const where: Where = {
+    and: [
+      { clinic: { equals: actor.clinicId } },
+      {
+        or: [
+          { lifecycle: { equals: 'open' } },
+          { and: [{ lifecycle: { exists: false } }, { status: { in: ['submitted', 'in_review', 'contacted'] } }] },
+        ],
+      },
+      {
+        or: [
+          { handlingStatus: { in: ['submitted', 'in_review', 'contacted'] } },
+          {
+            and: [{ handlingStatus: { exists: false } }, { status: { in: ['submitted', 'in_review', 'contacted'] } }],
+          },
+        ],
+      },
+    ],
+  }
   const result = await req.payload.count({
     collection: 'patientClinicInquiries',
     overrideAccess: true,
     req,
-    where: {
-      and: [
-        { clinic: { equals: actor.clinicId } },
-        {
-          or: [
-            { lifecycle: { equals: 'open' } },
-            { and: [{ lifecycle: { exists: false } }, { status: { in: ['submitted', 'in_review', 'contacted'] } }] },
-          ],
-        },
-        {
-          or: [
-            { handlingStatus: { in: ['submitted', 'in_review', 'contacted'] } },
-            {
-              and: [{ handlingStatus: { exists: false } }, { status: { in: ['submitted', 'in_review', 'contacted'] } }],
-            },
-          ],
-        },
-      ],
-    },
+    where,
   })
   if (!Number.isSafeInteger(result.totalDocs) || result.totalDocs < 0) {
     throw new InquiryCommunicationServiceError('unavailable', 'The inventory could not be established.')
+  }
+  const inquiries = await findMany(req, 'patientClinicInquiries', where)
+  const ids = new Set(inquiries.map((inquiry) => String(inquiry.id)))
+  if (inquiries.length !== result.totalDocs || ids.size !== inquiries.length) {
+    throw new InquiryCommunicationServiceError('unavailable', 'The inventory could not be established.')
+  }
+  let count = 0
+  for (let offset = 0; offset < inquiries.length; offset += 50) {
+    const batch = inquiries.slice(offset, offset + 50)
+    const keys = batch.flatMap((inquiry) => [
+      inquiryPackageTombstoneKey(inquiry.id, 'anonymized'),
+      inquiryPackageTombstoneKey(inquiry.id, 'hard-deleted'),
+    ])
+    const proofWhere: Where = { tombstoneKey: { in: keys } }
+    const expected = await req.payload.count({
+      collection: 'inquiryDeletionProofs',
+      overrideAccess: true,
+      req,
+      where: proofWhere,
+    })
+    const proofs = await findMany(req, 'inquiryDeletionProofs', proofWhere)
+    const proofIds = new Set(proofs.map((proof) => String(proof.id)))
+    if (
+      !Number.isSafeInteger(expected.totalDocs) ||
+      expected.totalDocs < 0 ||
+      proofs.length !== expected.totalDocs ||
+      proofIds.size !== proofs.length
+    ) {
+      throw new InquiryCommunicationServiceError('unavailable', 'The inventory could not be established.')
+    }
+    const operationsByKey = new Map(proofs.map((proof) => [text(proof.tombstoneKey), text(proof.operation)]))
+    for (const inquiry of batch) {
+      const hardDeleteOperation = operationsByKey.get(inquiryPackageTombstoneKey(inquiry.id, 'hard-deleted'))
+      const hardDeleteBarrier = hardDeleteOperation === 'hard-delete-pending' || hardDeleteOperation === 'hard-deleted'
+      const anonymizationProof = operationsByKey.has(inquiryPackageTombstoneKey(inquiry.id, 'anonymized'))
+      if (inquiryRetentionStateFromEvidence(inquiry, hardDeleteBarrier, anonymizationProof) === 'available') count += 1
+    }
   }
   const current = await resolveCurrentActor(req)
   if (current.kind !== 'clinic' || current.key !== actor.key || current.clinicId !== actor.clinicId) {
     throw new InquiryCommunicationServiceError('access-denied', 'The clinic participant changed.')
   }
-  return { count: result.totalDocs }
+  return { count }
 }
 
 export const readClinicInquiryQueue = async (

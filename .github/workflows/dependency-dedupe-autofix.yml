@@ -48,6 +48,8 @@ jobs:
         run: node scripts/assert-email-template-package-access.mjs && pnpm install --frozen-lockfile --strict-peer-dependencies
 
       - name: Dedupe lockfile
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
         run: pnpm dedupe --lockfile-only
 
       - name: Create or update autofix PR

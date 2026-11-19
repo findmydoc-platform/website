@@ -210,9 +210,18 @@ test('patient login follows the language in each public URL @smoke', async ({ ba
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width)
     await page.screenshot({ path: test.info().outputPath(`patient-login-de-${width}.png`), fullPage: true })
   }
-  await page.getByRole('button', { name: 'Sign in', exact: true }).click()
-  await expect(page.getByLabel('Email', { exact: true })).toHaveAttribute('aria-invalid', 'true')
-  await page.getByRole('link', { name: 'Register here' }).click()
+  await page.getByRole('button', { name: 'Anmelden', exact: true }).click()
+  await expect(page.getByLabel('E-Mail', { exact: true })).toHaveAttribute('aria-invalid', 'true')
+  const germanErrors = await page.locator('form').getByRole('alert').allTextContents()
+  await expect(page.getByRole('link', { name: 'Hier registrieren', exact: true })).toHaveAttribute(
+    'href',
+    '/register/patient',
+  )
+  await expect(page.getByRole('link', { name: 'Passwort vergessen?', exact: true })).toHaveAttribute(
+    'href',
+    '/auth/password/reset',
+  )
+  await page.getByRole('link', { name: '← Zur Startseite', exact: true }).click()
   await expect(page.locator('html')).toHaveAttribute('lang', 'en')
 
   await page.setExtraHTTPHeaders({ 'accept-language': 'de', 'x-findmydoc-ui-copy-locale': 'de' })
@@ -223,11 +232,23 @@ test('patient login follows the language in each public URL @smoke', async ({ ba
   await expect(page).toHaveURL(/\/en\/login\/patient\?locale=de&lang=de$/)
   const englishTitle = await page.getByRole('heading', { level: 1 }).innerText()
   expect(englishTitle).not.toEqual(germanTitle)
+  await expect(page.getByRole('link', { name: 'Register here', exact: true })).toHaveAttribute(
+    'href',
+    '/en/register/patient',
+  )
+  await expect(page.getByRole('link', { name: 'Forgot password?', exact: true })).toHaveAttribute(
+    'href',
+    '/en/auth/password/reset',
+  )
   for (const width of [320, 375, 640, 768, 1024]) {
     await page.setViewportSize({ width, height: 800 })
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width)
     await page.screenshot({ path: test.info().outputPath(`patient-login-en-${width}.png`), fullPage: true })
   }
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+  await expect(page.getByLabel('Email', { exact: true })).toHaveAttribute('aria-invalid', 'true')
+  const englishErrors = await page.locator('form').getByRole('alert').allTextContents()
+  expect(englishErrors).not.toEqual(germanErrors)
   await expectNoBrowserIssues(issues)
 })

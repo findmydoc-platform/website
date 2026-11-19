@@ -2,7 +2,10 @@ import React from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 ;(globalThis as unknown as { React: typeof React }).React = React
 vi.mock('next/headers', () => ({ headers: async () => new Headers() }))
-vi.mock('@/features/uiCopy/patientLogin', () => ({ patientLoginCopy: async () => ({ title: 'Test title' }) }))
+vi.mock('next-intl/server', () => ({
+  getLocale: async () => 'de',
+  getTranslations: async () => (key: string) => key,
+}))
 
 describe('Patient LoginPage', () => {
   const originalEnv = process.env

@@ -1,18 +1,24 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { consumeAuthFlash, getAuthFlashMessage } from '@/auth/utilities/authFlash'
+import {
+  consumeAuthFlash,
+  getAuthFlashMessage,
+  type AuthFlashKind,
+  type AuthFlashPayload,
+} from '@/auth/utilities/authFlash'
 import { Alert } from '@/components/atoms/alert'
 
-export function AuthFlashStatus() {
-  const [message, setMessage] = useState<string | null>(null)
+export function AuthFlashStatus({ messages }: { messages?: Record<AuthFlashKind, string> }) {
+  const [flash, setFlash] = useState<AuthFlashPayload | null>(null)
 
   useEffect(() => {
-    const flash = consumeAuthFlash()
-    setMessage(flash ? getAuthFlashMessage(flash) : null)
+    const nextFlash = consumeAuthFlash()
+    if (nextFlash) setFlash(nextFlash)
   }, [])
 
-  if (!message) return null
+  if (!flash) return null
+  const message = messages?.[flash.kind] ?? getAuthFlashMessage(flash)
 
   return (
     <div className="mb-4">

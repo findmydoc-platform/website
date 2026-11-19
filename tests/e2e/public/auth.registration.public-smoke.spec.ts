@@ -193,3 +193,41 @@ test('patient registration surfaces server provisioning failures without cleanup
   await expect(page).toHaveURL(/\/register\/patient(?:\?.*)?$/)
   await expectNoBrowserIssues(issues)
 })
+
+test('patient login follows the language in each public URL @smoke', async ({ baseURL, page }) => {
+  const issues = createBrowserIssueCollector(page)
+  const cookieUrl = new URL('/', baseURL).href
+  await page.setExtraHTTPHeaders({ 'accept-language': 'en', 'x-findmydoc-ui-copy-locale': 'en' })
+  await page.context().addCookies([{ name: 'NEXT_LOCALE', value: 'en', url: cookieUrl }])
+  const germanResponse = await page.goto('/login/patient?locale=en&lang=en', { waitUntil: 'domcontentloaded' })
+  expect((await germanResponse?.text())?.match(/<html\b[^>]*\blang="([^"]+)"/)?.[1]).toBe('de')
+  await expect(page.locator('html')).toHaveAttribute('lang', 'de')
+  await expect(page).toHaveURL(/\/login\/patient\?locale=en&lang=en$/)
+  const germanTitle = await page.getByRole('heading', { level: 1 }).innerText()
+  for (const width of [320, 375, 640, 768, 1024]) {
+    await page.setViewportSize({ width, height: 800 })
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width)
+    await page.screenshot({ path: test.info().outputPath(`patient-login-de-${width}.png`), fullPage: true })
+  }
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+  await expect(page.getByLabel('Email', { exact: true })).toHaveAttribute('aria-invalid', 'true')
+  await page.getByRole('link', { name: 'Register here' }).click()
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en')
+
+  await page.setExtraHTTPHeaders({ 'accept-language': 'de', 'x-findmydoc-ui-copy-locale': 'de' })
+  await page.context().addCookies([{ name: 'NEXT_LOCALE', value: 'de', url: cookieUrl }])
+  const englishResponse = await page.goto('/en/login/patient?locale=de&lang=de', { waitUntil: 'domcontentloaded' })
+  expect((await englishResponse?.text())?.match(/<html\b[^>]*\blang="([^"]+)"/)?.[1]).toBe('en')
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en')
+  await expect(page).toHaveURL(/\/en\/login\/patient\?locale=de&lang=de$/)
+  const englishTitle = await page.getByRole('heading', { level: 1 }).innerText()
+  expect(englishTitle).not.toEqual(germanTitle)
+  for (const width of [320, 375, 640, 768, 1024]) {
+    await page.setViewportSize({ width, height: 800 })
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width)
+    await page.screenshot({ path: test.info().outputPath(`patient-login-en-${width}.png`), fullPage: true })
+  }
+  await expectNoBrowserIssues(issues)
+})

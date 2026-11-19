@@ -3,6 +3,7 @@ import { networkInterfaces } from 'node:os'
 import { join, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { withPayload } from '@payloadcms/next/withPayload'
+import createNextIntlPlugin from 'next-intl/plugin'
 
 import { IMAGE_LOCAL_PATTERNS, IMAGE_QUALITIES } from './src/imageConfig.js'
 import { getAllowedDevOrigins } from './src/utilities/nextDevOrigins.js'
@@ -105,4 +106,6 @@ const nextConfig = {
   },
 }
 
-export default withPayload(nextConfig)
+const withNextIntl = createNextIntlPlugin()
+
+export default withPayload(withNextIntl(nextConfig))

@@ -5,13 +5,15 @@ import {
 import { AuthFlashStatus } from '@/app/(frontend)/_components/AuthFlashStatus'
 import * as LoginForm from '@/components/organisms/Auth/LoginForm'
 import { PATIENT_LOGIN_PATH } from '@/features/favorites/redirects'
+import { readInquiryPreparationRegistration } from '@/features/inquiryCommunication/service'
+import { readPreparationBinding } from '@/features/inquiryPreparations/context'
+import { patientLoginCopy } from '@/features/uiCopy/patientLogin'
+import { ENGLISH_PATIENT_LOGIN_PATH } from '@/i18n/requestLocale'
 import { sanitizeInternalRedirectPath } from '@/utilities/routing/sanitizeInternalRedirectPath'
 import Link from 'next/link'
 import { headers } from 'next/headers'
 import { createLocalReq, getPayload } from 'payload'
 import config from '@payload-config'
-import { readPreparationBinding } from '@/features/inquiryPreparations/context'
-import { readInquiryPreparationRegistration } from '@/features/inquiryCommunication/service'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,7 +30,9 @@ export default async function LoginPage({
   searchParams?: Promise<{ message?: string; next?: string; inquiry?: string }>
 }) {
   const resolvedSearchParams = await searchParamsPromise
-  const binding = readPreparationBinding(await headers())
+  const requestHeaders = await headers()
+  const copy = await patientLoginCopy()
+  const binding = readPreparationBinding(requestHeaders)
   const preparation = binding
     ? await readInquiryPreparationRegistration(
         await createLocalReq({}, await getPayload({ config })),
@@ -41,7 +45,7 @@ export default async function LoginPage({
   const postLoginRedirectPath = sanitizeInternalRedirectPath({
     nextPath: resolvedSearchParams?.next,
     fallbackPath: preparation ? '/patient/inquiries' : '/',
-    blockedPaths: [PATIENT_LOGIN_PATH],
+    blockedPaths: [PATIENT_LOGIN_PATH, ENGLISH_PATIENT_LOGIN_PATH],
   })
 
   return (
@@ -52,7 +56,7 @@ export default async function LoginPage({
         className={`w-full max-w-md ${PUBLIC_AUTH_FORM_CONTAINER_CLASSNAME}`}
       >
         <LoginForm.Header
-          title="Patient Login"
+          title={copy.title}
           description="Sign in to your patient account to access your medical information"
         />
         <LoginForm.Status

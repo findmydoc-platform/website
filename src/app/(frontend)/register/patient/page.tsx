@@ -12,6 +12,7 @@ import { localizedPatientAuthPath } from '@/i18n/patientAuthPath'
 import { uiCopyLocaleFromHeaders } from '@/i18n/requestLocale'
 import { headers } from 'next/headers'
 import { PatientVerificationResendForm } from './PatientVerificationResendForm'
+import { patientVerificationResendCopy } from '@/features/uiCopy/patientVerification'
 
 export default async function PatientRegistrationPage({
   searchParams = Promise.resolve({}),
@@ -50,7 +51,7 @@ export default async function PatientRegistrationPage({
           }
           successHref={`${loginPath}?message=patient-check-email`}
         />
-        <PatientVerificationResendForm initialEmail={preparation?.email} />
+        <PatientVerificationResendForm copy={await patientVerificationResendCopy()} initialEmail={preparation?.email} />
       </div>
     </PublicAuthRouteShell>
   )

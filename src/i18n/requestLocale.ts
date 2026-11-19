@@ -4,6 +4,7 @@ import { localizedPatientAuthPath } from '@/i18n/patientAuthPath'
 export const UI_COPY_LOCALE_HEADER = 'x-findmydoc-ui-copy-locale'
 export const ENGLISH_PATIENT_LOGIN_PATH = localizedPatientAuthPath(PATIENT_LOGIN_PATH, 'en')
 
+const AUTH_CONFIRMATION_PATH = '/auth/confirm'
 const PATIENT_REGISTRATION_PATH = '/register/patient'
 const ENGLISH_PATIENT_REGISTRATION_PATH = localizedPatientAuthPath(PATIENT_REGISTRATION_PATH, 'en')
 const RECOVERY_REQUEST_PATH = '/auth/password/reset'
@@ -11,8 +12,21 @@ const ENGLISH_RECOVERY_REQUEST_PATH = localizedPatientAuthPath(RECOVERY_REQUEST_
 
 export type UiCopyLocale = 'de' | 'en'
 
-export function uiCopyLocaleFromPath(pathname: string): UiCopyLocale | null {
-  const path = pathname.endsWith('/') ? pathname.slice(0, -1) : pathname
+export function isAuthConfirmationPath(pathname: string): boolean {
+  return pathname.replace(/\/$/, '') === AUTH_CONFIRMATION_PATH
+}
+
+export function uiCopyLocaleFromPath(
+  pathname: string,
+  searchParams?: Pick<URLSearchParams, 'getAll'> | null,
+): UiCopyLocale | null {
+  const path = pathname.replace(/\/$/, '')
+  if (path === AUTH_CONFIRMATION_PATH) {
+    const types = searchParams?.getAll('type')
+    const type = types?.length === 1 ? types[0] : undefined
+    return type === 'patient-verification' ? 'de' : null
+  }
+
   if (path === PATIENT_LOGIN_PATH || path === PATIENT_REGISTRATION_PATH || path === RECOVERY_REQUEST_PATH) return 'de'
   if (
     path === ENGLISH_PATIENT_LOGIN_PATH ||

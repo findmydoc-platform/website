@@ -9,6 +9,7 @@ import { Input } from '@/components/atoms/input'
 import { Label } from '@/components/atoms/label'
 import { Heading } from '@/components/atoms/Heading'
 import { usePublicFormValidation } from '@/components/molecules/PublicFormValidation'
+import type { PatientVerificationResendCopy } from '@/features/uiCopy/patientVerification'
 
 async function requestVerification(email: string) {
   const response = await fetch('/api/auth/register/patient/resend', {
@@ -22,17 +23,19 @@ async function requestVerification(email: string) {
 }
 
 export function PatientVerificationResendForm({
+  copy,
   onRequest = requestVerification,
   initialEmail = '',
-}: Readonly<{ onRequest?: (email: string) => Promise<void>; initialEmail?: string }>) {
+}: Readonly<{
+  copy: PatientVerificationResendCopy
+  onRequest?: (email: string) => Promise<void>
+  initialEmail?: string
+}>) {
   const [state, setState] = useState<'idle' | 'pending' | 'success' | 'error'>('idle')
   const [email, setEmail] = useState(initialEmail)
   const validation = usePublicFormValidation({
     messages: {
-      email: {
-        typeMismatch: 'Enter a valid email address.',
-        valueMissing: 'This field is required.',
-      },
+      email: copy.emailValidation,
     },
   })
   async function submit(event: React.FormEvent<HTMLFormElement>) {
@@ -53,9 +56,9 @@ export function PatientVerificationResendForm({
     <Card className="w-full max-w-md">
       <CardHeader>
         <Heading as="h2" size="h5" align="left" id="patient-verification-resend" tabIndex={-1}>
-          Need another verification email?
+          {copy.title}
         </Heading>
-        <CardDescription className="text-foreground">Enter the email you used to register.</CardDescription>
+        <CardDescription className="text-foreground">{copy.description}</CardDescription>
       </CardHeader>
       <CardContent>
         <form
@@ -68,22 +71,21 @@ export function PatientVerificationResendForm({
         >
           {state === 'pending' ? (
             <p className="sr-only" role="status">
-              Requesting your verification email.
+              {copy.announcementPending}
             </p>
           ) : null}
           {state === 'success' ? (
             <Alert variant="success" role="status">
-              If an eligible registration exists, you will receive a verification email. Check your inbox and spam
-              folder.
+              {copy.success}
             </Alert>
           ) : null}
           {state === 'error' ? (
             <Alert variant="error" role="alert">
-              We could not accept this request. Please try again.
+              {copy.error}
             </Alert>
           ) : null}
           <Field data-invalid={validation.getFieldError('email') ? true : undefined}>
-            <Label htmlFor="verification-resend-email">Email</Label>
+            <Label htmlFor="verification-resend-email">{copy.email}</Label>
             <Input
               id="verification-resend-email"
               name="email"
@@ -102,7 +104,7 @@ export function PatientVerificationResendForm({
             <FieldError id={validation.getFieldErrorId('email')}>{validation.getFieldError('email')}</FieldError>
           </Field>
           <Button type="submit" className="w-full" disabled={state === 'pending'}>
-            {state === 'pending' ? 'Requesting...' : 'Request verification email'}
+            {state === 'pending' ? copy.requesting : copy.submit}
           </Button>
         </form>
       </CardContent>

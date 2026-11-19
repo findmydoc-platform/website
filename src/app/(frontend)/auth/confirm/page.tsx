@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { ConfirmTokenHashForm } from './ConfirmTokenHashForm'
 import { createSiteMetadata } from '@/utilities/generateMeta'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { resolveTransactionalEmailEnvironment } from '@/features/transactionalEmail/environment'
 import { resolveVerificationKeys } from '@/auth/actions/verificationConfiguration'
 import { PATIENT_VERIFICATION_COOKIE, readPatientVerificationContext } from '@/auth/actions/patientVerificationContext'
@@ -13,18 +13,20 @@ import { resolveRecoveryKeys } from '@/auth/actions/recoveryConfiguration'
 import { readWebsiteRecoveryContext, WEBSITE_RECOVERY_COOKIE } from '@/auth/actions/websiteRecoveryContext'
 import { RecoveryConfirmationForm } from './RecoveryConfirmationForm'
 import { recoveryConfirmationCopy, recoveryMetadataTitle } from '@/features/uiCopy/passwordRecovery'
+import { patientVerificationCopy, patientVerificationMetadataTitle } from '@/features/uiCopy/patientVerification'
+import { uiCopyLocaleFromHeaders } from '@/i18n/requestLocale'
 
 export const dynamic = 'force-dynamic'
 
-type ConfirmPageProps = Readonly<{ searchParams: Promise<Readonly<{ type?: string }>> }>
+type ConfirmPageProps = Readonly<{ searchParams: Promise<Readonly<{ type?: string | string[] }>> }>
 
 export async function generateMetadata({ searchParams }: ConfirmPageProps): Promise<Metadata> {
   const { type } = await searchParams
+  let title = 'Confirm secure email link'
+  if (type === 'recovery') title = await recoveryMetadataTitle('confirmation')
+  if (type === 'patient-verification') title = await patientVerificationMetadataTitle()
   return {
-    ...createSiteMetadata({
-      title: type === 'recovery' ? await recoveryMetadataTitle('confirmation') : 'Confirm secure email link',
-      path: '/auth/confirm',
-    }),
+    ...createSiteMetadata({ title, path: '/auth/confirm' }),
     robots: { index: false, follow: false },
   }
 }
@@ -52,6 +54,7 @@ export default async function ConfirmTokenHashPage({ searchParams }: ConfirmPage
     )
   }
   if (type === 'patient-verification') {
+    const copy = await patientVerificationCopy(uiCopyLocaleFromHeaders(await headers()))
     let csrf: string | null = null
     let inquiryContinuationPending = false
     try {
@@ -72,7 +75,7 @@ export default async function ConfirmTokenHashPage({ searchParams }: ConfirmPage
     }
     return (
       <PublicAuthRouteShell>
-        <PatientVerificationForm csrf={csrf} inquiryContinuationPending={inquiryContinuationPending} />
+        <PatientVerificationForm copy={copy} csrf={csrf} inquiryContinuationPending={inquiryContinuationPending} />
       </PublicAuthRouteShell>
     )
   }

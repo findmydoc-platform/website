@@ -49,9 +49,11 @@ jobs:
           skip-commit-verification: true
 
       - name: Mark minor and patch updates for delayed auto-merge
+        id: add-auto-merge-marker
         if: |
-          steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
-          steps.metadata.outputs.update-type == 'version-update:semver-minor'
+          (steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
+          steps.metadata.outputs.update-type == 'version-update:semver-minor') &&
+          !contains(fromJSON(steps.metadata.outputs.updated-dependencies-json).*.dependencyName, '@findmydoc-platform/ui-copy')
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
@@ -65,9 +67,7 @@ jobs:
           gh issue edit "$PR_NUMBER" --add-label "$AUTOMERGE_LABEL"
 
       - name: Remove delayed auto-merge marker from other updates
-        if: |
-          steps.metadata.outputs.update-type != 'version-update:semver-patch' &&
-          steps.metadata.outputs.update-type != 'version-update:semver-minor'
+        if: steps.add-auto-merge-marker.outcome == 'skipped'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}

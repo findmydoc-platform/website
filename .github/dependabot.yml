@@ -18,11 +18,17 @@ updates:
       semver-patch-days: 3
       semver-minor-days: 7
       semver-major-days: 30
+      exclude:
+        - '@findmydoc-platform/ui-copy'
     commit-message:
       prefix: 'chore'
       prefix-development: 'build'
       include: 'scope'
     groups:
+      ui-copy:
+        patterns:
+          - '@findmydoc-platform/ui-copy'
+
       # 1) PayloadCMS-specific together
       payloadcms:
         patterns:

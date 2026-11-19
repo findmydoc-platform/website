@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process'
 
-import { expect, test, type Page, type Route } from '@playwright/test'
+import { expect, test, type Route } from '@playwright/test'
 
 import { createBrowserIssueCollector, expectNoBrowserIssues } from '../helpers/browserIssues'
 import { setCookieConsent } from '../helpers/cookieConsent'
@@ -73,14 +73,6 @@ test.afterEach(() => {
   }
 })
 
-async function fillPatientRegistrationForm(page: Page, passwords: { password: string; confirmPassword?: string }) {
-  await page.getByLabel('First Name').fill('John')
-  await page.getByLabel('Last Name').fill('Doe')
-  await page.getByPlaceholder('patient@example.com').fill('patient@example.com')
-  await page.getByLabel(/^Password$/).fill(passwords.password)
-  await page.getByLabel(/^Confirm Password$/).fill(passwords.confirmPassword ?? passwords.password)
-}
-
 test('clinic registration persists a real application after funnel submit @smoke', async ({ page }) => {
   const issues = createBrowserIssueCollector(page)
   const prefix = `e2e-clinic-registration-${Date.now()}`
@@ -136,63 +128,148 @@ test('clinic registration persists a real application after funnel submit @smoke
   await expectNoBrowserIssues(issues)
 })
 
-test('patient registration redirects to the login page after a successful submit @smoke', async ({ page }) => {
-  const issues = createBrowserIssueCollector(page)
-  let patientRegistrationRequestCount = 0
-  let patientRegistrationBody: Record<string, unknown> | null = null
+const patientRegistrationLocales = [
+  {
+    locale: 'de',
+    prefix: '',
+    otherLocale: 'en',
+    submit: 'Patientenkonto erstellen',
+    firstName: 'Vorname',
+    lastName: 'Nachname',
+    email: 'E-Mail',
+    password: 'Passwort', // pragma: allowlist secret
+    confirmation: 'Passwort bestätigen',
+  },
+  {
+    locale: 'en',
+    prefix: '/en',
+    otherLocale: 'de',
+    submit: 'Create Patient Account',
+    firstName: 'First Name',
+    lastName: 'Last Name',
+    email: 'Email',
+    password: 'Password', // pragma: allowlist secret
+    confirmation: 'Confirm Password',
+  },
+] as const
 
-  await page.route('**/api/auth/register/patient', async (route) => {
-    patientRegistrationRequestCount += 1
-    patientRegistrationBody = route.request().postDataJSON() as Record<string, unknown>
-    await fulfillJson(route, 200, { success: true })
-  })
-
-  await page.goto('/register/patient', { waitUntil: 'domcontentloaded' })
-  await fillPatientRegistrationForm(page, { password: patientTestPassword }) // pragma: allowlist secret
-  await page.getByRole('button', { name: 'Create Patient Account' }).click()
-
-  await expect(page).toHaveURL(/\/login\/patient\?message=patient-check-email$/)
-  await expect(
-    page.getByText(
-      'Check your email for the verification link we sent so you can finish setting up your findmydoc account.',
-    ),
-  ).toBeVisible()
-  expect(patientRegistrationRequestCount).toBe(1)
-  expect(patientRegistrationBody).toMatchObject({
-    email: 'patient@example.com',
-    firstName: 'John',
-    lastName: 'Doe',
-    password: expect.any(String),
-  })
-  await expectNoBrowserIssues(issues)
-})
-
-test('patient registration surfaces server provisioning failures without cleanup @smoke', async ({ page }) => {
-  const issues = createBrowserIssueCollector(page, {
-    ignoredConsoleErrors: [
-      /Failed to load resource: the server responded with a status of 500 .*\/api\/auth\/register\/patient/,
-    ],
-  })
-  let patientRegistrationRequestCount = 0
-
-  await page.route('**/api/auth/register/patient', async (route) => {
-    patientRegistrationRequestCount += 1
-    await fulfillJson(route, 500, {
-      error: 'We could not finish setting up your account. Please try again in a few minutes.',
+for (const variant of patientRegistrationLocales) {
+  test(`patient registration validates, retries and preserves the login destination in ${variant.locale} @smoke`, async ({
+    baseURL,
+    page,
+  }) => {
+    const issues = createBrowserIssueCollector(page, {
+      ignoredConsoleErrors: [
+        /Failed to load resource: the server responded with a status of 503 .*\/api\/auth\/register\/patient/,
+      ],
     })
+    const providerError = 'Synthetic provider detail for this test'
+    const submissions: Array<{ method: string; body: unknown }> = []
+    let finishFailure!: () => void
+    const releaseFailure = new Promise<void>((resolve) => {
+      finishFailure = resolve
+    })
+
+    await page.route('**/api/auth/register/patient', async (route) => {
+      const request = route.request()
+      submissions.push({ method: request.method(), body: request.postDataJSON() })
+      if (submissions.length === 1) {
+        await releaseFailure
+        await fulfillJson(route, 503, { error: providerError })
+      } else {
+        await fulfillJson(route, 200, { success: true })
+      }
+    })
+
+    await page.setExtraHTTPHeaders({
+      'accept-language': variant.otherLocale,
+      'x-findmydoc-ui-copy-locale': variant.otherLocale,
+    })
+    await page
+      .context()
+      .addCookies([{ name: 'NEXT_LOCALE', value: variant.otherLocale, url: new URL('/', baseURL).href }])
+
+    const destination = `${variant.prefix}/register/patient?locale=${variant.otherLocale}&lang=${variant.otherLocale}`
+    const response = await page.goto(destination, { waitUntil: 'domcontentloaded' })
+    expect(response?.ok()).toBe(true)
+    expect((await response?.text())?.match(/<html\b[^>]*\blang="([^"]+)"/)?.[1]).toBe(variant.locale)
+    await expect(page.locator('html')).toHaveAttribute('lang', variant.locale)
+    await expect(page).toHaveURL(new URL(destination, baseURL).href)
+
+    const form = page.getByRole('form', { name: variant.submit })
+    const submit = form.getByRole('button', { name: variant.submit, exact: true })
+    const firstName = form.getByLabel(variant.firstName, { exact: true })
+    const confirmPassword = form.getByLabel(variant.confirmation, { exact: true })
+
+    await submit.click()
+    await expect(firstName).toBeFocused()
+    await expect(firstName).toHaveAttribute('aria-invalid', 'true')
+    await expect(firstName).toHaveAccessibleDescription(/\S/)
+    await expect(form.getByRole('alert').first()).toBeVisible()
+
+    for (const width of [320, 375, 640, 768, 1024]) {
+      await page.setViewportSize({ width, height: width < 640 ? 812 : 900 })
+      await expect(firstName).toBeVisible()
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width)
+      await page.screenshot({
+        path: test.info().outputPath(`patient-registration-${variant.locale}-${width}.png`),
+        fullPage: true,
+      })
+    }
+
+    await firstName.fill('John')
+    await expect(firstName).not.toHaveAttribute('aria-invalid', 'true')
+    await form.getByLabel(variant.lastName, { exact: true }).fill('Doe')
+    await form.getByLabel(variant.email, { exact: true }).fill('patient@example.com')
+    await form.getByLabel(variant.password, { exact: true }).fill(patientTestPassword)
+    await confirmPassword.fill('Mismatch123')
+    await submit.click()
+    await expect(confirmPassword).toBeFocused()
+    await expect(confirmPassword).toHaveAttribute('aria-invalid', 'true')
+    await expect(confirmPassword).toHaveAccessibleDescription(/\S/)
+    expect(submissions).toHaveLength(0)
+
+    await confirmPassword.fill(patientTestPassword)
+    await expect(confirmPassword).not.toHaveAttribute('aria-invalid', 'true')
+    try {
+      await submit.click()
+      await expect(form.getByRole('button')).toBeDisabled()
+      await expect(form.getByRole('status')).toContainText(/\S/)
+    } finally {
+      finishFailure()
+    }
+
+    const failure = page.getByRole('alert').filter({ hasText: /\S/ })
+    await expect(failure).toContainText(/\S/)
+    await expect(failure).not.toContainText(providerError)
+    await expect(page).toHaveURL(new URL(destination, baseURL).href)
+    await expect(submit).toBeEnabled()
+    await page.setViewportSize({ width: 375, height: 812 })
+    await page.screenshot({
+      path: test.info().outputPath(`patient-registration-${variant.locale}-retry.png`),
+      fullPage: true,
+    })
+    await expect(firstName).toHaveValue('John')
+    await submit.click()
+
+    const loginDestination = `${variant.prefix}/login/patient?message=patient-check-email`
+    await expect(page).toHaveURL(new URL(loginDestination, baseURL).href)
+    await expect(page.locator('html')).toHaveAttribute('lang', variant.locale)
+    await expect(page.getByRole('status').filter({ hasText: /\S/ })).toBeVisible()
+
+    const submission = {
+      method: 'POST',
+      body: {
+        email: 'patient@example.com',
+        firstName: 'John',
+        lastName: 'Doe',
+        password: patientTestPassword,
+      },
+    }
+    expect(submissions).toEqual([submission, submission])
+    await expectNoBrowserIssues(issues)
   })
-
-  await page.goto('/register/patient', { waitUntil: 'domcontentloaded' })
-  await fillPatientRegistrationForm(page, { password: patientTestPassword }) // pragma: allowlist secret
-  await page.getByRole('button', { name: 'Create Patient Account' }).click()
-
-  await expect(
-    page.getByText('We could not finish setting up your account. Please try again in a few minutes.'),
-  ).toBeVisible()
-  expect(patientRegistrationRequestCount).toBe(1)
-  await expect(page).toHaveURL(/\/register\/patient(?:\?.*)?$/)
-  await expectNoBrowserIssues(issues)
-})
+}
 
 test('patient login follows the language in each public URL @smoke', async ({ baseURL, page }) => {
   const issues = createBrowserIssueCollector(page)

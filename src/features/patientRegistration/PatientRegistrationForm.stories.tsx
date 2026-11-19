@@ -1,9 +1,46 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, spyOn, userEvent, waitFor, within } from 'storybook/test'
 
-import { PatientRegistrationForm } from '@/components/organisms/Auth/PatientRegistrationForm'
-import { withMockRouter } from '../../utils/routerDecorator'
-import { withViewportStory } from '../../utils/viewportMatrix'
+import { PatientRegistrationForm } from './PatientRegistrationForm.client'
+import { withMockRouter } from '@/stories/utils/routerDecorator'
+import { withViewportStory } from '@/stories/utils/viewportMatrix'
+
+const exampleCopy = {
+  title: 'Example patient registration',
+  description: 'Fill in this example to try registration.',
+  submitButtonText: 'Submit example registration',
+  fields: [
+    { name: 'firstName', label: 'First name', type: 'text', required: true, gridCol: '2' as const },
+    { name: 'lastName', label: 'Last name', type: 'text', required: true, gridCol: '2' as const },
+    { name: 'email', label: 'Email', type: 'email', required: true },
+    { name: 'password', label: 'Password', type: 'password', required: true },
+    { name: 'confirmPassword', label: 'Confirm password', type: 'password', required: true },
+  ],
+  formMessages: {
+    validation: {
+      firstName: { valueMissing: 'Enter a first name.' },
+      lastName: { valueMissing: 'Enter a last name.' },
+      email: { valueMissing: 'Enter an email.', typeMismatch: 'Use a valid email.' },
+      password: { valueMissing: 'Enter a password.', tooShort: 'Enter a longer password.' },
+      confirmPassword: { valueMissing: 'Repeat the password.', tooShort: 'Enter a longer password.' },
+    },
+    passwordMismatch: 'Use the same password in both fields.', // pragma: allowlist secret
+    pending: 'Submitting the example…',
+    loginPrompt: 'Already signed up?',
+    fallbackError: 'The example could not be submitted.',
+  },
+  successMessage: 'Your example was submitted.',
+  signInLink: 'Sign in',
+  homeLink: 'Back home',
+  errors: {
+    missingCredentials: 'Enter an email and password.',
+    invalidPayload: 'Check the example fields.',
+    requestRejected: 'The service rejected the example.',
+    temporarilyUnavailable: 'The example is temporarily unavailable.',
+    setupFailed: 'Example registration failed.',
+    registrationFailed: 'Try submitting the example again.',
+  },
+}
 
 const submitPatientRegistration = () => new Promise<void>((resolve) => setTimeout(resolve, 120))
 
@@ -23,6 +60,9 @@ const meta = {
     'used-in:block:patient-registration-form',
   ],
   args: {
+    copy: exampleCopy,
+    loginHref: '/login/patient',
+    successHref: '/login/patient?message=patient-check-email',
     onSubmit: submitPatientRegistration,
   },
 } satisfies Meta<typeof PatientRegistrationForm>
@@ -43,10 +83,10 @@ export const Default: Story = {
 
     const consoleSpy = spyOn(console, 'error').mockImplementation(() => {})
     try {
-      await userEvent.click(canvas.getByRole('button', { name: /create patient account/i }))
+      await userEvent.click(canvas.getByRole('button', { name: exampleCopy.submitButtonText }))
 
       await waitFor(() => {
-        expect(canvas.getByText(/passwords do not match/i)).toBeInTheDocument()
+        expect(canvas.getByText(exampleCopy.formMessages.passwordMismatch)).toBeInTheDocument()
       })
     } finally {
       consoleSpy.mockRestore()
@@ -54,10 +94,10 @@ export const Default: Story = {
 
     await userEvent.clear(canvas.getByLabelText(/confirm password/i))
     await userEvent.type(canvas.getByLabelText(/confirm password/i), 'SecurePass123')
-    await userEvent.click(canvas.getByRole('button', { name: /create patient account/i }))
+    await userEvent.click(canvas.getByRole('button', { name: exampleCopy.submitButtonText }))
 
     await waitFor(() => {
-      expect(canvas.getByRole('button', { name: /creating account/i })).toBeInTheDocument()
+      expect(canvas.getByRole('button', { name: exampleCopy.formMessages.pending })).toBeInTheDocument()
     })
   },
 }
@@ -75,10 +115,10 @@ const validationViewportBase: Story = {
     const consoleSpy = spyOn(console, 'error').mockImplementation(() => {})
 
     try {
-      await userEvent.click(canvas.getByRole('button', { name: /create patient account/i }))
+      await userEvent.click(canvas.getByRole('button', { name: exampleCopy.submitButtonText }))
 
       await waitFor(() => {
-        expect(canvas.getByText(/passwords do not match/i)).toBeInTheDocument()
+        expect(canvas.getByText(exampleCopy.formMessages.passwordMismatch)).toBeInTheDocument()
       })
     } finally {
       consoleSpy.mockRestore()
@@ -96,10 +136,10 @@ const successViewportBase: Story = {
     await userEvent.type(canvas.getByLabelText('Password'), 'SecurePass123')
     await userEvent.type(canvas.getByLabelText(/confirm password/i), 'SecurePass123')
 
-    await userEvent.click(canvas.getByRole('button', { name: /create patient account/i }))
+    await userEvent.click(canvas.getByRole('button', { name: exampleCopy.submitButtonText }))
 
     await waitFor(() => {
-      expect(canvas.getByText(/your registration was submitted successfully/i)).toBeInTheDocument()
+      expect(canvas.getByText(exampleCopy.successMessage)).toBeInTheDocument()
     })
   },
 }

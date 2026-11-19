@@ -6,7 +6,10 @@ import {
   PUBLIC_AUTH_FORM_CONTAINER_CLASSNAME,
   PublicAuthRouteShell,
 } from '@/app/(frontend)/_components/PublicAuthRouteShell'
-import { PatientRegistrationForm } from '@/components/organisms/Auth/PatientRegistrationForm'
+import { PatientRegistrationForm } from '@/features/patientRegistration/PatientRegistrationForm.client'
+import { patientRegistrationCopy } from '@/features/uiCopy/patientRegistration'
+import { localizedPatientAuthPath } from '@/i18n/patientAuthPath'
+import { uiCopyLocaleFromHeaders } from '@/i18n/requestLocale'
 import { headers } from 'next/headers'
 import { PatientVerificationResendForm } from './PatientVerificationResendForm'
 
@@ -26,22 +29,26 @@ export default async function PatientRegistrationPage({
         )
       : null
 
+  const copy = await patientRegistrationCopy(preparation?.expiresAt)
+  const loginPath = localizedPatientAuthPath('/login/patient', uiCopyLocaleFromHeaders(requestHeaders))
+
   return (
     <PublicAuthRouteShell>
       <div className="flex w-full max-w-md flex-col gap-6">
         <PatientRegistrationForm
+          copy={copy}
           containerClassName={PUBLIC_AUTH_FORM_CONTAINER_CLASSNAME}
           initialValues={
             preparation
               ? { firstName: preparation.firstName, lastName: preparation.lastName, email: preparation.email }
               : undefined
           }
-          preparationExpiresAt={preparation?.expiresAt}
           loginHref={
             preparation && inquiry
-              ? `/login/patient?inquiry=${encodeURIComponent(inquiry)}&next=/patient/inquiries`
-              : undefined
+              ? `${loginPath}?inquiry=${encodeURIComponent(inquiry)}&next=/patient/inquiries`
+              : loginPath
           }
+          successHref={`${loginPath}?message=patient-check-email`}
         />
         <PatientVerificationResendForm initialEmail={preparation?.email} />
       </div>

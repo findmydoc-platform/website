@@ -142,9 +142,9 @@ test('keeps multiple clinic outcomes separate and retries only the selected fail
   await prepare(clinicB, 'Synthetic separately authorized inquiry for clinic B.')
   await prepare(clinicC, 'Synthetic separately authorized inquiry for clinic C.')
   await page.getByRole('link', { name: 'Continue account creation' }).click()
-  await page.getByLabel('Password', { exact: true }).fill('SyntheticPatient123') // pragma: allowlist secret
-  await page.getByLabel('Confirm Password', { exact: true }).fill('SyntheticPatient123') // pragma: allowlist secret
-  await page.getByRole('button', { name: 'Create Patient Account' }).click()
+  await page.getByLabel('Passwort', { exact: true }).fill('SyntheticPatient123') // pragma: allowlist secret
+  await page.getByLabel('Passwort bestätigen', { exact: true }).fill('SyntheticPatient123') // pragma: allowlist secret
+  await page.getByRole('button', { name: 'Patientenkonto erstellen' }).click()
   await expect(page).toHaveURL(/patient-check-email/)
   await fixtureCommand('worker')
   const link = confirmationLinks.get(email)

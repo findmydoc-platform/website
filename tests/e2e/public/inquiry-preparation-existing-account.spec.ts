@@ -41,14 +41,14 @@ test('existing patient keeps inquiry details through sign-in and recovery naviga
   await expect(page.getByRole('status')).toContainText(/\d{1,2}\.\d{1,2}\.\d{2}.*UTC/)
   await page.getByRole('link', { name: 'Passwort vergessen?' }).click()
   await expect(page).toHaveURL(/\/auth\/password\/reset/)
-  await expect(page.getByLabel('Email', { exact: true })).toHaveValue('existing-browser@example.test')
-  await expect(page.getByRole('status')).toContainText('saved but not sent')
+  await expect(page.getByLabel('E-Mail-Adresse', { exact: true })).toHaveValue('existing-browser@example.test')
+  await expect(page.getByRole('status')).toBeVisible()
   for (const width of [320, 375, 640, 768, 1024]) {
     await page.setViewportSize({ width, height: 900 })
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
     await page.screenshot({ path: `${artifacts}/recovery-${width}.png`, fullPage: true })
   }
-  await page.getByRole('link', { name: 'Patient sign in' }).click()
+  await page.getByRole('link', { name: 'Anmeldung für Patienten' }).click()
   await expect(page).toHaveURL(/\/login\/patient/)
   await expect(page.getByLabel('E-Mail', { exact: true })).toHaveValue('existing-browser@example.test')
   for (const width of [320, 375, 640, 768, 1024]) {

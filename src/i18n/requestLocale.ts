@@ -6,13 +6,21 @@ export const ENGLISH_PATIENT_LOGIN_PATH = localizedPatientAuthPath(PATIENT_LOGIN
 
 const PATIENT_REGISTRATION_PATH = '/register/patient'
 const ENGLISH_PATIENT_REGISTRATION_PATH = localizedPatientAuthPath(PATIENT_REGISTRATION_PATH, 'en')
+const RECOVERY_REQUEST_PATH = '/auth/password/reset'
+const ENGLISH_RECOVERY_REQUEST_PATH = localizedPatientAuthPath(RECOVERY_REQUEST_PATH, 'en')
 
 export type UiCopyLocale = 'de' | 'en'
 
 export function uiCopyLocaleFromPath(pathname: string): UiCopyLocale | null {
   const path = pathname.endsWith('/') ? pathname.slice(0, -1) : pathname
-  if (path === PATIENT_LOGIN_PATH || path === PATIENT_REGISTRATION_PATH) return 'de'
-  if (path === ENGLISH_PATIENT_LOGIN_PATH || path === ENGLISH_PATIENT_REGISTRATION_PATH) return 'en'
+  if (path === PATIENT_LOGIN_PATH || path === PATIENT_REGISTRATION_PATH || path === RECOVERY_REQUEST_PATH) return 'de'
+  if (
+    path === ENGLISH_PATIENT_LOGIN_PATH ||
+    path === ENGLISH_PATIENT_REGISTRATION_PATH ||
+    path === ENGLISH_RECOVERY_REQUEST_PATH
+  ) {
+    return 'en'
+  }
   return null
 }
 

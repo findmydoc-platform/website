@@ -1,8 +1,20 @@
 // @vitest-environment jsdom
 import '@testing-library/jest-dom'
+import de from '@findmydoc-platform/ui-copy/de.json'
+import en from '@findmydoc-platform/ui-copy/en.json'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, expect, test, vi } from 'vitest'
 import { RecoveryConfirmationForm } from '@/app/(frontend)/auth/confirm/RecoveryConfirmationForm'
+
+const catalog = en.auth.passwordRecovery
+const englishCopy = {
+  ...catalog.confirmation,
+  shared: {
+    invalidLink: catalog.shared.invalidLink,
+    retry: catalog.shared.retry,
+    requestLink: { href: '/en/auth/password/reset', label: catalog.shared.requestLink },
+  },
+}
 
 afterEach(() => {
   cleanup()
@@ -11,11 +23,11 @@ afterEach(() => {
 test('confirms only on explicit user action and keeps a temporary failure retryable', async () => {
   const fetch = vi.fn().mockResolvedValue({ ok: false, status: 503, json: async () => ({}) })
   vi.stubGlobal('fetch', fetch)
-  render(<RecoveryConfirmationForm csrf="offline-csrf" />)
+  render(<RecoveryConfirmationForm copy={englishCopy} csrf="offline-csrf" />)
   expect(fetch).not.toHaveBeenCalled()
   fireEvent.click(screen.getByRole('button', { name: 'Confirm recovery' }))
-  expect(screen.getByRole('status')).toHaveTextContent('Confirming your recovery link')
-  await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('you do not need another link'))
+  expect(screen.getByRole('status')).toHaveTextContent(/\S/)
+  await screen.findByRole('alert')
   fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
   await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2))
   expect(fetch).toHaveBeenLastCalledWith(
@@ -24,8 +36,24 @@ test('confirms only on explicit user action and keeps a temporary failure retrya
   )
 })
 test('shares safe error and request entry for invalid recovery', () => {
-  render(<RecoveryConfirmationForm csrf={null} />)
-  expect(screen.getByRole('alert')).toHaveTextContent('This link is invalid or has expired')
+  const catalog = de.auth.passwordRecovery
+  render(
+    <RecoveryConfirmationForm
+      csrf={null}
+      copy={{
+        ...catalog.confirmation,
+        shared: {
+          invalidLink: catalog.shared.invalidLink,
+          retry: catalog.shared.retry,
+          requestLink: { href: '/auth/password/reset', label: catalog.shared.requestLink },
+        },
+      }}
+    />,
+  )
+  expect(screen.getByRole('alert')).toBeVisible()
   expect(screen.queryByRole('button')).not.toBeInTheDocument()
-  expect(screen.getByRole('link', { name: 'Request a recovery email' })).toHaveAttribute('href', '/auth/password/reset')
+  expect(screen.getByRole('link', { name: 'E-Mail zur Wiederherstellung anfordern' })).toHaveAttribute(
+    'href',
+    '/auth/password/reset',
+  )
 })

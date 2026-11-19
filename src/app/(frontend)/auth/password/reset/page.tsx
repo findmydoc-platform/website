@@ -7,11 +7,11 @@ import { createLocalReq, getPayload } from 'payload'
 import config from '@payload-config'
 import { readPreparationBinding } from '@/features/inquiryPreparations/context'
 import { readInquiryPreparationRegistration } from '@/features/inquiryCommunication/service'
+import { recoveryMetadataTitle, recoveryRequestCopy } from '@/features/uiCopy/passwordRecovery'
 
-export const metadata: Metadata = createSiteMetadata({
-  title: 'Reset password',
-  path: '/auth/password/reset',
-})
+export async function generateMetadata(): Promise<Metadata> {
+  return createSiteMetadata({ title: await recoveryMetadataTitle('request'), path: '/auth/password/reset' })
+}
 
 const signInOptionLinkClassName =
   'inline-flex min-h-11 items-center rounded-md px-3 text-sm font-medium text-primary transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
@@ -40,31 +40,30 @@ export default async function ResetPasswordPage({ searchParams }: ResetPasswordP
         params?.inquiry,
       )
     : null
+  const copy = await recoveryRequestCopy(preparation?.expiresAt)
+  const patientSignInHref =
+    preparation && params?.inquiry
+      ? `${copy.patientSignInHref}?inquiry=${encodeURIComponent(params.inquiry)}&next=/patient/inquiries`
+      : copy.patientSignInHref
 
   return (
     <main className="min-h-svh bg-site-canvas py-6 sm:py-12">
       <div className="mx-auto max-w-4xl px-4">
         <div className="mb-2 sm:mb-6">
-          <nav aria-label="Sign in options" className="-mx-3 flex flex-wrap gap-1">
-            <Link
-              href={
-                preparation && params?.inquiry
-                  ? `/login/patient?inquiry=${encodeURIComponent(params.inquiry)}&next=/patient/inquiries`
-                  : '/login/patient'
-              }
-              className={signInOptionLinkClassName}
-            >
-              Patient sign in
+          <nav aria-label={copy.signInOptions} className="-mx-3 flex flex-wrap gap-1">
+            <Link href={patientSignInHref} className={signInOptionLinkClassName}>
+              {copy.patientSignIn}
             </Link>
             <Link href="/admin/login" className={signInOptionLinkClassName}>
-              Staff sign in
+              {copy.staffSignIn}
             </Link>
           </nav>
         </div>
         <ResetPasswordRequestForm
+          copy={copy.form}
           reason={reason}
           initialEmail={preparation?.email}
-          preparationExpiresAt={preparation?.expiresAt}
+          preparationNotice={copy.preparationNotice}
         />
       </div>
     </main>

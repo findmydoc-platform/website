@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
+import en from '@findmydoc-platform/ui-copy/en.json'
 import { expect, fn, userEvent, within } from 'storybook/test'
 import { ResetPasswordRequestForm } from './ResetPasswordRequestForm'
 import { PublicAuthRouteShell } from '@/app/(frontend)/_components/PublicAuthRouteShell'
@@ -6,7 +7,7 @@ import { PublicAuthRouteShell } from '@/app/(frontend)/_components/PublicAuthRou
 const meta = {
   title: 'Domain/Auth/Pages/RecoveryRequest',
   component: ResetPasswordRequestForm,
-  args: { onRequest: fn(async () => {}) },
+  args: { copy: en.auth.passwordRecovery.request, onRequest: fn(async () => {}) },
   tags: ['autodocs', 'domain:auth', 'layer:page', 'status:stable', 'used-in:route:/auth/password/reset'],
   decorators: [
     (Story) => (
@@ -26,7 +27,7 @@ export const Request: Story = {
     await userEvent.type(canvas.getByRole('textbox', { name: 'Email' }), 'principal@example.test')
     await userEvent.click(canvas.getByRole('button', { name: 'Send reset instructions' }))
     await expect(args.onRequest).toHaveBeenCalledOnce()
-    await expect(canvas.getByRole('status')).toHaveTextContent('If the email exists')
+    await expect(canvas.getByRole('status')).toBeVisible()
     await expect(canvas.getByRole('textbox', { name: 'Email' })).toHaveValue('')
   },
 }

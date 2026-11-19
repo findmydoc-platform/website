@@ -12,17 +12,24 @@ import { PublicAuthRouteShell } from '@/app/(frontend)/_components/PublicAuthRou
 import { resolveRecoveryKeys } from '@/auth/actions/recoveryConfiguration'
 import { readWebsiteRecoveryContext, WEBSITE_RECOVERY_COOKIE } from '@/auth/actions/websiteRecoveryContext'
 import { RecoveryConfirmationForm } from './RecoveryConfirmationForm'
+import { recoveryConfirmationCopy, recoveryMetadataTitle } from '@/features/uiCopy/passwordRecovery'
 
 export const dynamic = 'force-dynamic'
 
-export const metadata: Metadata = {
-  ...createSiteMetadata({ title: 'Confirm secure email link', path: '/auth/confirm' }),
-  robots: { index: false, follow: false },
+type ConfirmPageProps = Readonly<{ searchParams: Promise<Readonly<{ type?: string }>> }>
+
+export async function generateMetadata({ searchParams }: ConfirmPageProps): Promise<Metadata> {
+  const { type } = await searchParams
+  return {
+    ...createSiteMetadata({
+      title: type === 'recovery' ? await recoveryMetadataTitle('confirmation') : 'Confirm secure email link',
+      path: '/auth/confirm',
+    }),
+    robots: { index: false, follow: false },
+  }
 }
 
-export default async function ConfirmTokenHashPage({
-  searchParams,
-}: Readonly<{ searchParams: Promise<Readonly<{ type?: string }>> }>) {
+export default async function ConfirmTokenHashPage({ searchParams }: ConfirmPageProps) {
   const { type } = await searchParams
   if (type === 'recovery') {
     let csrf: string | null = null
@@ -37,9 +44,10 @@ export default async function ConfirmTokenHashPage({
     } catch {
       /* Missing authority shares the safe invalid-link state. */
     }
+    const copy = await recoveryConfirmationCopy()
     return (
       <PublicAuthRouteShell>
-        <RecoveryConfirmationForm csrf={csrf} />
+        <RecoveryConfirmationForm copy={copy} csrf={csrf} />
       </PublicAuthRouteShell>
     )
   }

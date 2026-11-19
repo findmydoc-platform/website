@@ -6,11 +6,14 @@ import { createSiteMetadata } from '@/utilities/generateMeta'
 import { resolveTransactionalEmailEnvironment } from '@/features/transactionalEmail/environment'
 import { resolveRecoveryKeys } from '@/auth/actions/recoveryConfiguration'
 import { readWebsiteRecoveryContext, WEBSITE_RECOVERY_COOKIE } from '@/auth/actions/websiteRecoveryContext'
+import { recoveryCompletionCopy, recoveryMetadataTitle } from '@/features/uiCopy/passwordRecovery'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = {
-  ...createSiteMetadata({ title: 'Complete password recovery', path: '/auth/password/reset/complete' }),
-  robots: { index: false, follow: false },
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    ...createSiteMetadata({ title: await recoveryMetadataTitle('completion'), path: '/auth/password/reset/complete' }),
+    robots: { index: false, follow: false },
+  }
 }
 export default async function CompleteResetPage({
   searchParams,
@@ -35,9 +38,15 @@ export default async function CompleteResetPage({
   } catch {
     /* Missing authority shares the safe invalid-link state. */
   }
+  const copy = await recoveryCompletionCopy()
   return (
     <PublicAuthRouteShell>
-      <ResetPasswordCompleteForm csrf={csrf} resume={resume} inquiryContinuationPending={inquiryContinuationPending} />
+      <ResetPasswordCompleteForm
+        copy={copy}
+        csrf={csrf}
+        resume={resume}
+        inquiryContinuationPending={inquiryContinuationPending}
+      />
     </PublicAuthRouteShell>
   )
 }

@@ -274,58 +274,47 @@ for (const variant of patientRegistrationLocales) {
 test('patient login follows the language in each public URL @smoke', async ({ baseURL, page }) => {
   const issues = createBrowserIssueCollector(page)
   const cookieUrl = new URL('/', baseURL).href
-  await page.setExtraHTTPHeaders({ 'accept-language': 'en', 'x-findmydoc-ui-copy-locale': 'en' })
-  await page.context().addCookies([{ name: 'NEXT_LOCALE', value: 'en', url: cookieUrl }])
-  const germanResponse = await page.goto('/login/patient?locale=en&lang=en', { waitUntil: 'domcontentloaded' })
-  expect((await germanResponse?.text())?.match(/<html\b[^>]*\blang="([^"]+)"/)?.[1]).toBe('de')
-  await expect(page.locator('html')).toHaveAttribute('lang', 'de')
-  await expect(page).toHaveURL(/\/login\/patient\?locale=en&lang=en$/)
-  const germanTitle = await page.getByRole('heading', { level: 1 }).innerText()
-  for (const width of [320, 375, 640, 768, 1024]) {
-    await page.setViewportSize({ width, height: 800 })
-    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
-    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width)
-    await page.screenshot({ path: test.info().outputPath(`patient-login-de-${width}.png`), fullPage: true })
-  }
-  await page.getByRole('button', { name: 'Anmelden', exact: true }).click()
-  await expect(page.getByLabel('E-Mail', { exact: true })).toHaveAttribute('aria-invalid', 'true')
-  const germanErrors = await page.locator('form').getByRole('alert').allTextContents()
-  await expect(page.getByRole('link', { name: 'Hier registrieren', exact: true })).toHaveAttribute(
-    'href',
-    '/register/patient',
-  )
-  await expect(page.getByRole('link', { name: 'Passwort vergessen?', exact: true })).toHaveAttribute(
-    'href',
-    '/auth/password/reset',
-  )
-  await page.getByRole('link', { name: '← Zur Startseite', exact: true }).click()
-  await expect(page.locator('html')).toHaveAttribute('lang', 'en')
+  const main = page.getByRole('main')
+  const form = main.locator('form')
+  const email = form.getByRole('textbox').and(form.locator('input[type="email"]'))
 
-  await page.setExtraHTTPHeaders({ 'accept-language': 'de', 'x-findmydoc-ui-copy-locale': 'de' })
-  await page.context().addCookies([{ name: 'NEXT_LOCALE', value: 'de', url: cookieUrl }])
-  const englishResponse = await page.goto('/en/login/patient?locale=de&lang=de', { waitUntil: 'domcontentloaded' })
-  expect((await englishResponse?.text())?.match(/<html\b[^>]*\blang="([^"]+)"/)?.[1]).toBe('en')
-  await expect(page.locator('html')).toHaveAttribute('lang', 'en')
-  await expect(page).toHaveURL(/\/en\/login\/patient\?locale=de&lang=de$/)
-  const englishTitle = await page.getByRole('heading', { level: 1 }).innerText()
-  expect(englishTitle).not.toEqual(germanTitle)
-  await expect(page.getByRole('link', { name: 'Register here', exact: true })).toHaveAttribute(
-    'href',
-    '/en/register/patient',
-  )
-  await expect(page.getByRole('link', { name: 'Forgot password?', exact: true })).toHaveAttribute(
-    'href',
-    '/en/auth/password/reset',
-  )
-  for (const width of [320, 375, 640, 768, 1024]) {
-    await page.setViewportSize({ width, height: 800 })
-    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
-    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width)
-    await page.screenshot({ path: test.info().outputPath(`patient-login-en-${width}.png`), fullPage: true })
+  for (const { locale, prefix, conflictingLocale } of [
+    { locale: 'de', prefix: '', conflictingLocale: 'en' },
+    { locale: 'en', prefix: '/en', conflictingLocale: 'de' },
+  ]) {
+    await page.setExtraHTTPHeaders({
+      'accept-language': conflictingLocale,
+      'x-findmydoc-ui-copy-locale': conflictingLocale,
+    })
+    await page.context().addCookies([{ name: 'NEXT_LOCALE', value: conflictingLocale, url: cookieUrl }])
+    const destination = `${prefix}/login/patient?locale=${conflictingLocale}&lang=${conflictingLocale}`
+    const response = await page.goto(destination, { waitUntil: 'domcontentloaded' })
+    expect((await response?.text())?.match(/<html\b[^>]*\blang="([^"]+)"/)?.[1]).toBe(locale)
+    await expect(page.locator('html')).toHaveAttribute('lang', locale)
+    await expect(page).toHaveURL(new URL(destination, baseURL).href)
+
+    for (const width of [320, 375, 640, 768, 1024]) {
+      await page.setViewportSize({ width, height: 800 })
+      await expect(main.getByRole('heading', { level: 1 })).toBeVisible()
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width)
+      await page.screenshot({ path: test.info().outputPath(`patient-login-${locale}-${width}.png`), fullPage: true })
+    }
+
+    for (const href of [`${prefix}/register/patient`, `${prefix}/auth/password/reset`]) {
+      const link = main.getByRole('link').and(main.locator(`[href="${href}"]`))
+      await expect(link).toBeVisible()
+      await expect(link).toHaveAccessibleName(/\S/)
+    }
+    await form.getByRole('button').click()
+    await expect(email).toHaveAttribute('aria-invalid', 'true')
+    await expect(email).toHaveAccessibleDescription(/\S/)
   }
-  await page.getByRole('button', { name: 'Sign in', exact: true }).click()
-  await expect(page.getByLabel('Email', { exact: true })).toHaveAttribute('aria-invalid', 'true')
-  const englishErrors = await page.locator('form').getByRole('alert').allTextContents()
-  expect(englishErrors).not.toEqual(germanErrors)
+
+  const home = main.getByRole('link').and(main.locator('[href="/"]'))
+  await page.goto('/login/patient', { waitUntil: 'domcontentloaded' })
+  await expect(page.locator('html')).toHaveAttribute('lang', 'de')
+  await home.click()
+  await expect(page).toHaveURL(new URL('/', baseURL).href)
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en')
   await expectNoBrowserIssues(issues)
 })

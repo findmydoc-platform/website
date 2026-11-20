@@ -21,6 +21,7 @@ export function CookieConsentLauncher({ buttonRef, ready, label, onOpenSettings 
         variant="outline"
         size="clear"
         aria-label={label}
+        lang="en"
         className="group inline-flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-border/80 bg-background/95 px-0 text-sm font-medium shadow-lg backdrop-blur-md transition-[width,box-shadow,background-color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] sm:h-12 sm:w-12 sm:justify-start sm:px-3 sm:hover:w-[10.25rem] sm:focus-visible:w-[10.25rem]"
         disabled={!ready}
         onClick={onOpenSettings}

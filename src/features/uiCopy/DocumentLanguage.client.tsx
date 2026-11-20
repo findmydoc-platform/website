@@ -20,6 +20,8 @@ function ConfirmationDocumentLanguage({ pathname }: { pathname: string }) {
 
 export function DocumentLanguage() {
   const pathname = usePathname()
+  if (!pathname) return null
+
   if (isAuthConfirmationPath(pathname)) {
     return (
       <Suspense fallback={null}>

@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { setTimeout as delay } from 'node:timers/promises'
 import { setCookieConsent } from '../helpers/cookieConsent'
 import { createBrowserIssueCollector, expectNoBrowserIssues } from '../helpers/browserIssues'
+import { confirmInquiryPreparationEmail } from '../helpers/confirmInquiryPreparationEmail'
 import { registerInquiryPreparationRuntime } from '../helpers/inquiryPreparationRuntime'
 import { resolvePlaywrightBaseURL } from '../../../scripts/test-env.mjs'
 type Clinic = { id: number; slug: string; name: string; doctorId: number | string }
@@ -159,7 +160,7 @@ test('keeps multiple clinic outcomes separate and retries only the selected fail
       ignoredConsoleErrors: [/Failed to load resource.*40[034]/],
     })
     await other.goto(link!)
-    await other.getByRole('button', { name: 'Confirm email', exact: true }).click()
+    await confirmInquiryPreparationEmail(other)
     await expect(other).toHaveURL(/\/patient\/inquiries$/)
     const notices = other.getByRole('region', { name: 'Inquiry submissions' })
     const noticeB = notices.getByRole('listitem').filter({ hasText: clinicB.name })

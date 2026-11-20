@@ -303,9 +303,14 @@ export const SubmitButton = ({
 }) => {
   const { state } = useLoginFormContext()
   return (
-    <Button type="submit" className={cn('w-full', className)} disabled={state.isLoading}>
-      {state.isLoading ? loadingText : children}
-    </Button>
+    <>
+      <p className="sr-only" role="status">
+        {state.isLoading ? loadingText : null}
+      </p>
+      <Button type="submit" className={cn('w-full', className)} disabled={state.isLoading}>
+        {state.isLoading ? loadingText : children}
+      </Button>
+    </>
   )
 }
 

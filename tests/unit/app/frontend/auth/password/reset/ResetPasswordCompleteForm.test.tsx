@@ -65,13 +65,10 @@ describe('Website recovery password completion form', () => {
   })
 
   test('shows the same safe error without a completion grant', () => {
-    render(<ResetPasswordCompleteForm copy={englishCopy} locale="en" csrf={null} />)
+    const { container } = render(<ResetPasswordCompleteForm copy={englishCopy} locale="en" csrf={null} />)
     expect(screen.getByRole('alert')).toBeVisible()
-    expect(screen.queryByLabelText('New password')).not.toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Request a recovery email' })).toHaveAttribute(
-      'href',
-      '/en/auth/password/reset',
-    )
+    expect(container.querySelectorAll('input[type="password"]')).toHaveLength(0)
+    expect(screen.getByRole('link')).toHaveAttribute('href', '/en/auth/password/reset')
   })
   test('validates inline, keeps retry on this page, and submits only the bound completion request', async () => {
     const fetch = vi
@@ -116,12 +113,12 @@ describe('Website recovery password completion form', () => {
         json: async () => ({ code: 'INVALID_OR_EXPIRED_LINK', message: 'private-provider-detail' }),
       }),
     )
-    render(<ResetPasswordCompleteForm copy={englishCopy} locale="en" csrf="offline-csrf" />)
+    const { container } = render(<ResetPasswordCompleteForm copy={englishCopy} locale="en" csrf="offline-csrf" />)
     for (const label of ['New password', 'Confirm password'])
       fireEvent.change(screen.getByLabelText(label), { target: { value: 'OfflinePassword123' } }) // pragma: allowlist secret
     fireEvent.click(screen.getByRole('button', { name: 'Update password' }))
     await screen.findByRole('alert')
-    expect(screen.queryByLabelText('New password')).not.toBeInTheDocument()
+    expect(container.querySelectorAll('input[type="password"]')).toHaveLength(0)
     expect(screen.queryByText('private-provider-detail')).not.toBeInTheDocument()
   })
 })

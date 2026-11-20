@@ -1,16 +1,15 @@
-import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ResetPasswordRequestForm, type ResetPasswordReason } from './ResetPasswordRequestForm'
-import { createSiteMetadata } from '@/utilities/generateMeta'
+import { recoveryRequestMetadata } from './recoveryRequestMetadata'
 import { headers } from 'next/headers'
 import { createLocalReq, getPayload } from 'payload'
 import config from '@payload-config'
 import { readPreparationBinding } from '@/features/inquiryPreparations/context'
 import { readInquiryPreparationRegistration } from '@/features/inquiryCommunication/service'
-import { recoveryMetadataTitle, recoveryRequestCopy } from '@/features/uiCopy/passwordRecovery'
+import { recoveryRequestCopy } from '@/features/uiCopy/passwordRecovery'
 
-export async function generateMetadata(): Promise<Metadata> {
-  return createSiteMetadata({ title: await recoveryMetadataTitle('request'), path: '/auth/password/reset' })
+export function generateMetadata() {
+  return recoveryRequestMetadata('de')
 }
 
 const signInOptionLinkClassName =

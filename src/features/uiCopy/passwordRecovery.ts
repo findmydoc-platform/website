@@ -1,9 +1,11 @@
 import { getLocale, getTranslations } from 'next-intl/server'
 
 import { localizedPatientAuthPath } from '@/i18n/patientAuthPath'
+import type { UiCopyLocale } from '@/i18n/requestLocale'
 
-export async function recoveryMetadataTitle(page: 'request' | 'confirmation' | 'completion') {
-  const translate = await getTranslations(`auth.passwordRecovery.${page}`)
+export async function recoveryMetadataTitle(page: 'request' | 'confirmation' | 'completion', locale?: UiCopyLocale) {
+  const namespace = `auth.passwordRecovery.${page}` as const
+  const translate = locale ? await getTranslations({ locale, namespace }) : await getTranslations(namespace)
   return translate('pageTitle')
 }
 

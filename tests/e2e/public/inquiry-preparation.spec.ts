@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { setCookieConsent } from '../helpers/cookieConsent'
 import { createBrowserIssueCollector, expectNoBrowserIssues } from '../helpers/browserIssues'
+import { confirmInquiryPreparationEmail } from '../helpers/confirmInquiryPreparationEmail'
 import { registerInquiryPreparationRuntime } from '../helpers/inquiryPreparationRuntime'
 import { resolvePlaywrightBaseURL } from '../../../scripts/test-env.mjs'
 
@@ -79,8 +80,7 @@ test('prepares, registers, confirms on another device and deliberately retries t
       ignoredConsoleErrors: [/Failed to load resource.*40[034]/, /net::ERR_FAILED/],
     })
     await other.goto(link!)
-    await expect(other.getByRole('heading', { name: 'Verify your email' })).toBeVisible()
-    await other.getByRole('button', { name: 'Confirm email', exact: true }).click()
+    await confirmInquiryPreparationEmail(other)
     await expect(other).toHaveURL(/\/patient\/inquiries$/)
     await expect(other.getByRole('region', { name: 'Inquiry submissions' })).toContainText('Not sent')
     for (const width of [320, 375, 640, 768, 1024]) {

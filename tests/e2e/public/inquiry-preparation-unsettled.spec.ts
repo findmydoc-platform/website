@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test'
 import type { PreparationReceipt } from '../../../src/features/inquiryPreparations/contracts'
 import { setCookieConsent } from '../helpers/cookieConsent'
 import { createBrowserIssueCollector, expectNoBrowserIssues } from '../helpers/browserIssues'
+import { confirmInquiryPreparationEmail } from '../helpers/confirmInquiryPreparationEmail'
 import { registerInquiryPreparationRuntime } from '../helpers/inquiryPreparationRuntime'
 import { resolvePlaywrightBaseURL } from '../../../scripts/test-env.mjs'
 
@@ -74,7 +75,7 @@ for (const retry of [true, false]) {
     let previousAttemptKey: string | undefined
     if (retry) {
       await page.goto(runtime.confirmationLinks.get(email)!)
-      await page.getByRole('button', { name: 'Confirm email', exact: true }).click()
+      await confirmInquiryPreparationEmail(page)
       await expect(page).toHaveURL(/\/patient\/inquiries$/)
       await expect(page.getByRole('button', { name: 'Try again', exact: true })).toBeVisible()
       await runtime.fixtureCommand('approved', clinic.id)
@@ -118,7 +119,7 @@ for (const retry of [true, false]) {
       if (retry) await page.getByRole('button', { name: 'Try again', exact: true }).click()
       else {
         await page.goto(runtime.confirmationLinks.get(email)!)
-        await page.getByRole('button', { name: 'Confirm email', exact: true }).click()
+        await confirmInquiryPreparationEmail(page)
         await expect(page).toHaveURL(/\/patient\/inquiries$/)
       }
       await pauseReady
@@ -223,7 +224,7 @@ test('does not send when the browser cannot retain reload correlation', async ({
       posts++
   })
   await page.goto(runtime.confirmationLinks.get(email)!)
-  await page.getByRole('button', { name: 'Confirm email', exact: true }).click()
+  await confirmInquiryPreparationEmail(page)
   await expect(page).toHaveURL(/\/patient\/inquiries$/)
   await expect(page.getByRole('region', { name: 'Inquiry submissions' }).getByRole('alert')).toContainText(
     'browser could not retain the submission status',
@@ -300,7 +301,7 @@ for (const acknowledgement of ['lost', 'unknown'] as const) {
       }
     })
     await page.goto(runtime.confirmationLinks.get(email)!)
-    await page.getByRole('button', { name: 'Confirm email', exact: true }).click()
+    await confirmInquiryPreparationEmail(page)
     const list = page.getByRole('region', { name: 'Patient inquiry list' })
     await expect.poll(() => statusReads, { timeout: 10_000 }).toBe(3)
     await expect(list.getByRole('link').filter({ hasText: clinic.name }).first()).toBeVisible()
@@ -370,7 +371,7 @@ for (const scenario of ['first-read-success', 'recovered-read'] as const) {
       await route.continue()
     })
     await page.goto(runtime.confirmationLinks.get(email)!)
-    await page.getByRole('button', { name: 'Confirm email', exact: true }).click()
+    await confirmInquiryPreparationEmail(page)
     const submissions = page.getByRole('region', { name: 'Inquiry submissions' })
     if (scenario === 'recovered-read') {
       await expect(submissions.getByRole('alert')).toBeVisible()

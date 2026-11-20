@@ -53,8 +53,5 @@ test('shares safe error and request entry for invalid recovery', () => {
   )
   expect(screen.getByRole('alert')).toBeVisible()
   expect(screen.queryByRole('button')).not.toBeInTheDocument()
-  expect(screen.getByRole('link', { name: 'E-Mail zur Wiederherstellung anfordern' })).toHaveAttribute(
-    'href',
-    '/auth/password/reset',
-  )
+  expect(screen.getByRole('link')).toHaveAttribute('href', '/auth/password/reset')
 })

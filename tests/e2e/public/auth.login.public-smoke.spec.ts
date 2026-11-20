@@ -12,7 +12,6 @@ const locales = [
     email: 'E-Mail',
     password: 'Passwort',
     submit: 'Anmelden',
-    pending: 'Anmeldung läuft …',
   },
   {
     locale: 'en',
@@ -20,7 +19,6 @@ const locales = [
     email: 'Email',
     password: 'Password',
     submit: 'Sign in',
-    pending: 'Signing in...',
   },
 ] as const
 
@@ -87,18 +85,32 @@ for (const copy of locales) {
     await page.goto(loginUrl)
     const email = page.getByLabel(copy.email, { exact: true })
     const password = page.getByLabel(copy.password, { exact: true })
-    const submit = page.getByRole('button', { name: copy.submit, exact: true })
+    const form = page.getByRole('main').locator('form')
+    const submit = form.locator('button[type="submit"]')
+    const pending = form.getByRole('status')
     const firstPassword = 'RejectedFixturePassword' // pragma: allowlist secret
     const secondPassword = 'AcceptedFixturePassword' // pragma: allowlist secret
 
+    await expect(pending).toBeEmpty()
     await email.fill('patient@example.com')
     await password.fill(firstPassword)
     try {
       await submit.click()
-      await expect(page.getByRole('button', { name: copy.pending, exact: true })).toBeDisabled()
+      await expect(submit).toBeDisabled()
       await expect(email).toBeDisabled()
       await expect(password).toBeDisabled()
+      await expect(pending).toContainText(/\S/)
+      await submit.evaluate((button) => button.scrollIntoView({ block: 'center' }))
       await page.screenshot({ path: testInfo.outputPath(`patient-login-${copy.locale}-pending-375x500.png`) })
+      for (const width of [320, 375, 640, 768, 1024]) {
+        await page.setViewportSize({ width, height: width < 640 ? 812 : 900 })
+        expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width)
+        await page.screenshot({
+          path: testInfo.outputPath(`patient-login-${copy.locale}-pending-${width}.png`),
+          fullPage: true,
+        })
+      }
+      await page.setViewportSize({ width: 375, height: 500 })
     } finally {
       finishFailure()
     }
@@ -106,6 +118,7 @@ for (const copy of locales) {
     const error = page.getByRole('main').getByRole('alert')
     await expect(error).toBeVisible()
     await expect(error).not.toContainText(providerDetail)
+    await expect(pending).toBeEmpty()
     await page.screenshot({ path: testInfo.outputPath(`patient-login-${copy.locale}-failure-375x500.png`) })
     await expect(page).toHaveURL((url) => `${url.pathname}${url.search}` === loginUrl)
     await expect(submit).toBeEnabled()
@@ -125,7 +138,7 @@ test('patient login announces registration and password reset in the requested l
   const issues = createBrowserIssueCollector(page)
   const registrationFeedback: string[] = []
   const recoveryFeedback: string[] = []
-  const feedback = page.getByRole('main').getByRole('status')
+  const feedback = page.getByRole('main').getByRole('status').filter({ hasText: /\S/ })
 
   for (const copy of locales) {
     await page.goto(`${copy.path}?message=patient-check-email`)

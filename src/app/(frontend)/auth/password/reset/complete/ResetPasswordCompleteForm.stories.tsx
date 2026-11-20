@@ -55,7 +55,7 @@ export const InquiryContinuation: Story = {
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement)
     await expect(canvas.getByRole('status')).toBeVisible()
-    await expect(canvas.queryByLabelText('New password')).not.toBeInTheDocument()
+    await expect(canvasElement.querySelectorAll('input[type="password"]')).toHaveLength(0)
     await userEvent.click(canvas.getByRole('button', { name: 'Continue saved inquiries' }))
     await expect(args.onComplete).toHaveBeenCalledWith({})
   },

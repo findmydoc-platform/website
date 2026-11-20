@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { setCookieConsent } from '../helpers/cookieConsent'
 import { createBrowserIssueCollector, expectNoBrowserIssues } from '../helpers/browserIssues'
+import { confirmInquiryPreparationEmail } from '../helpers/confirmInquiryPreparationEmail'
 import { registerInquiryPreparationRuntime } from '../helpers/inquiryPreparationRuntime'
 
 const origin = `http://localhost:${process.env.INQUIRY_BROWSER_PORT ?? '3000'}`
@@ -38,7 +39,8 @@ test('existing patient keeps inquiry details through sign-in and recovery naviga
   await page.getByRole('link', { name: 'Hier anmelden' }).click()
   await expect(page).toHaveURL(/\/login\/patient/)
   await expect(page.getByLabel('E-Mail', { exact: true })).toHaveValue('existing-browser@example.test')
-  await expect(page.getByRole('status')).toContainText(/\d{1,2}\.\d{1,2}\.\d{2}.*UTC/)
+  const savedInquiryNotice = page.getByRole('main').getByRole('status').filter({ hasText: /\S/ })
+  await expect(savedInquiryNotice).toContainText(/\d{1,2}\.\d{1,2}\.\d{2}.*UTC/)
   await page.getByRole('link', { name: 'Passwort vergessen?' }).click()
   await expect(page).toHaveURL(/\/auth\/password\/reset/)
   await expect(page.getByLabel('E-Mail-Adresse', { exact: true })).toHaveValue('existing-browser@example.test')
@@ -109,7 +111,7 @@ test('existing unverified patient confirms on another device and proves their un
     const other = await otherDevice.newPage()
     const issues = createBrowserIssueCollector(other)
     await other.goto(link!)
-    await other.getByRole('button', { name: 'Confirm email', exact: true }).click()
+    await confirmInquiryPreparationEmail(other)
     await expect(other).toHaveURL(/\/patient\/inquiries$/)
     await expect(other.getByRole('link', { name: 'Sign in to send your inquiry' })).toBeVisible()
     await expect(other.getByRole('button', { name: 'Try again' })).toHaveCount(0)

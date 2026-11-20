@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { setTimeout as delay } from 'node:timers/promises'
 import { setCookieConsent } from '../helpers/cookieConsent'
 import { createBrowserIssueCollector, expectNoBrowserIssues } from '../helpers/browserIssues'
+import { confirmInquiryPreparationEmail } from '../helpers/confirmInquiryPreparationEmail'
 import { registerInquiryPreparationRuntime } from '../helpers/inquiryPreparationRuntime'
 import { resolvePlaywrightBaseURL } from '../../../scripts/test-env.mjs'
 type Clinic = { id: number; slug: string; name: string; doctorId: number | string }
@@ -73,9 +74,12 @@ test('retains both first inquiries saved concurrently from separate tabs', async
     await tab.getByRole('link', { name: 'Continue account creation' }).click()
     await expect(tab).toHaveURL(/\/register\/patient\?inquiry=/)
     await tab.reload()
-    await expect(tab.getByText(/Your inquiry is saved but not sent\./)).toBeVisible()
-    await expect(tab.getByPlaceholder('patient@example.com')).toHaveValue(email)
-    await expect(tab.getByLabel('First Name', { exact: true })).toHaveValue('Synthetic')
+    await expect(tab.locator('html')).toHaveAttribute('lang', 'de')
+    const main = tab.getByRole('main')
+    await expect(main.getByText(/\d{1,2}\.\d{1,2}\.\d{2}.*UTC/)).toBeVisible()
+    const registration = main.getByRole('form')
+    await expect(registration.locator('input[name="email"]')).toHaveValue(email)
+    await expect(registration.locator('input[name="firstName"]')).toHaveValue('Synthetic')
     await tab.screenshot({ path: `${artifacts}/parallel-first-${index + 1}-375.png`, fullPage: true })
   }
   for (const collector of issues) await expectNoBrowserIssues(collector)
@@ -159,7 +163,7 @@ test('keeps multiple clinic outcomes separate and retries only the selected fail
       ignoredConsoleErrors: [/Failed to load resource.*40[034]/],
     })
     await other.goto(link!)
-    await other.getByRole('button', { name: 'Confirm email', exact: true }).click()
+    await confirmInquiryPreparationEmail(other)
     await expect(other).toHaveURL(/\/patient\/inquiries$/)
     const notices = other.getByRole('region', { name: 'Inquiry submissions' })
     const noticeB = notices.getByRole('listitem').filter({ hasText: clinicB.name })

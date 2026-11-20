@@ -5,7 +5,8 @@ import { headers } from 'next/headers'
 
 import { uiCopyLocaleFromHeaders } from '@/i18n/requestLocale'
 
-export default getRequestConfig(async () => {
-  const locale = uiCopyLocaleFromHeaders(await headers())
+export default getRequestConfig(async ({ locale: explicitLocale }) => {
+  const locale =
+    explicitLocale === 'de' || explicitLocale === 'en' ? explicitLocale : uiCopyLocaleFromHeaders(await headers())
   return { locale, messages: locale === 'de' ? germanMessages : englishMessages }
 })

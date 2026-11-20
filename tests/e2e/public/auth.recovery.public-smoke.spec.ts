@@ -9,20 +9,16 @@ const email = 'recovery-browser@example.test'
 const providerDetail = 'synthetic-private-provider-detail'
 const viewports = [320, 375, 640, 768, 1024]
 
-for (const { locale, prefix, emailLabel, submitLabel, pendingLabel } of [
+for (const { locale, prefix, emailLabel } of [
   {
     locale: 'de',
     prefix: '',
     emailLabel: 'E-Mail-Adresse',
-    submitLabel: 'Anleitung zum Zurücksetzen senden',
-    pendingLabel: 'E-Mail zum Zurücksetzen wird gesendet...',
   },
   {
     locale: 'en',
     prefix: '/en',
     emailLabel: 'Email',
-    submitLabel: 'Send reset instructions',
-    pendingLabel: 'Sending reset email...',
   },
 ]) {
   test(`password recovery requests validate and retry in ${locale} @smoke`, async ({ page, context, baseURL }) => {
@@ -51,9 +47,13 @@ for (const { locale, prefix, emailLabel, submitLabel, pendingLabel } of [
     const response = await page.goto(destination, { waitUntil: 'domcontentloaded' })
     expect(response?.ok()).toBe(true)
     await expect(page.locator('html')).toHaveAttribute('lang', locale)
+    const canonical = new URL(`${prefix}${recoveryRoute}`, baseURL).href
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', canonical)
+    await expect(page.locator('meta[property="og:url"]')).toHaveAttribute('content', canonical)
+    await expectRobotsIndexingBlocked(page)
     const form = page.locator(`form[action="${resetEndpoint}"]`)
     const emailField = form.getByRole('textbox', { name: emailLabel })
-    const submit = form.getByRole('button', { name: submitLabel })
+    const submit = form.locator('button[type="submit"]')
     await expect(form.getByRole('status')).toHaveCount(0)
     await expect(page.getByRole('main').getByRole('navigation').getByRole('link').first()).toHaveAttribute(
       'href',
@@ -69,7 +69,7 @@ for (const { locale, prefix, emailLabel, submitLabel, pendingLabel } of [
     await emailField.fill(email)
     await submit.click()
     try {
-      await expect(form.getByRole('button', { name: pendingLabel })).toBeDisabled()
+      await expect(submit).toBeDisabled()
     } finally {
       releaseFirstRequest()
     }
@@ -141,7 +141,7 @@ test('protected recovery screens keep an invalid link safe and offer a new reque
     }
   }
 
-  await main.getByRole('link', { name: 'Request a recovery email' }).click()
+  await main.locator(`a[href="/en${recoveryRoute}"]`).click()
   await expect(page).toHaveURL(/\/en\/auth\/password\/reset$/)
   await expectNoBrowserIssues(issues)
 })

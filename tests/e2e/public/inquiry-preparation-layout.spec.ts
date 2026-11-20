@@ -2,6 +2,7 @@ import { writeFileSync } from 'node:fs'
 import { expect, test } from '@playwright/test'
 import { setCookieConsent } from '../helpers/cookieConsent'
 import { createBrowserIssueCollector, expectNoBrowserIssues } from '../helpers/browserIssues'
+import { confirmInquiryPreparationEmail } from '../helpers/confirmInquiryPreparationEmail'
 import { registerInquiryPreparationRuntime } from '../helpers/inquiryPreparationRuntime'
 import { resolvePlaywrightBaseURL } from '../../../scripts/test-env.mjs'
 
@@ -83,7 +84,7 @@ test('keeps the inquiry return stable for single and multiple outcomes on mobile
           if (route.request().method() === 'POST') posts++
         })
         await page.goto(link!)
-        await page.getByRole('button', { name: 'Confirm email', exact: true }).click()
+        await confirmInquiryPreparationEmail(page)
         await expect(page).toHaveURL(/\/patient\/inquiries$/)
         const heading = page.getByRole('heading', { name: 'My inquiries', exact: true })
         await expect(heading).toBeVisible()

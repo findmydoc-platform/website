@@ -3,6 +3,8 @@ import { expect, userEvent, within } from 'storybook/test'
 import * as LoginForm from './LoginForm'
 import { withMockRouter } from '@/stories/utils/routerDecorator'
 
+const previewNotice = 'This is a preview deployment. Please sign in to continue.'
+
 const meta = {
   title: 'Domain/Auth/Organisms/LoginForm/Preview',
   component: LoginForm.Root,
@@ -23,7 +25,7 @@ export const RejectedCredentials: Story = {
   render: (args) => (
     <LoginForm.Root {...args}>
       <LoginForm.Header title="Platform Login" description="Access findmydoc platform tools" />
-      <LoginForm.Status message="This is a preview deployment. Please sign in to continue." />
+      <LoginForm.Status message={previewNotice} />
       <LoginForm.Form>
         <LoginForm.EmailField />
         <LoginForm.PasswordField />
@@ -33,11 +35,12 @@ export const RejectedCredentials: Story = {
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(canvas.getByRole('status')).toHaveTextContent('This is a preview deployment.')
+    await expect(canvas.getByText(previewNotice)).toHaveRole('status')
     await userEvent.type(canvas.getByLabelText('Email'), 'rejected@example.com')
     await userEvent.type(canvas.getByLabelText('Password'), 'rejected-password')
-    await userEvent.click(canvas.getByRole('button', { name: 'Sign in' }))
+    const submit = canvasElement.querySelector<HTMLButtonElement>('form button[type="submit"]')!
+    await userEvent.click(submit)
     await expect(await canvas.findByRole('alert')).toHaveTextContent('Invalid login credentials')
-    await expect(canvas.getByRole('button', { name: 'Sign in' })).toBeEnabled()
+    await expect(submit).toBeEnabled()
   },
 }

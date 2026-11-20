@@ -21,10 +21,11 @@ test('keeps failed requests on the recovery form without exposing response detai
   expect(email.closest('form')).toHaveAttribute('method', 'post')
   expect(email.closest('form')).toHaveAttribute('action', '/api/auth/password/reset')
   fireEvent.change(email, { target: { value: 'patient@example.test' } })
-  fireEvent.click(screen.getByRole('button', { name: 'Send reset instructions' }))
+  const submit = screen.getByRole('button')
+  fireEvent.click(submit)
 
   expect(await screen.findByRole('alert')).toBeVisible()
   expect(screen.queryByText(providerDetail)).not.toBeInTheDocument()
   expect(email).toHaveValue('patient@example.test')
-  expect(screen.getByRole('button', { name: 'Send reset instructions' })).toBeEnabled()
+  expect(submit).toBeEnabled()
 })

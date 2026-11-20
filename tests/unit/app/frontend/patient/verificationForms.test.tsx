@@ -5,6 +5,37 @@ import { afterEach, describe, expect, test, vi } from 'vitest'
 import { PatientVerificationForm } from '@/app/(frontend)/auth/confirm/PatientVerificationForm'
 import { PatientVerificationResendForm } from '@/app/(frontend)/register/patient/PatientVerificationResendForm'
 
+const confirmationCopy = {
+  title: 'Verification fixture',
+  description: 'Confirm the fixture email.',
+  announcementPending: 'Confirming the fixture email.',
+  invalid: 'The fixture confirmation link is no longer usable.',
+  retry: 'The fixture confirmation is temporarily unavailable.',
+  inquiryContinuation: 'Continue the saved fixture inquiry.',
+  completed: 'Fixture confirmation is complete.',
+  confirming: 'Confirming the fixture…',
+  retryAction: 'Retry fixture confirmation',
+  continueAction: 'Continue fixture inquiry',
+  confirm: 'Confirm fixture email',
+  resendLink: 'Resend fixture email',
+  resendHref: '/en/register/patient#patient-verification-resend',
+}
+
+const resendCopy = {
+  title: 'Resend fixture',
+  description: 'Use the address registered in this test.',
+  announcementPending: 'Submitting the fixture request.',
+  success: 'The fixture request was accepted.',
+  error: 'The fixture request failed.',
+  email: 'Fixture email',
+  emailValidation: {
+    typeMismatch: 'The fixture email is malformed.',
+    valueMissing: 'The fixture email is missing.',
+  },
+  requesting: 'Submitting the fixture…',
+  submit: 'Submit fixture email',
+}
+
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
@@ -21,17 +52,18 @@ describe('patient verification public forms', () => {
           }),
       ),
     )
-    render(<PatientVerificationForm csrf="offline-csrf" />)
-    fireEvent.click(screen.getByRole('button', { name: 'Confirm email' }))
-    expect(screen.getByRole('status')).toHaveTextContent('Confirming your email')
-    expect(screen.getByRole('button', { name: 'Confirming...' })).toBeDisabled()
+    render(<PatientVerificationForm copy={confirmationCopy} csrf="offline-csrf" />)
+    fireEvent.click(screen.getByRole('button', { name: confirmationCopy.confirm }))
+    expect(screen.getByRole('status')).toHaveTextContent(confirmationCopy.announcementPending)
+    expect(screen.getByRole('button', { name: confirmationCopy.confirming })).toBeDisabled()
     finish({ ok: false, status: 503, json: async () => ({}) })
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Try again' })).toBeEnabled())
+    await waitFor(() => expect(screen.getByRole('button', { name: confirmationCopy.retryAction })).toBeEnabled())
   })
   test('announces resend while the controlled email request is pending', async () => {
     let finish!: () => void
     render(
       <PatientVerificationResendForm
+        copy={resendCopy}
         onRequest={() =>
           new Promise((resolve) => {
             finish = resolve
@@ -39,24 +71,28 @@ describe('patient verification public forms', () => {
         }
       />,
     )
-    fireEvent.change(screen.getByRole('textbox', { name: 'Email' }), { target: { value: 'patient@example.test' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Request verification email' }))
-    expect(screen.getByRole('status')).toHaveTextContent('Requesting your verification email')
+    fireEvent.change(screen.getByRole('textbox', { name: resendCopy.email }), {
+      target: { value: 'patient@example.test' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: resendCopy.submit }))
+    expect(screen.getByRole('status')).toHaveTextContent(resendCopy.announcementPending)
     finish()
-    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('If an eligible registration exists'))
-    expect(screen.getByRole('textbox', { name: 'Email' })).toHaveValue('')
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(resendCopy.success))
+    expect(screen.getByRole('textbox', { name: resendCopy.email })).toHaveValue('')
   })
   test('offers email-only resend after invalid-submit, inline error, correction and submit', async () => {
     const fetch = vi.fn().mockResolvedValue({ ok: true })
     vi.stubGlobal('fetch', fetch)
-    render(<PatientVerificationResendForm />)
-    fireEvent.click(screen.getByRole('button', { name: 'Request verification email' }))
-    const email = screen.getByRole('textbox', { name: 'Email' })
+    render(<PatientVerificationResendForm copy={resendCopy} />)
+    fireEvent.click(screen.getByRole('button', { name: resendCopy.submit }))
+    const email = screen.getByRole('textbox', { name: resendCopy.email })
     expect(email).toHaveAttribute('aria-invalid', 'true')
+    expect(email).toHaveAccessibleDescription(resendCopy.emailValidation.valueMissing)
+    expect(email).toHaveFocus()
     expect(fetch).not.toHaveBeenCalled()
     fireEvent.change(email, { target: { value: 'patient@example.test' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Request verification email' }))
-    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('If an eligible registration exists'))
+    fireEvent.click(screen.getByRole('button', { name: resendCopy.submit }))
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(resendCopy.success))
     expect(fetch).toHaveBeenCalledWith(
       '/api/auth/register/patient/resend',
       expect.objectContaining({
@@ -74,10 +110,10 @@ describe('patient verification public forms', () => {
       json: async () => ({ code: 'VERIFICATION_TEMPORARILY_UNAVAILABLE' }),
     })
     vi.stubGlobal('fetch', fetch)
-    render(<PatientVerificationForm csrf="offline-csrf" />)
-    fireEvent.click(screen.getByRole('button', { name: 'Confirm email' }))
-    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('you do not need another link'))
-    fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
+    render(<PatientVerificationForm copy={confirmationCopy} csrf="offline-csrf" />)
+    fireEvent.click(screen.getByRole('button', { name: confirmationCopy.confirm }))
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(confirmationCopy.retry))
+    fireEvent.click(screen.getByRole('button', { name: confirmationCopy.retryAction }))
     await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2))
     expect(fetch).toHaveBeenLastCalledWith(
       '/auth/callback',
@@ -85,12 +121,12 @@ describe('patient verification public forms', () => {
     )
   })
   test('shows one neutral invalid state and a resend entry without account details', () => {
-    render(<PatientVerificationForm csrf={null} />)
-    expect(screen.getByRole('alert')).toHaveTextContent('This link is invalid or has expired')
+    render(<PatientVerificationForm copy={confirmationCopy} csrf={null} />)
+    expect(screen.getByRole('alert')).toHaveTextContent(confirmationCopy.invalid)
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Request a verification email' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: confirmationCopy.resendLink })).toHaveAttribute(
       'href',
-      '/register/patient#patient-verification-resend',
+      confirmationCopy.resendHref,
     )
   })
 })

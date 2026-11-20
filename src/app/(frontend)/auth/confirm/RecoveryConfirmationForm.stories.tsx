@@ -1,12 +1,24 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
+import en from '@findmydoc-platform/ui-copy/en.json'
 import { expect, fn, userEvent, within } from 'storybook/test'
 import { RecoveryConfirmationView } from './RecoveryConfirmationForm'
 import { PublicAuthRouteShell } from '@/app/(frontend)/_components/PublicAuthRouteShell'
 
+const catalog = en.auth.passwordRecovery
 const meta = {
   title: 'Domain/Auth/Pages/RecoveryConfirmation',
   component: RecoveryConfirmationView,
-  args: { onConfirm: fn() },
+  args: {
+    copy: {
+      ...catalog.confirmation,
+      shared: {
+        invalidLink: catalog.shared.invalidLink,
+        retry: catalog.shared.retry,
+        requestLink: { href: '/en/auth/password/reset', label: catalog.shared.requestLink },
+      },
+    },
+    onConfirm: fn(),
+  },
   tags: ['autodocs', 'domain:auth', 'layer:page', 'status:stable', 'used-in:route:/auth/confirm'],
   decorators: [
     (Story) => (

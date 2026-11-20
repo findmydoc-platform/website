@@ -1,49 +1,27 @@
 type RegistrationFormData = Record<string, string>
 
-type JsonRequestResult<T> = {
-  body: T | null
-  response: Response
-}
+type PatientRegistrationFailure =
+  'missingCredentials' | 'invalidPayload' | 'requestRejected' | 'temporarilyUnavailable' | 'setupFailed'
 
-type SuccessResponse = {
-  success?: boolean
-  error?: string
-}
-
-const postJson = async <T>(url: string, payload: unknown): Promise<JsonRequestResult<T>> => {
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
-  })
-
-  const body = (await response.json().catch(() => null)) as T | null
-
-  return {
-    body,
-    response,
-  }
-}
-
-export async function submitPatientRegistration(formData: RegistrationFormData): Promise<void> {
+export async function submitPatientRegistration(
+  formData: RegistrationFormData,
+): Promise<PatientRegistrationFailure | undefined> {
   const email = formData.email ?? ''
   const password = formData.password ?? ''
   const { firstName, lastName } = formData
 
-  if (!email || !password) {
-    throw new Error('Email and password are required')
-  }
+  if (!email || !password) return 'missingCredentials'
 
-  const { body, response } = await postJson<SuccessResponse>('/api/auth/register/patient', {
-    email,
-    password,
-    firstName,
-    lastName,
+  const response = await fetch('/api/auth/register/patient', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password, firstName, lastName }),
   })
 
-  if (!response.ok || body?.success !== true) {
-    throw new Error(body?.error || 'We could not finish setting up your account. Please try again in a few minutes.')
-  }
+  if (response.status === 400) return 'invalidPayload'
+  if (response.status === 403) return 'requestRejected'
+  if (response.status === 503) return 'temporarilyUnavailable'
+
+  const body: { success?: boolean } | null = await response.json().catch(() => null)
+  return response.ok && body?.success === true ? undefined : 'setupFailed'
 }

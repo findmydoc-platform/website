@@ -10,52 +10,48 @@ import { Button } from '@/components/atoms/button'
 import { Alert } from '@/components/atoms/alert'
 import { Heading } from '@/components/atoms/Heading'
 import { usePublicFormValidation } from '@/components/molecules/PublicFormValidation'
+import type { RecoveryRequestFormCopy } from '@/features/uiCopy/passwordRecovery'
 
 const formSchema = z.object({
-  email: z.string().email('Enter a valid email address.'),
+  email: z.string().email(),
 })
 
-type FormState =
-  | { status: 'idle'; error: string | null }
-  | { status: 'submitting'; error: string | null }
-  | { status: 'success'; error: null }
+type RecoveryRequestFailure = 'invalid-email' | 'retry'
+type FormState = { status: 'idle' | 'submitting' | 'success' } | { status: 'failed'; failure: RecoveryRequestFailure }
 
 type ParsedData = z.infer<typeof formSchema>
 
 export type ResetPasswordReason = 'expired'
 
-async function submitRequest(data: ParsedData) {
+async function submitRequest(data: ParsedData): Promise<RecoveryRequestFailure | void> {
   const response = await fetch('/api/auth/password/reset', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   })
 
-  const payload = await response.json().catch(() => ({}))
-
-  if (!response.ok) {
-    const message = typeof payload.error === 'string' ? payload.error : 'Unable to send reset email.'
-    throw new Error(message)
-  }
+  if (!response.ok) return response.status === 400 ? 'invalid-email' : 'retry'
 }
 
 export function ResetPasswordRequestForm({
+  copy,
   reason,
   onRequest = submitRequest,
   initialEmail,
-  preparationExpiresAt,
+  preparationNotice,
 }: {
+  copy: RecoveryRequestFormCopy
   reason?: ResetPasswordReason | null
-  onRequest?: (data: ParsedData) => Promise<void>
+  onRequest?: (data: ParsedData) => Promise<RecoveryRequestFailure | void>
   initialEmail?: string
-  preparationExpiresAt?: string
+  preparationNotice?: string
 }) {
-  const [formState, setFormState] = useState<FormState>({ status: 'idle', error: null })
+  const [formState, setFormState] = useState<FormState>({ status: 'idle' })
   const formValidation = usePublicFormValidation({
     messages: {
       email: {
-        typeMismatch: 'Enter a valid email address.',
-        valueMissing: 'This field is required.',
+        typeMismatch: copy.invalidEmail,
+        valueMissing: copy.requiredEmail,
       },
     },
   })
@@ -64,30 +60,32 @@ export function ResetPasswordRequestForm({
     event.preventDefault()
 
     const form = event.currentTarget
-    setFormState({ status: 'idle', error: null })
+    setFormState({ status: 'idle' })
     if (!formValidation.validateForm(form)) return
 
-    setFormState({ status: 'submitting', error: null })
+    setFormState({ status: 'submitting' })
 
     const formData = new FormData(form)
     const result = formSchema.safeParse({ email: formData.get('email') })
 
     if (!result.success) {
-      const message = result.error.issues[0]?.message ?? 'Enter a valid email address.'
-      formValidation.setCustomFieldError('email', message)
+      formValidation.setCustomFieldError('email', copy.invalidEmail)
       document.getElementById('email')?.focus()
-      setFormState({ status: 'idle', error: null })
+      setFormState({ status: 'idle' })
       return
     }
 
     try {
-      await onRequest(result.data)
+      const failure = await onRequest(result.data)
+      if (failure) {
+        setFormState({ status: 'failed', failure })
+        return
+      }
       form.reset()
       formValidation.clearAllFieldErrors()
-      setFormState({ status: 'success', error: null })
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to send reset email.'
-      setFormState({ status: 'idle', error: message })
+      setFormState({ status: 'success' })
+    } catch {
+      setFormState({ status: 'failed', failure: 'retry' })
     }
   }
 
@@ -99,11 +97,9 @@ export function ResetPasswordRequestForm({
       <Card className="w-full max-w-md">
         <CardHeader>
           <Heading as="h1" align="center" size="h4" className="font-semibold">
-            Reset your password
+            {copy.title}
           </Heading>
-          <CardDescription className="text-center text-foreground">
-            Enter the email associated with your account and we&apos;ll send instructions to reset your password.
-          </CardDescription>
+          <CardDescription className="text-center text-foreground">{copy.description}</CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
           <form
@@ -116,23 +112,26 @@ export function ResetPasswordRequestForm({
           >
             {reason === 'expired' ? (
               <Alert variant="warning" role="status">
-                That link is no longer valid. Request a new password reset link.
+                {copy.expired}
               </Alert>
             ) : null}
-            {preparationExpiresAt ? (
+            {preparationNotice ? (
               <Alert variant="info" role="status">
-                Your inquiry is saved but not sent. Complete password recovery, then sign in to continue. It expires on{' '}
-                {new Date(preparationExpiresAt).toLocaleString('en-GB', { timeZone: 'UTC' })} UTC.
+                {preparationNotice}
               </Alert>
             ) : null}
-            {formState.error && <Alert variant="error">{formState.error}</Alert>}
+            {formState.status === 'failed' && (
+              <Alert variant="error">
+                {formState.failure === 'invalid-email' ? copy.invalidRequest : copy.unavailable}
+              </Alert>
+            )}
             {isSuccess && (
               <Alert variant="success" role="status">
-                If the email exists in our records you will receive a password reset link shortly.
+                {copy.success}
               </Alert>
             )}
             <Field data-invalid={formValidation.getFieldError('email') ? true : undefined}>
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{copy.email}</Label>
               <Input
                 id="email"
                 name="email"
@@ -148,8 +147,12 @@ export function ResetPasswordRequestForm({
                 {formValidation.getFieldError('email')}
               </FieldError>
             </Field>
-            <Button type="submit" className="w-full" disabled={isSubmitting || isSuccess}>
-              {isSubmitting ? 'Sending reset email...' : 'Send reset instructions'}
+            <Button
+              type="submit"
+              className="h-auto min-h-10 w-full whitespace-normal"
+              disabled={isSubmitting || isSuccess}
+            >
+              {isSubmitting ? copy.sending : copy.submit}
             </Button>
           </form>
         </CardContent>

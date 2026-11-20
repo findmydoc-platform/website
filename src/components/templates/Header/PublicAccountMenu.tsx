@@ -235,12 +235,13 @@ export const PublicAccountMenu = ({ className, links: linkOverrides, state }: Pu
   const links = { ...DEFAULT_PUBLIC_ACCOUNT_MENU_LINKS, ...linkOverrides }
 
   return (
-    <div className={cn('flex shrink-0 items-center', className)}>
+    <div lang="en" className={cn('flex shrink-0 items-center', className)}>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           {state.kind === 'guest' ? <GuestTrigger /> : <PatientTrigger state={state} />}
         </DropdownMenuTrigger>
         <DropdownMenuContent
+          lang="en"
           align="end"
           sideOffset={8}
           className="w-[min(18rem,calc(100vw-2rem))] duration-200 ease-out motion-reduce:duration-0 motion-reduce:data-[state=closed]:animate-none motion-reduce:data-[state=open]:animate-none"

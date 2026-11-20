@@ -31,7 +31,12 @@ test('prepares, registers, confirms on another device and deliberately retries t
   await expect(form.getByText('Authorize account creation and this inquiry submission.')).toBeVisible()
   await form.getByRole('checkbox', { name: /authorize creation/ }).focus()
   await page.keyboard.press('Space')
+  const savedInquiry = page.waitForResponse(
+    (response) =>
+      response.url().endsWith('/api/patient/inquiry-preparations') && response.request().method() === 'POST',
+  )
   await form.getByRole('button', { name: 'Save inquiry and create account' }).click()
+  const { expiresAt } = (await (await savedInquiry).json()) as { expiresAt: string }
   await expect(form.getByRole('status')).toContainText('saved but not sent')
   await expect(form.getByRole('status')).toContainText('seven days')
   for (const width of [320, 375, 640, 768, 1024]) {
@@ -41,13 +46,24 @@ test('prepares, registers, confirms on another device and deliberately retries t
   }
   await form.getByRole('link', { name: 'Continue account creation' }).click()
   await expect(page).toHaveURL(/\/register\/patient\?inquiry=/)
+  const germanRegistration = new URL(page.url())
+  const expirationDate = new Date(expiresAt)
+  const dateOptions = { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'UTC' } as const
+  await expect(page.getByText(new Intl.DateTimeFormat('de', dateOptions).format(expirationDate))).toBeVisible()
+  await expect(page.getByLabel('Vorname', { exact: true })).toHaveValue('Synthetic')
+
+  const englishRegistration = new URL(germanRegistration)
+  englishRegistration.pathname = `/en${englishRegistration.pathname}`
+  await page.goto(englishRegistration.href)
+  await expect(page.getByText(new Intl.DateTimeFormat('en', dateOptions).format(expirationDate))).toBeVisible()
   await expect(page.getByLabel('First Name', { exact: true })).toHaveValue('Synthetic')
-  await page.reload()
+
+  await page.goto(germanRegistration.href)
   await expect(page.getByPlaceholder('patient@example.com')).toHaveValue('preparation-browser@example.test')
-  await page.getByLabel('Password', { exact: true }).fill('SyntheticPatient123') // pragma: allowlist secret
-  await page.getByLabel('Confirm Password', { exact: true }).fill('SyntheticPatient123') // pragma: allowlist secret
+  await page.getByLabel('Passwort', { exact: true }).fill('SyntheticPatient123') // pragma: allowlist secret
+  await page.getByLabel('Passwort bestätigen', { exact: true }).fill('SyntheticPatient123') // pragma: allowlist secret
   const registration = page.waitForResponse((response) => response.url().endsWith('/api/auth/register/patient'))
-  await page.getByRole('button', { name: 'Create Patient Account' }).click()
+  await page.getByRole('button', { name: 'Patientenkonto erstellen' }).click()
   expect((await registration).status(), JSON.stringify(providerRequests)).toBe(200)
   await expect(page).toHaveURL(/patient-check-email/)
   await fixtureCommand('worker')

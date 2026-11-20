@@ -31,6 +31,7 @@ describe('Website recovery password completion form', () => {
     const catalog = de.auth.passwordRecovery
     render(
       <ResetPasswordCompleteForm
+        locale="de"
         csrf="offline-csrf"
         copy={{
           ...catalog.completion,
@@ -64,7 +65,7 @@ describe('Website recovery password completion form', () => {
   })
 
   test('shows the same safe error without a completion grant', () => {
-    render(<ResetPasswordCompleteForm copy={englishCopy} csrf={null} />)
+    render(<ResetPasswordCompleteForm copy={englishCopy} locale="en" csrf={null} />)
     expect(screen.getByRole('alert')).toBeVisible()
     expect(screen.queryByLabelText('New password')).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Request a recovery email' })).toHaveAttribute(
@@ -77,7 +78,7 @@ describe('Website recovery password completion form', () => {
       .fn()
       .mockResolvedValue({ ok: false, status: 503, json: async () => ({ code: 'RECOVERY_TEMPORARILY_UNAVAILABLE' }) })
     vi.stubGlobal('fetch', fetch)
-    render(<ResetPasswordCompleteForm copy={englishCopy} csrf="offline-csrf" />)
+    render(<ResetPasswordCompleteForm copy={englishCopy} locale="en" csrf="offline-csrf" />)
     fireEvent.click(screen.getByRole('button', { name: 'Update password' }))
     const password = screen.getByLabelText('New password')
     expect(password).toHaveAttribute('aria-invalid', 'true')
@@ -115,7 +116,7 @@ describe('Website recovery password completion form', () => {
         json: async () => ({ code: 'INVALID_OR_EXPIRED_LINK', message: 'private-provider-detail' }),
       }),
     )
-    render(<ResetPasswordCompleteForm copy={englishCopy} csrf="offline-csrf" />)
+    render(<ResetPasswordCompleteForm copy={englishCopy} locale="en" csrf="offline-csrf" />)
     for (const label of ['New password', 'Confirm password'])
       fireEvent.change(screen.getByLabelText(label), { target: { value: 'OfflinePassword123' } }) // pragma: allowlist secret
     fireEvent.click(screen.getByRole('button', { name: 'Update password' }))

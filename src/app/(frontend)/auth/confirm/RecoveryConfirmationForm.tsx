@@ -7,6 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader } from '@/components/ato
 import { Heading } from '@/components/atoms/Heading'
 import { UiLink } from '@/components/molecules/Link'
 import type { RecoveryConfirmationCopy } from '@/features/uiCopy/passwordRecovery'
+import { RECOVERY_COMPLETION_PATH, localizedPatientAuthPath } from '@/i18n/patientAuthPath'
+import type { UiCopyLocale } from '@/i18n/requestLocale'
 
 export type RecoveryState = 'idle' | 'pending' | 'invalid' | 'retry' | 'completed'
 export function RecoverySafeError({ message }: Readonly<{ message: string }>) {
@@ -26,7 +28,8 @@ export function RecoveryRequestLink({ href, label }: Readonly<{ href: string; la
 export function RecoveryConfirmationForm({
   copy,
   csrf,
-}: Readonly<{ copy: RecoveryConfirmationCopy; csrf: string | null }>) {
+  locale,
+}: Readonly<{ copy: RecoveryConfirmationCopy; csrf: string | null; locale: UiCopyLocale }>) {
   const [state, setState] = useState<RecoveryState>(csrf ? 'idle' : 'invalid')
   async function confirm() {
     setState('pending')
@@ -39,9 +42,9 @@ export function RecoveryConfirmationForm({
         redirect: 'error',
       })
       const body = await response.json().catch(() => null)
-      if (response.ok && body?.redirectTo === '/auth/password/reset/complete') {
+      if (response.ok && body?.redirectTo === RECOVERY_COMPLETION_PATH) {
         setState('completed')
-        window.location.assign('/auth/password/reset/complete')
+        window.location.assign(localizedPatientAuthPath(RECOVERY_COMPLETION_PATH, locale))
       } else setState(response.status === 503 ? 'retry' : 'invalid')
     } catch {
       setState('retry')

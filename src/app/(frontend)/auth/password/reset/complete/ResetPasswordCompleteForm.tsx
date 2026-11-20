@@ -12,6 +12,8 @@ import { usePublicFormValidation } from '@/components/molecules/PublicFormValida
 import { createPasswordResetCompleteFlash, writeAuthFlash } from '@/auth/utilities/authFlash'
 import { resetPostHogBrowserIdentity } from '@/posthog/client-api'
 import type { RecoveryCompletionCopy } from '@/features/uiCopy/passwordRecovery'
+import { RECOVERY_COMPLETION_PATH, localizedPatientAuthPath } from '@/i18n/patientAuthPath'
+import type { UiCopyLocale } from '@/i18n/requestLocale'
 import { RecoveryRequestLink, RecoverySafeError, type RecoveryState } from '../../../confirm/RecoveryConfirmationForm'
 
 type PasswordInput = { password?: string; confirmPassword?: string }
@@ -19,11 +21,13 @@ export type RecoveryPasswordResult = 'completed' | 'retry' | 'invalid' | 'passwo
 export function ResetPasswordCompleteForm({
   copy,
   csrf,
+  locale,
   resume = false,
   inquiryContinuationPending = false,
 }: Readonly<{
   copy: RecoveryCompletionCopy
   csrf: string | null
+  locale: UiCopyLocale
   resume?: boolean
   inquiryContinuationPending?: boolean
 }>) {
@@ -45,12 +49,17 @@ export function ResetPasswordCompleteForm({
         resetPostHogBrowserIdentity()
         if (body.inquiryContinuationPending) {
           // Discard the signed-out document's in-memory session before continuing the separate inquiry work.
-          window.location.assign('/auth/password/reset/complete?inquiry=continue')
+          const completionPath = localizedPatientAuthPath(RECOVERY_COMPLETION_PATH, locale)
+          window.location.assign(`${completionPath}?inquiry=continue`)
           return 'inquiry-continuation'
         }
         writeAuthFlash(createPasswordResetCompleteFlash())
         // A full navigation discards this document's in-memory Supabase session after server cookie cleanup.
-        window.location.assign(body.redirectTo)
+        const signInPath =
+          body.redirectTo === '/login/patient?status=recovery-complete'
+            ? `${localizedPatientAuthPath('/login/patient', locale)}?status=recovery-complete`
+            : body.redirectTo
+        window.location.assign(signInPath)
         return 'completed'
       }
       return response.status === 503 ? 'retry' : response.status === 422 ? 'password-rejected' : 'invalid'

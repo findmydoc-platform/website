@@ -1,10 +1,16 @@
 import { PATIENT_LOGIN_PATH } from '@/features/favorites/redirects'
-import { localizedPatientAuthPath } from '@/i18n/patientAuthPath'
+import {
+  AUTH_CONFIRMATION_PATH,
+  RECOVERY_COMPLETION_PATH,
+  isLocalizedAuthConfirmationType,
+  localizedPatientAuthPath,
+} from '@/i18n/patientAuthPath'
 
 export const UI_COPY_LOCALE_HEADER = 'x-findmydoc-ui-copy-locale'
 export const ENGLISH_PATIENT_LOGIN_PATH = localizedPatientAuthPath(PATIENT_LOGIN_PATH, 'en')
 
-const AUTH_CONFIRMATION_PATH = '/auth/confirm'
+const ENGLISH_AUTH_CONFIRMATION_PATH = localizedPatientAuthPath(AUTH_CONFIRMATION_PATH, 'en')
+const ENGLISH_RECOVERY_COMPLETION_PATH = localizedPatientAuthPath(RECOVERY_COMPLETION_PATH, 'en')
 const PATIENT_REGISTRATION_PATH = '/register/patient'
 const ENGLISH_PATIENT_REGISTRATION_PATH = localizedPatientAuthPath(PATIENT_REGISTRATION_PATH, 'en')
 const RECOVERY_REQUEST_PATH = '/auth/password/reset'
@@ -13,7 +19,8 @@ const ENGLISH_RECOVERY_REQUEST_PATH = localizedPatientAuthPath(RECOVERY_REQUEST_
 export type UiCopyLocale = 'de' | 'en'
 
 export function isAuthConfirmationPath(pathname: string): boolean {
-  return pathname.replace(/\/$/, '') === AUTH_CONFIRMATION_PATH
+  const path = pathname.replace(/\/$/, '')
+  return path === AUTH_CONFIRMATION_PATH || path === ENGLISH_AUTH_CONFIRMATION_PATH
 }
 
 export function uiCopyLocaleFromPath(
@@ -21,12 +28,15 @@ export function uiCopyLocaleFromPath(
   searchParams?: Pick<URLSearchParams, 'getAll'> | null,
 ): UiCopyLocale | null {
   const path = pathname.replace(/\/$/, '')
-  if (path === AUTH_CONFIRMATION_PATH) {
+  if (isAuthConfirmationPath(path)) {
     const types = searchParams?.getAll('type')
     const type = types?.length === 1 ? types[0] : undefined
-    return type === 'patient-verification' ? 'de' : null
+    if (!isLocalizedAuthConfirmationType(type)) return null
+    return path === ENGLISH_AUTH_CONFIRMATION_PATH ? 'en' : 'de'
   }
 
+  if (path === RECOVERY_COMPLETION_PATH) return 'de'
+  if (path === ENGLISH_RECOVERY_COMPLETION_PATH) return 'en'
   if (path === PATIENT_LOGIN_PATH || path === PATIENT_REGISTRATION_PATH || path === RECOVERY_REQUEST_PATH) return 'de'
   if (
     path === ENGLISH_PATIENT_LOGIN_PATH ||

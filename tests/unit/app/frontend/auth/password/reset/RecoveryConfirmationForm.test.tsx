@@ -23,7 +23,7 @@ afterEach(() => {
 test('confirms only on explicit user action and keeps a temporary failure retryable', async () => {
   const fetch = vi.fn().mockResolvedValue({ ok: false, status: 503, json: async () => ({}) })
   vi.stubGlobal('fetch', fetch)
-  render(<RecoveryConfirmationForm copy={englishCopy} csrf="offline-csrf" />)
+  render(<RecoveryConfirmationForm copy={englishCopy} locale="en" csrf="offline-csrf" />)
   expect(fetch).not.toHaveBeenCalled()
   fireEvent.click(screen.getByRole('button', { name: 'Confirm recovery' }))
   expect(screen.getByRole('status')).toHaveTextContent(/\S/)
@@ -39,6 +39,7 @@ test('shares safe error and request entry for invalid recovery', () => {
   const catalog = de.auth.passwordRecovery
   render(
     <RecoveryConfirmationForm
+      locale="de"
       csrf={null}
       copy={{
         ...catalog.confirmation,

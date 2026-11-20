@@ -269,6 +269,7 @@ describe('public site mode proxy', () => {
       new NextRequest('https://findmydoc.eu/auth/password/reset/complete'),
       new NextRequest('https://findmydoc.eu/auth/invite/complete'),
       new NextRequest('https://findmydoc.eu/login/patient'),
+      new NextRequest('https://findmydoc.eu/en/login/patient'),
       new NextRequest('https://findmydoc.eu/register/patient'),
       new NextRequest('https://findmydoc.eu/register/clinic'),
     ]

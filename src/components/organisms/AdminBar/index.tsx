@@ -42,6 +42,7 @@ export const AdminBar: React.FC<{
 
   return (
     <div
+      lang="en"
       className={cn(baseClass, 'bg-secondary py-2 text-secondary-foreground', {
         block: show,
         hidden: !show,

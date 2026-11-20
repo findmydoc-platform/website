@@ -15,6 +15,7 @@ import { isNonProductionRuntime } from '@/features/runtimePolicy'
 import { projectHoldingFooterGroups, projectHoldingHeaderNavItems } from '@/features/temporaryLandingMode/navigation'
 import { readHoldingViewRequestHeader, readPublicSiteModeRequestHeader } from '@/features/temporaryLandingMode'
 import { resolveHoldingMode } from '@/features/temporaryLandingMode/resolver'
+import { DEFAULT_CONTENT_LOCALE } from '@/utilities/contentLocalization'
 import { getCachedGlobal } from '@/utilities/getGlobals'
 import { getServerSideURL } from '@/utilities/getURL'
 import { normalizeFooterNavGroups, normalizeHeaderNavItems } from '@/utilities/normalizeNavItems'
@@ -90,7 +91,7 @@ export default async function FrontendTemplate({ children }: { children: React.R
     <>
       <FrontendChrome holdingMode={isHoldingPublicView}>
         {showSiteChrome ? (
-          <div className="full-width">
+          <div className="full-width" lang={DEFAULT_CONTENT_LOCALE}>
             <Header
               navItems={headerNavItems}
               logoSrc={headerLogoSrc}
@@ -115,7 +116,7 @@ export default async function FrontendTemplate({ children }: { children: React.R
 
       <FrontendChrome holdingMode={isHoldingPublicView}>
         {showSiteChrome ? (
-          <div className="full-width">
+          <div className="full-width" lang={DEFAULT_CONTENT_LOCALE}>
             <Footer
               footerGroups={footerGroups}
               logoSrc={footerLogoSrc}

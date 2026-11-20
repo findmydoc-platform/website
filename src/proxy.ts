@@ -22,6 +22,7 @@ import {
 } from '@/features/searchIndexing'
 import { logCrawlerRequest } from '@/features/publicDiscovery/crawlerMonitoring'
 import { PUBLIC_DISCOVERY_SURFACE_PATHS } from '@/features/publicDiscovery/site'
+import { uiCopyLocaleFromPath, UI_COPY_LOCALE_HEADER } from '@/i18n/requestLocale'
 
 const NON_PAGE_PATHS = new Set(['/next/exit-preview', '/next/preview'])
 const PUBLIC_DISCOVERY_PATHS = new Set<string>(PUBLIC_DISCOVERY_SURFACE_PATHS)
@@ -66,6 +67,9 @@ const getHoldingRequestUser = async (request: NextRequest): Promise<User | null>
 
 const nextWithRequestHeaders = (request: NextRequest, headersToSet: Record<string, string | null>): NextResponse => {
   const requestHeaders = new Headers(request.headers)
+  requestHeaders.delete(UI_COPY_LOCALE_HEADER)
+  const uiCopyLocale = uiCopyLocaleFromPath(request.nextUrl.pathname, request.nextUrl.searchParams)
+  if (uiCopyLocale) requestHeaders.set(UI_COPY_LOCALE_HEADER, uiCopyLocale)
   requestHeaders.delete(PUBLIC_SITE_MODE_REQUEST_HEADER)
   requestHeaders.delete(TEMPORARY_LANDING_MODE_REQUEST_HEADER)
   requestHeaders.delete(HOLDING_VIEW_REQUEST_HEADER)
@@ -159,7 +163,10 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
       return privateResponse(withSearchRobotsHeader(nextWithTemporaryLandingHeaders(request, holdingMode)))
     }
 
-    if (isTemporaryLandingModeExemptPath(pathname)) {
+    if (
+      isTemporaryLandingModeExemptPath(pathname) ||
+      uiCopyLocaleFromPath(pathname, request.nextUrl.searchParams) === 'en'
+    ) {
       return privateResponse(withSearchRobotsHeader(nextWithTemporaryLandingHeaders(request, holdingMode)))
     }
 

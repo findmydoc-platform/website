@@ -5,22 +5,19 @@ import {
 import { AuthFlashStatus } from '@/app/(frontend)/_components/AuthFlashStatus'
 import * as LoginForm from '@/components/organisms/Auth/LoginForm'
 import { PATIENT_LOGIN_PATH } from '@/features/favorites/redirects'
+import { readInquiryPreparationRegistration } from '@/features/inquiryCommunication/service'
+import { readPreparationBinding } from '@/features/inquiryPreparations/context'
+import { patientLoginCopy } from '@/features/uiCopy/patientLogin'
+import { PatientLoginFormRoot } from '@/features/uiCopy/PatientLoginFormRoot.client'
+import { localizedPatientAuthPath } from '@/i18n/patientAuthPath'
+import { ENGLISH_PATIENT_LOGIN_PATH } from '@/i18n/requestLocale'
 import { sanitizeInternalRedirectPath } from '@/utilities/routing/sanitizeInternalRedirectPath'
 import Link from 'next/link'
 import { headers } from 'next/headers'
 import { createLocalReq, getPayload } from 'payload'
 import config from '@payload-config'
-import { readPreparationBinding } from '@/features/inquiryPreparations/context'
-import { readInquiryPreparationRegistration } from '@/features/inquiryCommunication/service'
 
 export const dynamic = 'force-dynamic'
-
-const patientLoginMessages: Record<string, { text: string; variant?: 'success' | 'info' | 'warning' }> = {
-  'patient-check-email': {
-    text: 'Check your email for the verification link we sent so you can finish setting up your findmydoc account.',
-    variant: 'success',
-  },
-}
 
 export default async function LoginPage({
   searchParams: searchParamsPromise,
@@ -28,7 +25,8 @@ export default async function LoginPage({
   searchParams?: Promise<{ message?: string; next?: string; inquiry?: string }>
 }) {
   const resolvedSearchParams = await searchParamsPromise
-  const binding = readPreparationBinding(await headers())
+  const requestHeaders = await headers()
+  const binding = readPreparationBinding(requestHeaders)
   const preparation = binding
     ? await readInquiryPreparationRegistration(
         await createLocalReq({}, await getPayload({ config })),
@@ -36,69 +34,70 @@ export default async function LoginPage({
         resolvedSearchParams?.inquiry,
       )
     : null
-  const messageKey = resolvedSearchParams?.message
-  const statusMessage = messageKey ? patientLoginMessages[messageKey] : undefined
+  const copy = await patientLoginCopy(preparation?.expiresAt)
+  const showCheckEmailStatus = resolvedSearchParams?.message === 'patient-check-email'
+  const registrationHref = localizedPatientAuthPath('/register/patient', copy.locale)
+  const recoveryHref = localizedPatientAuthPath('/auth/password/reset', copy.locale)
+  const inquiryQuery = resolvedSearchParams?.inquiry
+    ? `?inquiry=${encodeURIComponent(resolvedSearchParams.inquiry)}`
+    : ''
   const postLoginRedirectPath = sanitizeInternalRedirectPath({
     nextPath: resolvedSearchParams?.next,
     fallbackPath: preparation ? '/patient/inquiries' : '/',
-    blockedPaths: [PATIENT_LOGIN_PATH],
+    blockedPaths: [PATIENT_LOGIN_PATH, ENGLISH_PATIENT_LOGIN_PATH],
   })
 
   return (
     <PublicAuthRouteShell>
-      <LoginForm.Root
-        userTypes="patient"
+      <PatientLoginFormRoot
+        errors={copy.errors}
         redirectPath={postLoginRedirectPath}
+        validationMessages={copy.validationMessages}
         className={`w-full max-w-md ${PUBLIC_AUTH_FORM_CONTAINER_CLASSNAME}`}
       >
-        <LoginForm.Header
-          title="Patient Login"
-          description="Sign in to your patient account to access your medical information"
-        />
+        <LoginForm.Header title={copy.title} description={copy.description} />
         <LoginForm.Status
-          message={
-            preparation
-              ? `Your inquiry is saved but not sent. Sign in with your existing password to continue. It expires on ${new Date(preparation.expiresAt).toLocaleString('en-GB', { timeZone: 'UTC' })} UTC.`
-              : statusMessage?.text
-          }
-          variant={statusMessage?.variant}
+          message={copy.inquirySaved ?? (showCheckEmailStatus ? copy.checkEmail : undefined)}
+          variant={showCheckEmailStatus ? 'success' : undefined}
         />
-        <AuthFlashStatus />
+        <AuthFlashStatus messages={{ 'password-reset-complete': copy.passwordResetComplete }} />
         <LoginForm.Form>
-          <LoginForm.EmailField placeholder="patient@example.com" defaultValue={preparation?.email} />
-          <LoginForm.PasswordField
-            forgotPasswordHref={
-              preparation && resolvedSearchParams?.inquiry
-                ? `/auth/password/reset?inquiry=${encodeURIComponent(resolvedSearchParams.inquiry)}`
-                : '/auth/password/reset'
-            }
+          <LoginForm.EmailField
+            label={copy.emailLabel}
+            placeholder={copy.emailPlaceholder}
+            defaultValue={preparation?.email}
           />
-          <LoginForm.SubmitButton>Sign in</LoginForm.SubmitButton>
+          <LoginForm.PasswordField
+            label={copy.passwordLabel}
+            forgotPasswordLabel={copy.forgotPassword}
+            forgotPasswordHref={preparation ? `${recoveryHref}${inquiryQuery}` : recoveryHref}
+          />
+          <LoginForm.SubmitButton loadingText={copy.submitting}>{copy.submit}</LoginForm.SubmitButton>
         </LoginForm.Form>
         <LoginForm.Footer>
           {preparation ? (
             <p className="text-sm text-muted-foreground">
               <Link
-                href={`/register/patient${resolvedSearchParams?.inquiry ? `?inquiry=${encodeURIComponent(resolvedSearchParams.inquiry)}` : ''}#patient-verification-resend`}
+                href={`${registrationHref}${inquiryQuery}#patient-verification-resend`}
                 className="inline-flex min-h-11 items-center text-primary underline"
               >
-                Request another verification email
+                {copy.requestVerificationEmail}
               </Link>
             </p>
           ) : null}
           <p className="text-sm text-muted-foreground">
-            Don&apos;t have an account?{' '}
-            <Link href="/register/patient" className="text-primary hover:underline">
-              Register here
+            {copy.noAccount}{' '}
+            <Link href={registrationHref} className="text-primary hover:underline">
+              {copy.register}
             </Link>
           </p>
           <p className="text-sm text-muted-foreground">
             <Link href="/" className="text-primary hover:underline">
-              ← Back to home
+              {copy.backHome}
             </Link>
           </p>
         </LoginForm.Footer>
-      </LoginForm.Root>
+      </PatientLoginFormRoot>
     </PublicAuthRouteShell>
   )
 }

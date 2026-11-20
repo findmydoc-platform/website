@@ -39,6 +39,7 @@ export function CookieConsentBanner({
       }}
     >
       <DialogContent
+        lang="en"
         aria-modal="true"
         overlayClassName="bg-black/50 backdrop-blur-xs"
         className="max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-[62.5rem] gap-0 overflow-y-auto overscroll-contain rounded-3xl p-6 sm:p-8 lg:p-10"

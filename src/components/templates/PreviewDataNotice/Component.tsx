@@ -15,6 +15,7 @@ export function PreviewDataNotice({ className }: PreviewDataNoticeProps) {
     <aside
       aria-label="Preview data notice"
       role="note"
+      lang="en"
       className={cn('border-y border-[#FF2D2D]/30 bg-[#5A000A] text-white', className)}
     >
       <Container className="py-2">

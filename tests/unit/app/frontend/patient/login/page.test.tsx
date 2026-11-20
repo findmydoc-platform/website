@@ -2,6 +2,10 @@ import React from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 ;(globalThis as unknown as { React: typeof React }).React = React
 vi.mock('next/headers', () => ({ headers: async () => new Headers() }))
+vi.mock('next-intl/server', () => ({
+  getLocale: async () => 'de',
+  getTranslations: async () => (key: string) => key,
+}))
 
 describe('Patient LoginPage', () => {
   const originalEnv = process.env
@@ -63,18 +67,19 @@ describe('Patient LoginPage', () => {
     expect(loginRoot?.props.redirectPath).toBe('/clinics/berlin-health-clinic?from=favorites')
   })
 
-  it('falls back to home for unsafe next paths', async () => {
-    const LoginPage = await getLoginPage()
+  it.each(['//evil.example.com', '/login/patient', '/en/login/patient?locale=en'])(
+    'falls back to home when next points to %s',
+    async (next) => {
+      const LoginPage = await getLoginPage()
 
-    const result = await LoginPage({
-      searchParams: Promise.resolve({
-        next: '//evil.example.com',
-      }),
-    })
-    const loginRoot = findLoginRootElement(result)
+      const result = await LoginPage({
+        searchParams: Promise.resolve({ next }),
+      })
+      const loginRoot = findLoginRootElement(result)
 
-    expect(loginRoot?.props.redirectPath).toBe('/')
-  })
+      expect(loginRoot?.props.redirectPath).toBe('/')
+    },
+  )
 
   it('shows public registration in Preview', async () => {
     process.env.VERCEL_ENV = 'preview'

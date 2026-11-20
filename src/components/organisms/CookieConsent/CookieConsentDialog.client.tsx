@@ -46,6 +46,7 @@ export function CookieConsentDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
+        lang="en"
         aria-modal="true"
         className="max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] overflow-y-auto overscroll-contain rounded-2xl p-5 sm:max-w-2xl sm:p-6"
         onOpenAutoFocus={(event) => {

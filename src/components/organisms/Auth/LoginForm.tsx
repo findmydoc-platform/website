@@ -9,7 +9,11 @@ import { Label } from '@/components/atoms/label'
 import { Alert } from '@/components/atoms/alert'
 import { Card, CardContent } from '@/components/atoms/card'
 import { Heading } from '@/components/atoms/Heading'
-import { type PublicFormValidation, usePublicFormValidation } from '@/components/molecules/PublicFormValidation'
+import {
+  type NativeValidationMessageOverridesByField,
+  type PublicFormValidation,
+  usePublicFormValidation,
+} from '@/components/molecules/PublicFormValidation'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { handleLogin } from '@/auth/utilities/loginHandler'
@@ -48,12 +52,16 @@ export const Root = ({
   className,
   userTypes,
   redirectPath,
+  validationMessages,
+  unexpectedErrorText = 'An unexpected error occurred. Please try again.',
   loginHandler = handleLogin,
 }: {
   children: React.ReactNode
   className?: string
   userTypes: UserType[] | UserType
   redirectPath?: string
+  validationMessages?: NativeValidationMessageOverridesByField
+  unexpectedErrorText?: string
   loginHandler?: (data: LoginRequest) => Promise<LoginResponse | LoginError>
 }) => {
   const [state, setState] = useState<LoginState>({
@@ -61,7 +69,7 @@ export const Root = ({
     error: null,
     fieldErrors: {},
   })
-  const formValidation = usePublicFormValidation()
+  const formValidation = usePublicFormValidation({ messages: validationMessages })
   const router = useRouter()
   const allowedUserTypes = Array.isArray(userTypes) ? userTypes : [userTypes]
 
@@ -102,7 +110,7 @@ export const Root = ({
         } else {
           setState((prev) => ({
             ...prev,
-            error: errorResult.message || errorResult.error || 'An unexpected error occurred. Please try again.',
+            error: errorResult.message || errorResult.error || unexpectedErrorText,
           }))
         }
         return
@@ -118,7 +126,7 @@ export const Root = ({
       console.error('Login error:', error)
       setState((prev) => ({
         ...prev,
-        error: 'An unexpected error occurred. Please try again.',
+        error: unexpectedErrorText,
       }))
     } finally {
       setState((prev) => ({ ...prev, isLoading: false }))
@@ -244,11 +252,13 @@ export const EmailField = ({
 export const PasswordField = ({
   label = 'Password',
   forgotPasswordHref,
+  forgotPasswordLabel = 'Forgot password?',
   autoComplete = 'current-password',
   className,
 }: {
   label?: string
   forgotPasswordHref?: string
+  forgotPasswordLabel?: string
   autoComplete?: React.ComponentProps<typeof Input>['autoComplete']
   className?: string
 }) => {
@@ -262,7 +272,7 @@ export const PasswordField = ({
         <Label htmlFor="password">{label}</Label>
         {forgotPasswordHref && (
           <Link href={forgotPasswordHref} className="text-sm text-primary hover:underline">
-            Forgot password?
+            {forgotPasswordLabel}
           </Link>
         )}
       </div>

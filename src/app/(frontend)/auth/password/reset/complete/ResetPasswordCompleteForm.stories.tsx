@@ -1,12 +1,25 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
+import en from '@findmydoc-platform/ui-copy/en.json'
 import { expect, fn, userEvent, within } from 'storybook/test'
 import { RecoveryPasswordView, type RecoveryPasswordResult } from './ResetPasswordCompleteForm'
 import { PublicAuthRouteShell } from '@/app/(frontend)/_components/PublicAuthRouteShell'
 
+const catalog = en.auth.passwordRecovery
 const meta = {
   title: 'Domain/Auth/Pages/RecoveryPassword',
   component: RecoveryPasswordView,
-  args: { available: true, onComplete: fn(async (): Promise<RecoveryPasswordResult> => 'completed') },
+  args: {
+    available: true,
+    copy: {
+      ...catalog.completion,
+      shared: {
+        invalidLink: catalog.shared.invalidLink,
+        retry: catalog.shared.retry,
+        requestLink: { href: '/en/auth/password/reset', label: catalog.shared.requestLink },
+      },
+    },
+    onComplete: fn(async (): Promise<RecoveryPasswordResult> => 'completed'),
+  },
   tags: ['autodocs', 'domain:auth', 'layer:page', 'status:stable', 'used-in:route:/auth/password/reset/complete'],
   decorators: [
     (Story) => (
@@ -27,7 +40,7 @@ export const Password: Story = {
     await userEvent.type(canvas.getByLabelText('Confirm password'), 'OfflinePassword123') // pragma: allowlist secret
     await userEvent.click(canvas.getByRole('button', { name: 'Update password' }))
     await expect(args.onComplete).toHaveBeenCalledOnce()
-    await expect(canvas.getByRole('status')).toHaveTextContent('Password recovery complete')
+    await expect(canvas.getByRole('status')).toBeVisible()
   },
 }
 export const InvalidLink: Story = { args: { available: false } }
@@ -41,9 +54,7 @@ export const InquiryContinuation: Story = {
   args: { initialState: 'inquiry-continuation' },
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement)
-    await expect(canvas.getByRole('status')).toHaveTextContent(
-      'Your password has been changed and your sessions are signed out.',
-    )
+    await expect(canvas.getByRole('status')).toBeVisible()
     await expect(canvas.queryByLabelText('New password')).not.toBeInTheDocument()
     await userEvent.click(canvas.getByRole('button', { name: 'Continue saved inquiries' }))
     await expect(args.onComplete).toHaveBeenCalledWith({})

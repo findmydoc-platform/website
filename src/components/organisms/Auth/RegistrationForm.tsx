@@ -1,7 +1,7 @@
 'use client'
 
 import type React from 'react'
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { Button } from '@/components/atoms/button'
 import { Field, FieldError } from '@/components/atoms/field'
 import { Input } from '@/components/atoms/input'
@@ -9,7 +9,11 @@ import { Label } from '@/components/atoms/label'
 import { Alert } from '@/components/atoms/alert'
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/atoms/card'
 import { Heading } from '@/components/atoms/Heading'
-import { usePublicFormValidation } from '@/components/molecules/PublicFormValidation'
+import {
+  focusFirstInvalidControl,
+  usePublicFormValidation,
+  type NativeValidationMessageOverridesByField,
+} from '@/components/molecules/PublicFormValidation'
 import Link from 'next/link'
 import { cn } from '@/utilities/ui'
 
@@ -32,6 +36,13 @@ interface RegistrationFormProps {
   successMessage?: string
   fields: FormField[]
   submitButtonText: string
+  formMessages?: {
+    validation?: NativeValidationMessageOverridesByField
+    passwordMismatch?: string
+    pending?: string
+    loginPrompt?: string
+    fallbackError?: string
+  }
   initialValues?: Record<string, string>
   containerClassName?: string
   links?: {
@@ -50,6 +61,7 @@ export function RegistrationForm({
   successMessage = 'Your registration was submitted successfully.',
   fields,
   submitButtonText,
+  formMessages,
   containerClassName,
   initialValues,
   links,
@@ -59,7 +71,10 @@ export function RegistrationForm({
   const [isLoading, setIsLoading] = useState(false)
   const [hasSubmitted, setHasSubmitted] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const formValidation = usePublicFormValidation()
+  const headingId = useId()
+  const formValidation = usePublicFormValidation({ messages: formMessages?.validation })
+  const passwordMismatch = formMessages?.passwordMismatch ?? 'Passwords do not match.'
+  const pendingText = formMessages?.pending ?? 'Creating Account...'
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -69,32 +84,30 @@ export function RegistrationForm({
     const form = e.currentTarget
     if (!formValidation.validateForm(form)) return
 
+    const formData = new FormData(form)
+    const data: Record<string, string> = {}
+
+    fields.forEach((field) => {
+      data[field.name] = formData.get(field.name) as string
+    })
+
+    if (data.password && data.confirmPassword && data.password !== data.confirmPassword) {
+      formValidation.setCustomFieldError('confirmPassword', passwordMismatch)
+      focusFirstInvalidControl(form, 'confirmPassword')
+      return
+    }
+
+    const { confirmPassword: _confirmPassword, ...submissionData } = data
     setIsLoading(true)
 
     try {
-      const formData = new FormData(form)
-      const data: Record<string, string> = {}
-
-      fields.forEach((field) => {
-        data[field.name] = formData.get(field.name) as string
-      })
-
-      // Validate password confirmation if both fields exist
-      if (data.password && data.confirmPassword && data.password !== data.confirmPassword) {
-        formValidation.setCustomFieldError('confirmPassword', 'Passwords do not match.')
-        document.getElementById('confirmPassword')?.focus()
-        return
-      }
-
-      const { confirmPassword: _confirmPassword, ...submissionData } = data
-
       await onSubmit(submissionData)
       await onSuccess?.(submissionData)
       setHasSubmitted(true)
       formValidation.clearAllFieldErrors()
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error)
-      setError(msg || 'Registration failed')
+      setError(msg || (formMessages?.fallbackError ?? 'Registration failed'))
     } finally {
       setIsLoading(false)
     }
@@ -117,7 +130,12 @@ export function RegistrationForm({
           disabled={isLoading}
           minLength={field.minLength}
           defaultValue={initialValues?.[field.name]}
-          onChange={formValidation.handleFieldChange}
+          onChange={(event) => {
+            formValidation.handleFieldChange(event)
+            if (field.name === 'password' && formValidation.getFieldError('confirmPassword') === passwordMismatch) {
+              formValidation.clearFieldError('confirmPassword')
+            }
+          }}
           {...formValidation.getFieldProps(field.name)}
         />
         <FieldError id={fieldErrorId}>{fieldError}</FieldError>
@@ -147,7 +165,13 @@ export function RegistrationForm({
     <div className={cn('flex items-start justify-center px-0 py-8 sm:px-4 sm:py-12', containerClassName)}>
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-2 p-5 pb-4 sm:p-6 sm:pb-5">
-          <Heading as="h1" align="center" size="h4" className="text-[1.65rem] leading-tight text-balance sm:text-2xl">
+          <Heading
+            as="h1"
+            id={headingId}
+            align="center"
+            size="h4"
+            className="text-[1.65rem] leading-tight text-balance sm:text-2xl"
+          >
             {title}
           </Heading>
           <CardDescription className="text-center leading-6 text-balance">{description}</CardDescription>
@@ -160,11 +184,20 @@ export function RegistrationForm({
               </Alert>
             )}
             {hasSubmitted ? (
-              <Alert variant="success" className="text-left break-words">
+              <Alert variant="success" role="status" className="text-left break-words">
                 {successMessage}
               </Alert>
             ) : (
-              <form onSubmit={handleSubmit} onInvalid={formValidation.handleInvalid} className="space-y-4" noValidate>
+              <form
+                aria-labelledby={headingId}
+                onSubmit={handleSubmit}
+                onInvalid={formValidation.handleInvalid}
+                className="space-y-4"
+                noValidate
+              >
+                <p className="sr-only" role="status">
+                  {isLoading ? pendingText : null}
+                </p>
                 {fieldGroups.map((group, index) =>
                   group.kind === 'grid' ? (
                     <div key={`grid-group-${index}`} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -176,7 +209,7 @@ export function RegistrationForm({
                 )}
 
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? 'Creating Account...' : submitButtonText}
+                  {isLoading ? pendingText : submitButtonText}
                 </Button>
               </form>
             )}
@@ -185,7 +218,7 @@ export function RegistrationForm({
               <div className="space-y-3 text-center [&_a]:break-words [&_p]:leading-5">
                 {links.login && (
                   <p className="text-sm text-muted-foreground">
-                    Already have an account?{' '}
+                    {formMessages?.loginPrompt ?? 'Already have an account?'}{' '}
                     <Link href={links.login.href} className="text-primary hover:underline">
                       {links.login.text}
                     </Link>

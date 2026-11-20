@@ -18,6 +18,27 @@
 
 ## Local Development
 
+### Adopt a Product UI Copy release
+
+The Website pins an exact version of `@findmydoc-platform/ui-copy`. Dependabot checks for releases during the weekly
+npm run and proposes Copy updates in a dedicated pull request. Copy has no Dependabot cooldown and requires manual
+review and merge. Dependabot and CI use the existing
+[private package credentials](./engineering/transactional-email-platform-foundation.md#private-package-installation).
+The account behind `GH_PACKAGES_READ_TOKEN` needs read access to Copy.
+
+For an urgent correction, use a maintainer branch and set `UI_COPY_VERSION` to the published version. Load
+`NODE_AUTH_TOKEN` using the same local private package setup. Update the dependency and validate the resulting lockfile.
+
+```bash
+pnpm add --save-exact --lockfile-only "@findmydoc-platform/ui-copy@$UI_COPY_VERSION"
+pnpm install --frozen-lockfile --strict-peer-dependencies
+pnpm deps:dedupe:check
+```
+
+Review `package.json` and `pnpm-lock.yaml` together. Use a trusted Website pull request for Preview acceptance.
+When a Dependabot proposal needs a PR Preview, carry its version and lockfile updates to a maintainer branch.
+The reviewed Website version reaches production through the joint platform release.
+
 ### Environment Mode Matrix
 
 The repository supports `local`, `hybrid`, and `cloud` operation with the same codebase.

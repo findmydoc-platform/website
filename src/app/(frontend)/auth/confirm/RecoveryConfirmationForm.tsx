@@ -6,26 +6,30 @@ import { Button } from '@/components/atoms/button'
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/atoms/card'
 import { Heading } from '@/components/atoms/Heading'
 import { UiLink } from '@/components/molecules/Link'
+import type { RecoveryConfirmationCopy } from '@/features/uiCopy/passwordRecovery'
+import { RECOVERY_COMPLETION_PATH, localizedPatientAuthPath } from '@/i18n/patientAuthPath'
+import type { UiCopyLocale } from '@/i18n/requestLocale'
 
 export type RecoveryState = 'idle' | 'pending' | 'invalid' | 'retry' | 'completed'
-export function RecoverySafeError() {
+export function RecoverySafeError({ message }: Readonly<{ message: string }>) {
   return (
     <Alert variant="error" role="alert">
-      This link is invalid or has expired. Request a new recovery email to continue.
+      {message}
     </Alert>
   )
 }
-export function RecoveryRequestLink() {
+export function RecoveryRequestLink({ href, label }: Readonly<{ href: string; label: string }>) {
   return (
-    <UiLink
-      href="/auth/password/reset"
-      className="flex min-h-11 items-center text-primary underline underline-offset-4"
-    >
-      Request a recovery email
+    <UiLink href={href} className="flex min-h-11 items-center text-primary underline underline-offset-4">
+      {label}
     </UiLink>
   )
 }
-export function RecoveryConfirmationForm({ csrf }: Readonly<{ csrf: string | null }>) {
+export function RecoveryConfirmationForm({
+  copy,
+  csrf,
+  locale,
+}: Readonly<{ copy: RecoveryConfirmationCopy; csrf: string | null; locale: UiCopyLocale }>) {
   const [state, setState] = useState<RecoveryState>(csrf ? 'idle' : 'invalid')
   async function confirm() {
     setState('pending')
@@ -38,53 +42,56 @@ export function RecoveryConfirmationForm({ csrf }: Readonly<{ csrf: string | nul
         redirect: 'error',
       })
       const body = await response.json().catch(() => null)
-      if (response.ok && body?.redirectTo === '/auth/password/reset/complete') {
+      if (response.ok && body?.redirectTo === RECOVERY_COMPLETION_PATH) {
         setState('completed')
-        window.location.assign('/auth/password/reset/complete')
+        window.location.assign(localizedPatientAuthPath(RECOVERY_COMPLETION_PATH, locale))
       } else setState(response.status === 503 ? 'retry' : 'invalid')
     } catch {
       setState('retry')
     }
   }
-  return <RecoveryConfirmationView state={state} onConfirm={confirm} />
+  return <RecoveryConfirmationView copy={copy} state={state} onConfirm={confirm} />
 }
 export function RecoveryConfirmationView({
+  copy,
   state,
   onConfirm,
-}: Readonly<{ state: RecoveryState; onConfirm: () => void }>) {
+}: Readonly<{ copy: RecoveryConfirmationCopy; state: RecoveryState; onConfirm: () => void }>) {
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
         <Heading as="h1" size="h4" align="center">
-          Confirm password recovery
+          {copy.title}
         </Heading>
-        <CardDescription className="text-center text-foreground">
-          Continue only if you requested this email. Then choose a new password.
-        </CardDescription>
+        <CardDescription className="text-center text-foreground">{copy.description}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {state === 'pending' && (
           <p className="sr-only" role="status">
-            Confirming your recovery link.
+            {copy.pending}
           </p>
         )}
-        {state === 'invalid' && <RecoverySafeError />}
+        {state === 'invalid' && <RecoverySafeError message={copy.shared.invalidLink} />}
         {state === 'retry' && (
           <Alert variant="warning" role="alert">
-            We could not finish right now. Try again here. If your link was confirmed, you do not need another link.
+            {copy.unavailable}
           </Alert>
         )}
         {state === 'completed' && (
           <Alert variant="success" role="status">
-            Link confirmed. Opening password completion...
+            {copy.completed}
           </Alert>
         )}
         {state !== 'invalid' && state !== 'completed' && (
-          <Button className="w-full" disabled={state === 'pending'} onClick={onConfirm}>
-            {state === 'pending' ? 'Confirming...' : state === 'retry' ? 'Try again' : 'Confirm recovery'}
+          <Button
+            className="h-auto min-h-10 w-full whitespace-normal"
+            disabled={state === 'pending'}
+            onClick={onConfirm}
+          >
+            {state === 'pending' ? copy.confirming : state === 'retry' ? copy.shared.retry : copy.submit}
           </Button>
         )}
-        <RecoveryRequestLink />
+        <RecoveryRequestLink {...copy.shared.requestLink} />
       </CardContent>
     </Card>
   )

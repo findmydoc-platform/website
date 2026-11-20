@@ -27,6 +27,8 @@ import {
   isTemporaryLandingModeRequest,
   TEMPORARY_LANDING_DEFAULT_LOCALE,
 } from '@/features/temporaryLandingMode'
+import { DocumentLanguage } from '@/features/uiCopy/DocumentLanguage.client'
+import { uiCopyLocaleFromHeaders } from '@/i18n/requestLocale'
 import { VercelToolbar } from '@vercel/toolbar/next'
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -43,7 +45,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   )
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={uiCopyLocaleFromHeaders(requestHeaders)} suppressHydrationWarning>
       <head>
         <link href="/favicon.ico" rel="icon" sizes="32x32" />
         <link href="/favicon.svg" rel="icon" type="image/svg+xml" />
@@ -55,6 +57,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         ) : null}
       </head>
       <body className="min-h-screen bg-site-canvas text-foreground antialiased">
+        <DocumentLanguage />
         <SupabaseAuthHashUrlScrubber />
         {!blockSearchIndexing ? <JsonLdScript data={buildSiteBaseJsonLd({ description: holdingDescription })} /> : null}
         <div className="flex min-h-screen min-h-svh flex-col">

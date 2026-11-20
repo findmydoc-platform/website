@@ -129,16 +129,28 @@ test('patient login announces registration and password reset in the requested l
 
   for (const copy of locales) {
     await page.goto(`${copy.path}?message=patient-check-email`)
+    await expect(page.locator('html')).toHaveAttribute('lang', copy.locale)
     await expect(feedback).toBeVisible()
     registrationFeedback.push(await feedback.innerText())
 
-    await page.evaluate(({ key, flash }) => sessionStorage.setItem(key, JSON.stringify(flash)), {
-      key: AUTH_FLASH_STORAGE_KEY,
-      flash: createPasswordResetCompleteFlash(),
-    })
-    await page.goto(copy.path)
+    const recoveryFlash = await page.addInitScript(
+      ({ path, key, flash }) => {
+        if (window === window.top && location.pathname === path && !location.search) {
+          sessionStorage.setItem(key, JSON.stringify(flash))
+        }
+      },
+      { path: copy.path, key: AUTH_FLASH_STORAGE_KEY, flash: createPasswordResetCompleteFlash() },
+    )
+    try {
+      await page.goto(copy.path)
+    } finally {
+      await recoveryFlash.dispose()
+    }
+
+    await expect(page.locator('html')).toHaveAttribute('lang', copy.locale)
     await expect(feedback).toBeVisible()
     recoveryFeedback.push(await feedback.innerText())
+    expect(await page.evaluate((key) => sessionStorage.getItem(key), AUTH_FLASH_STORAGE_KEY)).toBeNull()
     await page.reload()
     await expect(feedback).toHaveCount(0)
   }

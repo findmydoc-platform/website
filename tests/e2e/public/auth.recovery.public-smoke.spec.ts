@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test'
 
 import { createBrowserIssueCollector, expectNoBrowserIssues } from '../helpers/browserIssues'
 import { setCookieConsent } from '../helpers/cookieConsent'
+import { expectRobotsIndexingBlocked } from '../helpers/robots'
 
 const recoveryRoute = '/auth/password/reset'
 const email = 'recovery-browser@example.test'
@@ -127,7 +128,7 @@ test('protected recovery screens keep an invalid link safe and offer a new reque
     expect(response?.ok()).toBe(true)
     await expect(alert).toBeVisible()
     await expect(page.locator('html')).toHaveAttribute('lang', locale)
-    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex, nofollow/)
+    await expectRobotsIndexingBlocked(page)
     await expect(main.getByText(providerDetail)).toHaveCount(0)
     await expect(main.locator('input[type="password"]')).toHaveCount(0)
     const requestLink = main.getByRole('link').and(main.locator(`[href="${requestPath}"]`))

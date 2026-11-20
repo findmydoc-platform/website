@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test'
 
 import { setCookieConsent } from '../helpers/cookieConsent'
+import { expectRobotsIndexingBlocked } from '../helpers/robots'
 
 for (const type of ['recovery', 'patient-verification']) {
   test(`${type} can switch language on the protected confirmation page @smoke`, async ({ page, context }) => {
@@ -14,7 +15,7 @@ for (const type of ['recovery', 'patient-verification']) {
     await expect(page).toHaveURL(`/auth/en/confirm?type=${type}`)
     await expect(page.locator('html')).toHaveAttribute('lang', 'en')
     await expect(main.getByRole('alert')).toBeVisible()
-    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex, nofollow/)
+    await expectRobotsIndexingBlocked(page)
 
     const german = main.getByRole('navigation').getByRole('link', { name: 'Deutsch', exact: true })
     await expect(german).toHaveAttribute('hreflang', 'de')

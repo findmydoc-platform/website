@@ -100,34 +100,52 @@ for (const { locale, prefix, emailLabel } of [
 test('protected recovery screens keep an invalid link safe and offer a new request @smoke', async ({
   page,
   context,
+  baseURL,
 }) => {
   await setCookieConsent(context)
   const issues = createBrowserIssueCollector(page)
   const protectedScreens = [
-    { name: 'confirmation-de', path: '/auth/confirm?type=recovery', locale: 'de', requestPath: recoveryRoute },
+    {
+      name: 'confirmation-de',
+      path: '/auth/confirm?type=recovery',
+      locale: 'de',
+      canonicalPath: '/auth/confirm',
+      requestPath: recoveryRoute,
+    },
     {
       name: 'confirmation-en',
       path: '/auth/en/confirm?type=recovery',
       locale: 'en',
+      canonicalPath: '/auth/en/confirm',
       requestPath: `/en${recoveryRoute}`,
     },
-    { name: 'completion-de', path: '/auth/password/reset/complete', locale: 'de', requestPath: recoveryRoute },
+    {
+      name: 'completion-de',
+      path: '/auth/password/reset/complete',
+      locale: 'de',
+      canonicalPath: '/auth/password/reset/complete',
+      requestPath: recoveryRoute,
+    },
     {
       name: 'completion-en',
       path: '/auth/en/password/reset/complete',
       locale: 'en',
+      canonicalPath: '/auth/en/password/reset/complete',
       requestPath: `/en${recoveryRoute}`,
     },
   ]
   const main = page.getByRole('main')
   const alert = main.getByRole('alert')
 
-  for (const { name, path, locale, requestPath } of protectedScreens) {
+  for (const { name, path, locale, canonicalPath, requestPath } of protectedScreens) {
     const url = `${path}${path.includes('?') ? '&' : '?'}error=${providerDetail}`
     const response = await page.goto(url, { waitUntil: 'domcontentloaded' })
     expect(response?.ok()).toBe(true)
     await expect(alert).toBeVisible()
     await expect(page.locator('html')).toHaveAttribute('lang', locale)
+    const canonical = new URL(canonicalPath, baseURL)
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', canonical.href)
+    await expect(page.locator('meta[property="og:url"]')).toHaveAttribute('content', canonical.href)
     await expectRobotsIndexingBlocked(page)
     await expect(main.getByText(providerDetail)).toHaveCount(0)
     await expect(main.locator('input[type="password"]')).toHaveCount(0)

@@ -39,7 +39,7 @@ export async function confirmMetadata(props: ConfirmPageProps, locale: UiCopyLoc
   if (type === 'recovery') title = await recoveryMetadataTitle('confirmation')
   if (type === 'patient-verification') title = await patientVerificationMetadataTitle()
   return {
-    ...createSiteMetadata({ title, path: AUTH_CONFIRMATION_PATH }),
+    ...createSiteMetadata({ title, path: localizedPatientAuthPath(AUTH_CONFIRMATION_PATH, locale) }),
     robots: { index: false, follow: false },
   }
 }

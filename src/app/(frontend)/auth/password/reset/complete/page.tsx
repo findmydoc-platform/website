@@ -7,13 +7,17 @@ import { resolveTransactionalEmailEnvironment } from '@/features/transactionalEm
 import { resolveRecoveryKeys } from '@/auth/actions/recoveryConfiguration'
 import { readWebsiteRecoveryContext, WEBSITE_RECOVERY_COOKIE } from '@/auth/actions/websiteRecoveryContext'
 import { recoveryCompletionCopy, recoveryMetadataTitle } from '@/features/uiCopy/passwordRecovery'
-import { RECOVERY_COMPLETION_PATH } from '@/i18n/patientAuthPath'
+import { localizedPatientAuthPath, RECOVERY_COMPLETION_PATH } from '@/i18n/patientAuthPath'
 import { uiCopyLocaleFromHeaders } from '@/i18n/requestLocale'
 
 export const dynamic = 'force-dynamic'
 export async function generateMetadata(): Promise<Metadata> {
+  const locale = uiCopyLocaleFromHeaders(await headers())
   return {
-    ...createSiteMetadata({ title: await recoveryMetadataTitle('completion'), path: RECOVERY_COMPLETION_PATH }),
+    ...createSiteMetadata({
+      title: await recoveryMetadataTitle('completion'),
+      path: localizedPatientAuthPath(RECOVERY_COMPLETION_PATH, locale),
+    }),
     robots: { index: false, follow: false },
   }
 }

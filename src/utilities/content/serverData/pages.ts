@@ -152,17 +152,6 @@ export async function findPublicPageRoute(
   return { page, locale, canonicalPath, languagePaths: { de, en, 'x-default': de } }
 }
 
-export async function findPageSlugs(payload: Payload): Promise<PageSlugDoc[]> {
-  const result = await queryPages<PageSlugDoc>(payload, {
-    depth: 0,
-    limit: 1000,
-    pagination: false,
-    select: PAGE_SLUG_SELECT,
-  })
-
-  return result.docs
-}
-
 export async function findPageSitemapDocs(payload: Payload, locale: ContentLocale = 'de'): Promise<PageSitemapDoc[]> {
   const result = await queryPages<PageSitemapDoc>(payload, {
     contentLocale: { locale, fallbackLocale: false },
@@ -175,4 +164,4 @@ export async function findPageSitemapDocs(payload: Payload, locale: ContentLocal
   return result.docs
 }
 
-export { PAGE_DETAIL_SELECT, PAGE_SITEMAP_SELECT, PAGE_SLUG_SELECT }
+export { PAGE_DETAIL_SELECT, PAGE_SITEMAP_SELECT }

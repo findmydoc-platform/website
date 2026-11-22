@@ -8,17 +8,10 @@ import React, { cache } from 'react'
 
 import { RenderBlocks } from '@/blocks/RenderBlocks'
 import { generateMeta } from '@/utilities/generateMeta'
-import { findPageBySlug, findPageSlugs, findPublicPageRoute } from '@/utilities/content/serverData'
+import { findPageBySlug, findPublicPageRoute } from '@/utilities/content/serverData'
 import { buildPagePath } from '@/utilities/cachePolicy'
 import { LivePreviewListener } from '@/components/organisms/LivePreviewListener'
 import type { ContentLocale } from '@/utilities/contentLocalization'
-
-export async function generateStaticParams() {
-  const payload = await getPayload({ config: configPromise })
-  const pages = await findPageSlugs(payload)
-
-  return pages.flatMap(({ slug }) => (slug && slug !== 'home' ? [{ slug: slug.split('/') }] : []))
-}
 
 type Args = {
   params: Promise<{

@@ -68,6 +68,8 @@ describe('seedGlobalsBaseline', () => {
     expect(updateGlobal).toHaveBeenCalledWith(
       expect.objectContaining({
         slug: 'cookieConsent',
+        locale: 'en',
+        fallbackLocale: false,
         data: expect.objectContaining({
           enabled: true,
           consentVersion: 3,

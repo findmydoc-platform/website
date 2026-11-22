@@ -47,10 +47,25 @@ export default async function LoginPage({
     blockedPaths: [PATIENT_LOGIN_PATH, ENGLISH_PATIENT_LOGIN_PATH],
   })
 
+  const switchQuery = new URLSearchParams()
+  for (const key of ['next', 'message', 'inquiry'] as const) {
+    const value = resolvedSearchParams?.[key]
+    if (typeof value === 'string') switchQuery.set(key, value)
+  }
+  const switchSuffix = switchQuery.size ? `?${switchQuery}` : ''
+  const languageSwitch = {
+    locale: copy.locale,
+    targets: {
+      de: `${PATIENT_LOGIN_PATH}${switchSuffix}`,
+      en: `${ENGLISH_PATIENT_LOGIN_PATH}${switchSuffix}`,
+    },
+  }
+
   return (
     <PublicAuthRouteShell>
       <PatientLoginFormRoot
         errors={copy.errors}
+        languageSwitch={languageSwitch}
         redirectPath={postLoginRedirectPath}
         validationMessages={copy.validationMessages}
         className={`w-full max-w-md ${PUBLIC_AUTH_FORM_CONTAINER_CLASSNAME}`}

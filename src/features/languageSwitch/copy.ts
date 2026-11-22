@@ -12,7 +12,7 @@ export const languageSwitcherCopy = {
   de: {
     label: de('label'),
     name: en('alternate'),
-    unavailable: 'Diese Seite ist auf Deutsch nicht verfügbar.',
+    unavailable: 'Diese Seite ist auf Deutsch noch nicht verfügbar.',
     confirmTitle: 'Sprache wechseln?',
     confirmDescription: 'Beim Sprachwechsel können Eingaben verloren gehen.',
     stay: 'Im Formular bleiben',
@@ -22,7 +22,7 @@ export const languageSwitcherCopy = {
   en: {
     label: en('label'),
     name: de('alternate'),
-    unavailable: 'This page is not available in English.',
+    unavailable: 'This page isn’t available in English yet.',
     confirmTitle: 'Switch language?',
     confirmDescription: 'Your entries may be lost when you switch languages.',
     stay: 'Stay on this form',

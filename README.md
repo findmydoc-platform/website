@@ -56,17 +56,14 @@ With pnpm 10.28.2, duplicate bins from the two packages select the higher `types
 
 ## Quality Gates
 
-AI anti-slop and quality hygiene are enforced through local and CI lanes:
-
-- Local lane: staged-file `pre-commit` checks plus a `pre-push` dead-code check and scoped AI-slop check.
+- Local lane: staged-file `pre-commit` checks plus `pre-push` dead-code checks.
 - Fast lane (PR blocking): merge-critical validation, tests, and build readiness.
 - Security lane: workflow and secret scanning for CI/security-relevant changes plus scheduled runs.
 - Semgrep lane: blocking SAST scans for application changes in pull requests and on `main`.
-- Deep lane (main + nightly): anti-slop and repository hygiene checks such as dead-code and dependency health.
+- Deep lane (nightly and manual): Semgrep, dead-code, and dependency checks.
 
 Key quality commands:
 
-- `pnpm ai:slop-check`
 - `pnpm deadcode:check`
 - `pnpm deps:graph:check`
 - `pnpm deps:dedupe:check`
@@ -79,8 +76,6 @@ Hook setup:
 - `pre-commit` runs `pnpm deps:dedupe:check` when `package.json` or `pnpm-lock.yaml` is staged. Only an explicit pnpm dedupe finding triggers `pnpm dedupe --lockfile-only --ignore-scripts`; the cleaned lockfile joins the same commit. Authentication, network, and other check failures stop the commit without attempting a repair. Partially staged files and unstaged manifest or lockfile changes must be staged or stashed first.
 - `pre-push` runs `pnpm deadcode:check` on every push, including documentation-only changes. It does not inspect changed paths or remote refs first. Findings and configuration or loader errors stop the push.
 - Knip analyzes the Payload config and admin importmap statically to avoid executing server and JSX modules during configuration loading.
-
-Reference: [AI Anti-Slop Playbook](docs/engineering/ai-anti-slop-playbook.md)
 
 PR Validation and Preview read the same native path-filter policy. They omit application builds and new Preview deployments only when every changed path is an approved test case, repository metadata or named documentation path. Test support, runtime inputs and unknown paths still require builds. PR Validation records permitted omissions and rejects missing expected test and coverage results. Pure modifications of existing integration cases use native verified file selection plus the collection contract and explicitly incomplete coverage. Uncertain, mixed or shared-input changes run full integration. Main full integration runs independently of the application-build decision. The seven required checks remain unchanged; Integration and Combined Coverage remain optional merge checks. See [CI results and full integration](docs/testing/strategy.md#ci-results-and-full-integration) for the result contract and frozen normal-CI reference.
 

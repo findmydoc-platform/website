@@ -32,10 +32,3 @@ repos:
         entry: pnpm format:check
         language: system
         pass_filenames: false
-      - id: ai-slop-pre-push-check
-        name: ai-slop-pre-push-check
-        entry: pnpm ai:slop-check:prepush
-        language: system
-        pass_filenames: false
-        stages:
-          - pre-push

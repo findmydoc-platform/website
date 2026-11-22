@@ -76,7 +76,7 @@ When adding a new ADR:
 - [011 — Parent-controlled components for interactive UI](./011-adr-parent-controlled-components.md)
 - [012 — Enforce code formatting with Prettier and CI gate](./012-adr-code-formatting-prettier-and-ci.md)
 - [013 — Storybook documentation location](./013-adr-storybook-documentation-location.md)
-- [014 — AI anti-slop quality gates and lane strategy](./014-adr-ai-anti-slop-quality-gates.md)
+- [014 — AI anti-slop quality gates and lane strategy](./014-adr-ai-anti-slop-quality-gates.md) _(superseded by ADR 042)_
 - [015 — Consolidated Seed Runner and Dashboard Job Queue](./015-adr-seed-runner-and-manual-seed-pipeline.md) _(versioned, current v2.0)_
 - [016 — Domain DNS control plane and registrar strategy](./016-adr-domain-dns-control-plane-and-registrar-strategy.md)
 - [017 — Payload virtual fields pilot for post author projection](./017-adr-payload-virtual-fields-post-populated-authors.md)
@@ -104,3 +104,4 @@ When adding a new ADR:
 - [039 — Canonical ARB catalogs for Product UI Copy](./039-adr-canonical-arb-ui-copy-catalogs.md)
 - [040 — Four-count Clinic Dashboard reporting V3](./040-adr-four-count-clinic-dashboard-reporting.md)
 - [041 — Shared UI Copy source, delivery, and fallback](./041-adr-shared-ui-copy-source-and-fallback.md)
+- [042 — Review changes to agent instructions](./042-adr-review-changes-to-agent-instructions.md)

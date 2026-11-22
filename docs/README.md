@@ -5,7 +5,6 @@ Use this index as the main entry point for project documentation.
 ## Global Contributor Rules
 
 - [Codex Instruction Router](../AGENTS.md)
-- [AI Anti-Slop Playbook](./engineering/ai-anti-slop-playbook.md)
 
 ## Core Docs
 

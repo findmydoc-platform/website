@@ -129,7 +129,7 @@ Purpose: broad hygiene, not standard PR blocking.
 
 Current scope:
 
-- `pnpm ai:slop-check`
+- Semgrep scan
 - `pnpm deadcode:check`
 - `pnpm deps:graph:check`
 - `pnpm deps:dedupe:check`
@@ -155,7 +155,6 @@ Current scope:
 | `actionlint` | workflow security | Workflow safety concern |
 | `zizmor` | workflow security | Workflow security concern |
 | `detect-secrets` | workflow security | Secret hygiene concern |
-| `pnpm ai:slop-check` | local pre-push + deep lane | Existing repo policy |
 | `pnpm deadcode:check` | deep lane | Broad hygiene, not standard merge gate |
 | `pnpm deps:graph:check` | deep lane | Architectural hygiene |
 | `pnpm deps:dedupe:check` | deep lane | Hygiene, with separate autofix workflow |

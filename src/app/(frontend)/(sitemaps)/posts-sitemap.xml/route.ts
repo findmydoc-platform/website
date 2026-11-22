@@ -5,7 +5,7 @@ import { unstable_cache } from 'next/cache'
 import { findPostSitemapDocs } from '@/utilities/content/serverData'
 import { SEARCH_ROBOTS_HEADER, SEARCH_ROBOTS_HEADER_VALUE } from '@/features/searchIndexing'
 import { resolveSitemapIndexingAccessForRequest } from '@/features/searchIndexing/sitemapGuards'
-import { buildSitemapTag } from '@/utilities/cachePolicy'
+import { buildPostPath, buildSitemapTag } from '@/utilities/cachePolicy'
 
 const buildSitemapLocation = (siteUrl: string, path: string): string => {
   const baseUrl = siteUrl.replace(/\/+$/, '')
@@ -28,21 +28,25 @@ const getPostsSitemap = unstable_cache(
     const SITE_URL =
       process.env.NEXT_PUBLIC_SERVER_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL || 'https://example.com'
 
-    const results = await findPostSitemapDocs(payload)
+    const [de, en] = await Promise.all([findPostSitemapDocs(payload, 'de'), findPostSitemapDocs(payload, 'en')])
+    const postsByLocale = { de, en }
+    return (['de', 'en'] as const).flatMap((locale) =>
+      postsByLocale[locale].flatMap((post) => {
+        const slug = normalizePostSitemapSlug(post?.slug)
+        if (!slug) return []
 
-    const sitemap = results.flatMap((post) => {
-      const slug = normalizePostSitemapSlug(post?.slug)
-      if (!slug) return []
-
-      return {
-        loc: buildSitemapLocation(SITE_URL, `/posts/${slug}`),
-        ...(post.updatedAt ? { lastmod: post.updatedAt } : {}),
-      }
-    })
-
-    return sitemap
+        try {
+          return {
+            loc: buildSitemapLocation(SITE_URL, buildPostPath(slug, locale)),
+            ...(post.updatedAt ? { lastmod: post.updatedAt } : {}),
+          }
+        } catch {
+          return []
+        }
+      }),
+    )
   },
-  ['posts-sitemap'],
+  ['posts-sitemap', 'localized'],
   {
     tags: [buildSitemapTag('posts')],
   },

@@ -1,12 +1,21 @@
 import { slugField } from '@/fields/slugField'
 import type { CollectionConfig, Field } from 'payload'
 
-import { platformOnlyOrPublished } from '../../access/scopeFilters'
 import { Banner } from '../../blocks/Banner/config'
 import { MediaBlock } from '../../blocks/MediaBlock/config'
 import { generatePreviewPath } from '../../utilities/generatePreviewPath'
 import { populateAuthors } from './hooks/populateAuthors'
-import { revalidateDelete, revalidatePost } from './hooks/revalidatePost'
+import {
+  capturePostBeforeChange,
+  capturePostBeforeDelete,
+  capturePostDraftSaveIntent,
+  revalidateDelete,
+  revalidatePost,
+} from './hooks/revalidatePost'
+import {
+  constrainPublicLocalizedRead,
+  readLocalizedPublicationAccess,
+} from '@/collections/common/localizedPublicationAccess'
 import {
   MetaDescriptionField,
   MetaImageField,
@@ -31,7 +40,7 @@ export const Posts: CollectionConfig<'posts'> = {
   access: {
     create: ({ req }) => isPlatformStaff({ req }),
     delete: ({ req }) => isPlatformStaff({ req }),
-    read: ({ req }) => platformOnlyOrPublished({ req }),
+    read: readLocalizedPublicationAccess,
     update: ({ req }) => isPlatformStaff({ req }),
   },
   // This config controls what's populated by default when a post is referenced
@@ -71,14 +80,17 @@ export const Posts: CollectionConfig<'posts'> = {
     useAsTitle: 'title',
   },
   hooks: {
+    beforeOperation: [capturePostDraftSaveIntent, constrainPublicLocalizedRead],
     beforeChange: [
       stableIdBeforeChangeHook,
+      capturePostBeforeChange,
       beforeChangePublishedAt({
         statusKey: '_status',
         publishedAtKey: 'publishedAt',
         publishedValue: 'published',
       }),
     ],
+    beforeDelete: [capturePostBeforeDelete],
     afterChange: [revalidatePost],
     afterDelete: [revalidateDelete],
   },
@@ -262,10 +274,18 @@ export const Posts: CollectionConfig<'posts'> = {
         },
       ],
     },
-    slugField(),
+    {
+      name: 'legacyEnglishSlug',
+      type: 'text',
+      index: true,
+      admin: { hidden: true },
+      access: { create: () => false, update: () => false },
+    },
+    slugField({ localized: true }),
   ],
   versions: {
     drafts: {
+      localizeStatus: true,
       autosave: {
         interval: 2000,
       },

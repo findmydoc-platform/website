@@ -214,13 +214,15 @@ describe('frontend sitemap routes', () => {
   })
 
   it('includes only valid post detail routes in the posts sitemap', async () => {
-    routeMocks.findPostSitemapDocs.mockResolvedValue([
-      { slug: 'first-post', updatedAt: '2026-01-01T00:00:00.000Z' },
-      { slug: ' second-post ', updatedAt: '2026-01-02T00:00:00.000Z' },
-      { slug: '', updatedAt: '2026-01-03T00:00:00.000Z' },
-      { slug: null, updatedAt: '2026-01-04T00:00:00.000Z' },
-      { slug: 'nested/post', updatedAt: '2026-01-05T00:00:00.000Z' },
-    ])
+    routeMocks.findPostSitemapDocs
+      .mockResolvedValueOnce([
+        { slug: 'first-post', updatedAt: '2026-01-01T00:00:00.000Z' },
+        { slug: ' second-post ', updatedAt: '2026-01-02T00:00:00.000Z' },
+        { slug: '', updatedAt: '2026-01-03T00:00:00.000Z' },
+        { slug: null, updatedAt: '2026-01-04T00:00:00.000Z' },
+        { slug: 'nested/post', updatedAt: '2026-01-05T00:00:00.000Z' },
+      ])
+      .mockResolvedValueOnce([{ slug: 'english-post' }])
     const request = new Request('https://findmydoc.eu/posts-sitemap.xml')
     const { GET } = await import('@/app/(frontend)/(sitemaps)/posts-sitemap.xml/route')
 
@@ -228,9 +230,13 @@ describe('frontend sitemap routes', () => {
     const body = await readSitemap(response)
     const locs = getEntryLocations(body.entries)
 
-    expect(locs).toEqual(['https://findmydoc.eu/posts/first-post', 'https://findmydoc.eu/posts/second-post'])
+    expect(locs).toEqual([
+      'https://findmydoc.eu/posts/first-post',
+      'https://findmydoc.eu/posts/second-post',
+      'https://findmydoc.eu/en/posts/english-post',
+    ])
     expect(body.entries[0]).toMatchObject({ lastmod: '2026-01-01T00:00:00.000Z' })
-    expect(routeMocks.unstableCache).toHaveBeenCalledWith(expect.any(Function), ['posts-sitemap'], {
+    expect(routeMocks.unstableCache).toHaveBeenCalledWith(expect.any(Function), ['posts-sitemap', 'localized'], {
       tags: ['surface:sitemap:posts'],
     })
   })

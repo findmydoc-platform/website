@@ -65,7 +65,7 @@ describe('content server data helpers', () => {
 
     expect(findMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        fallbackLocale: 'en',
+        fallbackLocale: false,
         locale: 'de',
         select: POST_LIST_SELECT,
       }),
@@ -117,7 +117,7 @@ describe('content server data helpers', () => {
     await findPublishedPostsPage(payload, {
       contentLocale: {
         locale: 'de',
-        fallbackLocale: 'en',
+        fallbackLocale: false,
       },
       limit: 12,
       pagination: false,
@@ -126,7 +126,7 @@ describe('content server data helpers', () => {
     expect(findMock).toHaveBeenCalledWith(
       expect.objectContaining({
         collection: 'posts',
-        fallbackLocale: 'en',
+        fallbackLocale: false,
         locale: 'de',
         overrideAccess: false,
       }),
@@ -269,6 +269,7 @@ describe('content server data helpers', () => {
     )
     expect(countMock).toHaveBeenCalledWith({
       collection: 'posts',
+      locale: 'en',
       overrideAccess: false,
       where: { _status: { equals: 'published' } },
     })

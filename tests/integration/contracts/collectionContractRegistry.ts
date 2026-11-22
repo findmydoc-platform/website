@@ -235,7 +235,11 @@ export const collectionContractRegistry = {
   },
   posts: {
     baseline: ['tests/integration/posts.lifecycle.test.ts'],
-    deep: ['tests/integration/posts.lifecycle.test.ts', 'tests/integration/access/pages-posts-access.test.ts'],
+    deep: [
+      'tests/integration/posts.lifecycle.test.ts',
+      'tests/integration/access/pages-posts-access.test.ts',
+      'tests/integration/migrations/postLocalePublication.test.ts',
+    ],
   },
   reviews: {
     baseline: ['tests/integration/reviews.lifecycle.test.ts'],

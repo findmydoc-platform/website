@@ -4,6 +4,7 @@ import configPromise from '@payload-config'
 import { unstable_cache } from 'next/cache'
 import { getPayload } from 'payload'
 import type { Post, PostsSelect } from '@/payload-types'
+import type { ContentLocale } from '@/utilities/contentLocalization'
 import {
   buildCollectionTag,
   buildPostPath,
@@ -12,13 +13,7 @@ import {
   buildSurfaceTag,
 } from '@/utilities/cachePolicy'
 
-import {
-  buildLocalizedQueryOptions,
-  mergePublishedWhere,
-  type LocalizedDocQuery,
-  type PaginatedResult,
-  type PagedResult,
-} from './shared'
+import { mergePublishedWhere, type LocalizedDocQuery, type PaginatedResult, type PagedResult } from './shared'
 
 export type PostSummaryDoc = Pick<
   Post,
@@ -61,6 +56,13 @@ export type PostDetailDoc = Omit<
 
 export type PostSitemapDoc = Pick<Post, 'id' | 'slug' | 'updatedAt'>
 
+export type PublicPostRoute = {
+  post: PostDetailDoc
+  locale: ContentLocale
+  canonicalPath: string
+  languagePaths?: Record<ContentLocale | 'x-default', string>
+}
+
 export type FindPublishedPostsArgs = {
   contentLocale?: LocalizedDocQuery
   depth?: number
@@ -76,11 +78,6 @@ export type CachedPublishedPostsPageArgs = {
   contentLocale?: LocalizedDocQuery
   limit?: number
   page?: number
-}
-
-export type CachedPublishedPostBySlugArgs = {
-  contentLocale?: LocalizedDocQuery
-  slug: string
 }
 
 const POST_LIST_SELECT = {
@@ -141,8 +138,7 @@ const POST_SITEMAP_SELECT = {
   updatedAt: true,
 } satisfies PostsSelect<true>
 
-const POSTS_LIST_DATA_CACHE_KEY_VERSION = '2026-07-08'
-const POST_DETAIL_DATA_CACHE_KEY_VERSION = '2026-07-31'
+const POSTS_LIST_DATA_CACHE_KEY_VERSION = 'localized-publication'
 
 export const buildPostListDataCacheTags = (): string[] => [
   buildCollectionTag('posts'),
@@ -163,14 +159,6 @@ export const buildPostListDataCacheKey = ({
     fallbackLocale: contentLocale?.fallbackLocale ?? null,
     limit,
     page,
-  })
-
-export const buildPostDetailDataCacheKey = ({ contentLocale, slug }: CachedPublishedPostBySlugArgs): string =>
-  JSON.stringify({
-    version: POST_DETAIL_DATA_CACHE_KEY_VERSION,
-    slug,
-    locale: contentLocale?.locale ?? null,
-    fallbackLocale: contentLocale?.fallbackLocale ?? null,
   })
 
 export const buildPostDetailDataCacheTags = (slug: string): string[] => [
@@ -275,10 +263,10 @@ async function queryPosts<TDoc>(
 ): Promise<PagedResult<TDoc>> {
   const result = await payload.find({
     collection: 'posts',
-    locale: 'en',
     depth,
     draft,
-    ...buildLocalizedQueryOptions(contentLocale),
+    locale: contentLocale?.locale ?? 'en',
+    fallbackLocale: draft ? (contentLocale?.fallbackLocale ?? false) : false,
     limit,
     page,
     pagination,
@@ -386,7 +374,16 @@ export async function findPostBySlug(
   payload: Payload,
   slug: string,
   draft = false,
-  contentLocale: LocalizedDocQuery = {},
+  contentLocale: LocalizedDocQuery = { locale: 'de' },
+): Promise<PostDetailDoc | null> {
+  return findPostDetail(payload, { slug: { equals: slug } }, draft, contentLocale)
+}
+
+async function findPostDetail(
+  payload: Payload,
+  where: Where,
+  draft: boolean,
+  contentLocale: LocalizedDocQuery,
 ): Promise<PostDetailDoc | null> {
   const result = await queryPosts<PostDetailDoc>(payload, {
     contentLocale,
@@ -394,11 +391,7 @@ export async function findPostBySlug(
     draft,
     limit: 1,
     pagination: false,
-    where: {
-      slug: {
-        equals: slug,
-      },
-    },
+    where,
     select: POST_DETAIL_SELECT,
   })
 
@@ -411,26 +404,66 @@ export async function findPostBySlug(
   return hydrateRelatedPostCards(payload, post, draft, contentLocale)
 }
 
-export async function getCachedPublishedPostBySlug(args: CachedPublishedPostBySlugArgs): Promise<PostDetailDoc | null> {
-  if (!isValidPublicPostSlug(args.slug)) {
-    return null
+async function findPostSlugById(payload: Payload, id: number, locale: ContentLocale) {
+  const result = await queryPosts<Pick<Post, 'slug'>>(payload, {
+    contentLocale: { locale },
+    depth: 0,
+    limit: 1,
+    pagination: false,
+    where: { id: { equals: id } },
+    select: { slug: true },
+  })
+  return result.docs[0]?.slug
+}
+
+export async function findPublicPostRoute(
+  payload: Payload,
+  slug: string,
+  locale: ContentLocale,
+): Promise<PublicPostRoute | null> {
+  if (!isValidPublicPostSlug(slug)) return null
+
+  let post = await findPostBySlug(payload, slug, false, { locale })
+  if (!post?.slug && locale === 'de') {
+    const legacyPost = await findPostDetail(payload, { legacyEnglishSlug: { equals: slug } }, false, { locale: 'en' })
+    if (!legacyPost?.slug || !isValidPublicPostSlug(legacyPost.slug)) return null
+
+    const germanSlug = await findPostSlugById(payload, legacyPost.id, 'de')
+    if (!germanSlug || !isValidPublicPostSlug(germanSlug)) {
+      return { post: legacyPost, locale: 'en', canonicalPath: buildPostPath(legacyPost.slug, 'en') }
+    }
+
+    post = await findPostBySlug(payload, germanSlug, false, { locale: 'de' })
   }
+  if (!post?.slug) return null
 
-  const tags = buildPostDetailDataCacheTags(args.slug)
+  const canonicalPath = buildPostPath(post.slug, locale)
+  const alternateLocale = locale === 'de' ? 'en' : 'de'
+  const alternateSlug = await findPostSlugById(payload, post.id, alternateLocale)
+  if (!alternateSlug || !isValidPublicPostSlug(alternateSlug)) return { post, locale, canonicalPath }
 
+  const alternatePath = buildPostPath(alternateSlug, alternateLocale)
+  const de = locale === 'de' ? canonicalPath : alternatePath
+  const en = locale === 'en' ? canonicalPath : alternatePath
+  return { post, locale, canonicalPath, languagePaths: { de, en, 'x-default': de } }
+}
+
+export async function getCachedPublicPostRoute(slug: string, locale: ContentLocale): Promise<PublicPostRoute | null> {
+  if (!isValidPublicPostSlug(slug)) return null
   return unstable_cache(
     async () => {
       const payload = await getPayload({ config: configPromise })
 
-      return findPostBySlug(payload, args.slug, false, args.contentLocale)
+      return findPublicPostRoute(payload, slug, locale)
     },
-    ['post-detail', buildPostDetailDataCacheKey(args)],
-    { tags },
+    ['post-detail-localized', slug, locale],
+    { tags: buildPostDetailDataCacheTags(slug) },
   )()
 }
 
-export async function findPostSitemapDocs(payload: Payload): Promise<PostSitemapDoc[]> {
+export async function findPostSitemapDocs(payload: Payload, locale: ContentLocale = 'de'): Promise<PostSitemapDoc[]> {
   const result = await queryPosts<PostSitemapDoc>(payload, {
+    contentLocale: { locale },
     depth: 0,
     limit: 1000,
     pagination: false,
@@ -443,6 +476,7 @@ export async function findPostSitemapDocs(payload: Payload): Promise<PostSitemap
 export async function countPublishedPosts(payload: Payload, where?: Where): Promise<number> {
   const result = await payload.count({
     collection: 'posts',
+    locale: 'en',
     overrideAccess: false,
     where: mergePublishedWhere(where),
   })

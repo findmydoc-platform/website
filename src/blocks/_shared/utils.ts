@@ -4,6 +4,7 @@
  */
 
 import { appendContentLocaleToPath, type ContentLocaleContext } from '@/utilities/contentLocalization'
+import { buildPostPath } from '@/utilities/cachePolicy'
 
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object'
@@ -51,6 +52,8 @@ export function resolveHrefFromReference(
   if (typeof slug !== 'string' || slug.length === 0) {
     return undefined
   }
+
+  if (relationTo === 'posts') return buildPostPath(slug, contentLocale?.locale)
 
   return appendContentLocaleToHref(buildReferencePath(relationTo, slug), contentLocale)
 }

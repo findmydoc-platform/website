@@ -370,7 +370,7 @@ describe('importCollection', () => {
     })
   })
 
-  it('splits configured localized fields into default upsert and locale updates', async () => {
+  it('publishes complete demo Post translations with their stable public slug', async () => {
     const englishContent = {
       root: {
         type: 'root',
@@ -397,6 +397,7 @@ describe('importCollection', () => {
       {
         stableId: 'post-1',
         slug: 'localized-post',
+        _status: 'published',
         title: { en: 'English title', de: 'Deutscher Titel' },
         excerpt: { en: 'English excerpt', de: 'Deutscher Auszug' },
         content: { en: englishContent, de: germanContent },
@@ -430,6 +431,9 @@ describe('importCollection', () => {
       id: 'post-1-id',
       locale: 'de',
       data: {
+        _status: 'published',
+        generateSlug: false,
+        slug: 'localized-post',
         title: 'Deutscher Titel',
         excerpt: 'Deutscher Auszug',
         content: germanContent,

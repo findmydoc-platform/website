@@ -140,6 +140,23 @@ describe('PayloadRedirects', () => {
     await expectRedirect('/legacy-post', '/posts/fresh-post')
   })
 
+  it('preserves a redirect to a Post whose English version is the only public version', async () => {
+    const findByID = vi
+      .fn()
+      .mockImplementation(({ locale }) =>
+        locale === 'en' ? { slug: 'published-post', _status: 'published', deletedAt: null } : null,
+      )
+    mocks.getPayload.mockResolvedValue({ findByID })
+    mocks.redirectsLoader.mockResolvedValue([
+      {
+        from: '/legacy-post',
+        to: { type: 'reference', reference: { relationTo: 'posts', value: 42 } },
+      },
+    ])
+
+    await expectRedirect('/legacy-post', '/en/posts/published-post')
+  })
+
   it('does not trust embedded reference object slugs as redirect targets', async () => {
     const findByID = vi.fn().mockResolvedValue({
       slug: 'fresh-target',

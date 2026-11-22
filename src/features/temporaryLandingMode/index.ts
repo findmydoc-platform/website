@@ -65,7 +65,7 @@ export const isTemporaryLandingPublicExemptPath = (pathname: string): boolean =>
     return true
   }
 
-  return /^\/posts\/[^/]+$/.test(normalizedPath)
+  return /^(?:\/en)?\/posts\/[^/]+$/.test(normalizedPath)
 }
 
 export const isTemporaryLandingIndexablePath = (pathname: string): boolean => {
@@ -79,7 +79,7 @@ export const isTemporaryLandingIndexablePath = (pathname: string): boolean => {
     normalizedPath === '/' ||
     normalizedPath === '/posts' ||
     /^\/posts\/page\/[1-9]\d*$/.test(normalizedPath) ||
-    /^\/posts\/[^/]+$/.test(normalizedPath)
+    /^(?:\/en)?\/posts\/[^/]+$/.test(normalizedPath)
   )
 }
 

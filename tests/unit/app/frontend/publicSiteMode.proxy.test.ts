@@ -73,7 +73,7 @@ describe('public site mode proxy', () => {
     process.env = originalEnv
   })
 
-  it.each(['/', '/posts', '/posts/article', '/posts/page/2'])(
+  it.each(['/', '/posts', '/posts/article', '/en/posts/article', '/posts/page/2'])(
     'marks anonymous Preview Holding content on %s',
     async (pathname) => {
       process.env.VERCEL_ENV = 'preview'
@@ -216,8 +216,15 @@ describe('public site mode proxy', () => {
   it('keeps only exact public blog route shapes reachable in temporary landing mode', async () => {
     mockHoldingMode('holding')
 
-    const allowedPaths = ['/posts', '/posts/', '/posts/example', '/posts/page/2']
-    const blockedPaths = ['/posts-admin', '/postscript', '/posts/foo/bar', '/posts/page/0', '/posts/page/2/extra']
+    const allowedPaths = ['/posts', '/posts/', '/posts/example', '/en/posts/example', '/posts/page/2']
+    const blockedPaths = [
+      '/posts-admin',
+      '/postscript',
+      '/posts/foo/bar',
+      '/posts/page/0',
+      '/posts/page/2/extra',
+      '/en/posts',
+    ]
 
     for (const path of allowedPaths) {
       const response = await proxy(new NextRequest(`https://findmydoc.eu${path}`))

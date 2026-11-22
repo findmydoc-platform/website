@@ -5,6 +5,7 @@ import { getPayload } from 'payload'
 
 import type { Page, Post, Redirect } from '@/payload-types'
 import { buildPagePath, buildPostPath } from '@/utilities/cachePolicy'
+import type { ContentLocale } from '@/utilities/contentLocalization'
 import { sanitizeInternalRedirectPathOrNull } from '@/utilities/routing/sanitizeInternalRedirectPath'
 
 type RedirectReference = NonNullable<NonNullable<Redirect['to']>['reference']>
@@ -20,6 +21,7 @@ const PUBLIC_TARGET_SELECT = {
 
 export async function resolveRedirectTargetPath(
   reference: RedirectTargetReference | null | undefined,
+  sourcePath: string,
 ): Promise<string | null> {
   const collection = normalizeSupportedCollection(reference?.relationTo)
   const id = normalizeReferenceId(reference?.value)
@@ -28,16 +30,22 @@ export async function resolveRedirectTargetPath(
 
   const payload = await getPayload({ config: configPromise })
 
-  return resolveRedirectTargetPathById({ collection, id, payload })
+  const locale = sourcePath.startsWith('/en/') ? 'en' : 'de'
+  const targetPath = await resolveRedirectTargetPathById({ collection, id, locale, payload })
+  if (targetPath || collection !== 'posts' || locale !== 'de') return targetPath
+
+  return resolveRedirectTargetPathById({ collection, id, locale: 'en', payload })
 }
 
 async function resolveRedirectTargetPathById({
   collection,
   id,
+  locale,
   payload,
 }: {
   collection: SupportedRedirectTargetCollection
   id: string | number
+  locale: ContentLocale
   payload: Payload
 }): Promise<string | null> {
   let target: RedirectTargetDocument | null
@@ -49,6 +57,7 @@ async function resolveRedirectTargetPathById({
       depth: 0,
       draft: false,
       overrideAccess: false,
+      ...(collection === 'posts' ? { locale, fallbackLocale: false } : {}),
       select: PUBLIC_TARGET_SELECT,
     })) as RedirectTargetDocument | null
   } catch {
@@ -63,7 +72,7 @@ async function resolveRedirectTargetPathById({
   let targetPath: string
 
   try {
-    targetPath = collection === 'pages' ? buildPagePath(slug) : buildPostPath(slug)
+    targetPath = collection === 'pages' ? buildPagePath(slug) : buildPostPath(slug, locale)
   } catch {
     return null
   }

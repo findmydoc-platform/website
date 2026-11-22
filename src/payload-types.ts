@@ -653,6 +653,7 @@ export interface Post {
         avatar?: string | null;
       }[]
     | null;
+  legacyEnglishSlug?: string | null;
   /**
    * When enabled, the slug will auto-generate from the title field on save and autosave.
    */
@@ -4718,6 +4719,7 @@ export interface PostsSelect<T extends boolean = true> {
         name?: T;
         avatar?: T;
       };
+  legacyEnglishSlug?: T;
   generateSlug?: T;
   slug?: T;
   updatedAt?: T;

@@ -1,0 +1,205 @@
+import type { Metadata } from 'next'
+
+import { RelatedPosts } from '@/blocks/RelatedPosts/Component'
+import { PayloadRedirects } from '@/app/(frontend)/_components/PayloadRedirects'
+import configPromise from '@payload-config'
+import { getPayload } from 'payload'
+import { draftMode, headers } from 'next/headers'
+import React, { cache } from 'react'
+import RichText from '@/blocks/_shared/RichText'
+
+import { PostHero } from '@/components/organisms/Heroes/PostHero'
+import { generateMeta } from '@/utilities/generateMeta'
+import PageClient from './page.client'
+import { LivePreviewListener } from '@/components/organisms/LivePreviewListener'
+import { Container } from '@/components/molecules/Container'
+import { DisclaimerNotice } from '@/components/molecules/DisclaimerNotice'
+import { calculateReadTime } from '@/utilities/blog/calculateReadTime'
+import { findPostBySlug, getCachedPublicPostRoute } from '@/utilities/content/serverData'
+import { DISCLAIMER_COPY } from '@/utilities/legal/disclaimers'
+import { resolveMediaImage } from '@/utilities/media/resolveMediaImage'
+import { PostShareActionBar } from './PostShareActionBar'
+import type { ContentLocale, ContentLocaleContext } from '@/utilities/contentLocalization'
+import { buildPostPath } from '@/utilities/cachePolicy'
+import { buildPostsIndexPath } from '@/utilities/content/postPaths'
+import { createBlogBreadcrumb, HOME_BREADCRUMB } from '@/utilities/breadcrumbs'
+import { JsonLdScript, buildArticlePageJsonLd } from '@/utilities/structuredData'
+import { isTemporaryLandingModeRequest } from '@/features/temporaryLandingMode'
+
+export type PostPageArgs = {
+  params: Promise<{
+    slug?: string
+  }>
+  searchParams: Promise<{
+    locale?: string | string[]
+  }>
+}
+
+export async function renderPost(args: PostPageArgs, pathLocale: ContentLocale) {
+  const { draft, requestPath, route } = await loadPostRoute(args, pathLocale)
+  if (!route) return <PayloadRedirects url={requestPath} />
+
+  const { post, locale, canonicalPath } = route
+  const contentLocale: ContentLocaleContext = { locale, fallbackLocale: false }
+
+  const firstAuthor = post.populatedAuthors?.[0]
+  const authorData =
+    firstAuthor && typeof firstAuthor === 'object'
+      ? {
+          name: firstAuthor.name || 'Unknown',
+          avatar: firstAuthor.avatar || undefined,
+          role: undefined,
+        }
+      : undefined
+
+  const heroImage =
+    post.heroImage && typeof post.heroImage === 'object'
+      ? resolveMediaImage(post.heroImage, {
+          fallbackAlt: post.title,
+          usage: 'hero',
+        })
+      : undefined
+
+  const breadcrumbs = [
+    HOME_BREADCRUMB,
+    createBlogBreadcrumb(buildPostsIndexPath(contentLocale)),
+    { label: post.title, href: canonicalPath },
+  ]
+  const readTime = calculateReadTime(post.content)
+  const hasPostContent = Boolean(post.content?.root?.children?.length)
+
+  return (
+    <article className="pb-16 sm:pb-20" lang={locale}>
+      <PageClient />
+      <JsonLdScript
+        data={
+          draft
+            ? null
+            : buildArticlePageJsonLd({
+                authorName: authorData?.name,
+                breadcrumbs,
+                description: post.excerpt,
+                imageUrl: heroImage?.src,
+                path: canonicalPath,
+                publishedAt: post.publishedAt,
+                title: post.title,
+                updatedAt: post.updatedAt,
+              })
+        }
+      />
+
+      {/* Allows redirects for valid pages too */}
+      <PayloadRedirects disableNotFound url={requestPath} />
+
+      {draft && <LivePreviewListener />}
+
+      <PostHero
+        title={post.title}
+        excerpt={post.excerpt || undefined}
+        categories={post.categories?.map((c) => (typeof c === 'object' ? c.title || '' : '')).filter(Boolean)}
+        author={authorData}
+        publishedAt={post.publishedAt || undefined}
+        readTime={readTime}
+        breadcrumbs={breadcrumbs}
+        image={heroImage}
+      />
+
+      {/* Action Bar - Back Link & Share Button */}
+      <PostShareActionBar
+        backLink={{ label: 'Back to Blog', href: buildPostsIndexPath(contentLocale) }}
+        shareUrl={canonicalPath}
+        shareTitle={post.title}
+        shareDescription={post.excerpt || undefined}
+      />
+
+      <div className="py-8 sm:py-10 md:py-12">
+        <Container>
+          <div className="grid grid-cols-1 lg:grid-cols-12">
+            <div className="lg:col-span-8 lg:col-start-3">
+              {hasPostContent ? (
+                <RichText
+                  className="text-muted-foreground [&.prose]:max-w-none"
+                  contentLocale={contentLocale}
+                  data={post.content}
+                  enableGutter={false}
+                />
+              ) : null}
+              <DisclaimerNotice
+                routeLabel="Blog"
+                copy={DISCLAIMER_COPY.blog}
+                variant="slim-notice-bar"
+                standalone={true}
+                className={hasPostContent ? 'mt-10 sm:mt-12' : 'mt-0'}
+              />
+              {post.relatedPosts && post.relatedPosts.length > 0 && (
+                <RelatedPosts
+                  className="mt-10 sm:mt-12"
+                  contentLocale={contentLocale}
+                  docs={post.relatedPosts.filter((post) => typeof post === 'object')}
+                />
+              )}
+            </div>
+          </div>
+        </Container>
+      </div>
+    </article>
+  )
+}
+
+export async function generatePostMetadata(args: PostPageArgs, pathLocale: ContentLocale): Promise<Metadata> {
+  const { draft, route } = await loadPostRoute(args, pathLocale)
+  if (!route) return { robots: { index: false, follow: false } }
+
+  const metadata = await generateMeta({ doc: route.post, path: route.canonicalPath, sourceCollection: 'posts' })
+  if (draft) return { ...metadata, robots: { index: false, follow: false } }
+  if (!route.languagePaths) return metadata
+  return {
+    ...metadata,
+    alternates: { canonical: route.canonicalPath, languages: route.languagePaths },
+  }
+}
+
+async function loadPostRoute({ params, searchParams }: PostPageArgs, pathLocale: ContentLocale) {
+  const [{ slug = '' }, { locale }] = await Promise.all([params, searchParams])
+  const previewLocale = locale === 'en' || locale === 'de' ? locale : pathLocale
+  const requestPath = `${pathLocale === 'en' ? '/en' : ''}/posts/${slug}`
+  return { requestPath, ...(await resolvePost(slug, pathLocale, previewLocale)) }
+}
+
+const resolvePost = cache(async (slug: string, pathLocale: ContentLocale, previewLocale: ContentLocale) => {
+  const draftPayload = await resolveDraftPayload()
+  if (!draftPayload) {
+    const route = await getCachedPublicPostRoute(slug, pathLocale)
+    return { draft: false, route }
+  }
+
+  const post = await findPostBySlug(draftPayload, slug, true, { locale: previewLocale, fallbackLocale: false })
+  const route = post?.slug
+    ? { post, locale: previewLocale, canonicalPath: buildPostPath(post.slug, previewLocale), languagePaths: undefined }
+    : null
+  return { draft: true, route }
+})
+
+const resolveDraftPayload = async () => {
+  const { isEnabled } = await draftMode()
+
+  if (!isEnabled) {
+    return null
+  }
+
+  const requestHeaders = await headers()
+
+  if (isTemporaryLandingModeRequest(requestHeaders)) {
+    return null
+  }
+
+  const payload = await getPayload({ config: configPromise })
+
+  try {
+    const { user } = await payload.auth({ headers: requestHeaders })
+
+    return user?.collection === 'platformStaff' ? payload : null
+  } catch {
+    return null
+  }
+}

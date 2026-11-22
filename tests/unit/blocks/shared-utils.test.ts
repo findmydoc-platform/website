@@ -27,7 +27,7 @@ describe('shared CMS link utilities', () => {
         },
         germanContentLocale,
       ),
-    ).toBe('/posts/hello-world?locale=de')
+    ).toBe('/posts/hello-world')
   })
 
   it('localizes internal CMS links while leaving external targets untouched', () => {

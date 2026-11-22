@@ -179,7 +179,7 @@ const buildDocumentPath = (
     case 'pages':
       return buildPagePath(slug, locale)
     case 'posts':
-      return buildPostPath(slug)
+      return buildPostPath(slug, locale)
   }
 }
 

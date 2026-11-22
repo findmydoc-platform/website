@@ -9,7 +9,12 @@ import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { buildRichText, buildRichTextWithInternalPostLink } from '../fixtures/richText'
 import { testSlug } from '../fixtures/testSlug'
 import { slugify } from '@/utilities/slugify'
-import { findPostBySlug, findPublishedPostsPage, findPostSitemapDocs } from '@/utilities/content/serverData'
+import {
+  findPostBySlug,
+  findPublicPostRoute,
+  findPublishedPostsPage,
+  findPostSitemapDocs,
+} from '@/utilities/content/serverData'
 import type { Post, Tag, Category, PlatformStaff } from '@/payload-types'
 import demoPosts from '@/endpoints/seed/data/demo/posts.json'
 
@@ -120,6 +125,147 @@ describe('Posts integration - lifecycle and access', () => {
       } catch {
         // ignore cleanup errors
       }
+    }
+  })
+
+  it('publishes the active Post locale without exposing the other locale’s draft', async () => {
+    const deTitle = `${slugPrefix} Deutscher Artikel`
+    const enTitle = `${slugPrefix} English article`
+    const de = buildPostData({ title: deTitle, includeMeta: true })
+    const en = buildPostData({ title: enTitle, includeMeta: true })
+    const created = await payload.create({
+      collection: 'posts',
+      locale: 'de',
+      data: de,
+      draft: true,
+      context: { disableRevalidate: true },
+    })
+    await payload.update({
+      collection: 'posts',
+      id: created.id,
+      locale: 'en',
+      data: en,
+      draft: true,
+      context: { disableRevalidate: true },
+    })
+    await payload.update({
+      collection: 'posts',
+      id: created.id,
+      locale: 'de',
+      publishSpecificLocale: 'de',
+      fallbackLocale: false,
+      data: { ...de, _status: 'published' },
+      draft: false,
+      context: { disableRevalidate: true },
+    })
+
+    const read = (locale: 'de' | 'en', slug: string) =>
+      payload.find({
+        collection: 'posts',
+        locale,
+        draft: false,
+        fallbackLocale: false,
+        overrideAccess: false,
+        where: { slug: { equals: slug } },
+      })
+    const deSlug = slugify(deTitle)
+    const enSlug = slugify(enTitle)
+    expect((await read('de', deSlug)).docs).toMatchObject([{ id: created.id, title: deTitle, slug: deSlug }])
+    expect((await read('en', enSlug)).docs).toEqual([])
+    expect((await read('en', deSlug)).docs).toEqual([])
+    const anonymousDraftRequest = await payload.find({
+      collection: 'posts',
+      locale: 'en',
+      draft: true,
+      fallbackLocale: 'de',
+      overrideAccess: false,
+      where: { id: { equals: created.id } },
+    })
+    expect(anonymousDraftRequest.docs).toEqual([])
+    expect(await findPublicPostRoute(payload, enSlug, 'en')).toBeNull()
+    const germanRoute = await findPublicPostRoute(payload, deSlug, 'de')
+    expect(germanRoute?.canonicalPath).toBe(`/posts/${deSlug}`)
+    expect(germanRoute?.languagePaths).toBeUndefined()
+
+    await payload.update({
+      collection: 'posts',
+      id: created.id,
+      locale: 'en',
+      publishSpecificLocale: 'en',
+      fallbackLocale: false,
+      data: { ...en, _status: 'published' },
+      draft: false,
+      context: { disableRevalidate: true },
+    })
+
+    expect((await read('en', enSlug)).docs).toMatchObject([{ id: created.id, title: enTitle, slug: enSlug }])
+    expect((await read('de', deSlug)).docs).toMatchObject([{ id: created.id, title: deTitle, slug: deSlug }])
+    const languagePaths = { de: `/posts/${deSlug}`, en: `/en/posts/${enSlug}`, 'x-default': `/posts/${deSlug}` }
+    await expect(findPublicPostRoute(payload, deSlug, 'de')).resolves.toMatchObject({
+      post: { id: created.id, title: deTitle },
+      canonicalPath: languagePaths.de,
+      languagePaths,
+    })
+    await expect(findPublicPostRoute(payload, enSlug, 'en')).resolves.toMatchObject({
+      post: { id: created.id, title: enTitle },
+      canonicalPath: languagePaths.en,
+      languagePaths,
+    })
+  })
+
+  it('keeps a migrated article path reachable while German awaits publication', async () => {
+    const englishTitle = `${slugPrefix} Existing blog article`
+    const legacySlug = slugify(englishTitle)
+    const migrated = await payload.create({
+      collection: 'posts',
+      locale: 'en',
+      data: {
+        ...buildPostData({ title: englishTitle, status: 'published' }),
+        legacyEnglishSlug: legacySlug,
+      },
+      overrideAccess: true,
+      context: { disableRevalidate: true },
+    })
+
+    try {
+      await expect(findPublicPostRoute(payload, legacySlug, 'de')).resolves.toMatchObject({
+        locale: 'en',
+        post: { id: migrated.id, title: englishTitle },
+        canonicalPath: `/en/posts/${legacySlug}`,
+      })
+
+      const germanTitle = `${slugPrefix} Bestehender Blogartikel`
+      await payload.update({
+        collection: 'posts',
+        id: migrated.id,
+        locale: 'de',
+        publishSpecificLocale: 'de',
+        fallbackLocale: false,
+        data: {
+          ...buildPostData({ title: germanTitle, status: 'published' }),
+          generateSlug: false,
+          slug: legacySlug,
+        },
+        context: { disableRevalidate: true },
+      })
+
+      await expect(findPublicPostRoute(payload, legacySlug, 'de')).resolves.toMatchObject({
+        locale: 'de',
+        post: { id: migrated.id, title: germanTitle },
+        canonicalPath: `/posts/${legacySlug}`,
+      })
+      await expect(findPublicPostRoute(payload, legacySlug, 'en')).resolves.toMatchObject({
+        locale: 'en',
+        post: { id: migrated.id, title: englishTitle },
+        canonicalPath: `/en/posts/${legacySlug}`,
+      })
+    } finally {
+      await payload.delete({
+        collection: 'posts',
+        id: migrated.id,
+        overrideAccess: true,
+        context: { disableRevalidate: true },
+      })
     }
   })
 
@@ -356,11 +502,12 @@ describe('Posts integration - lifecycle and access', () => {
     expect(updated.meta?.description).toBe('Updated SEO description.')
   })
 
-  it('stores german localized content while falling back to english defaults', async () => {
+  it('reads German post fields without filling missing SEO text from English', async () => {
     const title = `${slugPrefix} localized post`
 
     const created = await payload.create({
       collection: 'posts',
+      locale: 'en',
       data: buildPostData({
         title,
         includeMeta: true,
@@ -376,7 +523,11 @@ describe('Posts integration - lifecycle and access', () => {
       collection: 'posts',
       id: created.id,
       locale: 'de',
+      fallbackLocale: false,
       data: {
+        _status: 'published',
+        generateSlug: false,
+        slug: created.slug,
         title: `${title} de`,
         content: germanContent,
         excerpt: 'Kurzer deutscher Auszug.',
@@ -398,7 +549,7 @@ describe('Posts integration - lifecycle and access', () => {
     expect(localizedPost?.content).toEqual(germanContent)
     expect(localizedPost?.excerpt).toBe('Kurzer deutscher Auszug.')
     expect(localizedPost?.meta?.title).toBe(`${title} SEO titel`)
-    expect(localizedPost?.meta?.description).toBe('SEO description for integration tests.')
+    expect(localizedPost?.meta?.description).toBeFalsy()
   })
 
   it('stores demo seed rich text blocks per locale', async () => {
@@ -412,6 +563,7 @@ describe('Posts integration - lifecycle and access', () => {
 
     const created = await payload.create({
       collection: 'posts',
+      locale: 'en',
       data: {
         stableId: `${slug}-stable`,
         title,
@@ -432,7 +584,11 @@ describe('Posts integration - lifecycle and access', () => {
       collection: 'posts',
       id: created.id,
       locale: 'de',
+      fallbackLocale: false,
       data: {
+        _status: 'published',
+        generateSlug: false,
+        slug,
         title: `${title} de`,
         content: seedPost.content.de as PostCreateData['content'],
         excerpt: seedPost.excerpt.de,

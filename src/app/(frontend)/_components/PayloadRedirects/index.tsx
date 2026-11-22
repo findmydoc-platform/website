@@ -20,7 +20,7 @@ export const PayloadRedirects: React.FC<Props> = async ({ disableNotFound, url }
       redirect(redirectItem.to.url)
     }
 
-    const redirectUrl = await resolveRedirectTargetPath(redirectItem.to?.reference)
+    const redirectUrl = await resolveRedirectTargetPath(redirectItem.to?.reference, url)
 
     if (redirectUrl) redirect(redirectUrl)
   }

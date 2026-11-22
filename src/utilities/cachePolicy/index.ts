@@ -818,8 +818,8 @@ export const buildPagePath = (slug: string, locale: 'de' | 'en' = 'de'): string 
   return `${prefix}/${normalizedSlug}`
 }
 
-export const buildPostPath = (slug: string): string =>
-  `/posts/${assertPayloadSlug(slug, 'post slug', { allowNested: false })}`
+export const buildPostPath = (slug: string, locale: 'de' | 'en' = 'de'): string =>
+  `${locale === 'en' ? '/en' : ''}/posts/${assertPayloadSlug(slug, 'post slug', { allowNested: false })}`
 
 export const buildClinicPath = (slug: string): string =>
   `/clinics/${assertPayloadSlug(slug, 'clinic slug', { allowNested: false })}`

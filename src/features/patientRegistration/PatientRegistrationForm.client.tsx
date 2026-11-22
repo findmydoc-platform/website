@@ -1,6 +1,6 @@
 'use client'
 
-import { startTransition } from 'react'
+import { startTransition, type Ref } from 'react'
 import { useRouter } from 'next/navigation'
 import { RegistrationForm, type RegistrationSubmitHandler } from '@/components/organisms/Auth/RegistrationForm'
 import { submitPatientRegistration } from '@/auth/utilities/registrationSubmissions'
@@ -8,6 +8,7 @@ import type { PatientRegistrationCopy } from '@/features/uiCopy/patientRegistrat
 
 type PatientRegistrationFormProps = Readonly<{
   copy: PatientRegistrationCopy
+  formRef?: Ref<HTMLFormElement>
   initialValues?: Record<string, string>
   containerClassName?: string
   onSubmit?: RegistrationSubmitHandler
@@ -17,6 +18,7 @@ type PatientRegistrationFormProps = Readonly<{
 
 export function PatientRegistrationForm({
   copy,
+  formRef,
   containerClassName,
   initialValues,
   onSubmit,
@@ -32,6 +34,7 @@ export function PatientRegistrationForm({
 
   return (
     <RegistrationForm
+      formRef={formRef}
       title={copy.title}
       description={copy.description}
       fields={copy.fields}

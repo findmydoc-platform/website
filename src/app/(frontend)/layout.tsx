@@ -29,7 +29,7 @@ import {
   TEMPORARY_LANDING_DEFAULT_LOCALE,
 } from '@/features/temporaryLandingMode'
 import { LanguageSwitchRouteProvider } from '@/features/languageSwitch/LanguageSwitchRouteProvider.client'
-import { PatientLoginEmailHandoffProvider } from '@/features/uiCopy/PatientLoginEmailHandoff.client'
+import { PatientAuthFormHandoffProvider } from '@/features/languageSwitch/PatientAuthFormHandoff.client'
 import { DocumentLanguage } from '@/features/uiCopy/DocumentLanguage.client'
 import { uiCopyLocaleFromHeaders } from '@/i18n/requestLocale'
 import { VercelToolbar } from '@vercel/toolbar/next'
@@ -66,9 +66,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <div className="flex min-h-screen min-h-svh flex-col">
           <AdminBarClientAdapter preview={isEnabled} />
           <LanguageSwitchRouteProvider>
-            <PatientLoginEmailHandoffProvider>
+            <PatientAuthFormHandoffProvider>
               <TreatmentSearchHandoffProvider>{children}</TreatmentSearchHandoffProvider>
-            </PatientLoginEmailHandoffProvider>
+            </PatientAuthFormHandoffProvider>
           </LanguageSwitchRouteProvider>
         </div>
         <CookieConsentClientAdapter

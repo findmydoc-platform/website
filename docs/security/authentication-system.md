@@ -48,7 +48,10 @@ Supabase refresh-token revocation does not invalidate already-issued access toke
 
 ## Provisioning and Recovery
 
-Platform staff are provisioned only through the trusted `ops` workflow and must use `@findmydoc.eu` addresses. The website never offers public first-admin bootstrap. Staff category changes require explicit reprovisioning; automatic conversion between patient, clinic, and platform principals is not permitted.
+The trusted operations workflow provisions platform staff, including the first administrator. Payload rejects
+platform staff writes outside `@findmydoc.eu`, and platform sign-in rejects other domains before looking up the
+Payload principal. Public first-admin bootstrap returns `404`. Staff category changes require explicit
+reprovisioning.
 
 Approving a clinic application authorizes the resulting clinic and its named initial staff member to participate in the
 Dashboard. It does not publish the clinic or complete the account. The existing invitation targets the Dashboard.
@@ -59,6 +62,14 @@ describes durable evidence and the bounded transition for existing authorized pr
 Clinic staff transitions are enforced server-side. Rejected and disabled identities are banned in Supabase, approved
 and reactivated identities are unbanned, and offboarded identities are deleted from Supabase while the Payload row is
 retained. Synchronization failures remain visible and retryable without granting access.
+
+### Runtime admin recovery
+
+`/admin/login` stays available when no platform staff account exists. The login route logs distinct warnings for
+missing platform staff, missing platform admin roles, and missing login-capable staff. It checks local Payload
+records without calling the Supabase Admin API. The logs leave remediation to the private operations workflow.
+[Admin login route](<../../src/app/(frontend)/admin/login/page.tsx>) ·
+[Local readiness check](../../src/auth/utilities/firstAdminCheck.ts)
 
 ### Renew an expired initial clinic invitation
 

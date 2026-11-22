@@ -14,7 +14,7 @@ work together. [Shared platform architecture](https://github.com/findmydoc-platf
 - Payload registers collections, globals, and business endpoints in its [configuration](../../src/payload.config.ts).
   It stores managed data in PostgreSQL. For fields, relationships, validation, and indexes, read the owning
   [collection](../../src/collections) or [global](../../src/globals). Use the [generated Payload types](../../src/payload-types.ts)
-  for TypeScript document shapes.
+  for TypeScript document shapes. The [domain model](../datamodel/er-current-model.md) explains the main business relationships.
 - Supabase supplies identity and sessions. Payload resolves the current principal and applies role, clinic scope, and
   record-level rules. See the [authentication model](../security/authentication-system.md),
   [collection permission matrix](../security/permission-matrix.md), and [access helpers](../../src/access).

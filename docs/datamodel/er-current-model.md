@@ -1,544 +1,60 @@
+# Website domain model
+
+Payload owns the Website's business records. The [glossary](../../GLOSSARY.md) defines the domain terms. Use the
+[registered collections and globals](../../src/payload.config.ts) and their [collection definitions](../../src/collections)
+for fields, validation, relationships, and indexes. Use the [generated types](../../src/payload-types.ts) for TypeScript
+document shapes and the [migrations](../../src/migrations) for the database schema.
+
+## Clinics, people, and treatments
+
 ```mermaid
----
-config:
-  theme: neo-dark
----
 erDiagram
-    direction TB
+    direction LR
+    Group["Clinic group"]
+    Staff["Clinic staff"]
+    Draft["Clinic profile draft"]
+    Offering["Clinic treatment offering"]
+    DoctorTreatment["Doctor treatment"]
+    DoctorSpecialty["Doctor specialty"]
+    Specialty["Medical specialty"]
 
-    PlatformStaff {
-        text id PK "UUID, auto by Payload"
-        text stableId "Stable application identifier, unique"
-        text supabaseUserId "Supabase identity binding, unique"
-        email email "Private login email"
-        text firstName "Private given name"
-        text lastName "Private family name"
-        upload profileImage FK "Relationship to UserProfileMedia"
-        select role "enum: admin, support, content-manager (default: support)"
-        date createdAt "System: timestamps: true"
-        date updatedAt "System: timestamps: true"
-    }
-
-    ClinicStaff {
-        text id PK "UUID, auto by Payload"
-        text stableId "Stable application identifier, unique"
-        text supabaseUserId "Supabase identity binding, unique"
-        email email "Private login email"
-        text firstName "Private given name"
-        text lastName "Private family name"
-        upload profileImage FK "Relationship to UserProfileMedia"
-        relationship clinic FK "Relationship to Clinics, optional until assignment"
-        select status "enum: pending, approved, rejected, default: pending"
-        date createdAt "System: timestamps: true"
-        date updatedAt "System: timestamps: true"
-    }
-
-    Patients {
-        text id PK "UUID, auto by Payload"
-        email email "Patient email, required, unique"
-        text supabaseUserId "Supabase user id, unique, set by auth hook"
-        text firstName "First name, required"
-        text lastName "Last name, required"
-        date dateOfBirth "Optional birth date"
-        select gender "enum: male, female, other, not_specified"
-        text phoneNumber "Optional contact number"
-        text address "Optional street info"
-        relationship country FK "Relationship to Countries"
-        select language "enum: en, de, fr, es, ar, ru, zh (default: en)"
-        date createdAt "System: timestamps: true"
-        date updatedAt "System: timestamps: true"
-    }
-
-    UserProfileMedia {
-        text id PK "UUID, auto by Payload"
-        text alt "Screen-reader text, required"
-        richText caption "Optional caption"
-        relationship user FK "Owner: PlatformStaff, ClinicStaff, or Patients"
-        relationship createdBy FK "Uploader: PlatformStaff, ClinicStaff, or Patients"
-        text storagePath "Resolved storage path, readOnly"
-        text prefix "S3 prefix, readOnly"
-        upload file "User-owned image asset"
-        date createdAt "System: timestamps: true"
-        date updatedAt "System: timestamps: true"
-    }
-
-    ClinicApplications {
-        text id PK "UUID, auto by Payload"
-        text clinicName "Clinic label, required"
-        text contactFirstName "Primary contact first name"
-        text contactLastName "Primary contact last name"
-        email contactEmail "Primary email, required"
-        text contactPhone "Primary phone, optional"
-        text address_street "Street name, required"
-        text address_houseNumber "House number, required"
-        number address_zipCode "Zip/postal code, required"
-        text address_city "City, required"
-        text address_country "Legacy country value: Türkiye"
-        textarea additionalNotes "Optional free-text notes"
-        select status "enum: submitted, approved, rejected (platform managed)"
-        textarea reviewNotes "Internal reviewer notes"
-        relationship linkedRecords_clinic FK "Optional relationship to Clinics"
-        relationship linkedRecords_clinicStaff FK "Optional relationship to ClinicStaff"
-        date linkedRecords_processedAt "Timestamp when materialized"
-        text sourceMeta_ip "Captured submitter IP"
-        text sourceMeta_userAgent "Captured user agent"
-        date createdAt "System: timestamps: true"
-        date updatedAt "System: timestamps: true"
-    }
-
-    Clinics {
-        text id PK "UUID, auto by Payload"
-        number profileRevision "Published profile OCC revision, default: 0"
-        text name "Clinic name, required"
-        number averageRating "Readonly: aggregated from Reviews"
-        richText description "Long-form clinic description"
-        relationship tags FK "Relationship to Tags, hasMany"
-        join treatments "Join to ClinicTreatments (treatment, price)"
-        upload thumbnail FK "Relationship to ClinicMedia"
-        relationship galleryEntries FK "Relationship to ClinicGalleryEntries, ordered list"
-        point coordinates "Optional lat/long"
-        relationship address_country FK "Relationship to Countries, operationally Türkiye"
-        text address_street "Street name, required"
-        text address_houseNumber "House number, required"
-        text address_zipCode "Postal code, optional; max 32 characters"
-        relationship city FK "Relationship to Cities, required"
-        text contact_phoneNumber "Primary phone, required"
-        email contact_email "Primary email, required"
-        text contact_website "Public website URL"
-        group openingHours "Optional fixed Monday-Sunday local-time schedule"
-        text internalPrimaryContact_firstName "Internal first contact given name, required"
-        text internalPrimaryContact_lastName "Internal first contact family name, required"
-        email internalPrimaryContact_email "Internal first contact email, required"
-        select internalPrimaryContact_role "enum: Medical Director, Clinic Management, International Office, required"
-        relationship accreditations FK "Relationship to Accreditation, hasMany"
-        select status "enum: draft, pending, approved, rejected"
-        select verification "enum: unverified, bronze, silver, gold"
-        select supportedLanguages "Select[], required (languageOptions)"
-        text slug "System: generated from name"
-        date createdAt "System: timestamps: true"
-        date updatedAt "System: timestamps: true"
-    }
-
-    ClinicProfileDrafts {
-        text id PK "UUID, auto by Payload"
-        relationship clinic FK "Relationship to Clinics, required, unique"
-        number basePublishedRevision "Clinic profile revision used as the draft base"
-        number revision "Active draft OCC revision"
-        text name "Unpublished clinic name"
-        richText description "Unpublished clinic description"
-        select supportedLanguages "Unpublished language selection"
-        relationship address_country FK "Required relationship to Countries, fixed to ISO TR"
-        text address_street "Unpublished street"
-        text address_houseNumber "Unpublished house number"
-        text address_zipCode "Unpublished text postal code"
-        relationship address_city FK "Optional relationship to a Türkiye city"
-        group openingHours "Optional structurally valid Monday-Sunday schedule"
-        date createdAt "System: timestamps: true"
-        date updatedAt "System: timestamps: true"
-    }
-
-    ClinicMedia {
-        text id PK "UUID, auto by Payload"
-        text alt "Screen-reader alt text, required"
-        richText caption "Optional caption"
-        relationship clinic FK "Relationship to Clinics, required"
-        relationship createdBy FK "Uploader: PlatformStaff or ClinicStaff, auto-set"
-        text storagePath "Resolved storage path, readOnly"
-        text prefix "S3 prefix, readOnly"
-        upload file "Clinic-owned image asset"
-        date createdAt "System: timestamps: true"
-        date updatedAt "System: timestamps: true"
-    }
-
-    ClinicGalleryMedia {
-        text id PK "UUID, auto by Payload"
-        text alt "Screen-reader alt text, required"
-        richText description "Optional context text"
-        relationship clinic FK "Owning clinic, required"
-        select status "enum: draft, published"
-        date publishedAt "Auto-set when status=published"
-        relationship createdBy FK "Uploader: PlatformStaff or ClinicStaff, auto-set"
-        text storageKey "Immutable storage key, unique"
-        text storagePath "Resolved storage path, readOnly"
-        text prefix "S3 prefix, readOnly"
-        upload file "Gallery media image asset"
-        date createdAt "System: timestamps: true"
-        date updatedAt "System: timestamps: true"
-    }
-
-    ClinicGalleryEntries {
-        text id PK "UUID, auto by Payload"
-        relationship clinic FK "Owning clinic, required"
-        text title "Internal title, required"
-        relationship beforeMedia FK "Relationship to ClinicGalleryMedia"
-        relationship afterMedia FK "Relationship to ClinicGalleryMedia"
-        richText description "Optional story/summary"
-        select status "enum: draft, published"
-        date publishedAt "Auto-set when status=published"
-        relationship createdBy FK "Curator: PlatformStaff or ClinicStaff, auto-set"
-        date createdAt "System: timestamps: true"
-        date updatedAt "System: timestamps: true"
-    }
-
-    Doctors {
-        text id PK "UUID, auto by Payload"
-        select title "enum: dr, specialist, surgeon, assoc_prof, prof_dr"
-        text firstName "Required given name"
-        text lastName "Required family name"
-        select gender "enum: female, male"
-        text fullName "Computed value, readonly"
-        text biography "Optional plain-text professional bio"
-        upload profileImage FK "Relationship to DoctorMedia"
-        relationship clinic FK "Primary clinic, required"
-        array qualifications "Required textual list"
-        number experienceYears "Optional non-negative whole years of experience"
-        select languages "Select[], required (languageOptions)"
-        number averageRating "Readonly: aggregated from Reviews"
-        join treatments "Join to DoctorTreatments (treatment, specializationLevel)"
-        join specialties "Join to DoctorSpecialties (medicalSpecialty, level, certifications)"
-        text slug "System: generated from fullName"
-        date createdAt "System: timestamps: true"
-        date updatedAt "System: timestamps: true"
-    }
-
-    DoctorMedia {
-        text id PK "UUID, auto by Payload"
-        text alt "Screen-reader alt text, required"
-        richText caption "Optional caption"
-        relationship doctor FK "Owning doctor, required"
-        relationship clinic FK "Derived clinic, readonly"
-        relationship createdBy FK "Uploader: PlatformStaff or ClinicStaff, auto-set"
-        text storagePath "Resolved storage path, readOnly"
-        text prefix "S3 prefix, readOnly"
-        upload file "Doctor-owned image asset"
-        date createdAt "System: timestamps: true"
-        date updatedAt "System: timestamps: true"
-    }
-
-    DoctorTreatments {
-        text id PK "UUID, auto by Payload"
-        relationship doctor FK "Relationship to Doctors, required"
-        relationship treatment FK "Relationship to Treatments, required"
-        select specializationLevel "enum: general_practice, specialist, sub_specialist"
-        number treatmentsPerformed "Future metric, readonly"
-        date createdAt "System: timestamps: true"
-        date updatedAt "System: timestamps: true"
-    }
-
-    DoctorSpecialties {
-        text id PK "UUID, auto by Payload"
-        relationship doctor FK "Relationship to Doctors, required"
-        relationship medicalSpecialty FK "Relationship to MedicalSpecialties, required"
-        select specializationLevel "enum: beginner, intermediate, advanced, expert, specialist"
-        array certifications "Certifications array"
-        date createdAt "System: timestamps: true"
-        date updatedAt "System: timestamps: true"
-    }
-
-    MedicalSpecialties {
-        text id PK "UUID, auto by Payload"
-        text name "Specialty name, required"
-        textarea description "Optional short description"
-        relationship parentSpecialty FK "Self-reference for hierarchy"
-        relationship featureImage FK "Relationship to PlatformContentMedia"
-        join doctorLinks "Join to DoctorSpecialties"
-        date createdAt "System: timestamps: true"
-        date updatedAt "System: timestamps: true"
-    }
-
-    Treatments {
-        text id PK "UUID, auto by Payload"
-        text name "Treatment name, required"
-        relationship tags FK "Relationship to Tags, hasMany"
-        richText description "Detailed description, required"
-        relationship medicalSpecialty FK "Relationship to MedicalSpecialties, required"
-        number averagePrice "Readonly: computed from ClinicTreatments"
-        number averageRating "Readonly: aggregated from Reviews"
-        join Clinics "Join to ClinicTreatments (clinic, price)"
-        join Doctors "Join to DoctorTreatments (doctor, specializationLevel)"
-        date createdAt "System: timestamps: true"
-        date updatedAt "System: timestamps: true"
-    }
-
-    ClinicTreatments {
-        text id PK "UUID, auto by Payload"
-        number price "Clinic price in EUR, required, >= 0, max 2 decimals"
-        boolean active "Public offering status, default false"
-        relationship clinic FK "Relationship to Clinics, required"
-        relationship treatment FK "Relationship to Treatments, required"
-        date createdAt "System: timestamps: true"
-        date updatedAt "System: timestamps: true"
-    }
-
-    Tags {
-        text id PK "UUID, auto by Payload"
-        text name "Tag name, required"
-        text slug "System: generated from name"
-        join posts "Join to Posts"
-        join clinics "Join to Clinics"
-        join treatments "Join to Treatments"
-        date createdAt "System: timestamps: true"
-        date updatedAt "System: timestamps: true"
-    }
-
-    Categories {
-        text id PK "UUID, auto by Payload"
-        text title "Category title, required"
-        text slug "System: generated from title"
-        date createdAt "System: timestamps: true"
-        date updatedAt "System: timestamps: true"
-    }
-
-    FavoriteClinics {
-        text id PK "UUID, auto by Payload"
-        relationship patient FK "Relationship to Patients, required"
-        relationship clinic FK "Relationship to Clinics, required"
-        date createdAt "System: timestamps: true"
-        date updatedAt "System: timestamps: true"
-    }
-
-    Reviews {
-        text id PK "UUID, auto by Payload"
-        date reviewDate "Auto-set on create"
-        relationship patient FK "Relationship to Patients, required on create, nullable after patient deletion"
-        select authorVisibility "enum: anonymous, firstNameInitial"
-        text publicAuthorName "Public author snapshot, nullable"
-        select status "enum: pending, approved, rejected"
-        number starRating "1-5 rating, required"
-        textarea comment "Review text, required"
-        select publicMeasure "none, context, redaction, placeholder, removed"
-        textarea publicComment "Separate redacted public text"
-        textarea publicNotice "Factual public moderation notice"
-        textarea moderationReason "Internal moderation reason"
-        date moderatedAt "Internal moderation timestamp"
-        relationship moderatedBy FK "Internal PlatformStaff actor"
-        select withdrawalState "active, withdrawn"
-        select withdrawalSource "patient, platform"
-        textarea withdrawalReason "Internal withdrawal reason"
-        date withdrawnAt "Latest withdrawal-state change timestamp"
-        relationship withdrawnBy FK "Internal Patients or PlatformStaff actor"
-        relationship clinic FK "Relationship to Clinics, required"
-        relationship doctor FK "Relationship to Doctors, required"
-        relationship treatment FK "Relationship to Treatments, required"
-        date lastEditedAt "Audit timestamp, readonly"
-        text editedByName "Editor display name"
-        relationship editedBy FK "Relationship to PlatformStaff"
-        date createdAt "System: timestamps: true"
-        date updatedAt "System: timestamps: true"
-    }
-
-    ReviewResponses {
-        text id PK "UUID, auto by Payload"
-        relationship review FK "Unique relationship to one approved Review"
-        relationship clinic FK "Derived from Review, immutable"
-        group publishedResponse "Public body, approval date, blocked flag"
-        group pendingResponse "Moderated body and submission date"
-        select moderationStatus "enum: pending, approved, rejected, blocked"
-        textarea moderationReason "Required for rejected or blocked"
-        date moderatedAt "Platform decision timestamp"
-        select lastAction "Non-personal action audit"
-        date lastActionAt "Action timestamp"
-        select lastActorType "enum: clinic_staff, platform_staff, system"
-        relationship lastActionBy FK "Optional internal actor relation"
-        date createdAt "System: timestamps: true"
-        date updatedAt "System: timestamps: true"
-    }
-
-    ReviewAppeals {
-        text id PK "UUID, auto by Payload"
-        relationship review FK "Unique relationship to one approved Review"
-        relationship clinic FK "Derived from Review, immutable"
-        select reason "incorrect_clinic, inappropriate_content, privacy_concern, other"
-        textarea details "Immutable clinic submission"
-        select status "submitted, under_review, upheld, dismissed"
-        textarea decisionReason "Required for upheld or dismissed"
-        date decidedAt "Platform decision timestamp"
-        select lastAction "Non-personal action audit"
-        date lastActionAt "Action timestamp"
-        select lastActorType "enum: clinic_staff, platform_staff, system"
-        relationship lastActionBy FK "Optional internal actor relation"
-        date createdAt "System: timestamps: true"
-        date updatedAt "System: timestamps: true"
-    }
-
-    Countries {
-        text id PK "UUID, auto by Payload"
-        text name "Country name, required"
-        text isoCode "ISO alpha-2 code, required"
-        text language "Primary language, required"
-        text currency "Currency code, required"
-        date createdAt "System: timestamps: true"
-        date updatedAt "System: timestamps: true"
-    }
-
-    Cities {
-        text id PK "UUID, auto by Payload"
-        text name "City name, required"
-        text airportcode "Optional IATA code"
-        point coordinates "Required lat/long"
-        relationship country FK "Relationship to Countries, required"
-        date createdAt "System: timestamps: true"
-        date updatedAt "System: timestamps: true"
-    }
-
-    Accreditation {
-        text id PK "UUID, auto by Payload"
-        text name "Accreditation name, required"
-        text abbreviation "Abbreviation, required"
-        text country "Issuing country, required"
-        richText description "Details, required"
-        relationship icon FK "Relationship to PlatformContentMedia"
-        date createdAt "System: timestamps: true"
-        date updatedAt "System: timestamps: true"
-    }
-
-    PlatformContentMedia {
-        text id PK "UUID, auto by Payload"
-        text stableId "Stable seed identifier, unique"
-        text alt "Screen-reader alt text, required"
-        richText caption "Optional caption"
-        relationship createdBy FK "Uploader (PlatformStaff), auto-set, required"
-        text storagePath "Resolved storage path, readOnly"
-        text prefix "S3 prefix, readOnly"
-        upload file "Platform-managed media asset"
-        date createdAt "System: timestamps: true"
-        date updatedAt "System: timestamps: true"
-    }
-
-    Posts {
-        text id PK "UUID, auto by Payload"
-        text title "Post title, required"
-        text slug "System: generated, unique"
-        relationship tags FK "Relationship to Tags, hasMany"
-        upload heroImage FK "Relationship to PlatformContentMedia, required"
-        richText content "Article rich text, required"
-        text excerpt "SEO/meta summary, required"
-        relationship relatedPosts FK "Self-relationship, hasMany"
-        relationship categories FK "Relationship to Categories, hasMany"
-        text meta_title "SEO title"
-        text meta_description "SEO description"
-        upload meta_image FK "Relationship to PlatformContentMedia"
-        date publishedAt "Optional publish date"
-        relationship authors FK "Relationship to PlatformStaff, hasMany"
-        array populatedAuthors "Virtual read-time author projection from authors"
-        date createdAt "System: timestamps: true"
-        date updatedAt "System: timestamps: true"
-    }
-
-    Pages {
-        text id PK "UUID, auto by Payload"
-        text title "Page title, required"
-        blocks layout "CMS blocks: CallToAction, Content, MediaBlock, Archive, FormBlock"
-        text meta_title "SEO title"
-        text meta_description "SEO description"
-        upload meta_image FK "Relationship to PlatformContentMedia"
-        date publishedAt "Optional publish time"
-        text slug "System: generated from title"
-        date createdAt "System: timestamps: true"
-        date updatedAt "System: timestamps: true"
-    }
-
-    %% Relationships
-    PlatformStaff ||--o{ UserProfileMedia : "owns or creates"
-    ClinicStaff ||--o{ UserProfileMedia : "owns or creates"
-    PlatformStaff ||--o{ ClinicGalleryEntries : "createdBy"
-    ClinicStaff ||--o{ ClinicGalleryEntries : "createdBy"
-    PlatformStaff ||--o{ ClinicGalleryMedia : "createdBy"
-    ClinicStaff ||--o{ ClinicGalleryMedia : "createdBy"
-    PlatformStaff ||--o{ ClinicMedia : "createdBy"
-    ClinicStaff ||--o{ ClinicMedia : "createdBy"
-    PlatformStaff ||--o{ DoctorMedia : "createdBy"
-    ClinicStaff ||--o{ DoctorMedia : "createdBy"
-    PlatformStaff ||--o{ PlatformContentMedia : "createdBy"
-
-    Patients }o--|| Countries : "resides in"
-    Patients ||--o{ FavoriteClinics : "saves"
-    Patients ||--o{ UserProfileMedia : "owns media"
-    Patients o|--o{ Reviews : "submits, nullable after deletion"
-
-    ClinicStaff }o--|| Clinics : "assigned to"
-
-    ClinicApplications }o--|| Clinics : "linkedRecords.clinic"
-    ClinicApplications }o--|| ClinicStaff : "linkedRecords.clinicStaff"
-
-    Clinics ||--o{ Doctors : "employs"
-    Clinics ||--o{ ClinicTreatments : "offers"
-    Clinics ||--o{ Reviews : "receives"
-    Clinics ||--o{ ReviewResponses : "owns response workflow"
-    Clinics ||--o{ ReviewAppeals : "submits appeal"
-    Clinics ||--o{ FavoriteClinics : "is favorited"
-    Clinics }o--|| Cities : "located in"
-    Clinics }o--|| Countries : "located in"
-    Clinics }o--o{ Tags : "tagged with"
-    Clinics }o--o{ Accreditation : "holds"
-    Clinics }o--o{ ClinicGalleryEntries : "owns gallery entries"
-    Clinics }o--o{ ClinicGalleryMedia : "owns gallery media"
-    Clinics }o--o{ ClinicMedia : "owns media"
-    Clinics ||--o| ClinicProfileDrafts : "has one active profile draft"
-    ClinicProfileDrafts }o--|| Countries : "draft country"
-    ClinicProfileDrafts }o--o| Cities : "draft city"
-
-    ClinicGalleryEntries }o--|| ClinicGalleryMedia : "beforeMedia"
-    ClinicGalleryEntries }o--|| ClinicGalleryMedia : "afterMedia"
-
-    Doctors }o--|| Clinics : "works at"
-    Doctors ||--o{ DoctorTreatments : "performs"
-    Doctors ||--o{ DoctorSpecialties : "specializes"
-    Doctors ||--o{ Reviews : "is reviewed"
-    Doctors }o--o{ DoctorMedia : "profile image"
-    DoctorMedia }o--|| Clinics : "derived clinic ownership"
-
-    MedicalSpecialties ||--o{ MedicalSpecialties : "parent of"
-    MedicalSpecialties ||--o{ Treatments : "includes"
-    MedicalSpecialties ||--o{ DoctorSpecialties : "practiced by"
-    MedicalSpecialties }o--|| PlatformContentMedia : "featureImage"
-
-    Treatments ||--o{ ClinicTreatments : "priced at clinics"
-    Treatments ||--o{ DoctorTreatments : "performed by"
-    Treatments ||--o{ Reviews : "reviewed"
-    Treatments }o--o{ Tags : "tagged"
-    Treatments }o--|| MedicalSpecialties : "belongs to"
-
-    Tags }o--o{ Posts : "categorizes posts"
-    Tags }o--o{ Clinics : "categorizes clinics"
-    Tags }o--o{ Treatments : "categorizes treatments"
-
-    Categories }o--o{ Posts : "categorizes posts"
-
-    PlatformStaff ||--o{ Posts : "authors"
-    Posts ||--o{ Posts : "related posts"
-    Posts }o--|| PlatformContentMedia : "hero/meta image"
-    Pages }o--|| PlatformContentMedia : "meta image"
-    MedicalSpecialties }o--|| PlatformContentMedia : "feature image asset"
-    Accreditation }o--|| PlatformContentMedia : "icon asset"
-    Doctors }o--|| DoctorMedia : "profileImage"
-    Clinics }o--|| ClinicMedia : "thumbnail"
-
-    Reviews ||--|| Clinics : "references clinic"
-    Reviews ||--|| Doctors : "references doctor"
-    Reviews ||--|| Treatments : "references treatment"
-    Reviews ||--o| ReviewResponses : "has at most one response workflow"
-    Reviews ||--o| ReviewAppeals : "has at most one appeal"
-
-    PlatformStaff o|--o{ ReviewResponses : "lastActionBy, nullable"
-    ClinicStaff o|--o{ ReviewResponses : "lastActionBy, nullable"
-    PlatformStaff o|--o{ ReviewAppeals : "lastActionBy, nullable"
-    ClinicStaff o|--o{ ReviewAppeals : "lastActionBy, nullable"
-    PlatformStaff o|--o{ Reviews : "editedBy, moderatedBy, or withdrawnBy"
-    Patients o|--o{ Reviews : "withdrawnBy, nullable"
-
-    FavoriteClinics ||--|| Clinics : "references clinic"
-
-    Countries ||--o{ Cities : "has cities"
+    Group o|--o{ Clinic : "groups"
+    Clinic o|--o{ Staff : "has local assignment"
+    Clinic ||--o| Draft : "has active draft"
+    Clinic ||--o{ Doctor : "has profile"
+    Clinic ||--o{ Offering : "offers"
+    Treatment ||--o{ Offering : "is offered as"
+    Doctor ||--o{ DoctorTreatment : "performs"
+    Treatment ||--o{ DoctorTreatment : "is performed as"
+    Doctor ||--o{ DoctorSpecialty : "practices"
+    Specialty ||--o{ DoctorSpecialty : "is practiced as"
 ```
 
-`Reviews`, `ReviewResponses`, and `ReviewAppeals` use Payload native versions with unlimited retention. Raw Review
-version history is platform-only; an assigned clinic reads only the sanitized Review publication-history DTO. Response
-and appeal histories remain available to platform staff and the assigned clinic. The current document and every
-version retain state, action type, and timestamps. Actor relations are
-intentionally nullable: deleting an account removes the personal relation from current and version relation tables
-while the non-personal audit remains. Version restoration is disabled for all three collections, and physical workflow
-deletion remains disabled through normal collection access. An appeal decision writes only the appeal and its version
-history. Upholding does not change the parent review or its clinic response and therefore creates no versions for
-either. Public response reads continue to require an independently approved, active review with a readable
-`none`, `context`, or `redaction` measure and a non-blocked response.
+- Clinic application approval links the clinic and the initial staff member and authorizes private Dashboard
+  participation. Public publication and the staff member's account activation are separate decisions. The clinic
+  record holds the published profile. An active profile draft holds proposed changes to its core fields.
+  [Clinic participation](../security/clinic-participation.md) ·
+  [Clinic profile provider contract](../integrations/clinic-dashboard-api.md)
+- A doctor profile describes a clinician. Dashboard access comes from a clinic staff assignment and current
+  authorization. A clinic can belong to one group or stay independent. Group assignments grant access through
+  current membership. [Clinic groups](../security/clinic-groups.md) ·
+  [Staff assignments](../security/clinic-staff-assignments.md)
+- A treatment is a shared definition. Each clinic treatment offering carries that clinic's price and availability.
+  Doctor treatment and specialty records describe a doctor's practice independently of a clinic's offers.
+  [Treatment definitions](../../GLOSSARY.md#treatments)
+
+## Patient interactions and reviews
+
+- A saved clinic links a patient and a clinic. An inquiry belongs to its receiving clinic and can exist without an
+  authenticated patient or a conversation. Private conversation messages and clinic-only notes have different access
+  rules. [Saved clinics](../../src/collections/FavoriteClinics.ts) ·
+  [Inquiry terms](../../GLOSSARY.md#inquiries) · [Clinic Dashboard provider contract](../integrations/clinic-dashboard-api.md)
+- A review identifies a clinic, a doctor, and a treatment. It can have one clinic response workflow
+  and one appeal. Review approval, public moderation, author withdrawal, and the appeal outcome are independent.
+  [Review lifecycle, version history, and audit](../review-modification-process.md)
+
+## Editorial content and media
+
+Pages and posts carry editorial content. Globals own shared navigation, consent settings, and curated landing-page
+content. Media records separate platform content, clinic assets, doctor assets, and account images by ownership.
+[Global definitions](../../src/globals) · [Media ownership and storage](../integrations/storage.md)

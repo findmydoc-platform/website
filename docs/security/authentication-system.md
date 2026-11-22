@@ -66,8 +66,10 @@ retained. Synchronization failures remain visible and retryable without granting
 ### Runtime admin recovery
 
 `/admin/login` stays available when no platform staff account exists. The login route logs distinct warnings for
-missing platform staff, missing platform admin roles, and missing login-capable staff. It checks local Payload
-records without calling the Supabase Admin API. The logs leave remediation to the private operations workflow.
+missing platform staff, missing platform admin roles, and missing staff records with a linked identity. It treats a
+non-empty `supabaseUserId` in a local Payload staff record as a readiness signal and checks for an admin role
+separately. A stored ID establishes only the local link. This check makes no Supabase Admin API call and does not
+verify the identity or a successful sign-in. The logs leave remediation to the private operations workflow.
 [Admin login route](<../../src/app/(frontend)/admin/login/page.tsx>) ·
 [Local readiness check](../../src/auth/utilities/firstAdminCheck.ts)
 

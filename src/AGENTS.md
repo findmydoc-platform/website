@@ -37,7 +37,7 @@ This guide defines shared defaults for `src/**`. Nested `AGENTS.md` files overri
 ### Global Engineering Rules (Critical First)
 
 1. Use Payload-native APIs and migrations for Payload-managed data; never use direct SQL or database-adapter access, and stop for an explicit architecture decision if Payload has no suitable mechanism.
-2. Payload business logic and collection or global lifecycle side effects belong in hooks (`src/hooks/**` or collection hooks), not UI components.
+2. Keep Payload business logic and lifecycle side effects in hooks alongside the owning collection or global. Use `src/hooks/**` for shared hooks. Pass the hook's `req` to nested Local API operations in the same transaction, and verify cross-collection effects with an integration test. [Payload transactions](https://payloadcms.com/docs/database/transactions)
 3. Access rules must reuse helpers in `src/access/**`; avoid duplicate role logic.
 4. Collections should remain minimal, indexed where needed, and documented via `admin.description`.
 5. Respect soft delete (`trash: true`) patterns unless destructive behavior is explicitly required.

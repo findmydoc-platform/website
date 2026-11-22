@@ -2,13 +2,9 @@
 
 ## Critical Rules
 
-- Keep side effects in hooks, not UI components.
 - Reuse `src/access/**` helpers; avoid duplicated role logic.
 - Maintain soft-delete behavior unless destructive semantics are explicitly required.
 - Keep hook logic deterministic, testable, and scoped to the owning collection/global.
-- Keep hooks with their owning collection or global. Use `src/hooks/` for hooks that multiple owners share.
-- Pass the hook's `req` to nested Payload Local API operations that belong to the same transaction. Verify cross-collection
-  effects with an integration test. [Payload transactions](https://payloadcms.com/docs/database/transactions)
 - Mirror editable-field prerequisites in the owning collection's Admin UI, native validation, and tests.
 - Throw public Payload errors (`ValidationError` with field paths or `APIError`) for user-actionable failures instead of generic errors.
 - Cache-affecting hooks use normalized planner events, preserve old and new identities or relations when they affect public output, and return early for `context.disableRevalidate`.

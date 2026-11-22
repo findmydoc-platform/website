@@ -116,6 +116,7 @@ pairs, elapsed windows fell from 43:03 to 26:27 in total, with 1.3% more observe
 coverage. These results apply to the measured changes and runner configuration.
 [CI optimization archive](https://github.com/findmydoc-platform/management/issues/407) ·
 [Test and metadata acceptance](https://github.com/findmydoc-platform/website/issues/2079) ·
+[Full integration measurement protocol](https://github.com/findmydoc-platform/website/blob/e2eb40a310bb967789666c7f00b7695226601b7a/docs/engineering/full-integration-parallel-validation.md#measurement-protocol) ·
 [Full integration comparisons](https://github.com/findmydoc-platform/website/pull/2126)
 
 ## Cross-References

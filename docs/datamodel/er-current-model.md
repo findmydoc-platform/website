@@ -19,6 +19,7 @@ erDiagram
     Specialty["Medical specialty"]
 
     Group o|--o{ Clinic : "groups"
+    Group o|--o{ Staff : "has group assignment"
     Clinic o|--o{ Staff : "has local assignment"
     Clinic ||--o| Draft : "has active draft"
     Clinic ||--o{ Doctor : "has profile"
@@ -36,8 +37,9 @@ erDiagram
   [Clinic participation](../security/clinic-participation.md) ·
   [Clinic profile provider contract](../integrations/clinic-dashboard-api.md)
 - A doctor profile describes a clinician. Dashboard access comes from a clinic staff assignment and current
-  authorization. A clinic can belong to one group or stay independent. Group assignments grant access through
-  current membership. [Clinic groups](../security/clinic-groups.md) ·
+  authorization. A clinic can belong to one group or stay independent. A staff member has one local assignment
+  to a clinic, one group assignment, or neither. Group assignments grant access through current membership.
+  [Clinic groups](../security/clinic-groups.md) ·
   [Staff assignments](../security/clinic-staff-assignments.md)
 - A treatment is a shared definition. Each clinic treatment offering carries that clinic's price and availability.
   Doctor treatment and specialty records describe a doctor's practice independently of a clinic's offers.
@@ -45,9 +47,11 @@ erDiagram
 
 ## Patient interactions and reviews
 
-- A saved clinic links a patient and a clinic. An inquiry belongs to its receiving clinic and can exist without an
-  authenticated patient or a conversation. Private conversation messages and clinic-only notes have different access
-  rules. [Saved clinics](../../src/collections/FavoriteClinics.ts) ·
+- A saved clinic links a patient and a clinic. An inquiry belongs to its receiving clinic. Historical guest
+  inquiries can exist without an authenticated patient or a conversation. An anonymous clinic contact request
+  now creates a private preparation, with inquiry creation after the verified patient handoff. Private conversation
+  messages and clinic-only notes have different access rules. [Saved clinics](../../src/collections/FavoriteClinics.ts) ·
+  [Prepared inquiry handoff](../security/auth-actions.md#prepared-inquiry-handoff) ·
   [Inquiry terms](../../GLOSSARY.md#inquiries) · [Clinic Dashboard provider contract](../integrations/clinic-dashboard-api.md)
 - A review identifies a clinic, a doctor, and a treatment. It can have one clinic response workflow
   and one appeal. Review approval, public moderation, author withdrawal, and the appeal outcome are independent.

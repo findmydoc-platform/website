@@ -17,7 +17,7 @@ stores the bytes. Local and hybrid development use S3Mock. [Storage modes](./int
 | --- | --- |
 | Sign-in, registration, and password reset | [Auth routes](../src/app/api/auth) coordinate Supabase identity and Payload principals. |
 | Editorial and marketing forms | [Form Bridge](../src/app/api/form-bridge) resolves Payload forms by their unique slug and forwards submissions to Payload without changing identities. |
-| Clinic-profile contact requests | [Clinic contact endpoint](../src/app/api/clinic-contact-requests/route.ts) creates a [patient clinic inquiry](../src/collections/PatientClinicInquiries.ts) with clinic context and consent evidence. |
+| Clinic-profile contact requests | The [clinic contact endpoint](../src/app/api/clinic-contact-requests/route.ts) stores a private, unsent preparation after the visitor authorizes account creation and later submission. A [verified patient handoff](./security/auth-actions.md#prepared-inquiry-handoff) submits the inquiry to the clinic. |
 
 ## Editorial content
 

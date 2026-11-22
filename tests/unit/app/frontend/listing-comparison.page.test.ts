@@ -166,6 +166,17 @@ describe('listing comparison page route metadata', () => {
     })
   })
 
+  it('keeps the English comparison out of discovery during the copy rollout', async () => {
+    const pageModule = await import('@/app/(frontend)/en/listing-comparison/page')
+
+    for (const searchParams of [{}, { city: 'berlin' }]) {
+      await expect(pageModule.generateMetadata({ searchParams: Promise.resolve(searchParams) })).resolves.toEqual({
+        alternates: { canonical: '/en/listing-comparison' },
+        robots: { index: false, follow: true },
+      })
+    }
+  })
+
   it('renders canonical listing comparison JSON-LD from listing server data', async () => {
     const pageModule = await import('@/app/(frontend)/listing-comparison/page')
     const result = await pageModule.default({

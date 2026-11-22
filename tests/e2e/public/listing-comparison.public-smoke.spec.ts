@@ -102,3 +102,55 @@ test('clearing the specialty chip also clears any selected treatments from the U
   await waitForMissingSearchParam(page, 'treatment')
   await expectNoBrowserIssues(issues)
 })
+
+test('switching the listing language keeps the treatment search and result filters in both directions @smoke', async ({
+  page,
+}, testInfo) => {
+  const issues = createBrowserIssueCollector(page, {
+    ignoredConsoleErrors: [missingListingMediaError],
+  })
+  await page.goto('/listing-comparison', { waitUntil: 'domcontentloaded' })
+
+  const header = page.getByRole('banner')
+  const results = page.getByRole('region', { name: 'Clinic results' })
+  const rating = page.getByRole('button', { name: '4+ ★' })
+  const locateSearch = (locale: 'de' | 'en') =>
+    page.getByRole('textbox', { name: locale === 'de' ? 'Behandlungen suchen' : 'Search treatments' })
+  const term = 'implant'
+
+  await page.getByRole('button', { name: /^Medical Specialty/ }).click()
+  await page.getByRole('radiogroup', { name: 'Medical Specialty' }).getByText('Dental', { exact: true }).click()
+  await waitForSearchParam(page, 'specialty', '1')
+  await rating.click()
+  await waitForSearchParam(page, 'ratingMin', '4')
+  await page.getByRole('button', { name: /^Behandlungen/ }).click()
+  await locateSearch('de').fill(term)
+  await expect(page.getByRole('checkbox', { name: /Single Dental Implant/ })).toBeVisible()
+  await expect(locateSearch('de')).toHaveValue(term)
+  const filteredResults = await results.getByRole('status').innerText()
+
+  for (const [locale, fromLabel, targetLabel, pathname] of [
+    ['en', 'Sprache', 'English', '/en/listing-comparison'],
+    ['de', 'Language', 'Deutsch', '/listing-comparison'],
+  ] as const) {
+    const treatmentSearch = locateSearch(locale)
+    await header.getByRole('button', { name: new RegExp(fromLabel) }).click()
+    await page.getByRole('dialog', { name: fromLabel }).getByRole('link', { name: targetLabel }).click()
+    await expect(page).toHaveURL((url) => url.pathname === pathname)
+    await expect(page.locator('html')).toHaveAttribute('lang', locale)
+    await waitForSearchParam(page, 'specialty', '1')
+    await waitForSearchParam(page, 'ratingMin', '4')
+    await expect(rating).toHaveAttribute('aria-pressed', 'true')
+    await expect(treatmentSearch).toHaveValue(term)
+    await expect(page.getByRole('checkbox', { name: /Single Dental Implant/ })).toBeVisible()
+    await expect(results.getByRole('status')).toHaveText(filteredResults)
+    expect(page.url()).not.toContain(term)
+    await expect(
+      page.getByRole('navigation', { name: 'Breadcrumb' }).getByRole('link', { name: 'Clinics' }),
+    ).toHaveAttribute('href', pathname)
+    await treatmentSearch.scrollIntoViewIfNeeded()
+    await page.screenshot({ path: testInfo.outputPath(`listing-language-${locale}.png`), animations: 'disabled' })
+  }
+
+  await expectNoBrowserIssues(issues)
+})

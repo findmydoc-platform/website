@@ -4,6 +4,7 @@ import React from 'react'
 import '@fontsource/dm-sans'
 
 import { AdminBarClientAdapter } from '@/app/(frontend)/AdminBarClientAdapter.client'
+import { TreatmentSearchHandoffProvider } from '@/app/(frontend)/listing-comparison/TreatmentSearchHandoff.client'
 import { SupabaseAuthHashUrlScrubber } from '@/app/(frontend)/_components/SupabaseAuthHashUrlScrubber.client'
 import { createSiteMetadata } from '@/utilities/generateMeta'
 import { getGlobal } from '@/utilities/getGlobals'
@@ -65,7 +66,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <div className="flex min-h-screen min-h-svh flex-col">
           <AdminBarClientAdapter preview={isEnabled} />
           <LanguageSwitchRouteProvider>
-            <PatientLoginEmailHandoffProvider>{children}</PatientLoginEmailHandoffProvider>
+            <PatientLoginEmailHandoffProvider>
+              <TreatmentSearchHandoffProvider>{children}</TreatmentSearchHandoffProvider>
+            </PatientLoginEmailHandoffProvider>
           </LanguageSwitchRouteProvider>
         </div>
         <CookieConsentClientAdapter

@@ -1,13 +1,11 @@
 'use client'
 
 import * as React from 'react'
-import { usePathname, useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 
-import {
-  buildListingComparisonHref,
-  buildListingComparisonSearchParams,
-  type ListingComparisonQueryState,
-} from '@/utilities/listingComparison/queryState'
+import type { UiCopyLocale } from '@/i18n/requestLocale'
+
+import { buildListingComparisonHref, type ListingComparisonQueryState } from '@/utilities/listingComparison/queryState'
 import { clampPriceRange, type PriceBounds } from '@/utilities/listingComparison/priceRange'
 import type { SortOption } from '@/utilities/listingComparison/sort'
 
@@ -22,6 +20,7 @@ export type ListingComparisonFilterDraft = {
 }
 
 type UseListingComparisonUrlStateArgs = {
+  locale: UiCopyLocale
   queryState: ListingComparisonQueryState
   priceBounds: PriceBounds
 }
@@ -29,12 +28,13 @@ type UseListingComparisonUrlStateArgs = {
 type UseListingComparisonUrlStateResult = {
   sortSelection: SortOption
   setSortSelection: React.Dispatch<React.SetStateAction<SortOption>>
-  filterDraft: ListingComparisonFilterDraft
   setFilterDraft: React.Dispatch<React.SetStateAction<ListingComparisonFilterDraft>>
   filterResetSignature: string
   resultViewSignature: string
   buildPageHref: (targetPage: number) => string
   clearSpecialtySelection: () => void
+  buildLanguageSwitchHref: (targetLocale: UiCopyLocale) => string
+  cancelPendingFilterUpdate: () => void
 }
 
 function removeDuplicateSelections(values: string[]): string[] {
@@ -102,11 +102,12 @@ function buildFilterResetSignature(queryState: ListingComparisonQueryState, pric
 }
 
 export function useListingComparisonUrlState({
+  locale,
   queryState,
   priceBounds,
 }: UseListingComparisonUrlStateArgs): UseListingComparisonUrlStateResult {
   const router = useRouter()
-  const pathname = usePathname()
+  const pendingFilterUpdate = React.useRef<number | null>(null)
 
   const [sortSelection, setSortSelection] = React.useState<SortOption>(queryState.sort)
   const [filterDraft, setFilterDraft] = React.useState<ListingComparisonFilterDraft>({
@@ -134,55 +135,53 @@ export function useListingComparisonUrlState({
     })
   }, [queryState, queryStateSignature])
 
-  const navigateToQueryState = React.useCallback(
-    (nextState: ListingComparisonQueryState, method: 'replace' | 'push' = 'replace') => {
-      const params = buildListingComparisonSearchParams(nextState, {
-        priceMax: priceBounds.max,
-      })
-      const query = params.toString()
-      const href = query ? `${pathname}?${query}` : pathname
+  const draftQueryState = React.useMemo<ListingComparisonQueryState>(() => {
+    const [priceMin, priceMax] = clampPriceRange(filterDraft.priceRange, priceBounds)
+    return {
+      page: queryState.page,
+      sort: sortSelection,
+      cities: removeDuplicateSelections(filterDraft.cities),
+      specialties: filterDraft.specialty ? [filterDraft.specialty] : [],
+      treatments: removeDuplicateSelections(filterDraft.treatments),
+      ratingMin: filterDraft.rating,
+      priceMin,
+      priceMax,
+    }
+  }, [filterDraft, priceBounds, queryState.page, sortSelection])
+  const hasFilterChanges = !isSameListingComparisonQueryState(draftQueryState, queryState)
+  const buildLanguageSwitchHref = (targetLocale: UiCopyLocale) =>
+    buildListingComparisonHref(hasFilterChanges ? { ...draftQueryState, page: 1 } : queryState, {
+      locale: targetLocale,
+      priceMax: priceBounds.max,
+    })
 
-      if (method === 'push') {
-        router.push(href, { scroll: false })
-      } else {
-        router.replace(href, { scroll: false })
-      }
+  const cancelPendingFilterUpdate = React.useCallback(() => {
+    if (pendingFilterUpdate.current === null) return
+    window.clearTimeout(pendingFilterUpdate.current)
+    pendingFilterUpdate.current = null
+  }, [])
+
+  const navigateToQueryState = React.useCallback(
+    (nextState: ListingComparisonQueryState) => {
+      const href = buildListingComparisonHref(nextState, { locale, priceMax: priceBounds.max })
+      router.replace(href, { scroll: false })
     },
-    [pathname, priceBounds.max, router],
+    [locale, priceBounds.max, router],
   )
 
   React.useEffect(() => {
-    const timer = window.setTimeout(() => {
-      const clampedPriceRange = clampPriceRange(filterDraft.priceRange, priceBounds)
-      const nextState: ListingComparisonQueryState = {
-        ...queryState,
-        page: 1,
-        sort: sortSelection,
-        cities: removeDuplicateSelections(filterDraft.cities),
-        specialties: filterDraft.specialty ? [filterDraft.specialty] : [],
-        treatments: removeDuplicateSelections(filterDraft.treatments),
-        ratingMin: filterDraft.rating,
-        priceMin: clampedPriceRange[0],
-        priceMax: clampedPriceRange[1],
-      }
+    if (!hasFilterChanges) return
 
-      if (!isSameListingComparisonQueryState(nextState, queryState)) {
-        navigateToQueryState(nextState, 'replace')
-      }
+    pendingFilterUpdate.current = window.setTimeout(() => {
+      pendingFilterUpdate.current = null
+      navigateToQueryState({ ...draftQueryState, page: 1 })
     }, URL_UPDATE_DELAY_MS)
 
-    return () => window.clearTimeout(timer)
-  }, [filterDraft, navigateToQueryState, priceBounds, queryState, sortSelection])
+    return cancelPendingFilterUpdate
+  }, [cancelPendingFilterUpdate, draftQueryState, hasFilterChanges, navigateToQueryState])
 
-  const buildPageHref = React.useCallback(
-    (targetPage: number) => {
-      const nextState: ListingComparisonQueryState = { ...queryState, page: targetPage }
-      return buildListingComparisonHref(nextState, {
-        priceMax: priceBounds.max,
-      })
-    },
-    [priceBounds.max, queryState],
-  )
+  const buildPageHref = (targetPage: number) =>
+    buildListingComparisonHref({ ...queryState, page: targetPage }, { locale, priceMax: priceBounds.max })
 
   const clearSpecialtySelection = React.useCallback(() => {
     const nextState: ListingComparisonQueryState = {
@@ -191,17 +190,19 @@ export function useListingComparisonUrlState({
       specialties: [],
       treatments: [],
     }
-    navigateToQueryState(nextState, 'replace')
-  }, [navigateToQueryState, queryState])
+    cancelPendingFilterUpdate()
+    navigateToQueryState(nextState)
+  }, [cancelPendingFilterUpdate, navigateToQueryState, queryState])
 
   return {
     sortSelection,
     setSortSelection,
-    filterDraft,
     setFilterDraft,
     filterResetSignature,
     resultViewSignature: queryStateSignature,
     buildPageHref,
     clearSpecialtySelection,
+    buildLanguageSwitchHref,
+    cancelPendingFilterUpdate,
   }
 }

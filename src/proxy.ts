@@ -22,7 +22,7 @@ import {
 } from '@/features/searchIndexing'
 import { logCrawlerRequest } from '@/features/publicDiscovery/crawlerMonitoring'
 import { PUBLIC_DISCOVERY_SURFACE_PATHS } from '@/features/publicDiscovery/site'
-import { uiCopyLocaleFromPath, UI_COPY_LOCALE_HEADER } from '@/i18n/requestLocale'
+import { patientAuthLocaleFromPath, uiCopyLocaleFromPath, UI_COPY_LOCALE_HEADER } from '@/i18n/requestLocale'
 
 const NON_PAGE_PATHS = new Set(['/next/exit-preview', '/next/preview'])
 const PUBLIC_DISCOVERY_PATHS = new Set<string>(PUBLIC_DISCOVERY_SURFACE_PATHS)
@@ -165,7 +165,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
 
     if (
       isTemporaryLandingModeExemptPath(pathname) ||
-      uiCopyLocaleFromPath(pathname, request.nextUrl.searchParams) === 'en'
+      patientAuthLocaleFromPath(pathname, request.nextUrl.searchParams) === 'en'
     ) {
       return privateResponse(withSearchRobotsHeader(nextWithTemporaryLandingHeaders(request, holdingMode)))
     }

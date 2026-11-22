@@ -19,13 +19,13 @@ const GLOBAL_CACHE_NAMESPACE_VERSION = '2026-06-20'
  */
 export async function getGlobal(slug: Global, depth = 0) {
   const payload = await getPayload({ config: configPromise })
+  const usesExistingPageReferences = slug === 'header' || slug === 'footer' || slug === 'cookieConsent'
 
   const global = await payload.findGlobal({
     slug,
     depth,
     // Shared chrome still uses its existing English CMS references during the Page pilot.
-    locale: 'en',
-    fallbackLocale: false,
+    ...(usesExistingPageReferences ? { locale: 'en', fallbackLocale: false } : {}),
   })
 
   return global

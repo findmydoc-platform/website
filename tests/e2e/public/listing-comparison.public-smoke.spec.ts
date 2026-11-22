@@ -149,8 +149,16 @@ test('switching the listing language keeps the treatment search and result filte
       page.getByRole('navigation', { name: 'Breadcrumb' }).getByRole('link', { name: 'Clinics' }),
     ).toHaveAttribute('href', pathname)
     await treatmentSearch.scrollIntoViewIfNeeded()
-    await page.screenshot({ path: testInfo.outputPath(`listing-language-${locale}.png`), animations: 'disabled' })
+    await page.screenshot({
+      path: testInfo.outputPath(`listing-language-${locale}.png`),
+      animations: 'disabled',
+      style: 'nextjs-portal { display: none; }',
+    })
   }
+
+  await page.getByRole('button', { name: 'Behandlungssuche löschen' }).click()
+  await expect(locateSearch('de')).toHaveValue('')
+  await expect(locateSearch('de')).toBeFocused()
 
   await expectNoBrowserIssues(issues)
 })

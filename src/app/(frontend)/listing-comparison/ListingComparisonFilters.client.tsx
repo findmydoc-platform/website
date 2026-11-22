@@ -331,6 +331,13 @@ export function ListingComparisonFilters({
   const medicalSpecialtyGroupName = React.useId()
   const subspecialtyGroupName = React.useId()
   const treatmentSearchId = React.useId()
+  const treatmentSearchInput = React.useRef<HTMLInputElement>(null)
+
+  const clearTreatmentSearch = () => {
+    setOpenSections((current) => ({ ...current, treatment: true }))
+    setTreatmentSearch('')
+    treatmentSearchInput.current?.focus()
+  }
 
   const normalizedCityOptions = React.useMemo(
     () => cityOptions.map((option) => normalizeCheckboxOption(option)),
@@ -714,6 +721,7 @@ export function ListingComparisonFilters({
                 {copy.search}
               </Label>
               <Input
+                ref={treatmentSearchInput}
                 id={treatmentSearchId}
                 type="text"
                 value={treatmentSearch}
@@ -723,14 +731,14 @@ export function ListingComparisonFilters({
                   if (event.key !== 'Escape') return
                   if (treatmentSearch.length === 0) return
                   event.preventDefault()
-                  setTreatmentSearch('')
+                  clearTreatmentSearch()
                 }}
               />
               {treatmentSearch.length > 0 ? (
                 <button
                   type="button"
                   className="cursor-pointer rounded-md border border-border bg-background px-2 py-2 text-xs font-medium text-foreground hover:bg-muted"
-                  onClick={() => setTreatmentSearch('')}
+                  onClick={clearTreatmentSearch}
                   aria-label={copy.clearSearch}
                 >
                   {copy.clear}

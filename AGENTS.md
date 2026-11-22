@@ -146,7 +146,9 @@ The Next.js guide requirement in the managed block above applies to changes invo
 
 ### Platform architecture
 
-For questions spanning Website and Clinic Dashboard, start with the [shared platform architecture](https://github.com/findmydoc-platform/platform-architecture) when GitHub access is available. If access is unavailable, use the local application documentation and state that the shared architecture could not be checked. This repository remains authoritative for its implementation and Payload API contracts. Follow links to the relevant local documentation before changing code.
+Start Website-only work with the [Website architecture](docs/architecture/README.md) and follow its links to the owning sources. For cross-application work, read the relevant [shared arc42 chapter](https://github.com/findmydoc-platform/platform-architecture#read-the-architecture) first. The Website owns the Payload provider contract and business authorization.
+
+If a change may affect another repository or a shared architecture claim, follow the [platform maintenance guide](https://github.com/findmydoc-platform/platform-architecture/blob/main/MAINTENANCE.md) for companion updates and evidence. Refactors that preserve shared relationships stay local. If you cannot access the shared repository, use the local entry and report which shared sources you could not verify.
 
 ### Issue tracker
 

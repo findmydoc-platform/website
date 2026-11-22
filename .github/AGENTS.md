@@ -4,7 +4,10 @@
 
 These instructions apply to `.github/**`, including workflows, actions, scripts, coverage config, issue templates, Dependabot config, and pull request metadata.
 
-Use [docs/engineering/github-actions-pipeline-cost-optimization.md](../docs/engineering/github-actions-pipeline-cost-optimization.md) as research context for CI cost and feedback-time decisions. Do not copy that report into workflow comments; translate it into small, testable workflow rules.
+For CI routing or cost changes, use the [testing strategy](../docs/testing/strategy.md#ci-results-and-full-integration).
+The [CI optimization archive](https://github.com/findmydoc-platform/management/issues/407) holds prior measurement evidence.
+Read the [original cost research](https://github.com/findmydoc-platform/website/blob/d5ba7e51a9b0d07a3d03a07ab7f44712611fb8b8/docs/engineering/github-actions-pipeline-cost-optimization.md)
+when comparing a new optimization with the alternatives considered before rollout.
 
 ## Workflow Security
 
@@ -30,7 +33,7 @@ Use [docs/engineering/github-actions-pipeline-cost-optimization.md](../docs/engi
 - Treat dependency updates by risk: dev-tool patch updates can use narrow checks, runtime dependencies need affected build/tests, and core framework or security updates need broader validation.
 - Avoid duplicated setup across jobs. Reuse the repository's Node and pnpm versions, dependency caching, shared scripts, and existing summary writers before adding new install/build work.
 - Use path filters as a first pass and dependency-aware routing when available. Do not narrow checks for shared runtime files unless downstream impact is explicitly represented.
-- Optimize for total billable work before adding parallelism. Parallel jobs can shorten feedback time while increasing cost through repeated setup.
+- Measure complete feedback time and total runner work separately. Parallel jobs can shorten feedback time while increasing runner work through repeated setup.
 
 ## Artifacts And Reporting
 

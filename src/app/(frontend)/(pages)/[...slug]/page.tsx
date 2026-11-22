@@ -8,27 +8,16 @@ import React, { cache } from 'react'
 
 import { RenderBlocks } from '@/blocks/RenderBlocks'
 import { generateMeta } from '@/utilities/generateMeta'
-import { findPageBySlug, findPageSlugs, type PageDetailDoc } from '@/utilities/content/serverData'
+import { findPageBySlug, findPageSlugs, findPublicPageRoute } from '@/utilities/content/serverData'
+import { buildPagePath } from '@/utilities/cachePolicy'
 import { LivePreviewListener } from '@/components/organisms/LivePreviewListener'
-import {
-  appendContentLocaleToPath,
-  resolveContentLocaleContext,
-  type ContentLocaleContext,
-} from '@/utilities/contentLocalization'
+import type { ContentLocale } from '@/utilities/contentLocalization'
 
 export async function generateStaticParams() {
   const payload = await getPayload({ config: configPromise })
   const pages = await findPageSlugs(payload)
 
-  const params = pages
-    ?.filter((doc) => {
-      return doc.slug && doc.slug !== 'home'
-    })
-    .map(({ slug }) => {
-      return { slug: slug!.split('/') }
-    })
-
-  return params
+  return pages.flatMap(({ slug }) => (slug && slug !== 'home' ? [{ slug: slug.split('/') }] : []))
 }
 
 type Args = {
@@ -40,63 +29,48 @@ type Args = {
   }>
 }
 
-export default async function Page({ params: paramsPromise, searchParams: searchParamsPromise }: Args) {
-  const { isEnabled: draft } = await draftMode()
-  const { slug = ['home'] } = await paramsPromise
-  const searchParams = await searchParamsPromise
-  const contentLocale = resolveContentLocaleContext(searchParams.locale)
-  const url = '/' + slug.join('/')
+const queryPage = cache(async (slug: string, locale: ContentLocale, draft: boolean) => {
+  const payload = await getPayload({ config: configPromise })
+  if (!draft) return findPublicPageRoute(payload, slug, locale)
 
-  const page: PageDetailDoc | null = await queryPageBySlug({
-    contentLocale,
-    slug: slug.join('/'),
-  })
+  const page = await findPageBySlug(payload, slug, true, { locale, fallbackLocale: false })
+  return page ? { page, locale, canonicalPath: buildPagePath(slug, locale), languagePaths: undefined } : null
+})
 
-  if (!page) {
-    return <PayloadRedirects url={url} />
-  }
+async function loadRoute({ params, searchParams }: Args) {
+  const [{ isEnabled: draft }, { slug: pathSegments = ['home'] }] = await Promise.all([draftMode(), params])
+  const isEnglishPath = pathSegments[0] === 'en'
+  const slugSegments = isEnglishPath ? pathSegments.slice(1) : pathSegments
+  const previewLocale = draft ? (await searchParams).locale : undefined
+  const locale = previewLocale === 'de' || previewLocale === 'en' ? previewLocale : isEnglishPath ? 'en' : 'de'
+  const url = '/' + pathSegments.join('/')
+  const route = await queryPage(slugSegments.join('/') || 'home', locale, draft)
+  return { route, draft, url }
+}
 
-  const { layout } = page
+export default async function Page(args: Args) {
+  const { route, draft, url } = await loadRoute(args)
+  if (!route) return <PayloadRedirects url={url} />
 
   return (
-    <article className="pt-12 pb-20 sm:pt-16 sm:pb-24">
-      {/* Allows redirects for valid pages too */}
+    <article className="pt-12 pb-20 sm:pt-16 sm:pb-24" lang={route.locale}>
       <PayloadRedirects disableNotFound url={url} />
-
       {draft && <LivePreviewListener />}
-
-      <RenderBlocks blocks={layout} contentLocale={contentLocale} />
+      <RenderBlocks blocks={route.page.layout} contentLocale={{ locale: route.locale, fallbackLocale: false }} />
     </article>
   )
 }
 
-export async function generateMetadata({
-  params: paramsPromise,
-  searchParams: searchParamsPromise,
-}: Args): Promise<Metadata> {
-  const { slug = ['home'] } = await paramsPromise
-  const searchParams = await searchParamsPromise
-  const contentLocale = resolveContentLocaleContext(searchParams.locale)
-  const page = await queryPageBySlug({
-    contentLocale,
-    slug: slug.join('/'),
-  })
+export async function generateMetadata(args: Args): Promise<Metadata> {
+  const { route, draft } = await loadRoute(args)
+  if (!route) return { robots: { index: false, follow: false } }
 
-  return generateMeta({
-    doc: page,
-    path: appendContentLocaleToPath(`/${slug.join('/')}`, contentLocale.locale),
-    sourceCollection: 'pages',
-  })
+  const metadata = await generateMeta({ doc: route.page, path: route.canonicalPath, sourceCollection: 'pages' })
+  if (draft) return { ...metadata, robots: { index: false, follow: false } }
+  if (!route.languagePaths) return metadata
+
+  return {
+    ...metadata,
+    alternates: { canonical: route.canonicalPath, languages: route.languagePaths },
+  }
 }
-
-const queryPageBySlug = cache(
-  async ({ slug, contentLocale }: { contentLocale?: ContentLocaleContext; slug: string }) => {
-    const normalizedContentLocale = contentLocale ?? {}
-
-    const { isEnabled: draft } = await draftMode()
-
-    const payload = await getPayload({ config: configPromise })
-
-    return findPageBySlug(payload, slug, draft, normalizedContentLocale)
-  },
-)

@@ -215,7 +215,11 @@ export const collectionContractRegistry = {
   },
   pages: {
     baseline: ['tests/integration/pages.lifecycle.test.ts'],
-    deep: ['tests/integration/pages.lifecycle.test.ts', 'tests/integration/access/pages-posts-access.test.ts'],
+    deep: [
+      'tests/integration/pages.lifecycle.test.ts',
+      'tests/integration/access/pages-posts-access.test.ts',
+      'tests/integration/migrations/pageLocalePublication.test.ts',
+    ],
   },
   patients: {
     baseline: ['tests/integration/patientLifecycle.test.ts'],

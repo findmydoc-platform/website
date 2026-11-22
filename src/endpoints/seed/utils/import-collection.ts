@@ -319,7 +319,7 @@ export async function importCollection(options: CollectionImportOptions): Promis
       const result = await upsertByStableId(payload, collection, draft, {
         filePath,
         context,
-        req,
+        req: collection === 'posts' ? { ...req, locale: DEFAULT_CONTENT_LOCALE } : req,
         policy: upsertPolicy,
       })
       if (result.created) created += 1

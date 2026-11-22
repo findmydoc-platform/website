@@ -86,6 +86,7 @@ function buildManagedLegalPageData(
   return {
     title: spec.title,
     slug: spec.slug,
+    legacyEnglishSlug: spec.slug,
     generateSlug: false,
     _status: 'published',
     publishedAt: timestamp,
@@ -100,6 +101,8 @@ function buildManagedLegalPageData(
 async function findManagedPageBySlug(payload: Payload, slug: string): Promise<ManagedPageDoc | null> {
   const result = await payload.find({
     collection: 'pages',
+    locale: 'en',
+    fallbackLocale: false,
     where: {
       slug: {
         equals: slug,
@@ -118,6 +121,8 @@ async function createManagedPage(payload: Payload, spec: (typeof MANAGED_LEGAL_P
   try {
     return await payload.create({
       collection: 'pages',
+      locale: 'en',
+      fallbackLocale: false,
       data: buildManagedLegalPageData(spec),
       draft: false,
       overrideAccess: true,
@@ -157,6 +162,9 @@ async function ensureManagedPage(payload: Payload, spec: (typeof MANAGED_LEGAL_P
   await payload.update({
     collection: 'pages',
     id: existing.id,
+    locale: 'en',
+    fallbackLocale: false,
+    publishSpecificLocale: 'en',
     data: update,
     overrideAccess: true,
     trash: true,
@@ -295,7 +303,7 @@ function resolveManagedLegalSpec(data: Record<string, unknown>, originalDoc?: Pa
   const incomingSlug = typeof data.slug === 'string' ? data.slug : null
   const existingSlug = typeof originalDoc?.slug === 'string' ? originalDoc.slug : null
 
-  return getManagedLegalPageSpec(existingSlug ?? incomingSlug)
+  return getManagedLegalPageSpec(originalDoc?.legacyEnglishSlug ?? existingSlug ?? incomingSlug)
 }
 
 const enforceManagedLegalPagesBeforeChange: CollectionBeforeChangeHook<Page> = async ({
@@ -335,7 +343,9 @@ async function findPageForDeletion(req: PayloadRequest, id: number | string) {
   const doc = await req.payload.findByID({
     collection: 'pages',
     id,
-    req,
+    locale: 'en',
+    fallbackLocale: false,
+    req: { ...req, query: { ...req.query } },
     overrideAccess: true,
   })
 

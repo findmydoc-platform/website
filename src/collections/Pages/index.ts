@@ -1,7 +1,6 @@
 import { slugField } from '@/fields/slugField'
 import type { CollectionConfig, Field } from 'payload'
 
-import { platformOnlyOrPublished } from '../../access/scopeFilters'
 import { Archive } from '../../blocks/ArchiveBlock/config'
 import { BlogHero } from '../../blocks/BlogHero/config'
 import { CallToAction } from '../../blocks/CallToAction/config'
@@ -12,7 +11,13 @@ import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { beforeChangePublishedAt } from '@/hooks/publishedAt'
 import { generatePreviewPath } from '../../utilities/generatePreviewPath'
 import { capturePageDraftSaveIntent } from './hooks/pageDraftIntent'
-import { revalidateDelete, revalidatePage } from './hooks/revalidatePage'
+import { constrainPublicPageRead, readPageAccess } from './hooks/pagePublicRead'
+import {
+  capturePageBeforeChange,
+  capturePageBeforeDelete,
+  revalidateDelete,
+  revalidatePage,
+} from './hooks/revalidatePage'
 import { managedLegalPageHooks } from './legalPages'
 import {
   MetaDescriptionField,
@@ -27,7 +32,7 @@ export const Pages: CollectionConfig<'pages'> = {
   access: {
     create: ({ req }) => isPlatformStaff({ req }),
     delete: ({ req }) => isPlatformStaff({ req }),
-    read: ({ req }) => platformOnlyOrPublished({ req }),
+    read: readPageAccess,
     update: ({ req }) => isPlatformStaff({ req }),
   },
   // This config controls what's populated by default when a page is referenced
@@ -128,7 +133,15 @@ export const Pages: CollectionConfig<'pages'> = {
         position: 'sidebar',
       },
     },
+    {
+      name: 'legacyEnglishSlug',
+      type: 'text',
+      index: true,
+      admin: { hidden: true },
+      access: { create: () => false, update: () => false },
+    },
     slugField({
+      localized: true,
       required: false,
       name: 'slug',
       fieldToUse: 'title',
@@ -136,20 +149,22 @@ export const Pages: CollectionConfig<'pages'> = {
   ],
   hooks: {
     afterChange: [revalidatePage],
-    beforeOperation: [capturePageDraftSaveIntent],
+    beforeOperation: [capturePageDraftSaveIntent, constrainPublicPageRead],
     beforeChange: [
       ...managedLegalPageHooks.beforeChange,
+      capturePageBeforeChange,
       beforeChangePublishedAt({
         statusKey: '_status',
         publishedAtKey: 'publishedAt',
         publishedValue: 'published',
       }),
     ],
-    beforeDelete: [...managedLegalPageHooks.beforeDelete],
+    beforeDelete: [...managedLegalPageHooks.beforeDelete, capturePageBeforeDelete],
     afterDelete: [revalidateDelete],
   },
   versions: {
     drafts: {
+      localizeStatus: true,
       autosave: {
         interval: 100, // We set this interval for optimal live preview
       },

@@ -28,14 +28,19 @@ describe('Payload-backed utilities', () => {
   })
 
   describe('getGlobal', () => {
-    it('fetches globals with the requested depth', async () => {
-      const findGlobalMock = vi.fn().mockResolvedValue({ hero: 'content' })
+    it('keeps existing English Page references populated in shared navigation', async () => {
+      const englishPage = { id: 1, slug: 'privacy-policy' }
+      const findGlobalMock = vi.fn(({ locale }) => ({
+        navItems: [{ link: { reference: { relationTo: 'pages', value: locale === 'en' ? englishPage : 1 } } }],
+      }))
       getPayloadMock.mockResolvedValue({ findGlobal: findGlobalMock })
 
       const globalDoc = await getGlobal('header' as GlobalSlug, 1)
 
-      expect(findGlobalMock).toHaveBeenCalledWith({ slug: 'header', depth: 1 })
-      expect(globalDoc).toEqual({ hero: 'content' })
+      expect(findGlobalMock).toHaveBeenCalledWith({ slug: 'header', depth: 1, locale: 'en', fallbackLocale: false })
+      expect(globalDoc).toEqual({
+        navItems: [{ link: { reference: { relationTo: 'pages', value: englishPage } } }],
+      })
     })
 
     it('wraps global fetches with caching metadata', async () => {
@@ -49,7 +54,7 @@ describe('Payload-backed utilities', () => {
       })
 
       const result = await cachedGlobal()
-      expect(findGlobalMock).toHaveBeenCalledWith({ slug: 'footer', depth: 3 })
+      expect(findGlobalMock).toHaveBeenCalledWith({ slug: 'footer', depth: 3, locale: 'en', fallbackLocale: false })
       expect(result).toEqual({ footer: 'data' })
     })
   })

@@ -182,7 +182,7 @@ import { ensureManagedLegalContent } from './collections/Pages/legalPages'
 import { plugins } from './plugins'
 import { defaultLexical } from '@/fields/defaultLexical'
 import { getServerSideURL } from './utilities/getURL'
-import { CONTENT_LOCALES, DEFAULT_CONTENT_LOCALE } from '@/utilities/contentLocalization'
+import { CONTENT_LOCALES } from '@/utilities/contentLocalization'
 import { MEDIA_UPLOAD_MAX_BYTES, MEDIA_UPLOAD_TOO_LARGE_MESSAGE } from '@/config/mediaUploadPolicy'
 
 const filename = fileURLToPath(import.meta.url)
@@ -691,6 +691,7 @@ export default buildConfig({
   cors: [getServerSideURL()].filter(Boolean),
   email: shouldUseSilentEmailAdapter ? silentEmailAdapter : undefined,
   globals: [Header, Footer, CookieConsent, LandingPages],
+  experimental: { localizeStatus: true },
   localization: {
     locales: [
       {
@@ -702,7 +703,8 @@ export default buildConfig({
         label: 'German',
       },
     ],
-    defaultLocale: DEFAULT_CONTENT_LOCALE,
+    defaultLocale: 'de',
+    defaultLocalePublishOption: 'active',
     fallback: true,
   },
   plugins: [...plugins],

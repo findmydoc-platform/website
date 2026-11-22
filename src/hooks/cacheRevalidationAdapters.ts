@@ -1,3 +1,5 @@
+import type { ContentLocale } from '@/utilities/contentLocalization'
+
 import {
   executeRevalidationPlan,
   planRevalidation,
@@ -126,11 +128,13 @@ const executePlan = (event: Parameters<typeof planRevalidation>[0], logger: Reva
 export const executeCollectionChangeRevalidation = ({
   collection,
   doc,
+  locale,
   logger,
   previousDoc,
 }: {
   readonly collection: CoreCollectionRevalidationCollection
   readonly doc: RevalidatableCollectionDoc
+  readonly locale?: ContentLocale
   readonly logger: RevalidationLogger
   readonly previousDoc?: RevalidatableCollectionDoc
 }): void => {
@@ -160,6 +164,7 @@ export const executeCollectionChangeRevalidation = ({
       subject: {
         id,
         slug,
+        ...(locale ? { locale } : {}),
         ...(previousSlug ? { previousSlug } : {}),
         status,
         ...(previousStatus ? { previousStatus } : {}),
@@ -172,10 +177,12 @@ export const executeCollectionChangeRevalidation = ({
 export const executeCollectionDeleteRevalidation = ({
   collection,
   doc,
+  locale,
   logger,
 }: {
   readonly collection: CoreCollectionRevalidationCollection
   readonly doc: RevalidatableCollectionDoc
+  readonly locale?: ContentLocale
   readonly logger: RevalidationLogger
 }): void => {
   const id = normalizeId(doc.id, 'document id')
@@ -194,6 +201,7 @@ export const executeCollectionDeleteRevalidation = ({
       subject: {
         id,
         slug,
+        ...(locale ? { locale } : {}),
         status,
         previousStatus: status,
       },

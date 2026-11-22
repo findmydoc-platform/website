@@ -811,14 +811,11 @@ export const buildSitemapTag = (sitemapId: string): string => `surface:sitemap:$
 export const buildDiscoveryTag = (discoveryId: string): string =>
   `surface:discovery:${assertKnownDiscoveryId(discoveryId)}`
 
-export const buildPagePath = (slug: string): string => {
+export const buildPagePath = (slug: string, locale: 'de' | 'en' = 'de'): string => {
   const normalizedSlug = assertPayloadSlug(slug, 'page slug', { allowNested: true })
-
-  if (normalizedSlug === 'home') {
-    return '/'
-  }
-
-  return `/${normalizedSlug}`
+  const prefix = locale === 'en' ? '/en' : ''
+  if (normalizedSlug === 'home') return prefix || '/'
+  return `${prefix}/${normalizedSlug}`
 }
 
 export const buildPostPath = (slug: string): string =>

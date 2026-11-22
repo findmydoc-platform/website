@@ -275,6 +275,7 @@ async function queryPosts<TDoc>(
 ): Promise<PagedResult<TDoc>> {
   const result = await payload.find({
     collection: 'posts',
+    locale: 'en',
     depth,
     draft,
     ...buildLocalizedQueryOptions(contentLocale),

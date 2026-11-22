@@ -500,6 +500,7 @@ export interface Page {
     description?: string | null;
   };
   publishedAt?: string | null;
+  legacyEnglishSlug?: string | null;
   /**
    * When enabled, the slug will auto-generate from the title field on save and autosave.
    */
@@ -4573,6 +4574,7 @@ export interface PagesSelect<T extends boolean = true> {
         description?: T;
       };
   publishedAt?: T;
+  legacyEnglishSlug?: T;
   generateSlug?: T;
   slug?: T;
   parent?: T;

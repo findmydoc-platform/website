@@ -1,124 +1,61 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { capturePageDraftSaveIntent } from '@/collections/Pages/hooks/pageDraftIntent'
-import { revalidatePage, revalidateDelete } from '@/collections/Pages/hooks/revalidatePage'
+import {
+  capturePageBeforeChange,
+  capturePageBeforeDelete,
+  revalidateDelete,
+  revalidatePage,
+} from '@/collections/Pages/hooks/revalidatePage'
 import { revalidatePath, revalidateTag } from 'next/cache'
 import type { PayloadRequest } from 'payload'
 import { createMockReq } from '../helpers/testHelpers'
 
-type PageDoc = {
-  id: string | number
-  _status?: 'draft' | 'published'
-  slug?: string
-}
-
-const buildReq = (disableRevalidate = false): PayloadRequest =>
-  createMockReq(null, undefined, {
-    context: {
-      disableRevalidate,
-    },
-  })
-
+const page = { id: 1 } as Parameters<typeof revalidatePage>[0]['doc']
+const buildReq = (disableRevalidate = false) => createMockReq(null, undefined, { context: { disableRevalidate } })
 const getPathCalls = () => vi.mocked(revalidatePath).mock.calls.map(([path]) => path)
 const getTagCalls = () => vi.mocked(revalidateTag).mock.calls.map(([tag]) => tag)
 
 type AfterChangeArgs = Parameters<typeof revalidatePage>[0]
-type AfterDeleteArgs = Parameters<typeof revalidateDelete>[0]
+type PageSlugs = Partial<Record<'de' | 'en', string>>
 
-const buildAfterChangeArgs = (args: { doc: PageDoc; previousDoc?: PageDoc; req: PayloadRequest }): AfterChangeArgs => ({
-  collection: { slug: 'pages' } as unknown as AfterChangeArgs['collection'],
-  context: args.req.context,
-  data: {},
-  doc: args.doc,
-  operation: 'update',
-  previousDoc: args.previousDoc,
-  req: args.req,
-})
+function setPublishedSlugs(req: PayloadRequest, slugs: PageSlugs) {
+  vi.mocked(req.payload.find).mockImplementation(async ({ locale }) => {
+    const slug = locale === 'de' || locale === 'en' ? slugs[locale] : undefined
+    return { docs: slug ? [{ id: page.id, slug }] : [] } as Awaited<ReturnType<typeof req.payload.find>>
+  })
+}
 
-const buildAfterDeleteArgs = (args: { doc: PageDoc; req: PayloadRequest }): AfterDeleteArgs => ({
-  collection: { slug: 'pages' } as unknown as AfterDeleteArgs['collection'],
-  context: args.req.context,
-  doc: args.doc,
-  id: 1,
-  req: args.req,
-})
+async function savePage(req: PayloadRequest, before: PageSlugs, after: PageSlugs) {
+  const collection = { slug: 'pages' } as AfterChangeArgs['collection']
+  const base = { context: req.context, collection, req, operation: 'update' as const, data: {} }
+  setPublishedSlugs(req, before)
+  await capturePageBeforeChange({ ...base, originalDoc: page })
+  setPublishedSlugs(req, after)
+  return revalidatePage({ ...base, doc: page, previousDoc: page })
+}
 
 describe('Pages revalidation hooks', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
+  beforeEach(() => vi.clearAllMocks())
 
-  it('revalidates published page path and pages sitemap', () => {
-    const req = buildReq(false)
-    const doc: PageDoc = { id: 1, _status: 'published', slug: 'about' }
+  it('revalidates the published path and pages sitemap', async () => {
+    const result = await savePage(buildReq(), {}, { de: 'about' })
 
-    const result = revalidatePage(
-      buildAfterChangeArgs({
-        doc,
-        previousDoc: undefined,
-        req,
-      }),
-    ) as PageDoc
-
-    expect(result).toBe(doc)
+    expect(result).toBe(page)
     expect(getPathCalls()).toEqual(['/about'])
     expect(getTagCalls()).toEqual(['entity:pages:1', 'collection:pages', 'slug:pages:about', 'surface:sitemap:pages'])
   })
 
-  it('revalidates old path when page transitions from published to draft', () => {
-    const req = buildReq(false)
-    const previousDoc: PageDoc = { id: 1, _status: 'published', slug: 'home' }
-    const doc: PageDoc = { id: 1, _status: 'draft', slug: 'home' }
+  it('invalidates both locale paths when English is withdrawn and German stays published', async () => {
+    await savePage(buildReq(), { en: 'about', de: 'ueber-uns' }, { de: 'ueber-uns' })
 
-    revalidatePage(
-      buildAfterChangeArgs({
-        doc,
-        previousDoc,
-        req,
-      }),
-    )
-
-    expect(getPathCalls()).toEqual(['/'])
-    expect(getTagCalls()).toEqual(['entity:pages:1', 'collection:pages', 'slug:pages:home', 'surface:sitemap:pages'])
+    expect(getPathCalls()).toEqual(['/en/about', '/ueber-uns'])
+    expect(getTagCalls()).toContain('surface:sitemap:pages')
   })
 
-  it('does not invalidate public caches when a page draft is autosaved', () => {
-    const req = buildReq(false)
-    const previousDoc: PageDoc = { id: 1, _status: 'published', slug: 'about' }
-    const doc: PageDoc = { id: 1, _status: 'draft', slug: 'about' }
+  it('revalidates old and new paths when a published English slug changes', async () => {
+    await savePage(buildReq(), { en: 'old-about' }, { en: 'about' })
 
-    capturePageDraftSaveIntent({
-      args: { draft: true },
-      operation: 'update',
-      req,
-    } as Parameters<typeof capturePageDraftSaveIntent>[0])
-
-    const result = revalidatePage(
-      buildAfterChangeArgs({
-        doc,
-        previousDoc,
-        req,
-      }),
-    ) as PageDoc
-
-    expect(result).toBe(doc)
-    expect(getPathCalls()).toEqual([])
-    expect(getTagCalls()).toEqual([])
-  })
-
-  it('revalidates old and new paths when a published page slug changes', () => {
-    const req = buildReq(false)
-    const previousDoc: PageDoc = { id: 1, _status: 'published', slug: 'old-about' }
-    const doc: PageDoc = { id: 1, _status: 'published', slug: 'about' }
-
-    revalidatePage(
-      buildAfterChangeArgs({
-        doc,
-        previousDoc,
-        req,
-      }),
-    )
-
-    expect(getPathCalls()).toEqual(['/about', '/old-about'])
+    expect(getPathCalls()).toEqual(['/en/about', '/en/old-about'])
     expect(getTagCalls()).toEqual([
       'entity:pages:1',
       'collection:pages',
@@ -128,65 +65,68 @@ describe('Pages revalidation hooks', () => {
     ])
   })
 
-  it('skips revalidation when disabled via context', () => {
+  it('invalidates both canonical paths for all-locale publication', async () => {
+    await savePage(buildReq(), {}, { en: 'about', de: 'ueber-uns' })
+
+    expect(getPathCalls()).toEqual(['/en/about', '/ueber-uns'])
+    expect(getTagCalls()).toContain('surface:sitemap:pages')
+  })
+
+  it('does not read published routes or invalidate caches on draft saves', async () => {
+    const req = buildReq()
+    capturePageDraftSaveIntent({
+      args: { draft: true },
+      context: req.context,
+      collection: { slug: 'pages' } as AfterChangeArgs['collection'],
+      operation: 'update',
+      req,
+    } as unknown as Parameters<typeof capturePageDraftSaveIntent>[0])
+    await savePage(req, { de: 'about' }, { de: 'about' })
+
+    expect(req.payload.find).not.toHaveBeenCalled()
+    expect(getPathCalls()).toEqual([])
+    expect(getTagCalls()).toEqual([])
+  })
+
+  it('skips revalidation when disabled via context', async () => {
     const req = buildReq(true)
-    const doc: PageDoc = { id: 1, _status: 'published', slug: 'pricing' }
+    await savePage(req, {}, { de: 'pricing' })
 
-    revalidatePage(
-      buildAfterChangeArgs({
-        doc,
-        previousDoc: undefined,
-        req,
-      }),
-    )
+    expect(req.payload.find).not.toHaveBeenCalled()
+    expect(getPathCalls()).toEqual([])
+    expect(getTagCalls()).toEqual([])
+  })
 
-    revalidateDelete(buildAfterDeleteArgs({ doc, req }))
+  it('does not invalidate caches for a document without a public slug in either locale', async () => {
+    await savePage(buildReq(), {}, {})
 
     expect(getPathCalls()).toEqual([])
     expect(getTagCalls()).toEqual([])
   })
 
-  it('skips incomplete autosaved drafts until a slug exists', () => {
-    const req = buildReq(false)
-    const doc: PageDoc = { id: 1, _status: 'draft' }
+  it('invalidates all previously public paths on document deletion', async () => {
+    const req = buildReq()
+    const args = {
+      context: req.context,
+      collection: { slug: 'pages' } as AfterChangeArgs['collection'],
+      id: page.id,
+      req,
+    }
+    setPublishedSlugs(req, { en: 'about', de: 'home' })
 
-    const result = revalidatePage(buildAfterChangeArgs({ doc, req })) as PageDoc
+    await capturePageBeforeDelete(args)
+    expect(await revalidateDelete({ ...args, doc: page })).toBe(page)
 
-    expect(result).toBe(doc)
-    expect(getPathCalls()).toEqual([])
-    expect(getTagCalls()).toEqual([])
+    expect(getPathCalls()).toEqual(['/en/about', '/'])
+    expect(getTagCalls()).toContain('surface:sitemap:pages')
   })
 
-  it('revalidates deleted page path and pages sitemap', () => {
-    const req = buildReq(false)
-    const doc: PageDoc = { id: 1, _status: 'published', slug: 'home' }
-
-    const result = revalidateDelete(buildAfterDeleteArgs({ doc, req })) as PageDoc
-
-    expect(result).toBe(doc)
-    expect(getPathCalls()).toEqual(['/'])
-    expect(getTagCalls()).toEqual(['entity:pages:1', 'collection:pages', 'slug:pages:home', 'surface:sitemap:pages'])
-  })
-
-  it('throws strict adapter errors before revalidating published page events without a slug', () => {
-    const req = buildReq(false)
-    const doc = { id: 1, _status: 'published' } as PageDoc
-
-    expect(() => revalidatePage(buildAfterChangeArgs({ doc, req }))).toThrow(/document slug/)
-    expect(getPathCalls()).toEqual([])
-    expect(getTagCalls()).toEqual([])
-  })
-
-  it('keeps executor failures best-effort for CMS writes', () => {
-    const req = buildReq(false)
-    const doc: PageDoc = { id: 1, _status: 'published', slug: 'about' }
+  it('keeps executor failures best-effort for CMS writes', async () => {
     vi.mocked(revalidateTag).mockImplementationOnce(() => {
       throw new Error('cache unavailable')
     })
 
-    const result = revalidatePage(buildAfterChangeArgs({ doc, req })) as PageDoc
-
-    expect(result).toBe(doc)
+    expect(await savePage(buildReq(), {}, { de: 'about' })).toBe(page)
     expect(getPathCalls()).toEqual(['/about'])
   })
 })

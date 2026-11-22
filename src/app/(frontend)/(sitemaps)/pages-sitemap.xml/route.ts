@@ -6,7 +6,8 @@ import { findPageSitemapDocs } from '@/utilities/content/serverData'
 import { SEARCH_ROBOTS_HEADER, SEARCH_ROBOTS_HEADER_VALUE } from '@/features/searchIndexing'
 import { resolveSitemapIndexingAccessForRequest } from '@/features/searchIndexing/sitemapGuards'
 import { getListingComparisonServerData } from '@/utilities/listingComparison/serverData'
-import { buildSitemapTag } from '@/utilities/cachePolicy'
+import { buildPagePath, buildSitemapTag } from '@/utilities/cachePolicy'
+import type { ContentLocale } from '@/utilities/contentLocalization'
 
 const fixedPublicPaths = ['/', '/posts', '/contact', '/about', '/listing-comparison'] as const
 const excludedPublicPaths = new Set(['/search'])
@@ -22,14 +23,16 @@ const buildSitemapLocation = (siteUrl: string, path: string): string => {
   return path === '/' ? `${baseUrl}/` : `${baseUrl}${path}`
 }
 
-const normalizePageSitemapPath = (slug: string | null | undefined): string | null => {
-  if (typeof slug !== 'string') return null
+const normalizePageSitemapPath = (slug: string | null | undefined, locale: ContentLocale): string | null => {
+  if (!slug) return null
 
-  const normalizedSlug = slug.trim().replace(/^\/+|\/+$/g, '')
-  if (normalizedSlug.length === 0) return null
-  if (normalizedSlug === 'home') return '/'
-
-  return `/${normalizedSlug}`
+  try {
+    const normalizedSlug = slug.trim().replace(/^\/+|\/+$/g, '')
+    const unprefixedPath = buildPagePath(normalizedSlug)
+    return excludedPublicPaths.has(unprefixedPath) ? null : buildPagePath(normalizedSlug, locale)
+  } catch {
+    return null
+  }
 }
 
 const getPagesSitemap = unstable_cache(
@@ -38,8 +41,9 @@ const getPagesSitemap = unstable_cache(
     const SITE_URL =
       process.env.NEXT_PUBLIC_SERVER_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL || 'https://example.com'
 
-    const [results, listingComparisonData] = await Promise.all([
-      findPageSitemapDocs(payload),
+    const [germanPages, englishPages, listingComparisonData] = await Promise.all([
+      findPageSitemapDocs(payload, 'de'),
+      findPageSitemapDocs(payload, 'en'),
       getListingComparisonServerData(payload),
     ])
 
@@ -54,28 +58,31 @@ const getPagesSitemap = unstable_cache(
       })
     }
 
-    for (const page of results) {
-      const path = normalizePageSitemapPath(page?.slug)
-      if (!path || excludedPublicPaths.has(path)) continue
+    const pages = { de: germanPages, en: englishPages }
+    for (const locale of ['de', 'en'] as const) {
+      for (const page of pages[locale]) {
+        const path = normalizePageSitemapPath(page.slug, locale)
+        if (!path) continue
 
-      const existingEntry = sitemapByPath.get(path)
-      if (existingEntry) {
+        const existingEntry = sitemapByPath.get(path)
+        if (existingEntry) {
+          sitemapByPath.set(path, {
+            ...existingEntry,
+            ...(page.updatedAt ? { lastmod: page.updatedAt } : {}),
+          })
+          continue
+        }
+
         sitemapByPath.set(path, {
-          ...existingEntry,
+          loc: buildSitemapLocation(SITE_URL, path),
           ...(page.updatedAt ? { lastmod: page.updatedAt } : {}),
         })
-        continue
       }
-
-      sitemapByPath.set(path, {
-        loc: buildSitemapLocation(SITE_URL, path),
-        ...(page.updatedAt ? { lastmod: page.updatedAt } : {}),
-      })
     }
 
     return Array.from(sitemapByPath.values())
   },
-  ['pages-sitemap'],
+  ['pages-sitemap', 'localized'],
   {
     tags: [buildSitemapTag('pages')],
   },

@@ -111,6 +111,8 @@ import * as migration_20261109_100853_read_doctor_image_mcp from './20261109_100
 import * as migration_20261111_092853_align_localized_parent_indexes from './20261111_092853_align_localized_parent_indexes'
 import * as migration_20261111_145406_cookie_consent_approved_prompt from './20261111_145406_cookie_consent_approved_prompt'
 
+import * as migration_20261122_215857_localize_page_publication from './20261122_215857_localize_page_publication'
+
 export const migrations = [
   {
     up: migration_20260112_225205.up,
@@ -671,5 +673,10 @@ export const migrations = [
     up: migration_20261111_145406_cookie_consent_approved_prompt.up,
     down: migration_20261111_145406_cookie_consent_approved_prompt.down,
     name: '20261111_145406_cookie_consent_approved_prompt',
+  },
+  {
+    up: migration_20261122_215857_localize_page_publication.up,
+    down: migration_20261122_215857_localize_page_publication.down,
+    name: '20261122_215857_localize_page_publication',
   },
 ]

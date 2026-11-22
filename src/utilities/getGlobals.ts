@@ -23,6 +23,9 @@ export async function getGlobal(slug: Global, depth = 0) {
   const global = await payload.findGlobal({
     slug,
     depth,
+    // Shared chrome still uses its existing English CMS references during the Page pilot.
+    locale: 'en',
+    fallbackLocale: false,
   })
 
   return global

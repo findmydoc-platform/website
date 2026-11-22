@@ -8,7 +8,7 @@ import { buildRichText } from '../fixtures/richText'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
 import { slugify } from '@/utilities/slugify'
-import { findPageBySlug } from '@/utilities/content/serverData'
+import { findPageBySlug, findPublicPageRoute } from '@/utilities/content/serverData'
 import type { ContentBlock } from '@/payload-types'
 
 const buildPageLayout = (text = 'Page content for integration tests.'): ContentBlock[] => [
@@ -86,52 +86,119 @@ describe('Pages integration - lifecycle and access', () => {
     expect(updated.publishedAt).toBeTruthy()
   })
 
-  it('stores german localized content while falling back to english defaults', async () => {
-    const title = `${slugPrefix} localized page`
+  it.each(['active', 'all'] as const)(
+    'publishes the selected Page languages using the %s publication action',
+    async (publicationScope) => {
+      expect(payload.config.localization && payload.config.localization.defaultLocalePublishOption).toBe('active')
 
-    const created = await payload.create({
-      collection: 'pages',
-      data: {
-        title,
-        layout: buildPageLayout('English page content.'),
-        meta: {
-          title: `${title} SEO title`,
-          description: 'English SEO description.',
+      const germanSlug = `${slugPrefix}-de`
+      const englishSlug = `${slugPrefix}-en`
+      const germanTitle = 'Test page in German'
+      const englishTitle = 'Test page in English'
+      const created = await payload.create({
+        collection: 'pages',
+        locale: 'de',
+        data: {
+          title: germanTitle,
+          slug: germanSlug,
+          generateSlug: false,
+          layout: buildPageLayout('German page content.'),
+          _status: 'draft',
         },
-        _status: 'published',
-      },
-      overrideAccess: true,
-      context: { disableRevalidate: true },
-    })
+        draft: true,
+        context: { disableRevalidate: true },
+      })
 
-    await payload.update({
-      collection: 'pages',
-      id: created.id,
-      locale: 'de',
-      data: {
-        title: `${title} de`,
-        layout: buildPageLayout('German page content.'),
-        meta: {
-          title: `${title} SEO titel`,
+      await payload.update({
+        collection: 'pages',
+        id: created.id,
+        locale: 'en',
+        data: {
+          title: englishTitle,
+          slug: englishSlug,
+          generateSlug: false,
+          layout: buildPageLayout('English page content.'),
+          meta: { description: 'English SEO description.' },
         },
-      },
-      overrideAccess: true,
-      context: { disableRevalidate: true },
-    })
+        draft: true,
+        context: { disableRevalidate: true },
+      })
 
-    const localizedPage = await findPageBySlug(payload, String(created.slug), false, {
-      locale: 'de',
-      fallbackLocale: 'en',
-    })
+      await payload.update({
+        collection: 'pages',
+        id: created.id,
+        locale: 'de',
+        publishSpecificLocale: 'de',
+        data: { _status: 'published' },
+        context: { disableRevalidate: true },
+      })
 
-    const localizedLayout = JSON.stringify(localizedPage?.layout)
+      const germanPage = await findPageBySlug(payload, germanSlug, false, { locale: 'de', fallbackLocale: false })
+      expect(germanPage).toMatchObject({ id: created.id, title: germanTitle, slug: germanSlug })
+      expect(germanPage?.meta?.description).toBeFalsy()
+      expect(await findPublicPageRoute(payload, englishSlug, 'en')).toBeNull()
+      const germanAPIRead = await payload.find({
+        collection: 'pages',
+        locale: 'de',
+        fallbackLocale: 'en',
+        overrideAccess: false,
+        where: { id: { equals: created.id } },
+      })
+      expect(germanAPIRead.docs[0]?.meta?.description).toBeFalsy()
+      const allLocalesAPIRead = await payload.find({
+        collection: 'pages',
+        locale: 'all',
+        overrideAccess: false,
+        disableErrors: true,
+        where: { id: { equals: created.id } },
+      })
+      expect(allLocalesAPIRead.docs).toEqual([])
+      const germanRoute = await findPublicPageRoute(payload, germanSlug, 'de')
+      expect(germanRoute).toMatchObject({ canonicalPath: `/${germanSlug}` })
+      expect(germanRoute?.languagePaths).toBeUndefined()
 
-    expect(localizedPage?.slug).toBe(created.slug)
-    expect(localizedPage?.title).toBe(`${title} de`)
-    expect(localizedLayout).toContain('German page content.')
-    expect(localizedPage?.meta?.title).toBe(`${title} SEO titel`)
-    expect(localizedPage?.meta?.description).toBe('English SEO description.')
-  })
+      await payload.update({
+        collection: 'pages',
+        id: created.id,
+        locale: 'en',
+        ...(publicationScope === 'all' ? { publishAllLocales: true } : { publishSpecificLocale: 'en' }),
+        data: { _status: 'published' },
+        context: { disableRevalidate: true },
+      })
+
+      const englishPage = await findPageBySlug(payload, englishSlug, false, { locale: 'en', fallbackLocale: false })
+      expect(englishPage).toMatchObject({
+        id: created.id,
+        title: englishTitle,
+        slug: englishSlug,
+        meta: { description: 'English SEO description.' },
+      })
+      expect(JSON.stringify(englishPage?.layout)).toContain('English page content.')
+      const languagePaths = { de: `/${germanSlug}`, en: `/en/${englishSlug}`, 'x-default': `/${germanSlug}` }
+      expect(await findPublicPageRoute(payload, germanSlug, 'de')).toMatchObject({
+        canonicalPath: `/${germanSlug}`,
+        languagePaths,
+      })
+      expect(await findPublicPageRoute(payload, englishSlug, 'en')).toMatchObject({
+        canonicalPath: `/en/${englishSlug}`,
+        languagePaths,
+      })
+      expect(await findPageBySlug(payload, germanSlug, false, { locale: 'de', fallbackLocale: false })).toMatchObject({
+        id: created.id,
+        title: germanTitle,
+        slug: germanSlug,
+      })
+      await payload.update({
+        collection: 'pages',
+        id: created.id,
+        locale: 'en',
+        data: { _status: 'draft' },
+        context: { disableRevalidate: true },
+      })
+      expect(await findPublicPageRoute(payload, englishSlug, 'en')).toBeNull()
+      expect(await findPublicPageRoute(payload, germanSlug, 'de')).toMatchObject({ canonicalPath: `/${germanSlug}` })
+    },
+  )
 
   it('updates title without changing slug unless explicitly set', async () => {
     const title = `${slugPrefix} slug lock`
@@ -265,17 +332,25 @@ describe('Pages integration - lifecycle and access', () => {
 
   it('keeps a managed legal page public while its draft is available for preview', async () => {
     const slug = 'privacy-policy'
-    const publishedBefore = await findPageBySlug(payload, slug)
+    const english = { locale: 'en', fallbackLocale: false } as const
+    const publishedBefore = await findPageBySlug(payload, slug, false, english)
 
     if (!publishedBefore) {
       throw new Error('Expected the managed privacy policy page to be published')
     }
+
+    expect(await findPublicPageRoute(payload, slug, 'de')).toMatchObject({
+      page: { id: publishedBefore.id },
+      locale: 'en',
+      canonicalPath: '/en/privacy-policy',
+    })
 
     const draftMarker = 'Managed legal page draft preview content.'
 
     try {
       await payload.update({
         collection: 'pages',
+        locale: 'en',
         id: publishedBefore.id,
         data: {
           layout: buildPageLayout(draftMarker),
@@ -287,8 +362,8 @@ describe('Pages integration - lifecycle and access', () => {
       })
 
       const [publicPage, previewPage] = await Promise.all([
-        findPageBySlug(payload, slug),
-        findPageBySlug(payload, slug, true),
+        findPageBySlug(payload, slug, false, english),
+        findPageBySlug(payload, slug, true, english),
       ])
 
       expect(publicPage?.layout).toEqual(publishedBefore.layout)
@@ -297,6 +372,7 @@ describe('Pages integration - lifecycle and access', () => {
       await expect(
         payload.update({
           collection: 'pages',
+          locale: 'en',
           id: publishedBefore.id,
           data: { _status: 'draft' },
           unpublishAllLocales: true,
@@ -307,6 +383,7 @@ describe('Pages integration - lifecycle and access', () => {
     } finally {
       await payload.update({
         collection: 'pages',
+        locale: 'en',
         id: publishedBefore.id,
         data: {
           layout: publishedBefore.layout,

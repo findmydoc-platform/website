@@ -148,22 +148,26 @@ describe('frontend sitemap routes', () => {
     expect(body.entries.find((entry: { loc: string }) => entry.loc.endsWith('/listing-comparison'))).toMatchObject({
       lastmod: '2026-01-06T00:00:00.000Z',
     })
-    expect(routeMocks.unstableCache).toHaveBeenCalledWith(expect.any(Function), ['pages-sitemap'], {
+    expect(routeMocks.unstableCache).toHaveBeenCalledWith(expect.any(Function), ['pages-sitemap', 'localized'], {
       tags: ['surface:sitemap:pages'],
     })
   })
 
   it('normalizes and deduplicates CMS pages in the pages sitemap', async () => {
-    routeMocks.findPageSitemapDocs.mockResolvedValue([
-      { slug: 'home', updatedAt: '2026-01-01T00:00:00.000Z' },
-      { slug: 'about', updatedAt: '2026-01-01T00:00:00.000Z' },
-      { slug: 'search', updatedAt: '2026-01-01T00:00:00.000Z' },
-      { slug: 'privacy-policy', updatedAt: '2026-01-02T00:00:00.000Z' },
-      { slug: 'imprint', updatedAt: '2026-01-03T00:00:00.000Z' },
-      { slug: 'custom-page', updatedAt: '2026-01-01T00:00:00.000Z' },
-      { slug: '/custom-page/', updatedAt: '2026-01-04T00:00:00.000Z' },
-      { slug: '', updatedAt: '2026-01-01T00:00:00.000Z' },
-    ])
+    routeMocks.findPageSitemapDocs.mockImplementation(async (_payload, locale) =>
+      locale === 'en'
+        ? []
+        : [
+            { slug: 'home', updatedAt: '2026-01-01T00:00:00.000Z' },
+            { slug: 'about', updatedAt: '2026-01-01T00:00:00.000Z' },
+            { slug: 'search', updatedAt: '2026-01-01T00:00:00.000Z' },
+            { slug: 'privacy-policy', updatedAt: '2026-01-02T00:00:00.000Z' },
+            { slug: 'imprint', updatedAt: '2026-01-03T00:00:00.000Z' },
+            { slug: 'custom-page', updatedAt: '2026-01-01T00:00:00.000Z' },
+            { slug: '/custom-page/', updatedAt: '2026-01-04T00:00:00.000Z' },
+            { slug: '', updatedAt: '2026-01-01T00:00:00.000Z' },
+          ],
+    )
     const request = new Request('https://findmydoc.eu/pages-sitemap.xml')
     const { GET } = await import('@/app/(frontend)/(sitemaps)/pages-sitemap.xml/route')
 
@@ -184,6 +188,29 @@ describe('frontend sitemap routes', () => {
     expect(body.entries.find((entry: { loc: string }) => entry.loc.endsWith('/about'))).toMatchObject({
       lastmod: '2026-01-01T00:00:00.000Z',
     })
+  })
+
+  it('adds the English page canonical after publication and removes it independently of German', async () => {
+    const german = { id: 1, slug: 'pflege/deutschland' }
+    const english = { id: 1, slug: 'care/germany' }
+    let englishPublished = false
+    routeMocks.findPageSitemapDocs.mockImplementation(async (_payload, locale) =>
+      locale === 'en' ? (englishPublished ? [english] : []) : [german],
+    )
+    const request = new Request('https://findmydoc.eu/pages-sitemap.xml')
+    const { GET } = await import('@/app/(frontend)/(sitemaps)/pages-sitemap.xml/route')
+    const locations = async () => getEntryLocations((await readSitemap(await GET(request))).entries)
+
+    expect(await locations()).toContain('https://findmydoc.eu/pflege/deutschland')
+    expect(await locations()).not.toContain('https://findmydoc.eu/en/care/germany')
+
+    englishPublished = true
+    expect(await locations()).toContain('https://findmydoc.eu/en/care/germany')
+
+    englishPublished = false
+    const withdrawnLocations = await locations()
+    expect(withdrawnLocations).toContain('https://findmydoc.eu/pflege/deutschland')
+    expect(withdrawnLocations).not.toContain('https://findmydoc.eu/en/care/germany')
   })
 
   it('includes only valid post detail routes in the posts sitemap', async () => {

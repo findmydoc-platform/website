@@ -10,6 +10,7 @@ Use this index as the main entry point for project documentation.
 ## Core Docs
 
 - [Domain Glossary](../GLOSSARY.md)
+- [Website architecture](./architecture/README.md)
 - [Shared Platform Architecture](https://github.com/findmydoc-platform/platform-architecture) (private repository; GitHub access required)
 - [Setup & Development](./setup.md)
 - [Features & Integrations](./features.md)

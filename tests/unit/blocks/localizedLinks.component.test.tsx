@@ -123,7 +123,7 @@ describe('locale-aware block links', () => {
 
     expect(ctaProps?.links).toEqual([
       {
-        href: '/posts/localization-guide-post?locale=de',
+        href: '/posts/localization-guide-post',
         label: 'Read the Guide',
         newTab: false,
         appearance: 'inline',

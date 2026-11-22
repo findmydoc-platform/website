@@ -163,3 +163,40 @@ test('protected recovery screens keep an invalid link safe and offer a new reque
   await expect(page).toHaveURL(/\/en\/auth\/password\/reset$/)
   await expectNoBrowserIssues(issues)
 })
+
+test('the public recovery request keeps its draft and expired-link context across languages @smoke', async ({
+  page,
+  context,
+}, testInfo) => {
+  await setCookieConsent(context)
+  const issues = createBrowserIssueCollector(page)
+  const main = page.getByRole('main')
+  const form = main.locator('form[action="/api/auth/password/reset"]')
+  const emailField = form.getByRole('textbox')
+  const germanLanguage = page.getByRole('banner').getByRole('button', { name: /Sprache/ })
+  const englishLanguage = page.getByRole('banner').getByRole('button', { name: /Language/ })
+  const incompleteEmail = 'recovery.incomplete@'
+  const path = `${recoveryRoute}?reason=expired`
+
+  await page.setViewportSize({ width: 375, height: 400 })
+  await page.goto(`${path}&lang=en`)
+  await expect(form.getByRole('status')).toBeVisible()
+  await emailField.fill(incompleteEmail)
+
+  await germanLanguage.click()
+  const english = page.getByRole('link', { name: 'English', exact: true })
+  await expect(english).toBeVisible()
+  await english.click()
+  await expect(page).toHaveURL(`/en${path}`)
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en')
+  await expect(emailField).toHaveValue(incompleteEmail)
+  await expect(form.getByRole('status')).toBeVisible()
+  await page.screenshot({ path: testInfo.outputPath('recovery-language-switch-preserved-375x400.png') })
+
+  await englishLanguage.click()
+  await page.getByRole('link', { name: 'Deutsch', exact: true }).click()
+  await expect(page).toHaveURL(path)
+  await expect(page.locator('html')).toHaveAttribute('lang', 'de')
+  await expect(emailField).toHaveValue(incompleteEmail)
+  await expectNoBrowserIssues(issues)
+})

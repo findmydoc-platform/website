@@ -8,9 +8,13 @@ import {
   useLanguageSwitchRoute,
   type LanguageSwitchTargets,
 } from '@/features/languageSwitch/LanguageSwitchRouteProvider.client'
+import {
+  readChangedPatientAuthInput,
+  patientAuthFormInput,
+  usePatientAuthFormHandoff,
+} from '@/features/languageSwitch/PatientAuthFormHandoff.client'
 import type { UiCopyLocale } from '@/i18n/requestLocale'
 
-import { usePatientLoginEmailHandoff } from './PatientLoginEmailHandoff.client'
 import type { patientLoginCopy } from './patientLogin'
 
 type ErrorCopy = Awaited<ReturnType<typeof patientLoginCopy>>['errors']
@@ -32,35 +36,27 @@ type Props = Omit<ComponentProps<typeof Root>, 'userTypes' | 'loginHandler' | 'u
   languageSwitch?: { locale: UiCopyLocale; targets: LanguageSwitchTargets }
 }
 
-function field(form: HTMLFormElement | null, name: string): HTMLInputElement | null {
-  const input = form?.elements.namedItem(name)
-  return input instanceof HTMLInputElement ? input : null
-}
-
 export function PatientLoginFormRoot({ errors, languageSwitch, ...props }: Props) {
   const form = useRef<HTMLFormElement>(null)
-  const emailHandoff = usePatientLoginEmailHandoff()
-  const requiresConfirmation = useCallback(() => Boolean(field(form.current, 'password')?.value), [])
+  const handoff = usePatientAuthFormHandoff()
+  const requiresConfirmation = useCallback(() => Boolean(patientAuthFormInput(form.current, 'password')?.value), [])
   const onNavigate = useCallback(
     (href: string) => {
-      if (!emailHandoff) return
-
-      const email = field(form.current, 'email')
-      emailHandoff.current = email && email.value !== email.defaultValue ? { href, value: email.value } : null
+      const email = readChangedPatientAuthInput(form.current, 'email')
+      if (email !== undefined) handoff?.save(href, { form: 'login', email })
     },
-    [emailHandoff],
+    [handoff],
   )
 
   useLanguageSwitchRoute(languageSwitch && { ...languageSwitch, requiresConfirmation, onNavigate })
 
   useLayoutEffect(() => {
-    const draft = emailHandoff?.current
-    if (!draft || draft.href !== `${window.location.pathname}${window.location.search}`) return
+    const draft = handoff?.take()
+    if (draft?.form !== 'login') return
 
-    const email = field(form.current, 'email')
-    if (email) email.value = draft.value
-    emailHandoff.current = null
-  }, [emailHandoff])
+    const email = patientAuthFormInput(form.current, 'email')
+    if (email) email.value = draft.email
+  }, [handoff])
 
   return (
     <Root

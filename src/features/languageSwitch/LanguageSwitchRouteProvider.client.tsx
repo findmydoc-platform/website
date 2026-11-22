@@ -58,8 +58,3 @@ export function useLanguageSwitchRoute(config?: LanguageSwitchRouteProps) {
     return () => registerRoute((current) => (current === registration ? null : current))
   }, [de, en, locale, onNavigate, pathname, registerRoute, requiresConfirmation])
 }
-
-export function LanguageSwitchRoute(props: Pick<LanguageSwitchRouteProps, 'locale' | 'targets'>) {
-  useLanguageSwitchRoute(props)
-  return null
-}

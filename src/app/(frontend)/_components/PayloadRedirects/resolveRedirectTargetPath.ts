@@ -30,9 +30,9 @@ export async function resolveRedirectTargetPath(
 
   const payload = await getPayload({ config: configPromise })
 
-  const locale = sourcePath.startsWith('/en/') ? 'en' : 'de'
+  const locale = sourcePath === '/en' || sourcePath.startsWith('/en/') ? 'en' : 'de'
   const targetPath = await resolveRedirectTargetPathById({ collection, id, locale, payload })
-  if (targetPath || collection !== 'posts' || locale !== 'de') return targetPath
+  if (targetPath || locale !== 'de') return targetPath
 
   return resolveRedirectTargetPathById({ collection, id, locale: 'en', payload })
 }
@@ -57,7 +57,8 @@ async function resolveRedirectTargetPathById({
       depth: 0,
       draft: false,
       overrideAccess: false,
-      ...(collection === 'posts' ? { locale, fallbackLocale: false } : {}),
+      locale,
+      fallbackLocale: false,
       select: PUBLIC_TARGET_SELECT,
     })) as RedirectTargetDocument | null
   } catch {
@@ -72,7 +73,7 @@ async function resolveRedirectTargetPathById({
   let targetPath: string
 
   try {
-    targetPath = collection === 'pages' ? buildPagePath(slug) : buildPostPath(slug, locale)
+    targetPath = collection === 'pages' ? buildPagePath(slug, locale) : buildPostPath(slug, locale)
   } catch {
     return null
   }

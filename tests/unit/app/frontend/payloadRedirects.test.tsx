@@ -92,12 +92,31 @@ describe('PayloadRedirects', () => {
       depth: 0,
       draft: false,
       overrideAccess: false,
+      locale: 'de',
+      fallbackLocale: false,
       select: {
         slug: true,
         _status: true,
         deletedAt: true,
       },
     })
+  })
+
+  it('resolves an English Page redirect to the published English slug', async () => {
+    const findByID = vi.fn(({ locale }) => ({
+      slug: locale === 'en' ? 'about-us' : 'ueber-uns',
+      _status: 'published',
+      deletedAt: null,
+    }))
+    mocks.getPayload.mockResolvedValue({ findByID })
+    mocks.redirectsLoader.mockResolvedValue([
+      {
+        from: '/en/old-about',
+        to: { type: 'reference', reference: { relationTo: 'pages', value: 12 } },
+      },
+    ])
+
+    await expectRedirect('/en/old-about', '/en/about-us')
   })
 
   it('normalizes home page references to root only after live resolution', async () => {

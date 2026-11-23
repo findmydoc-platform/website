@@ -8,6 +8,8 @@ import type { ListingCardData } from '@/components/organisms/Listing'
 import { ListingComparison } from '@/components/templates/ListingComparison/Component'
 import { FavoriteClinicButton } from '@/features/favorites/FavoriteClinicButton'
 import { buildPatientLoginHref } from '@/features/favorites/redirects'
+import { useLanguageSwitchRoute } from '@/features/languageSwitch/LanguageSwitchRouteProvider.client'
+import type { UiCopyLocale } from '@/i18n/requestLocale'
 import { SortControl } from '@/components/molecules/SortControl'
 import { Pagination } from '@/components/molecules/Pagination'
 import { Breadcrumb } from '@/components/molecules/Breadcrumb'
@@ -21,6 +23,7 @@ import { normalizePriceBounds, type PriceBounds } from '@/utilities/listingCompa
 import { ListingComparisonFilters } from './ListingComparisonFilters.client'
 import { useListingComparisonUrlState } from './useListingComparisonUrlState'
 import { useListingResultImpressions } from './useListingResultImpressions'
+import { useTreatmentSearchHandoff } from './TreatmentSearchHandoff.client'
 
 type ListingComparisonTrustStatInput =
   | {
@@ -88,6 +91,7 @@ export type ListingComparisonTrust = {
 }
 
 export type ListingComparisonPageClientProps = {
+  locale: UiCopyLocale
   hero: {
     title: string
     subtitle: string
@@ -120,6 +124,7 @@ const iconMap = {
 } satisfies Record<ListingComparisonTrustStatInput['icon'], React.ComponentType>
 
 export function ListingComparisonPageClient({
+  locale,
   hero,
   trust,
   results,
@@ -154,10 +159,39 @@ export function ListingComparisonPageClient({
     resultViewSignature,
     buildPageHref,
     clearSpecialtySelection,
+    buildLanguageSwitchHref,
+    cancelPendingFilterUpdate,
   } = useListingComparisonUrlState({
+    locale,
     queryState,
     priceBounds: normalizedPriceBounds,
   })
+  const [treatmentSearch, setTreatmentSearch] = React.useState('')
+  const pendingTreatmentSearch = useTreatmentSearchHandoff()
+  const handoffTreatmentSearch = React.useCallback(
+    (href: string) => {
+      cancelPendingFilterUpdate()
+      if (!pendingTreatmentSearch) return
+      pendingTreatmentSearch.current = treatmentSearch ? { href, value: treatmentSearch } : null
+    },
+    [cancelPendingFilterUpdate, pendingTreatmentSearch, treatmentSearch],
+  )
+  useLanguageSwitchRoute({
+    locale,
+    targets: {
+      de: buildLanguageSwitchHref('de'),
+      en: buildLanguageSwitchHref('en'),
+    },
+    onNavigate: handoffTreatmentSearch,
+  })
+
+  React.useLayoutEffect(() => {
+    const handoff = pendingTreatmentSearch?.current
+    if (!handoff || handoff.href !== currentPath) return
+    setTreatmentSearch(handoff.value)
+    pendingTreatmentSearch.current = null
+  }, [currentPath, pendingTreatmentSearch])
+
   const onResultElement = useListingResultImpressions(resultViewSignature)
 
   const specialtyChipLabel = React.useMemo(() => {
@@ -171,6 +205,9 @@ export function ListingComparisonPageClient({
       filters={
         <ListingComparisonFilters
           key={filterResetSignature}
+          locale={locale}
+          treatmentSearchValue={treatmentSearch}
+          onTreatmentSearchChange={setTreatmentSearch}
           cityOptions={filterOptions.cities}
           waitTimeOptions={filterOptions.waitTimes}
           specialtyOptions={filterOptions.specialties}
@@ -223,7 +260,10 @@ export function ListingComparisonPageClient({
           {specialtyChipLabel ? (
             <button
               type="button"
-              onClick={clearSpecialtySelection}
+              onClick={() => {
+                setTreatmentSearch('')
+                clearSpecialtySelection()
+              }}
               className="inline-flex items-center rounded-full border border-border bg-background px-3 py-1 text-xs font-medium text-foreground transition-colors hover:bg-muted"
               title="Remove active specialty filter"
               aria-label={`Remove ${specialtyChipLabel} specialty filter`}

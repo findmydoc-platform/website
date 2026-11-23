@@ -11,7 +11,7 @@ import { patientLoginCopy } from '@/features/uiCopy/patientLogin'
 import { PatientLoginFormRoot } from '@/features/uiCopy/PatientLoginFormRoot.client'
 import { localizedPatientAuthPath } from '@/i18n/patientAuthPath'
 import { ENGLISH_PATIENT_LOGIN_PATH } from '@/i18n/requestLocale'
-import { sanitizeInternalRedirectPath } from '@/utilities/routing/sanitizeInternalRedirectPath'
+import { sanitizeInternalRedirectPathOrNull } from '@/utilities/routing/sanitizeInternalRedirectPath'
 import Link from 'next/link'
 import { headers } from 'next/headers'
 import { createLocalReq, getPayload } from 'payload'
@@ -22,7 +22,7 @@ export const dynamic = 'force-dynamic'
 export default async function LoginPage({
   searchParams: searchParamsPromise,
 }: {
-  searchParams?: Promise<{ message?: string; next?: string; inquiry?: string }>
+  searchParams?: Promise<{ message?: string; next?: string | string[]; inquiry?: string }>
 }) {
   const resolvedSearchParams = await searchParamsPromise
   const requestHeaders = await headers()
@@ -41,16 +41,33 @@ export default async function LoginPage({
   const inquiryQuery = resolvedSearchParams?.inquiry
     ? `?inquiry=${encodeURIComponent(resolvedSearchParams.inquiry)}`
     : ''
-  const postLoginRedirectPath = sanitizeInternalRedirectPath({
-    nextPath: resolvedSearchParams?.next,
-    fallbackPath: preparation ? '/patient/inquiries' : '/',
+  const requestedNext = resolvedSearchParams?.next
+  const validatedNext = sanitizeInternalRedirectPathOrNull({
+    nextPath: typeof requestedNext === 'string' ? requestedNext : null,
     blockedPaths: [PATIENT_LOGIN_PATH, ENGLISH_PATIENT_LOGIN_PATH],
   })
+  const postLoginRedirectPath = validatedNext ?? (preparation ? '/patient/inquiries' : '/')
+
+  const switchQuery = new URLSearchParams()
+  if (validatedNext) switchQuery.set('next', validatedNext)
+  for (const key of ['message', 'inquiry'] as const) {
+    const value = resolvedSearchParams?.[key]
+    if (typeof value === 'string') switchQuery.set(key, value)
+  }
+  const switchSuffix = switchQuery.size ? `?${switchQuery}` : ''
+  const languageSwitch = {
+    locale: copy.locale,
+    targets: {
+      de: `${PATIENT_LOGIN_PATH}${switchSuffix}`,
+      en: `${ENGLISH_PATIENT_LOGIN_PATH}${switchSuffix}`,
+    },
+  }
 
   return (
     <PublicAuthRouteShell>
       <PatientLoginFormRoot
         errors={copy.errors}
+        languageSwitch={languageSwitch}
         redirectPath={postLoginRedirectPath}
         validationMessages={copy.validationMessages}
         className={`w-full max-w-md ${PUBLIC_AUTH_FORM_CONTAINER_CLASSNAME}`}

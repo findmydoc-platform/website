@@ -213,6 +213,17 @@ describe('public site mode proxy', () => {
     },
   )
 
+  it.each(['/listing-comparison', '/en/listing-comparison'])(
+    'blocks %s during temporary landing mode',
+    async (path) => {
+      mockHoldingMode('holding')
+
+      const response = await proxy(new NextRequest(`https://findmydoc.eu${path}`))
+
+      expect(response.status).toBe(404)
+    },
+  )
+
   it('keeps only exact public blog route shapes reachable in temporary landing mode', async () => {
     mockHoldingMode('holding')
 

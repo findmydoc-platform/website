@@ -172,3 +172,103 @@ test('patient login announces registration and password reset in the requested l
   expect(new Set(recoveryFeedback).size).toBe(locales.length)
   await expectNoBrowserIssues(issues)
 })
+
+test('patient login omits ambiguous redirect targets when switching language @smoke', async ({ page }) => {
+  const response = await page.goto('/login/patient?next=%2Fpatient%2Finquiries&next=%2F')
+  expect(response?.ok()).toBe(true)
+
+  await page
+    .getByRole('banner')
+    .getByRole('button', { name: /Sprache/ })
+    .click()
+  await page.getByRole('dialog', { name: 'Sprache', exact: true }).getByRole('link', { name: 'English' }).click()
+  await expect(page).toHaveURL('/en/login/patient')
+})
+
+test('patient login switches languages and confirms before discarding a password @smoke', async ({
+  page,
+}, testInfo) => {
+  const issues = createBrowserIssueCollector(page)
+  const loginContext = '?next=%2Fpatient%2Finquiries&message=patient-check-email'
+  const enteredPassword = 'LanguageSwitchFixturePassword' // pragma: allowlist secret
+
+  await page.setViewportSize({ width: 320, height: 500 })
+  await page.goto(`${locales[0].path}${loginContext}`)
+  await expect(page.locator('html')).toHaveAttribute('lang', 'de')
+
+  const header = page.getByRole('banner')
+  const languageButton = header.getByRole('button', { name: /Sprache/ })
+  await expect(languageButton).toContainText('DE')
+  const menuButton = header.getByRole('button', { name: 'Open menu' })
+  const accountButton = header.getByRole('button', { name: /open account menu/i })
+  const boxes = await Promise.all([languageButton, menuButton, accountButton].map((button) => button.boundingBox()))
+  for (const box of boxes) {
+    expect(box?.width).toBeGreaterThanOrEqual(44)
+    expect(box?.height).toBeGreaterThanOrEqual(44)
+    expect(box!.y + box!.height / 2).toBeCloseTo(boxes[0]!.y + boxes[0]!.height / 2, 0)
+  }
+
+  const email = page.getByLabel(locales[0].email, { exact: true })
+  const password = page.getByLabel(locales[0].password, { exact: true })
+  await email.fill('patient@example.com')
+  await password.fill(enteredPassword)
+
+  await languageButton.focus()
+  await page.keyboard.press('Enter')
+  const languageMenu = page.getByRole('dialog', { name: /Sprache/ })
+  await expect(languageMenu.locator('[aria-current="true"]')).toHaveAttribute('lang', 'de')
+  const english = languageMenu.getByRole('link', { name: 'English', exact: true })
+  await expect(english).toHaveAttribute('hreflang', 'en')
+  await expect(english).toBeFocused()
+  await testInfo.attach('language-menu-accessibility-tree', {
+    body: await languageMenu.ariaSnapshot(),
+    contentType: 'text/yaml',
+  })
+  await page.screenshot({ path: testInfo.outputPath('login-language-menu-320x500.png') })
+  await page.keyboard.press('Enter')
+
+  const confirmation = page.getByRole('dialog', { name: /Sprache wechseln/ })
+  const stay = confirmation.getByRole('button', { name: 'Im Formular bleiben' })
+  await expect(stay).toBeFocused()
+  await page.screenshot({ path: testInfo.outputPath('login-language-confirmation-320x500.png') })
+  await page.keyboard.press('Escape')
+  await expect(languageButton).toBeFocused()
+  await expect(password).toHaveValue(enteredPassword)
+
+  for (const name of ['Schließen', 'Im Formular bleiben']) {
+    await languageButton.click()
+    await english.click()
+    await confirmation.getByRole('button', { name, exact: true }).click()
+    await expect(page).toHaveURL(`/login/patient${loginContext}`)
+    await expect(email).toHaveValue('patient@example.com')
+    await expect(password).toHaveValue(enteredPassword)
+  }
+
+  await languageButton.click()
+  await english.click()
+  await confirmation.getByRole('button', { name: 'Trotzdem zu Englisch wechseln', exact: true }).click()
+  await expect(page).toHaveURL(`/en/login/patient${loginContext}`)
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en')
+  await expect(page.getByLabel(locales[1].email, { exact: true })).toHaveValue('patient@example.com')
+  await expect(page.getByLabel(locales[1].password, { exact: true })).toBeEmpty()
+
+  const englishLanguageButton = header.getByRole('button', { name: /Language/ })
+  await expect(englishLanguageButton).toContainText('EN')
+  for (const width of [320, 375, 640, 768, 1024]) {
+    await page.setViewportSize({ width, height: width === 320 ? 345 : 800 })
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width)
+    await englishLanguageButton.click()
+    const options = page.getByRole('dialog', { name: 'Language' })
+    await expect(options.locator('[aria-current="true"]')).toHaveAttribute('lang', 'en')
+    await page.screenshot({ path: testInfo.outputPath(`login-language-en-${width}.png`) })
+    await page.keyboard.press('Escape')
+    await expect(englishLanguageButton).toBeFocused()
+  }
+
+  await englishLanguageButton.click()
+  await page.getByRole('link', { name: 'Deutsch', exact: true }).click()
+  await expect(page).toHaveURL(`/login/patient${loginContext}`)
+  await expect(page.locator('html')).toHaveAttribute('lang', 'de')
+  await expect(email).toHaveValue('patient@example.com')
+  await expectNoBrowserIssues(issues)
+})

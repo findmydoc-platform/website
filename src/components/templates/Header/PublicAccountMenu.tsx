@@ -155,7 +155,7 @@ const PatientTrigger = React.forwardRef<
     type="button"
     variant="ghost"
     className={cn(
-      'size-10 rounded-full border-0 bg-transparent p-0 hover:bg-card focus-visible:bg-card focus-visible:ring-1 focus-visible:ring-border/70 focus-visible:ring-offset-0',
+      'size-11 rounded-full border-0 bg-transparent p-0 hover:bg-card focus-visible:bg-card focus-visible:ring-1 focus-visible:ring-border/70 focus-visible:ring-offset-0',
       className,
     )}
     aria-label={`${getInitials(state.displayName)}, open account menu`}

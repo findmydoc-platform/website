@@ -43,6 +43,7 @@ interface RegistrationFormProps {
     loginPrompt?: string
     fallbackError?: string
   }
+  formRef?: React.Ref<HTMLFormElement>
   initialValues?: Record<string, string>
   containerClassName?: string
   links?: {
@@ -63,6 +64,7 @@ export function RegistrationForm({
   submitButtonText,
   formMessages,
   containerClassName,
+  formRef,
   initialValues,
   links,
   onSubmit,
@@ -189,6 +191,7 @@ export function RegistrationForm({
               </Alert>
             ) : (
               <form
+                ref={formRef}
                 aria-labelledby={headingId}
                 onSubmit={handleSubmit}
                 onInvalid={formValidation.handleInvalid}

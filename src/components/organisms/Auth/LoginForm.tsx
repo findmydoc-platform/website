@@ -33,6 +33,7 @@ type LoginFormContextType = {
   state: LoginState
   clearFieldError: (fieldName: string) => void
   formValidation: PublicFormValidation
+  formRef?: React.Ref<HTMLFormElement>
   handleSubmit: (e: React.FormEvent<HTMLFormElement>) => Promise<void>
 }
 
@@ -55,6 +56,7 @@ export const Root = ({
   validationMessages,
   unexpectedErrorText = 'An unexpected error occurred. Please try again.',
   loginHandler = handleLogin,
+  formRef,
 }: {
   children: React.ReactNode
   className?: string
@@ -62,6 +64,7 @@ export const Root = ({
   redirectPath?: string
   validationMessages?: NativeValidationMessageOverridesByField
   unexpectedErrorText?: string
+  formRef?: React.Ref<HTMLFormElement>
   loginHandler?: (data: LoginRequest) => Promise<LoginResponse | LoginError>
 }) => {
   const [state, setState] = useState<LoginState>({
@@ -134,7 +137,7 @@ export const Root = ({
   }
 
   return (
-    <LoginFormContext.Provider value={{ state, clearFieldError, formValidation, handleSubmit }}>
+    <LoginFormContext.Provider value={{ state, clearFieldError, formRef, formValidation, handleSubmit }}>
       <div className={cn('flex items-start justify-center px-0 py-8 sm:px-4 sm:py-12', className)}>
         <Card className="w-full max-w-md">
           <CardContent className="p-5 pt-5 sm:p-6 sm:pt-6">{children}</CardContent>
@@ -198,9 +201,10 @@ export const Status = ({ message, variant = 'info' }: { message?: string; varian
 }
 
 export const Form = ({ children, className }: { children: React.ReactNode; className?: string }) => {
-  const { formValidation, handleSubmit } = useLoginFormContext()
+  const { formRef, formValidation, handleSubmit } = useLoginFormContext()
   return (
     <form
+      ref={formRef}
       onSubmit={handleSubmit}
       onInvalid={formValidation.handleInvalid}
       className={cn('space-y-4', className)}

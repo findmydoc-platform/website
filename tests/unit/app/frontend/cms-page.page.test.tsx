@@ -61,7 +61,12 @@ describe('frontend CMS page route metadata', () => {
 
     expect(renderedPage).toMatch(/<h1[\s>]/)
     expect(renderedPage).toMatch(/<a[^>]+href="\/pflege\/deutschland"/)
-    expect(await generateMetadata(args)).toEqual({ robots: { index: false, follow: false } })
+    expect(await generateMetadata(args)).toEqual({
+      title: 'This page isn’t available in English yet.',
+      robots: { index: false, follow: false },
+    })
+    mocks.headers.mockResolvedValue(new Headers())
+    expect(await generateMetadata(routeArgs('en/unknown'))).not.toHaveProperty('title')
   })
 
   it('only lists a published equivalent as a language alternate and keeps each canonical self-referential', async () => {

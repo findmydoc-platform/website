@@ -8,6 +8,7 @@ import { RenderBlocks } from '@/blocks/RenderBlocks'
 import { generateMeta } from '@/utilities/generateMeta'
 import { loadPageRoute } from '@/app/(frontend)/_data/loadPageRoute'
 import { LivePreviewListener } from '@/components/organisms/LivePreviewListener'
+import { languageSwitcherCopy } from '@/features/languageSwitch/copy'
 import { CmsLanguageSwitchRoute } from '@/features/languageSwitch/CmsLanguageSwitchRoute.client'
 import { CMS_TRANSLATION_SOURCE_HEADER } from '@/utilities/routing/cmsRedirectRequest'
 import { CmsDocumentLanguage } from '@/features/uiCopy/DocumentLanguage.client'
@@ -23,14 +24,18 @@ type Args = {
 
 async function loadRoute({ params, searchParams }: Args) {
   const [{ slug = ['home'] }, { locale }] = await Promise.all([params, searchParams])
-  return loadPageRoute(slug, locale)
+  const result = await loadPageRoute(slug, locale)
+  const { route, draft, url } = result
+  const germanPath =
+    !route && !draft && (url === '/en' || url.startsWith('/en/'))
+      ? (await headers()).get(CMS_TRANSLATION_SOURCE_HEADER)
+      : null
+  return { ...result, germanPath }
 }
 
 export default async function Page(args: Args) {
-  const { route, draft, url } = await loadRoute(args)
+  const { route, draft, url, germanPath } = await loadRoute(args)
   if (!route) {
-    const germanPath =
-      !draft && (url === '/en' || url.startsWith('/en/')) && (await headers()).get(CMS_TRANSLATION_SOURCE_HEADER)
     return germanPath ? <CmsTranslationUnavailable germanPath={germanPath} /> : <PayloadRedirects url={url} />
   }
 
@@ -51,8 +56,13 @@ export default async function Page(args: Args) {
 }
 
 export async function generateMetadata(args: Args): Promise<Metadata> {
-  const { route, draft } = await loadRoute(args)
-  if (!route) return { robots: { index: false, follow: false } }
+  const { route, draft, germanPath } = await loadRoute(args)
+  if (!route) {
+    return {
+      robots: { index: false, follow: false },
+      ...(germanPath ? { title: languageSwitcherCopy.en.unavailable } : {}),
+    }
+  }
 
   const metadata = await generateMeta({ doc: route.page, path: route.canonicalPath, sourceCollection: 'pages' })
   if (draft) return { ...metadata, robots: { index: false, follow: false } }

@@ -17,6 +17,7 @@ import { calculateReadTime } from '@/utilities/blog/calculateReadTime'
 import { DISCLAIMER_COPY } from '@/utilities/legal/disclaimers'
 import { resolveMediaImage } from '@/utilities/media/resolveMediaImage'
 import { PostShareActionBar } from './PostShareActionBar'
+import { languageSwitcherCopy } from '@/features/languageSwitch/copy'
 import { CmsLanguageSwitchRoute } from '@/features/languageSwitch/CmsLanguageSwitchRoute.client'
 import { CMS_TRANSLATION_SOURCE_HEADER } from '@/utilities/routing/cmsRedirectRequest'
 import { CmsDocumentLanguage } from '@/features/uiCopy/DocumentLanguage.client'
@@ -35,9 +36,8 @@ export type PostPageArgs = {
 }
 
 export async function renderPost(args: PostPageArgs, pathLocale: ContentLocale) {
-  const { draft, requestPath, route } = await loadPostRoute(args, pathLocale)
+  const { draft, requestPath, route, germanPath } = await loadPostRoute(args, pathLocale)
   if (!route) {
-    const germanPath = !draft && pathLocale === 'en' && (await headers()).get(CMS_TRANSLATION_SOURCE_HEADER)
     return germanPath ? <CmsTranslationUnavailable germanPath={germanPath} /> : <PayloadRedirects url={requestPath} />
   }
 
@@ -156,8 +156,13 @@ export async function renderPost(args: PostPageArgs, pathLocale: ContentLocale) 
 }
 
 export async function generatePostMetadata(args: PostPageArgs, pathLocale: ContentLocale): Promise<Metadata> {
-  const { draft, route } = await loadPostRoute(args, pathLocale)
-  if (!route) return { robots: { index: false, follow: false } }
+  const { draft, route, germanPath } = await loadPostRoute(args, pathLocale)
+  if (!route) {
+    return {
+      robots: { index: false, follow: false },
+      ...(germanPath ? { title: languageSwitcherCopy.en.unavailable } : {}),
+    }
+  }
 
   const metadata = await generateMeta({ doc: route.post, path: route.canonicalPath, sourceCollection: 'posts' })
   if (draft) return { ...metadata, robots: { index: false, follow: false } }
@@ -172,5 +177,8 @@ async function loadPostRoute({ params, searchParams }: PostPageArgs, pathLocale:
   const [{ slug = '' }, { locale }] = await Promise.all([params, searchParams])
   const previewLocale = locale === 'en' || locale === 'de' ? locale : pathLocale
   const requestPath = `${pathLocale === 'en' ? '/en' : ''}/posts/${slug}`
-  return { requestPath, ...(await resolvePost(slug, pathLocale, previewLocale)) }
+  const result = await resolvePost(slug, pathLocale, previewLocale)
+  const germanPath =
+    !result.route && !result.draft && pathLocale === 'en' ? (await headers()).get(CMS_TRANSLATION_SOURCE_HEADER) : null
+  return { requestPath, ...result, germanPath }
 }

@@ -325,6 +325,22 @@ describe('frontend post detail route', () => {
     expect(metadata.alternates).toEqual({ canonical: languagePaths.en, languages: languagePaths })
   })
 
+  it('titles a noindex notice for an unavailable English Post', async () => {
+    mocks.getCachedPublicPostRouteMock.mockResolvedValue(null)
+    mocks.headersMock.mockResolvedValue(new Headers({ 'x-fmd-cms-translation-source': '/posts/gruener-tee' }))
+
+    const { generateMetadata } = await import('@/app/(frontend)/en/posts/[slug]/page')
+    const args = { params: Promise.resolve({ slug: 'green-tea' }), searchParams: Promise.resolve({}) }
+
+    expect(await generateMetadata(args)).toEqual({
+      title: 'This page isn’t available in English yet.',
+      robots: { index: false, follow: false },
+    })
+
+    mocks.headersMock.mockResolvedValue(new Headers())
+    expect(await generateMetadata(args)).not.toHaveProperty('title')
+  })
+
   it('routes unknown public slugs through the redirect and not-found boundary', async () => {
     mocks.getCachedPublicPostRouteMock.mockResolvedValueOnce(null)
 

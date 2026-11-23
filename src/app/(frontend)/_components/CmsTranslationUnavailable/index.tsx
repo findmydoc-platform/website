@@ -15,7 +15,7 @@ export function CmsTranslationUnavailable({ germanPath }: { germanPath: string }
       <Heading as="h1" size="h3" align="left">
         {languageSwitcherCopy.en.unavailable}
       </Heading>
-      <Button asChild size="lg">
+      <Button asChild size="lg" className="hover:bg-primary-hover">
         <Link href={germanPath} hrefLang="de" lang="de" prefetch={false}>
           Auf Deutsch lesen
         </Link>

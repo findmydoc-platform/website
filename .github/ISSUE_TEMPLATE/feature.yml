@@ -13,6 +13,7 @@ body:
       value: |
         Use this structure when creating or rewriting a feature issue.
         Keep the issue lightweight and template-shaped. Put task-specific implementation details in issue comments or pull requests. Link repository documentation for supported behavior and durable technical decisions.
+        If this ticket implements an agreed Engineering Spec, link its lead issue.
 
   - type: textarea
     id: problem

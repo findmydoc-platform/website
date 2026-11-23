@@ -25,8 +25,8 @@ Issues and specs for this repository live in GitHub Issues. Use the `gh` CLI for
 
 ## When a skill says "publish to the issue tracker"
 
-Create a GitHub issue in this repository.
+Reuse the lead issue for an Engineering Spec, even if it lives in another repository. If a cross-repository Spec needs a new lead issue, create it in the repository that owns the decision. Create Website implementation issues in this repository and link them to their parent when one exists.
 
 ## When a skill says "fetch the relevant ticket"
 
-Use `gh issue view <number> --comments`.
+Use `gh issue view <number> --comments` for issues in this repository. Pass the issue URL for issues in another repository.

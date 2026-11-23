@@ -26,7 +26,7 @@ treatment and gallery contracts, and the inquiry communication contract. The Cli
 are implemented in the Dashboard repository; trusted preview and production rollout evidence remain pending.
 
 The notification foundation adds Website-owned immutable occurrences, personal receipt storage and the read-only
-new-inquiry path. Guest and verified submissions capture one occurrence inside their existing source transaction,
+new-inquiry path. A verified inquiry submission captures one occurrence inside its source transaction,
 subject to a persisted activation boundary that defaults to inactive. Installed `clinic-notifications-v1` support
 is negotiated separately from capture activation. Its [closed wire contract](../architecture/clinic-notifications-v1.md)
 defines the complete catalog for the following implementation slices. Personal explicit marking now persists first
@@ -118,8 +118,7 @@ sanitized `503` responses.
 
 Active-workspace recovery consumes these existing source contracts. A clinic assignment replacement, revocation or group
 membership change takes effect on the next scoped operation; stale identity or bootstrap claims cannot authorize it. The
-Dashboard then reads a new personal bootstrap and offers only current eligible choices. `403` preserves the valid personal
-session, including an approved empty set. Source outages remain distinct from confirmed denial. Recovery introduces no
+Dashboard then reads a new personal bootstrap and offers only current eligible choices. A scoped `403` preserves the valid personal session. If the new bootstrap returns an approved empty set, the Dashboard restricts the workspace and preserves the session. Source outages remain distinct from confirmed denial. Recovery introduces no
 new source endpoint, stored draft transport, revocation channel, age policy or public-cache invalidation.
 
 
@@ -703,10 +702,12 @@ All retention collections and routes are `private-live`. Responses use private n
 is `no-public-impact`: there are no public reads, tags, paths, planner events, revalidation owners, or public cache
 flushes for review, hold, cutover, or offboarding operations.
 
-The public `POST /api/clinic-contact-requests` route is likewise an HTTP adapter around one guest inquiry command. That
-command validates the clinic and optional doctor or treatment inside its serializable transaction, deduplicates the
-submission, initializes the root aggregate, and appends a content-free `inquiry-created` audit event atomically. Guest
-submission creates neither a conversation nor a read position.
+The public `POST /api/clinic-contact-requests` route stores a private, unsent preparation after the visitor authorizes
+account creation and later submission. The clinic cannot see it, and preparation creates no inquiry or notification.
+After identity verification and the required password evidence, the My inquiries handoff rechecks verified patient
+access and calls the inquiry creation command. The command validates the clinic and optional doctor or treatment,
+deduplicates the submission, initializes the inquiry, and appends a content-free `inquiry-created` audit event in the
+same transaction. [Prepared inquiry handoff](../security/auth-actions.md#prepared-inquiry-handoff)
 
 ## Dashboard-facing Route Semantics
 

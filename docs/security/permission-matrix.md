@@ -1,173 +1,34 @@
-# Permission Matrix (Authoritative)
+# Collection permission matrix
 
-Security-focused reference for roles and collection access; business narrative intentionally omitted.
+Use the [generated matrix](./permission-matrix.generated.md) for collection-level create, read, update, delete, Admin,
+and version access expectations. Its source is the [permission matrix configuration](../../src/security/permission-matrix.config.ts).
+[Collection access and hooks](../../src/collections) enforce access alongside the [shared access helpers](../../src/access).
+An Admin entry describes expected administrative access or authority. It does not imply a separate Payload
+`access.admin` handler.
 
----
+## Authorization boundaries
 
-## 👥 Roles (Condensed)
-* Platform Staff: Global administrative & moderation authority (RWDA all collections; approval + master data control).
-* Clinic Staff: After staff approval, successful auth synchronization, verified password evidence, and clinic participation approval, manage only their clinic's operational data; scoped staff/doctor reads; self profile update.
-* Patients: Read public data; manage own reviews (create-only), favorites, and profile updates.
-* Anonymous: Read-only approved public content.
+- Platform staff roles and clinic staff eligibility come from the current Payload principal. An operator or user's
+  role, clinic, account state, field access, and record ownership can narrow an operation shown in the matrix.
+  [Authentication and integrity](./authentication-system.md#authorization-and-integrity)
+- A staff member's active local or group assignment limits current clinic scope. Invitation and participation evidence
+  can enable private Dashboard access independently of public clinic publication.
+  [Staff assignments](./clinic-staff-assignments.md) · [Clinic participation](./clinic-participation.md)
+- Domain operations can require tighter checks than generic collection access. The Website owns the request contracts
+  for Dashboard writes, review history, and private AuthAction commands.
+  [Clinic Dashboard API](../integrations/clinic-dashboard-api.md) · [Review access and audit](../review-modification-process.md) ·
+  [Auth actions](./auth-actions.md)
+- A media file request and a media document read are different operations. File delivery follows the collection's
+  publication and ownership rules. [Media access and storage](../integrations/storage.md)
 
----
-
-## 🔐 **Permission Model (RWDA System)**
-
-### **Permission Types Explained**
-
-**R - Read**: View and access data
-- Browse listings and profiles
-- View approved content and reviews
-- Access search and discovery features
-
-**W - Write**: Create and modify data
-- Add new content and profiles
-- Update existing information
-- Submit forms and applications
-
-**D - Delete**: Remove data from the platform
-- Remove outdated or incorrect information
-- Delete inappropriate content
-- Archive completed processes
-
-**A - Admin**: Administrative functions
-- Approve pending content
-- Moderate submissions
-- Manage user permissions and roles
-
-**Interpretation note**: In this project, `A` is a business-level marker for approval, moderation, role management, or Payload Admin UI access. It does not imply a dedicated collection-level `access.admin` handler. Where CRUD already fully expresses the effective permissions, `A` may be intentionally redundant for RWDA consistency.
-
-### **Access Control Principles**
-
-**Least Privilege**: Users receive the minimum permissions necessary for their role
-**Clinic Segregation**: Clinic staff can only access their own clinic's data
-**Moderation Flow**: All public content requires Platform Staff approval
-**Data Protection**: Personal and sensitive data is restricted to authorized users only
-
----
-
-## 📊 **Complete Permission Matrix**
-
-Human-readable and machine-readable views are generated from the config on demand:
-
-- For documentation/review: `pnpm matrix:derive` writes
-  - `docs/security/permission-matrix.generated.md` (human-readable generated table)
-
-- For CLI verification tooling: `pnpm matrix:derive json` writes
-  - `tmp/permission-matrix.json` (machine-readable snapshot used by `pnpm matrix:verify`)
-
-- For unit tests: the JSON snapshot is generated automatically by the unit test setup.
-
-If you need to change permissions, update `src/security/permission-matrix.config.ts` and regenerate as needed.
-
-### Notes on Specific Rows
-* PlatformStaff: Platform Staff can review safe identity fields and manage roles. Every platform role can select, replace, or remove its own profile image using media owned by that staff account. Updating another staff member's profile image is denied. The Supabase identity binding remains hidden, and Create/Delete operations use the trusted provisioning path instead of direct Admin forms †.
-* ClinicStaff: Business access is denied until the direct staff principal is approved, its Supabase synchronization is successful, and its assigned clinic has approved participation and is neither rejected nor deleted. Public publication is separate. Platform Staff can review safe identity fields and manage clinic assignment and lifecycle status. Eligible Clinic Staff can read staff in their own clinic and target only their own principal for updates; identity and synchronization fields remain system-owned. Create/Delete operations occur exclusively through the trusted provisioning path †‡.
-* Patients: Patients can update their own profile but cannot create or delete their patient record (provisioned via Supabase/Auth).
-* AuthActions: Platform Staff, including Support, read only lifecycle diagnostics in Admin. Generic writes are denied for every role; internal Auth commands own creation, state changes and hard deletion 42 days after the first terminal timestamp. Principal and fixed destinations stay private. See [the AuthAction contract](auth-actions.md).
-* ClinicProfileDrafts: Hidden from Admin. All generic collection operations are denied, including for Platform Staff. The tenant-scoped Clinic Dashboard service owns draft reads and mutations through its internal Payload access override.
-* FavoriteClinics: Hidden from Admin. Patient ownership checks and existing Platform data access remain enforced through the collection API.
-* MCP API Keys: Only current Platform administrators can browse or manage keys. Access checks reload the staff role and deny access when the record is missing or unavailable. Existing platform staff-owned keys retain their configured MCP access, including Support-owned keys. Key ownership remains immutable and unlock stays disabled.
-* RecoveryRequestEvents: No generic read, write or Admin access, including Platform Staff. Owned Auth commands store separate short-lived target and IP HMAC events; the existing Website scheduler deletes them after their one-hour counting window. See [recovery admission](auth-actions.md#recovery-request-admission).
-* Reviews: Patients can create pending reviews and withdraw only their own review through the narrow command. Only Platform can edit, moderate, correct withdrawal state, or delete reviews. Clinic staff read sanitized approved state for currently eligible local or group clinics, including removed and withdrawn rows; public readers receive only active visible projections. Raw versions are Platform-only, while current-source-clinic sanitized publication history uses the dedicated private endpoint.
-* PlatformContentMedia: Publicly readable marketing / page assets. Write restricted to Platform.
-* ClinicMedia: Document reads stay scoped to Platform + own clinic. Clinic Staff writes use only the revision-protected Clinic Dashboard gallery endpoints; direct collection writes are Platform-only. Static file reads (`/api/clinicMedia/file/:filename`) require both `status=published` and an approved owning clinic. Drafts remain private, ownership remains immutable after create, and files stay in per-clinic storage paths.
-* DoctorMedia: Similar scoping to ClinicMedia; ownership derives from doctor -> clinic relationship; `clinic` denormalized for access filtering.
-* UserProfileMedia: Self or Platform management of avatars; owner + createdBy auto-stamped for patients and staff uploads.
-* Global Upload Limit: 4 MiB per file (configured in root Payload `upload.limits.fileSize`).
-* † Provisioning and deletion of PlatformStaff & ClinicStaff principals are performed through the trusted provisioning path (no direct create/delete endpoints or UI forms).
-* ‡ ClinicStaff row: RW shown is conditional; Supabase authentication may exist before approval, but Payload business access remains denied until the staff and clinic are access-ready.
-
----
-
-## 🛡️ Security Notes
-* Cross-clinic isolation enforced in access functions (Clinic Staff never read other clinics' protected data).
-* Staff principal create/delete only through the trusted provisioning path (no direct CRUD endpoints/forms).
-* Clinic Staff business access is denied until staff approval, successful auth synchronization, verified password evidence, and clinic participation approval (no partial API access).
-* Platform Staff are sole moderators (reviews, master data, approvals).
-* Patients cannot self-create/delete patient record; identity originates in Supabase.
-
-## 📋 Audit & Logging
-Create/update/delete + provisioning events logged (basic logs only; advanced metrics deferred).
-
----
-
-## 🔄 Key Workflows (Security-Focused)
-### Clinic Onboarding
-1. Anonymous submission → `clinicApplications` (status `submitted`)
-2. Platform approval → provisioning creates Clinic (pending), ClinicStaff (pending), and a Dashboard-targeted Supabase invitation
-3. Provisioning failures remain visible; retries may create additional records carrying the same onboarding key
-4. Payload logs a structured warning with all affected record ids when more than one clinic or staff principal exists for that key
-5. Platform finalizes and approves Clinic; ClinicStaff approved and auth sync successful → gains access
-
----
-
-## 🔄 **Permission Workflows & User Journeys**
-
-### **Clinic Onboarding Process**
-1. **Clinic** submits a public registration request.
-2. **Platform Staff** approves the request, authorizing the resulting clinic and its named initial staff member for Dashboard participation.
-3. **Clinic Staff** receives the existing Dashboard invitation. Usable access still requires verified account completion and synchronized identity.
-4. **Clinic Staff** gains tenant-scoped access after current Payload checks confirm participation and private password evidence.
-5. **Platform Staff** decides public publication separately after profile completeness and quality review.
-
-### Review Moderation
-1. Patient submits review (pending)
-2. Platform Staff approves → public or rejects → hidden
-
----
-
-## (Deferred / Future – Tracked Elsewhere)
-* Structured auth & approval metrics
-* Profile recovery automation
-
-## 🔗 **Related Documentation**
-
-For technical implementation details, see:
-* **Authentication System Guide** (`authentication-system.md`)
-* **Supabase Provisioning** (`supabase-provisioning.md`)
-* **Auth Flow Diagram** (`auth-flow-diagram.md`)
-
-External reference:
-* **PayloadCMS Access Control Documentation**: https://payloadcms.com/docs/access-control/overview
-
----
-
-**Document Maintenance**: This permission matrix should be reviewed and updated whenever new user roles, data collections, or security requirements are introduced to the platform.
+A collection with `trash: true` uses Payload's native soft delete. The collection configuration determines where
+Trash is available. [Payload collection options](https://payloadcms.com/docs/configuration/collections#options)
 
 ## Maintenance
 
-### Machine-Readable Matrix
+Update the matrix configuration and the matching test in [the collection access-matrix suite](../../tests/unit/access-matrix)
+when adding or changing a collection's access rules. Each collection has a `<slug>.permission.test.ts` file.
 
-This permission matrix is also available in generated formats derived from `src/security/permission-matrix.config.ts`:
-
-- `docs/security/permission-matrix.generated.md` – generated table view kept in sync with this document.
-- `tmp/permission-matrix.json` – machine-readable snapshot consumed by verification tooling.
-
-Regeneration commands:
-- `pnpm matrix:derive` (docs markdown table)
-- `pnpm matrix:derive json` (temporary JSON snapshot used by verification)
-
-CI verification uses:
-- `pnpm matrix:derive json`
-- `pnpm matrix:verify`
-
-### Automation Scripts
-
-- **`pnpm matrix:verify`**: Verifies that all collections defined in `src/collections/` have corresponding entries in the permission matrix JSON and that each has a corresponding test file in `tests/unit/access-matrix/`.
-- **`pnpm matrix:derive`**: Regenerates the generated Markdown table from `src/security/permission-matrix.config.ts`.
-- **`pnpm matrix:derive json`**: Regenerates `tmp/permission-matrix.json` for verification tooling.
-
-### Test Coverage
-
-Each collection **must** have a corresponding permission test file in `tests/unit/access-matrix/<slug>.permission.test.ts` that validates the access control implementation matches the matrix expectations.
-
-### Adding New Collections
-
-When adding a new collection:
-1. Define the collection in `src/collections/`
-2. Add the collection to the matrix table above
-3. Update `src/security/permission-matrix.config.ts` with the new entry
-4. Create `tests/unit/access-matrix/<slug>.permission.test.ts` following the existing patterns
-5. Run `pnpm matrix:derive json` and `pnpm matrix:verify` to confirm alignment
+- `pnpm matrix:derive` updates the checked-in Markdown table.
+- `pnpm matrix:derive json` writes `tmp/permission-matrix.json` for verification.
+- `pnpm matrix:verify` checks collection coverage and matching permission test files.

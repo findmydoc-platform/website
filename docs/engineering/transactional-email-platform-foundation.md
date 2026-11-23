@@ -60,10 +60,10 @@ the [deployment runbook](../deployment-runbook.md#when-migrations-run). Package 
 A failed registry authorization, unresolved package, missing public export, or incompatible
 React Email peer must fail installation, the consumer contract, or the build.
 
-The work is tracked by [Website issue #1846](https://github.com/findmydoc-platform/website/issues/1846) under
-[management issue #388](https://github.com/findmydoc-platform/management/issues/388). It specifies the foundation
-that future implementation tickets must deliver before the Lettermint delivery edge or any product flow is
-implemented.
+[Website issue #1846](https://github.com/findmydoc-platform/website/issues/1846) records the foundation design.
+The implementation is in [the Website email module](../../src/features/transactionalEmail). The
+[foundation specification at the retention decision](https://github.com/findmydoc-platform/website/blob/945153dbc9e63354fc93d4ff49631c377e189ece/docs/engineering/transactional-email-platform-foundation.md)
+preserves the original test plan, implementation order, and delivery issue sequence.
 
 ## Scope
 
@@ -102,71 +102,19 @@ Dashboard handoff. The existing flow issues retain their approved product respon
 
 ## Ownership and module shape
 
-The foundation will be a deep module. Its planned directory and single payload-independent public import file are:
+Product flows call the [public command port](../../src/features/transactionalEmail/index.ts). The
+[Website integration](../../src/features/transactionalEmail/payloadIntegration.ts) binds the current Payload
+request, authentication state, and transaction privately. The port exposes no Payload request or implementation type.
 
-```text
-src/features/transactionalEmail/
-src/features/transactionalEmail/index.ts
-```
-
-Product flows receive only the command port exported by that public interface. A Website integration layer binds the
-current `PayloadRequest`, authentication state, and transaction to private module capabilities before it supplies that
-port. The integration binding is not part of the domain command contract, and the public import does not export
-`PayloadRequest` or another Payload type.
-
-Product flows do not import storage, worker, retry, template, link, logging, delivery, or Payload integration
-implementations.
-
-Payload collection declarations remain in the repository's collection directory:
-
-```text
-src/collections/TransactionalEmailOutbox.ts
-src/collections/TransactionalEmailEvents.ts
-```
-
-Those files declare schemas, access denial, indexes, and internal hook guards. They delegate behavior to the feature
-module. They do not contain delivery policy.
-
-The module implementation may use internal files such as the following. The names describe ownership, not a required
-one-file-per-concept implementation:
-
-```text
-src/features/transactionalEmail/
-  index.ts
-  commands.ts
-  catalog.ts
-  errors.ts
-  state.ts
-  transactions.ts
-  storage.ts
-  worker.ts
-  retry.ts
-  retention.ts
-  logging.ts
-  adapters/
-    delivery.ts
-    fakeDelivery.ts
-```
-
-The delivery seam is real because the fake adapter and the later Lettermint adapter both satisfy it. The link seam will
-likewise have a local and CI fake plus the later Supabase implementation. Template rendering remains a pure internal
-function and does not need an adapter.
+The [outbox](../../src/collections/TransactionalEmailOutbox.ts) and [event](../../src/collections/TransactionalEmailEvents.ts)
+collections declare storage, indexes, and access guards. The email module owns delivery, retention, and worker policy.
+The worker uses the same delivery interface for local fakes and hosted Lettermint. Template rendering also stays
+inside the module.
 
 ## Public command interface
 
-The module exposes one request-bound command port to product flows:
-
-```ts
-type TransactionalEmailAcceptance = {
-  operationId: string
-  acceptedAt: string
-  deduplicated: boolean
-}
-
-type TransactionalEmailCommands = {
-  accept(command: TransactionalEmailCommand): Promise<TransactionalEmailAcceptance>
-}
-```
+Use the [command port and receipt types](../../src/features/transactionalEmail/index.ts) with the
+[validated command union](../../src/features/transactionalEmail/commands.ts).
 
 Command acceptance means that the logical operation, outbox record, and first event have joined the current atomic
 unit of work. `acceptedAt` is the original command-acceptance time stored as the outbox `createdAt`. It does not mean
@@ -196,22 +144,7 @@ The command never contains an email address, URL, sender, subject, rendered body
 retry setting, idempotency key, or free-form `metadata`, `context`, or arbitrary key-value object. Each flow issue owns
 the exact command-specific identifiers when it implements its catalog entry.
 
-The first catalog contains exactly these command types:
-
-```text
-auth.email-verification
-auth.invitation
-auth.password-recovery
-conversation.external-message-received
-moderation.report-received
-moderation.report-decided
-moderation.appeal-received
-moderation.appeal-decided
-clinic.registration-received
-```
-
-There is no generic send command and no fallback command type. Adding a tenth type requires a new explicit platform
-decision and a catalog change.
+The set of [command types](../../src/features/transactionalEmail/commands.ts) is closed.
 
 ### Command-acceptance errors
 
@@ -242,10 +175,8 @@ The command catalog is exhaustive and resolved at build time. Each registered co
 - action-link generation when required;
 - one closed typed React Email renderer that renders HTML and plain text.
 
-The foundation defines the catalog contract and uses a test catalog. Issues #1734 through #1737 add the real entries
-they own. The runtime catalog registers only product flows whose source and package template already exist. The typed
-test catalog covers every command variant without activating the unimplemented Auth, Conversation, or Moderation
-flows. There is no database-backed, Admin-managed, environment-selected, or runtime plugin registration.
+The [Website catalog](../../src/features/transactionalEmail/payloadCatalog.ts) registers product flows with an
+implemented source and package template. Hosted delivery requires separate [command activation](transactional-email-lettermint-delivery-edge.md#command-by-command-activation-registry).
 
 A missing catalog entry fails before the module creates an outbox record. A catalog entry may derive template and
 recipient choices from authoritative Website data, but callers cannot pass or override those choices. If one command
@@ -647,135 +578,15 @@ A focused architecture contract test must prove that both collections are classi
 stops for a new cache decision if a later change proposes a public status page, public route, cached loader, sitemap or
 discovery use, new cache class, new tag family, or revalidation behavior.
 
-## Outside-in test contract
+## Runtime evidence
 
-The primary behavior tests cross the same payload-independent command port that product flows use. The Website test
-integration binds real Payload with the test Postgres database, the static test catalog, fake link generation, and the
-fake delivery adapter.
-
-The behavior suite must prove:
-
-1. A valid standalone command returns a successful receipt only after one outbox operation and its first event commit.
-2. A caller-owned transaction commits or rolls back its domain mutation, outbox record, and first event together; its
-   product-facing integration boundary returns no successful receipt before commit or after rollback.
-3. Repeating the same authorized business operation returns the original operation without creating another row.
-4. An unauthorized initial or duplicate command returns no receipt or existing-operation metadata and does not change
-   the outbox or event history.
-5. Concurrent standalone command acceptance produces one logical operation after the losing module-owned transaction
-   retries in full.
-6. Concurrent command acceptance inside caller-owned transactions returns a typed retryable conflict to the losing
-   owner; repeating that complete transaction returns the winning operation as deduplicated.
-7. A standalone call owns a serializable transaction and handles a serialization conflict within the bounded retry
-   policy.
-8. Two workers cannot hold a valid lease for the same operation at the same time.
-9. An expired lease can be reclaimed, while a stale lease token cannot mutate the record.
-10. Preparation becomes durable before a provider attempt. The exact serialized provider request and its
-    team/project/route binding never change across retries; scrubbing later clears only the serialized request and
-    retains the content-free binding.
-11. Changing recipient ownership or eligibility after command acceptance but before preparation produces no link or
-    delivery call and records the command-specific terminal result.
-12. Changing recipient ownership or eligibility between provider attempts prevents the next link or delivery call,
-    records the command-specific terminal result, and scrubs the prepared payload.
-13. A deterministic crash after the fake provider returns but before local result persistence consumes the started
-    attempt. Lease reclaim reuses the same provider idempotency key and byte-equivalent prepared payload without
-    regenerating the link or content.
-14. Retry delays, six-attempt limit, Auth safety margin, non-Auth deadline, and 24-hour ambiguity window use an injected
-    clock.
-15. State transitions reject every transition not listed in this contract.
-16. Event sequences remain unique under concurrent worker and provider-event writes.
-17. Provider-event identities deduplicate repeated webhook input at the storage seam.
-18. Provider acceptance and every terminal pre-provider outcome scrub every transient field while retaining exactly
-    the approved content-free metadata.
-19. A 30-minute runner cadence and safety sweep meet the one-hour scrub limit, while the 28-day deletion
-    policy meets its daily deletion bound.
-20. Local, test, and CI make no external network or PostHog call.
-21. Environment selection is exhaustive: Local, test, and CI choose only fakes; Preview and Production without a real
-    adapter fail before processing and never fall back to a fake.
-22. Structured logs contain only the approved field allowlist.
-
-Small unit tests cover pure state-transition, retry, deadline, and retention calculations. They do not replace the
-outside-in behavior suite with mocks of Payload internals.
-
-Collection contract tests must also prove:
-
-- Admin, REST, GraphQL, and normal Local API access stay denied;
-- the module's unforgeable private capability is required and cannot be reproduced with a Boolean or caller-created
-  context value;
-- direct event updates stay denied;
-- the required unique constraints exist after migration;
-- the integration contract registry includes both collections;
-- the cache policy classifies both collections as `private-live` with no public tags.
-
-## Future implementation order
-
-Implementation remains separate from this specification and requires a new explicit instruction.
-
-When authorized, the foundation should be implemented in this order:
-
-1. Add failing outside-in command-acceptance and worker tests with the test catalog and fake adapters.
-2. Add the public command types, acceptance result, typed errors, static catalog contract, and Payload-independent
-   command port with its Website integration binding.
-3. Add both hidden collection declarations and generate the Payload migration.
-4. Add join-or-own transaction handling, storage invariants, business-key deduplication, and ordered event appends.
-5. Add state, deadline, retry, lease, preparation, scrubbing, and retention behavior.
-6. Add the fake link and delivery adapters, safe logger events, Local, test, and CI network guard, and hosted
-   fail-closed environment tests.
-7. Register both collections in Payload, permission metadata, integration contracts, and cache policy.
-8. Run the focused suites, full repository validation, and the matching read-only reviewers after user confirmation.
-
-No step may add a real product-flow catalog entry, Lettermint credential, provider adapter, webhook, sender DNS change,
-Dashboard call, Preview send, or Production send.
-
-## Validation for the future implementation
-
-The implementation work order requires:
-
-```bash
-pnpm payload migrate:create transactional_email_foundation
-bash .codex/scripts/payload-migration.sh migrate:status
-pnpm format
-pnpm check
-pnpm build
-```
-
-It also requires the focused behavior, access-matrix, integration-contract, cache-architecture, migration, log-scrubbing,
-and network-guard tests introduced by the change. The implementation must inspect the generated migration and verify
-the composite and partial unique indexes against a fresh test database.
-
-After local validation, the matching read-only reviewers are `test_reviewer`, `architecture_reviewer`,
-`security_reviewer`, and `cache_architecture_reviewer`. They run only after explicit user confirmation. All findings
-must be presented before fixes are made.
-
-## Planning and delivery sequence
-
-The repository sequence remains:
-
-1. Website #1846 accepts this foundation specification and performs no implementation.
-2. Website #1847 specifies the Lettermint delivery edge against this contract, while Clinic Dashboard #150 specifies
-   its narrow, responsibility-free handoff.
-3. `to-tickets` creates distinct implementation issues. A To-Spec issue does not double as an implementation issue.
-4. The shared foundation is implemented with fake adapters only.
-5. The Lettermint delivery edge and Dashboard handoff are implemented against that foundation.
-6. Website #1737 becomes the first Preview pilot.
-7. Website #1734, #1735, and #1736 follow only after the clinic-registration pilot has proved the shared path.
-
-The native GitHub dependencies remain the planning authority. This document does not replace their parent or blocker
-relationships.
-
-## Exit criteria for the foundation implementation
-
-The future foundation implementation is complete only when:
-
-- product callers can submit only a closed typed command through a Payload-independent port and receive only the
-  acceptance result after commit;
-- the outbox and first event share the triggering Payload transaction when possible;
-- storage constraints prevent duplicate logical operations and duplicate provider events;
-- the worker claim, exact-payload retry, deadline, scrubbing, and retention contracts pass against test Postgres;
-- both collections remain unreachable through normal Payload surfaces;
-- Local, test, and CI prove zero external delivery, link-generation, and PostHog traffic, while Preview and Production
-  prove that missing real adapters fail closed without a fake fallback;
-- the cache architecture records `no-public-impact` and no public invalidation wiring exists;
-- no real provider, flow, Dashboard, Preview, or Production behavior has entered the change.
+- [Command acceptance and atomicity](../../tests/integration/transactionalEmail.acceptance.test.ts) ·
+  [Transaction ownership and concurrency](../../tests/integration/transactionalEmail.transactions.test.ts)
+- [Worker lease, preparation, and retry](../../tests/integration/transactionalEmail.worker.test.ts) ·
+  [Event persistence](../../tests/integration/transactionalEmail.events.test.ts) ·
+  [Scrubbing and retention](../../tests/integration/transactionalEmail.retention.test.ts)
+- [Outbox collection permissions](../../tests/unit/access-matrix/transactionalEmailOutbox.permission.test.ts) ·
+  [Event collection permissions](../../tests/unit/access-matrix/transactionalEmailEvents.permission.test.ts)
 
 ## Stop conditions
 

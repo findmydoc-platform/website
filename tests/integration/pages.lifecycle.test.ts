@@ -34,6 +34,13 @@ describe('Pages integration - lifecycle and access', () => {
 
   afterEach(async () => {
     await cleanupTestEntities(payload, 'pages', slugPrefix)
+    await payload.delete({
+      collection: 'pages',
+      locale: 'en',
+      where: { slug: { like: `${slugPrefix}%` } },
+      context: { disableRevalidate: true },
+      overrideAccess: true,
+    })
   })
 
   it('creates a draft page and generates slug from title', async () => {
@@ -199,6 +206,130 @@ describe('Pages integration - lifecycle and access', () => {
       expect(await findPublicPageRoute(payload, germanSlug, 'de')).toMatchObject({ canonicalPath: `/${germanSlug}` })
     },
   )
+
+  it('publishes both private Page locales in a single publish all action', async () => {
+    const context = { disableRevalidate: true }
+    const germanSlug = `${slugPrefix}-all-de`
+    const englishSlug = `${slugPrefix}-all-en`
+    const page = await payload.create({
+      collection: 'pages',
+      locale: 'de',
+      draft: true,
+      context,
+      data: { title: 'German Page', slug: germanSlug, generateSlug: false, layout: buildPageLayout() },
+    })
+
+    await payload.update({
+      collection: 'pages',
+      id: page.id,
+      locale: 'en',
+      draft: true,
+      context,
+      data: { title: 'English Page', slug: englishSlug, generateSlug: false, layout: buildPageLayout() },
+    })
+
+    expect(await findPublicPageRoute(payload, germanSlug, 'de')).toBeNull()
+    expect(await findPublicPageRoute(payload, englishSlug, 'en')).toBeNull()
+
+    await payload.update({
+      collection: 'pages',
+      id: page.id,
+      locale: 'en',
+      publishAllLocales: true,
+      context,
+      data: { _status: 'published' },
+    })
+
+    expect(await findPublicPageRoute(payload, germanSlug, 'de')).toMatchObject({ page: { id: page.id } })
+    expect(await findPublicPageRoute(payload, englishSlug, 'en')).toMatchObject({ page: { id: page.id } })
+  })
+
+  it.each(['en', 'all'] as const)(
+    'rejects publishing all Page locales from %s if the German draft slug overlaps the English namespace',
+    async (locale) => {
+      const context = { disableRevalidate: true }
+      const page = await payload.create({
+        collection: 'pages',
+        locale: 'en',
+        draft: true,
+        context,
+        data: {
+          title: 'English Page',
+          slug: `${slugPrefix}-namespace`,
+          generateSlug: false,
+          layout: buildPageLayout(),
+        },
+      })
+      await payload.update({
+        collection: 'pages',
+        id: page.id,
+        locale: 'de',
+        draft: true,
+        context,
+        data: { title: 'German Page', slug: 'en/foo', generateSlug: false, layout: buildPageLayout() },
+      })
+
+      try {
+        await expect(
+          payload.update({
+            collection: 'pages',
+            id: page.id,
+            req: { locale },
+            publishAllLocales: true,
+            context,
+            data: {
+              _status: 'published',
+              // Payload's all-locale operation accepts a locale-keyed value despite the generated Page type.
+              ...(locale === 'all' ? { slug: { en: page.slug } as unknown as string } : {}),
+            },
+          }),
+        ).rejects.toMatchObject({
+          data: { errors: expect.arrayContaining([expect.objectContaining({ path: 'slug' })]) },
+        })
+      } finally {
+        await payload.delete({ collection: 'pages', id: page.id, context })
+      }
+    },
+  )
+
+  it('loads the published English target slug for a CMS reference on an English Page', async () => {
+    const context = { disableRevalidate: true }
+    const target = await payload.create({
+      collection: 'pages',
+      locale: 'en',
+      context,
+      data: {
+        title: 'English target',
+        slug: `${slugPrefix}-english-target`,
+        generateSlug: false,
+        layout: buildPageLayout(),
+        _status: 'published',
+      },
+    })
+    const slug = `${slugPrefix}-english-referrer`
+    await payload.create({
+      collection: 'pages',
+      locale: 'en',
+      context,
+      data: {
+        title: 'English referrer',
+        slug,
+        generateSlug: false,
+        layout: [
+          {
+            blockType: 'cta',
+            links: [
+              { link: { type: 'reference', label: 'Read more', reference: { relationTo: 'pages', value: target.id } } },
+            ],
+          },
+        ],
+        _status: 'published',
+      },
+    })
+
+    const route = await findPublicPageRoute(payload, slug, 'en')
+    expect(route?.page.layout).toMatchObject([{ links: [{ link: { reference: { value: { slug: target.slug } } } }] }])
+  })
 
   it('updates title without changing slug unless explicitly set', async () => {
     const title = `${slugPrefix} slug lock`

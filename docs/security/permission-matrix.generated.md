@@ -14,8 +14,8 @@
 | PlatformStaff `(platformStaff)` | Conditional<br/><sub>disabled API create; managed via provisioning</sub> | Platform | Platform | Conditional<br/><sub>disabled API delete; managed via provisioning</sub> | Platform | – |
 | ClinicStaff `(clinicStaff)` | Conditional<br/><sub>disabled API create; managed via provisioning</sub> | Conditional<br/><sub>platform full + clinic own clinic</sub> | Conditional<br/><sub>platform + own profile only when staff and clinic are access-ready; clinic, lifecycle, identity, and sync fields are system/platform controlled</sub> | Conditional<br/><sub>disabled API delete; managed via provisioning</sub> | Platform | – |
 | Patients `(patients)` | Platform | Conditional<br/><sub>platform full + patient own profile</sub> | Conditional<br/><sub>platform full + own profile only</sub> | Platform | Platform | – |
-| Posts `(posts)` | Platform | Published (approved) | Platform | Platform | Platform | – |
-| Pages `(pages)` | Platform | Published (approved) | Platform | Platform | Platform | – |
+| Posts `(posts)` | Platform | Published (approved)<br/><sub>requested locale only</sub> | Platform | Platform | Platform | Platform |
+| Pages `(pages)` | Platform | Published (approved)<br/><sub>requested locale only</sub> | Platform | Platform | Platform | Platform |
 | Doctors `(doctors)` | Conditional<br/><sub>platform full + clinic allowed (hook assigns clinic ownership)</sub> | Conditional<br/><sub>platform all + current eligible clinic scope + public active doctors</sub> | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> | Platform | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> | – |
 | ClinicGroups `(clinicGroups)` | Conditional<br/><sub>platform admin/support only</sub> | Conditional<br/><sub>platform admin/support only</sub> | Conditional<br/><sub>platform admin/support only</sub> | Conditional<br/><sub>platform admin/support only; referenced groups cannot be deleted</sub> | Conditional<br/><sub>platform admin/support only</sub> | – |
 | Clinics `(clinics)` | Conditional<br/><sub>platform admin/support only</sub> | Conditional<br/><sub>clinic current eligible assignment, public approved, platform all</sub> | Conditional<br/><sub>platform full + clinic own profile only</sub> | Platform | Platform | – |
@@ -77,8 +77,8 @@
 - **PlatformStaff**: Platform staff review safe identity fields, edit their own profile image using their own media, and manage roles; identity bindings and create/delete remain provisioning-only
 - **ClinicStaff**: Platform staff manage clinic assignment and lifecycle; approved and synced staff with private password evidence read their participation-approved clinic; invitation authorization is private and immutable; identity binding, auth sync, and create/delete remain provisioning-only
 - **Patients**: Patients can update own profile; no self-create/delete
-- **Posts**: Blog content - platform write, published content readable by all
-- **Pages**: Static pages - platform write, published content readable by all
+- **Posts**: Public reads require publication in the requested locale. Platform staff can read drafts and versions.
+- **Pages**: Public reads require publication in the requested locale. Platform staff can read drafts and versions.
 - **Doctors**: Platform RWDA, including targetless permanent cleanup of trashed clinicless doctors in an active native transaction; clinic RWA current eligible local/group clinics including inactive doctors; public active doctors; averageRating is computed-only; native deletion dependencies remain enforced
 - **ClinicGroups**: Private group metadata; only persisted platform admin/support roles manage groups. Clinic references block deletion.
 - **Clinics**: Platform admin/support create, platform read/update/delete, clinic RW current eligible assignment, patients/anonymous R approved; averageRating is computed-only

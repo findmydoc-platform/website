@@ -6,6 +6,4 @@ export const {
   afterDelete: revalidateDelete,
   beforeChange: capturePageBeforeChange,
   beforeDelete: capturePageBeforeDelete,
-  beforeOperation: capturePageDraftSaveIntent,
-  isDraftSave: isPageDraftSaveIntent,
 } = localizedPublicationRevalidation<Page>('pages')

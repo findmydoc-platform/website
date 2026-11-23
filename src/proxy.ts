@@ -22,7 +22,12 @@ import {
 } from '@/features/searchIndexing'
 import { logCrawlerRequest } from '@/features/publicDiscovery/crawlerMonitoring'
 import { PUBLIC_DISCOVERY_SURFACE_PATHS } from '@/features/publicDiscovery/site'
-import { uiCopyLocaleFromPath, UI_COPY_LOCALE_HEADER } from '@/i18n/requestLocale'
+import {
+  FRONTEND_PATH_HEADER,
+  FRONTEND_PREVIEW_LOCALE_HEADER,
+  uiCopyLocaleFromPath,
+  UI_COPY_LOCALE_HEADER,
+} from '@/i18n/requestLocale'
 
 const NON_PAGE_PATHS = new Set(['/next/exit-preview', '/next/preview'])
 const PUBLIC_DISCOVERY_PATHS = new Set<string>(PUBLIC_DISCOVERY_SURFACE_PATHS)
@@ -67,6 +72,12 @@ const getHoldingRequestUser = async (request: NextRequest): Promise<User | null>
 
 const nextWithRequestHeaders = (request: NextRequest, headersToSet: Record<string, string | null>): NextResponse => {
   const requestHeaders = new Headers(request.headers)
+  requestHeaders.set(FRONTEND_PATH_HEADER, request.nextUrl.pathname)
+  requestHeaders.delete(FRONTEND_PREVIEW_LOCALE_HEADER)
+  const [previewLocale, ...otherLocales] = request.nextUrl.searchParams.getAll('locale')
+  if ((previewLocale === 'de' || previewLocale === 'en') && otherLocales.length === 0) {
+    requestHeaders.set(FRONTEND_PREVIEW_LOCALE_HEADER, previewLocale)
+  }
   requestHeaders.delete(UI_COPY_LOCALE_HEADER)
   const uiCopyLocale = uiCopyLocaleFromPath(request.nextUrl.pathname, request.nextUrl.searchParams)
   if (uiCopyLocale) requestHeaders.set(UI_COPY_LOCALE_HEADER, uiCopyLocale)

@@ -41,6 +41,7 @@ export const Posts: CollectionConfig<'posts'> = {
     create: ({ req }) => isPlatformStaff({ req }),
     delete: ({ req }) => isPlatformStaff({ req }),
     read: readLocalizedPublicationAccess,
+    readVersions: isPlatformStaff,
     update: ({ req }) => isPlatformStaff({ req }),
   },
   // This config controls what's populated by default when a post is referenced

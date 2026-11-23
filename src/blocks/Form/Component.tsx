@@ -69,12 +69,13 @@ export const FormBlock: React.FC<
           setError({
             message: submissionError.message,
             status: String(submissionError.status),
+            lang: submissionError.lang,
           })
           return
         }
 
         console.warn(submissionError)
-        setError({ message: 'Something went wrong.' })
+        setError({ message: 'Something went wrong.', lang: 'en' })
       }
     },
     [form.confirmationType, form.id, form.redirect?.url, router],

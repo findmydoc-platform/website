@@ -17,6 +17,9 @@ export const constrainPublicLocalizedRead: CollectionBeforeOperationHook = async
   if (operation === 'read' && !overrideAccess && !(await isPlatformStaff({ req }))) {
     args.draft = false
     req.fallbackLocale = false
+    if ('id' in args) {
+      args.flattenLocales = true
+    }
   }
   return args
 }

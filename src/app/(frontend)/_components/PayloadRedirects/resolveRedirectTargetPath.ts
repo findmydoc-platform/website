@@ -5,7 +5,7 @@ import { getPayload } from 'payload'
 
 import type { Page, Post, Redirect } from '@/payload-types'
 import { buildPagePath, buildPostPath } from '@/utilities/cachePolicy'
-import type { ContentLocale } from '@/utilities/contentLocalization'
+import { isReservedPageSlug, type ContentLocale } from '@/utilities/contentLocalization'
 import { sanitizeInternalRedirectPathOrNull } from '@/utilities/routing/sanitizeInternalRedirectPath'
 
 type RedirectReference = NonNullable<NonNullable<Redirect['to']>['reference']>
@@ -68,7 +68,7 @@ async function resolveRedirectTargetPathById({
   if (!target || target._status !== 'published' || target.deletedAt) return null
 
   const slug = typeof target.slug === 'string' ? target.slug.trim() : ''
-  if (!slug) return null
+  if (!slug || (collection === 'pages' && isReservedPageSlug(slug, locale))) return null
 
   let targetPath: string
 

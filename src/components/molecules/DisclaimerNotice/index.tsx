@@ -11,6 +11,7 @@ export type DisclaimerNoticeSurface = 'light' | 'muted'
 export type DisclaimerNoticeSize = 'default' | 'compact'
 
 export type DisclaimerNoticeProps = {
+  lang?: string
   copy: React.ReactNode
   variant?: DisclaimerNoticeVariant
   surface?: DisclaimerNoticeSurface
@@ -69,6 +70,7 @@ function iconClasses(size: DisclaimerNoticeSize, standalone: boolean): string {
 }
 
 export function DisclaimerNotice({
+  lang,
   copy,
   variant = 'inline-note',
   surface = 'light',
@@ -87,6 +89,7 @@ export function DisclaimerNotice({
   if (variant === 'collapsible-disclosure') {
     return (
       <div
+        lang={lang}
         className={cn(
           'rounded-xl border shadow-xs',
           surfaceClasses(surface),
@@ -135,6 +138,7 @@ export function DisclaimerNotice({
 
   return (
     <aside
+      lang={lang}
       aria-label={routeLabel ? `${routeLabel} disclaimer` : 'Disclaimer'}
       className={cn(
         'flex items-start gap-3 rounded-xl border border-border/60 shadow-xs',

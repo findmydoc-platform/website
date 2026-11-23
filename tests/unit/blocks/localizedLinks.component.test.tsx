@@ -69,7 +69,7 @@ describe('locale-aware block links', () => {
       | undefined
 
     expect(contentProps?.columns?.[0]?.link).toEqual({
-      href: '/privacy-policy?locale=de',
+      href: '/privacy-policy',
       label: 'Privacy Policy',
       newTab: false,
     })

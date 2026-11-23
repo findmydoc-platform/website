@@ -1,4 +1,4 @@
-import { formatDateTime } from 'src/utilities/formatDateTime'
+import { formatDateTime } from '@/utilities/formatDateTime'
 import React from 'react'
 import { Calendar, Clock } from 'lucide-react'
 
@@ -24,6 +24,7 @@ export type PostHeroProps = {
   authors?: string
   publishedAt?: string
   readTime?: string
+  readTimeLang?: string
   breadcrumbs?: BreadcrumbItem[]
   image?: {
     src: string | StaticImageData
@@ -45,6 +46,7 @@ export const PostHero: React.FC<PostHeroProps> = ({
   authors, // deprecated
   publishedAt,
   readTime,
+  readTimeLang,
   breadcrumbs,
   image,
   overlayOpacity = 72,
@@ -67,7 +69,7 @@ export const PostHero: React.FC<PostHeroProps> = ({
 
   return (
     <div className="relative isolate overflow-hidden">
-      <div className="absolute inset-0 -z-10 select-none">
+      <div className="absolute inset-0 -z-10 select-none" lang={image ? undefined : 'en'}>
         <FallbackImage
           fill
           priority
@@ -99,7 +101,7 @@ export const PostHero: React.FC<PostHeroProps> = ({
           <div className="text-left lg:col-span-7 lg:col-start-3">
             {/* Breadcrumb Navigation */}
             {breadcrumbs && breadcrumbs.length > 0 && (
-              <Breadcrumb items={breadcrumbs} variant="light" className="mb-4 sm:mb-6" />
+              <Breadcrumb items={breadcrumbs} variant="light" className="mb-4 sm:mb-6" lang="en" />
             )}
 
             {/* Category Badge */}
@@ -144,8 +146,14 @@ export const PostHero: React.FC<PostHeroProps> = ({
                     />
                   </div>
                   <div className="flex flex-col">
-                    <p className="font-semibold text-white">{displayAuthor.name}</p>
-                    {authorRole && <p className="text-sm text-white/70">{authorRole}</p>}
+                    <p className="font-semibold text-white" lang={author || authors ? undefined : 'en'}>
+                      {displayAuthor.name}
+                    </p>
+                    {authorRole && (
+                      <p className="text-sm text-white/70" lang={displayAuthor.role ? undefined : 'en'}>
+                        {authorRole}
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
@@ -161,7 +169,7 @@ export const PostHero: React.FC<PostHeroProps> = ({
                 {readTime && (
                   <div className="flex items-center gap-1.5">
                     <Clock className="h-4 w-4" />
-                    <span>{readTime}</span>
+                    <span lang={readTimeLang}>{readTime}</span>
                   </div>
                 )}
               </div>

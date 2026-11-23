@@ -1,5 +1,7 @@
 import { slugField } from '@/fields/slugField'
-import type { CollectionConfig, Field } from 'payload'
+import { isReservedPageSlug } from '@/utilities/contentLocalization'
+import { text as validateText, type TextFieldSingleValidation } from 'payload/shared'
+import { ValidationError, type CollectionConfig, type Field, type FieldHook } from 'payload'
 
 import { Archive } from '../../blocks/ArchiveBlock/config'
 import { BlogHero } from '../../blocks/BlogHero/config'
@@ -27,12 +29,42 @@ import {
   PreviewField,
 } from '@payloadcms/plugin-seo/fields'
 
+const reservedSlugMessage = 'This slug is reserved for another public route.'
+
+const validatePageSlug: TextFieldSingleValidation = (value, options) => {
+  if (typeof value === 'string' && isReservedPageSlug(value, options.req.locale)) return reservedSlugMessage
+  return validateText(value, options)
+}
+
+const validateSlugsOnPublishAll: FieldHook = ({ data, originalDoc, req, siblingDocWithLocales, value }) => {
+  // Payload validates submitted slugs before publishing the merged locales.
+  if (data?._status !== 'published' || !originalDoc?._status || typeof originalDoc._status !== 'object') return value
+
+  const previousSlugs = siblingDocWithLocales?.slug as Partial<Record<'de' | 'en', unknown>> | undefined
+  const submittedSlugs =
+    req.locale === 'all' && value && typeof value === 'object' && !Array.isArray(value) ? value : {}
+  for (const locale of ['de', 'en'] as const) {
+    const slug =
+      req.locale === locale ? value : locale in submittedSlugs ? submittedSlugs[locale] : previousSlugs?.[locale]
+    if (typeof slug !== 'string' || !isReservedPageSlug(slug, locale)) continue
+
+    throw new ValidationError({
+      collection: 'pages',
+      errors: [{ message: reservedSlugMessage, path: 'slug' }],
+      id: originalDoc.id,
+      req,
+    })
+  }
+  return value
+}
+
 export const Pages: CollectionConfig<'pages'> = {
   slug: 'pages',
   access: {
     create: ({ req }) => isPlatformStaff({ req }),
     delete: ({ req }) => isPlatformStaff({ req }),
     read: readPageAccess,
+    readVersions: isPlatformStaff,
     update: ({ req }) => isPlatformStaff({ req }),
   },
   // This config controls what's populated by default when a page is referenced
@@ -145,6 +177,21 @@ export const Pages: CollectionConfig<'pages'> = {
       required: false,
       name: 'slug',
       fieldToUse: 'title',
+      overrides: (row) => ({
+        ...row,
+        fields: row.fields.map((field) =>
+          field.type === 'text' && !field.hasMany && field.name === 'slug'
+            ? {
+                ...field,
+                validate: validatePageSlug,
+                hooks: {
+                  ...field.hooks,
+                  beforeChange: [...(field.hooks?.beforeChange ?? []), validateSlugsOnPublishAll],
+                },
+              }
+            : field,
+        ),
+      }),
     }),
   ],
   hooks: {

@@ -37,24 +37,48 @@ describe('Payload-backed utilities', () => {
 
       const globalDoc = await getGlobal('header' as GlobalSlug, 1)
 
-      expect(findGlobalMock).toHaveBeenCalledWith({ slug: 'header', depth: 1, locale: 'en', fallbackLocale: false })
+      expect(findGlobalMock).toHaveBeenCalledWith({
+        slug: 'header',
+        depth: 1,
+        locale: 'en',
+        fallbackLocale: false,
+        overrideAccess: false,
+      })
       expect(globalDoc).toEqual({
         navItems: [{ link: { reference: { relationTo: 'pages', value: englishPage } } }],
       })
     })
 
-    it('wraps global fetches with caching metadata', async () => {
+    it('expires landing content when a referenced Page or Post is published or withdrawn', async () => {
+      const findGlobal = vi.fn().mockResolvedValue({ home: {} })
+      getPayloadMock.mockResolvedValue({ findGlobal })
+
+      await getCachedGlobal('landingPages', 2)()
+
+      expect(unstableCacheMock).toHaveBeenCalledWith(expect.any(Function), expect.any(Array), {
+        tags: ['global:landingPages', 'collection:pages', 'collection:posts'],
+      })
+      expect(findGlobal).toHaveBeenCalledWith({ slug: 'landingPages', depth: 2, overrideAccess: false })
+    })
+
+    it('loads populated footer references anonymously and invalidates them when their publications change', async () => {
       const findGlobalMock = vi.fn().mockResolvedValue({ footer: 'data' })
       getPayloadMock.mockResolvedValue({ findGlobal: findGlobalMock })
 
       const cachedGlobal = getCachedGlobal('footer' as GlobalSlug, 3)
 
-      expect(unstableCacheMock).toHaveBeenCalledWith(expect.any(Function), ['2026-06-20', 'footer', '3'], {
-        tags: ['global:footer'],
+      expect(unstableCacheMock).toHaveBeenCalledWith(expect.any(Function), [expect.any(String), 'footer', '3'], {
+        tags: ['global:footer', 'collection:pages', 'collection:posts'],
       })
 
       const result = await cachedGlobal()
-      expect(findGlobalMock).toHaveBeenCalledWith({ slug: 'footer', depth: 3, locale: 'en', fallbackLocale: false })
+      expect(findGlobalMock).toHaveBeenCalledWith({
+        slug: 'footer',
+        depth: 3,
+        locale: 'en',
+        fallbackLocale: false,
+        overrideAccess: false,
+      })
       expect(result).toEqual({ footer: 'data' })
     })
   })

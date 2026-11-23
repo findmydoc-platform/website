@@ -287,7 +287,7 @@ describe('content server data helpers', () => {
       1,
       expect.objectContaining({
         collection: 'pages',
-        depth: 0,
+        depth: 1,
         draft: false,
         limit: 1,
         pagination: false,
@@ -309,6 +309,21 @@ describe('content server data helpers', () => {
         select: PAGE_SITEMAP_SELECT,
       }),
     )
+  })
+
+  it.each([
+    ['de', 'en/old-page'],
+    ['en', 'posts/old-page'],
+  ] as const)('excludes historical %s Pages shadowed by a different public route', async (locale, slug) => {
+    const { payload, findMock } = createPayloadMock()
+    findMock.mockResolvedValueOnce({
+      docs: [
+        { id: 8, slug },
+        { id: 9, slug: 'open-page' },
+      ],
+    })
+
+    expect(await findPageSitemapDocs(payload, locale)).toEqual([{ id: 9, slug: 'open-page' }])
   })
 
   it('passes locale-aware lookup options through page detail queries', async () => {

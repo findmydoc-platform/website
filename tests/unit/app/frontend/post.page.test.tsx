@@ -234,7 +234,7 @@ describe('frontend post detail route', () => {
     expect(heroElement?.props.breadcrumbs).toEqual([
       { label: 'Home', href: '/' },
       { label: 'Blog', href: '/posts?locale=de' },
-      { label: 'Hallo Welt', href: '/posts/hello-world' },
+      { label: 'Hallo Welt', href: '/posts/hello-world', lang: 'de' },
     ])
     expect(heroElement?.props.image).toEqual({
       src: '/api/platformContentMedia/file/post-hero.webp',
@@ -289,6 +289,18 @@ describe('frontend post detail route', () => {
     expect(disclaimerElement?.props.routeLabel).toBe('Blog')
     expect(disclaimerElement?.props.variant).toBe('slim-notice-bar')
     expect(disclaimerElement?.props.standalone).toBe(true)
+  })
+
+  it('marks English actions and the disclaimer inside a German article', async () => {
+    const { default: PostPage } = await import('@/app/(frontend)/posts/[slug]/page')
+    const result = await PostPage({
+      params: Promise.resolve({ slug: 'hello-world' }),
+      searchParams: Promise.resolve({}),
+    })
+
+    expect(findElementByType(result, 'article')?.props.lang).toBe('de')
+    expect(findElementByType(result, mocks.postShareActionBarComponent)?.props.lang).toBe('en')
+    expect(findElementByType(result, mocks.disclaimerNoticeComponent)?.props.lang).toBe('en')
   })
 
   it('emits the English canonical and bidirectional hreflang for a public pair', async () => {

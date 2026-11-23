@@ -16,11 +16,13 @@
  */
 export class FormSubmissionError extends Error {
   status: number
+  lang?: string
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, lang?: string) {
     super(message)
     this.name = 'FormSubmissionError'
     this.status = status
+    this.lang = lang
   }
 }
 
@@ -73,10 +75,10 @@ export async function submitFormData({
     const errorData = await res.json().catch(() => ({}))
     const errorMessage =
       (typeof errorData.error === 'string' && errorData.error) ||
-      (typeof errorData.message === 'string' && errorData.message) ||
-      `Form submission failed: ${res.status}`
+      (typeof errorData.message === 'string' && errorData.message)
 
-    throw new FormSubmissionError(errorMessage, res.status)
+    if (errorMessage) throw new FormSubmissionError(errorMessage, res.status)
+    throw new FormSubmissionError(`Form submission failed: ${res.status}`, res.status, 'en')
   }
 
   return res.json()

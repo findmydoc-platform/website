@@ -13,12 +13,13 @@ import type { BlogCardBaseProps } from '@/utilities/blog/normalizePost'
  * Used for: "Related Articles" section at bottom of blog post detail page
  * Visual: Category pill below image, compact layout, meta info with icons
  */
-export const Overview: React.FC<BlogCardBaseProps> = ({
+export const Overview: React.FC<BlogCardBaseProps & { readTimeLang?: string }> = ({
   title,
   excerpt,
   href,
   dateLabel,
   readTime,
+  readTimeLang,
   category,
   image,
   author,
@@ -26,7 +27,7 @@ export const Overview: React.FC<BlogCardBaseProps> = ({
 }) => {
   const resolvedImage = image ?? {
     src: '/images/blog-placeholder-1600-900.svg',
-    alt: 'Blog placeholder',
+    alt: '',
     sizes: '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw',
     quality: 70,
   }
@@ -44,7 +45,7 @@ export const Overview: React.FC<BlogCardBaseProps> = ({
         <div className="relative mb-5 aspect-[16/10] overflow-hidden rounded-xl">
           <Image
             src={resolvedImage.src}
-            alt={resolvedImage.alt || 'Blog placeholder'}
+            alt={resolvedImage.alt}
             fill
             className="object-cover transition-transform duration-500 group-hover:scale-105"
             sizes={imageSizes}
@@ -98,7 +99,7 @@ export const Overview: React.FC<BlogCardBaseProps> = ({
                     </span>
                   )}
                   {readTime && (
-                    <span className="flex items-center gap-1">
+                    <span className="flex items-center gap-1" lang={readTimeLang}>
                       <Clock className="h-3 w-3" />
                       {readTime}
                     </span>

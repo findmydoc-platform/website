@@ -54,3 +54,12 @@ export const appendContentLocaleToPath = (path: string, locale?: ContentLocale |
 
   return `${url.pathname}${url.search}${url.hash}`
 }
+
+const reservedEnglishPageSlugs = new Set(['auth/password/reset', 'login/patient', 'register/patient'])
+
+export function isReservedPageSlug(slug: string, locale: string | undefined): boolean {
+  const path = slug.trim().replace(/^\/+|\/+$/g, '')
+  if (locale === 'de') return /^en(?:\/|$)/.test(path)
+  if (locale === 'en') return /^posts\/[^/]+$/.test(path) || reservedEnglishPageSlugs.has(path)
+  return false
+}

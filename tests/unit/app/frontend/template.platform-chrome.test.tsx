@@ -73,6 +73,15 @@ describe('platform navigation during Holding mode', () => {
     expect(screen.getByRole('heading', { name: 'Page content' })).toBeInTheDocument()
   })
 
+  it('announces the shared Preview notice in English on a German Post', async () => {
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'preview')
+    mocks.pathname = '/posts/gruener-tee'
+
+    await renderTemplate()
+
+    expect(screen.getByRole('note', { name: 'Preview data notice' })).toHaveAttribute('lang', 'en')
+  })
+
   it.each([null, 'patient', 'clinic'])(
     'keeps the standalone Holding contact page for a visitor with user type %s',
     async (userType) => {

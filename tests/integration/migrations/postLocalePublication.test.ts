@@ -19,7 +19,8 @@ const legacyPostFixture = `
   );
   CREATE TABLE _posts_v (
     id integer PRIMARY KEY, parent_id integer REFERENCES posts, published_locale _locales,
-    version_slug varchar, version_generate_slug boolean, version__status enum__posts_v_version_status
+    version_slug varchar, version_generate_slug boolean, version__status enum__posts_v_version_status,
+    snapshot boolean DEFAULT false, created_at timestamptz DEFAULT now()
   );
   CREATE TABLE _posts_v_locales (
     _locale _locales NOT NULL, _parent_id integer NOT NULL REFERENCES _posts_v,
@@ -35,7 +36,7 @@ const legacyPostFixture = `
     ('en', 41, 'Existing English title', 'Existing SEO title', 'Existing SEO description', '{"article": "Existing English body"}', 'Existing English excerpt'),
     ('de', 41, 'Unreleased German translation', NULL, NULL, NULL, NULL),
     ('en', 42, 'Unpublished English work', NULL, NULL, NULL, NULL);
-  INSERT INTO _posts_v VALUES
+  INSERT INTO _posts_v (id, parent_id, published_locale, version_slug, version_generate_slug, version__status) VALUES
     (101, 41, 'en', 'legacy-public', false, 'published'),
     (102, 42, NULL, 'legacy-draft', true, 'draft');
   INSERT INTO _posts_v_locales VALUES
@@ -132,6 +133,222 @@ describe('Post locale publication migration', () => {
           version_slug: 'legacy-draft',
           version_title: 'English draft snapshot',
         },
+      ])
+    } finally {
+      await client.query('ROLLBACK')
+      await client.end()
+    }
+  })
+
+  it('preserves previously published German Posts and retains their existing public links', async () => {
+    const { connectionString } = deriveDatabaseConfig(process.env.DATABASE_URI)
+    const client = new Client({ connectionString })
+    await client.connect()
+    const db = drizzle(client as unknown as NodePgClient)
+    const schema = `post_locale_history_${randomUUID().replaceAll('-', '')}`
+
+    try {
+      await client.query(`BEGIN; CREATE SCHEMA "${schema}"; SET LOCAL search_path TO "${schema}";`)
+      await client.query(legacyPostFixture)
+      await client.query(`
+        INSERT INTO posts VALUES (51, 'legacy-selected', true, 'published'),
+          (52, 'legacy-all', true, 'published'), (53, 'legacy-withdrawn', true, 'draft'),
+          (54, 'legacy-only-english', true, 'published');
+        INSERT INTO posts_locales VALUES
+          ('de', 51, 'Published German Article', NULL, NULL, '{"article": "Published German body"}', 'German excerpt'),
+          ('de', 52, 'German in publish all', NULL, NULL, NULL, NULL),
+          ('de', 53, 'Withdrawn German Article', NULL, NULL, NULL, NULL);
+        INSERT INTO _posts_v VALUES
+          (200, 51, 'de', 'older-slug', true, 'published', false, '2026-06-01'),
+          (201, 51, 'en', 'older-slug', true, 'published', false, '2026-06-02'),
+          (202, 51, 'en', 'legacy-selected', true, 'draft', true, '2026-06-02'),
+          (203, 51, NULL, 'another-slug', true, 'draft', false, '2026-06-03'),
+          (204, 52, NULL, 'legacy-all', true, 'published', false, '2026-06-01'),
+          (205, 53, 'de', 'legacy-withdrawn', true, 'published', false, '2026-06-01'),
+          (206, 54, NULL, 'legacy-only-english', true, 'published', false, '2026-06-01');
+        INSERT INTO _posts_v_locales VALUES
+          ('de', 200, 'Published German Article'), ('de', 201, 'Published German Article'),
+          ('en', 201, 'Published English Article'), ('en', 202, 'English companion snapshot'),
+          ('de', 202, 'Private German snapshot'),
+          ('de', 203, 'Private German draft'), ('de', 204, 'German in publish all'),
+          ('de', 205, 'Previously published German Article'), ('en', 206, 'Only English existed when published');
+      `)
+      await up({ db } as unknown as Parameters<typeof up>[0])
+
+      expect(
+        (
+          await client.query(`SELECT _parent_id, slug, _status, generate_slug, title, content, excerpt FROM posts_locales
+                              WHERE _locale = 'de' AND _parent_id >= 51 ORDER BY _parent_id`)
+        ).rows,
+      ).toEqual([
+        {
+          _parent_id: 51,
+          slug: 'legacy-selected',
+          _status: 'published',
+          generate_slug: false,
+          title: 'Published German Article',
+          content: { article: 'Published German body' },
+          excerpt: 'German excerpt',
+        },
+        {
+          _parent_id: 52,
+          slug: 'legacy-all',
+          _status: 'published',
+          generate_slug: false,
+          title: 'German in publish all',
+          content: null,
+          excerpt: null,
+        },
+        {
+          _parent_id: 53,
+          slug: 'legacy-withdrawn',
+          _status: 'draft',
+          generate_slug: true,
+          title: 'Withdrawn German Article',
+          content: null,
+          excerpt: null,
+        },
+        {
+          _parent_id: 54,
+          slug: 'legacy-only-english',
+          _status: 'draft',
+          generate_slug: false,
+          title: null,
+          content: null,
+          excerpt: null,
+        },
+      ])
+      expect(
+        (
+          await client.query(`SELECT _parent_id, version_slug, version__status, version_title FROM _posts_v_locales
+                              WHERE (_locale = 'de' AND _parent_id >= 201) OR _parent_id = 202
+                              ORDER BY _parent_id, _locale`)
+        ).rows,
+      ).toEqual([
+        {
+          _parent_id: 201,
+          version_slug: 'legacy-selected',
+          version__status: 'published',
+          version_title: 'Published German Article',
+        },
+        {
+          _parent_id: 202,
+          version_slug: 'legacy-selected',
+          version__status: 'draft',
+          version_title: 'English companion snapshot',
+        },
+        {
+          _parent_id: 202,
+          version_slug: 'legacy-selected',
+          version__status: 'draft',
+          version_title: 'Private German snapshot',
+        },
+        {
+          _parent_id: 203,
+          version_slug: 'legacy-selected',
+          version__status: 'draft',
+          version_title: 'Private German draft',
+        },
+        {
+          _parent_id: 204,
+          version_slug: 'legacy-all',
+          version__status: 'published',
+          version_title: 'German in publish all',
+        },
+        {
+          _parent_id: 205,
+          version_slug: 'legacy-withdrawn',
+          version__status: 'published',
+          version_title: 'Previously published German Article',
+        },
+        { _parent_id: 206, version_slug: 'legacy-only-english', version__status: 'draft', version_title: null },
+      ])
+    } finally {
+      await client.query('ROLLBACK')
+      await client.end()
+    }
+  })
+
+  it('keeps the English draft private when the historical publication selected German only', async () => {
+    const { connectionString } = deriveDatabaseConfig(process.env.DATABASE_URI)
+    const client = new Client({ connectionString })
+    await client.connect()
+    const db = drizzle(client as unknown as NodePgClient)
+    const schema = `post_locale_draft_${randomUUID().replaceAll('-', '')}`
+
+    try {
+      await client.query(`BEGIN; CREATE SCHEMA "${schema}"; SET LOCAL search_path TO "${schema}";`)
+      await client.query(legacyPostFixture)
+      await client.query(`
+        INSERT INTO posts VALUES (51, 'german-first', false, 'published');
+        INSERT INTO posts_locales VALUES
+          ('en', 51, 'Private initial English draft', NULL, NULL, NULL, NULL), ('de', 51, 'Published German Post', NULL, NULL, NULL, NULL);
+        INSERT INTO _posts_v VALUES
+          (201, 51, NULL, 'german-first', false, 'draft', false, '2026-06-01'),
+          (202, 51, 'de', 'german-first', false, 'published', false, '2026-06-02'),
+          (203, 51, 'de', 'german-first', false, 'draft', true, '2026-06-02');
+        INSERT INTO _posts_v_locales VALUES
+          ('en', 201, 'Private initial English draft'), ('de', 202, 'Published German Post'),
+          ('en', 203, 'Private initial English draft'), ('de', 203, 'Published German Post');
+      `)
+      await up({ db } as unknown as Parameters<typeof up>[0])
+
+      expect(
+        (await client.query("SELECT _status, title FROM posts_locales WHERE _locale = 'en' AND _parent_id = 51")).rows,
+      ).toEqual([{ _status: 'draft', title: 'Private initial English draft' }])
+      expect(
+        (await client.query("SELECT version__status FROM _posts_v_locales WHERE _locale = 'en' AND _parent_id = 202"))
+          .rows,
+      ).toEqual([{ version__status: 'draft' }])
+    } finally {
+      await client.query('ROLLBACK')
+      await client.end()
+    }
+  })
+
+  it('keeps current Post locale slugs and publication when the expansion is replayed', async () => {
+    const { connectionString } = deriveDatabaseConfig(process.env.DATABASE_URI)
+    const client = new Client({ connectionString })
+    await client.connect()
+    const db = drizzle(client as unknown as NodePgClient)
+    const schema = `post_locale_replay_${randomUUID().replaceAll('-', '')}`
+    const migrate = () => up({ db } as unknown as Parameters<typeof up>[0])
+
+    try {
+      await client.query(`BEGIN; CREATE SCHEMA "${schema}"; SET LOCAL search_path TO "${schema}";`)
+      await client.query(legacyPostFixture)
+      await migrate()
+      await client.query(`
+        UPDATE posts_locales SET slug = 'new-english-slug', _status = 'draft', generate_slug = false
+          WHERE _parent_id = 41 AND _locale = 'en';
+        UPDATE posts_locales SET slug = 'new-german-slug', _status = 'published', generate_slug = true
+          WHERE _parent_id = 41 AND _locale = 'de';
+        UPDATE _posts_v_locales SET version_slug = 'new-english-slug', version__status = 'draft', version_generate_slug = true
+          WHERE _parent_id = 101 AND _locale = 'en';
+        UPDATE _posts_v_locales SET version_slug = 'new-german-slug', version__status = 'published', version_generate_slug = true
+          WHERE _parent_id = 101 AND _locale = 'de';
+      `)
+      await migrate()
+
+      expect(
+        (
+          await client.query(
+            'SELECT _locale, slug, _status, generate_slug FROM posts_locales WHERE _parent_id = 41 ORDER BY _locale',
+          )
+        ).rows,
+      ).toEqual([
+        { _locale: 'en', slug: 'new-english-slug', _status: 'draft', generate_slug: false },
+        { _locale: 'de', slug: 'new-german-slug', _status: 'published', generate_slug: true },
+      ])
+      expect(
+        (
+          await client.query(
+            'SELECT _locale, version_slug, version__status, version_generate_slug FROM _posts_v_locales WHERE _parent_id = 101 ORDER BY _locale',
+          )
+        ).rows,
+      ).toEqual([
+        { _locale: 'en', version_slug: 'new-english-slug', version__status: 'draft', version_generate_slug: true },
+        { _locale: 'de', version_slug: 'new-german-slug', version__status: 'published', version_generate_slug: true },
       ])
     } finally {
       await client.query('ROLLBACK')

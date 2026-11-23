@@ -3,7 +3,6 @@ import type {
   CollectionAfterDeleteHook,
   CollectionBeforeChangeHook,
   CollectionBeforeDeleteHook,
-  CollectionBeforeOperationHook,
   PayloadRequest,
   TypeWithID,
 } from 'payload'
@@ -13,6 +12,7 @@ import {
   executeCollectionDeleteRevalidation,
 } from '@/hooks/cacheRevalidationAdapters'
 import { CONTENT_LOCALES, type ContentLocale } from '@/utilities/contentLocalization'
+import { localizedDraftIntent } from './localizedDraftIntent'
 
 type Collection = 'pages' | 'posts'
 type PublishedSlugs = Partial<Record<ContentLocale, string>>
@@ -20,7 +20,7 @@ type DocumentId = TypeWithID['id']
 
 export function localizedPublicationRevalidation<T extends TypeWithID>(collection: Collection) {
   const previousPublishedSlugsKey = `${collection}PublicSlugsBeforeMutation`
-  const draftSaveKey = `${collection}DraftSave`
+  const { beforeOperation, isDraftSave } = localizedDraftIntent(collection)
 
   async function getPublishedSlugs(req: PayloadRequest, id: DocumentId): Promise<PublishedSlugs> {
     const publishedSlugs: PublishedSlugs = {}
@@ -57,15 +57,6 @@ export function localizedPublicationRevalidation<T extends TypeWithID>(collectio
     const previous = snapshots.get(id) ?? {}
     snapshots.delete(id)
     return previous
-  }
-
-  const isDraftSave = (context: PayloadRequest['context']): boolean => context[draftSaveKey] === true
-
-  const beforeOperation: CollectionBeforeOperationHook = ({ args, operation, req }) => {
-    if (operation === 'update') {
-      req.context[draftSaveKey] = args.draft === true && args.unpublishAllLocales !== true
-    }
-    return args
   }
 
   const beforeChange: CollectionBeforeChangeHook<T> = async ({ data, originalDoc, req }) => {
@@ -115,5 +106,5 @@ export function localizedPublicationRevalidation<T extends TypeWithID>(collectio
     return doc
   }
 
-  return { isDraftSave, beforeOperation, beforeChange, beforeDelete, afterChange, afterDelete }
+  return { beforeOperation, beforeChange, beforeDelete, afterChange, afterDelete }
 }

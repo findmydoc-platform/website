@@ -7,6 +7,7 @@ import { Container } from '@/components/molecules/Container'
 import { cn } from '@/utilities/ui'
 
 export type PostActionBarProps = {
+  lang?: string
   backLink?: {
     label?: string
     href?: string
@@ -21,6 +22,7 @@ export type PostActionBarProps = {
 }
 
 export const PostActionBar: React.FC<PostActionBarProps> = ({
+  lang,
   backLink = { label: 'Back to Blog', href: '/posts' },
   shareButton = { label: 'Share' },
   className,
@@ -33,6 +35,7 @@ export const PostActionBar: React.FC<PostActionBarProps> = ({
     <Container className={className}>
       <div className={cn('grid grid-cols-1 lg:grid-cols-12', layoutClassName)}>
         <div
+          lang={lang}
           className={cn(
             'flex flex-col gap-3 border-b py-5 sm:flex-row sm:items-center sm:justify-between sm:py-6 lg:col-span-8 lg:col-start-3',
             contentClassName,

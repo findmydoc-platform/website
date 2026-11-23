@@ -6,6 +6,7 @@ export type BreadcrumbItem = {
   label: string
   href: string
   current?: boolean
+  lang?: string
 }
 
 export type BreadcrumbProps = {
@@ -13,6 +14,7 @@ export type BreadcrumbProps = {
   separator?: React.ReactNode
   variant?: 'default' | 'light'
   className?: string
+  lang?: string
 }
 
 /**
@@ -30,7 +32,13 @@ export type BreadcrumbProps = {
  * />
  * ```
  */
-export const Breadcrumb: React.FC<BreadcrumbProps> = ({ items, separator = '›', variant = 'default', className }) => {
+export const Breadcrumb: React.FC<BreadcrumbProps> = ({
+  items,
+  separator = '›',
+  variant = 'default',
+  className,
+  lang,
+}) => {
   if (!items || items.length === 0) {
     return null
   }
@@ -41,7 +49,7 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({ items, separator = '›'
   }
 
   return (
-    <nav className={cn('text-sm', variantClasses[variant], className)} aria-label="Breadcrumb">
+    <nav className={cn('text-sm', variantClasses[variant], className)} aria-label="Breadcrumb" lang={lang}>
       <ol className="flex flex-wrap items-center gap-x-4 gap-y-1">
         {items.map((item, index) => {
           const isCurrent = item.current ?? index === items.length - 1
@@ -54,7 +62,11 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({ items, separator = '›'
               : 'text-inherit hover:text-foreground'
 
           return (
-            <li key={`${item.href}-${index}`} className="inline-flex max-w-full min-w-0 items-center gap-4">
+            <li
+              key={`${item.href}-${index}`}
+              lang={item.lang}
+              className="inline-flex max-w-full min-w-0 items-center gap-4"
+            >
               {isCurrent ? (
                 <span aria-current="page" className={cn('max-w-full break-words', itemClasses)} title={item.label}>
                   {item.label}

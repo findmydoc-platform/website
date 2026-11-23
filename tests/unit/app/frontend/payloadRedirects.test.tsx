@@ -119,6 +119,17 @@ describe('PayloadRedirects', () => {
     await expectRedirect('/en/old-about', '/en/about-us')
   })
 
+  it('does not redirect to a historical German Page inside the English namespace', async () => {
+    const findByID = vi.fn(({ locale }) => (locale === 'de' ? { slug: 'en', _status: 'published' } : null))
+    mocks.getPayload.mockResolvedValue({ findByID })
+    mocks.redirectsLoader.mockResolvedValue([
+      { from: '/old-page', to: { type: 'reference', reference: { relationTo: 'pages', value: 12 } } },
+    ])
+
+    await expect(PayloadRedirects({ url: '/old-page' })).rejects.toMatchObject({ code: '404' })
+    expect(mocks.redirect).not.toHaveBeenCalled()
+  })
+
   it('normalizes home page references to root only after live resolution', async () => {
     const findByID = vi.fn().mockResolvedValue({
       slug: 'home',

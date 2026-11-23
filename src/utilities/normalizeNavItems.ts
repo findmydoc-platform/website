@@ -1,6 +1,6 @@
 import { isNotNull, isRecord, resolveHrefFromCMSLink } from '@/blocks/_shared/utils'
 import type { UiLinkProps } from '@/components/molecules/Link'
-import { LEGACY_LEGAL_REDIRECTS, REQUIRED_LEGAL_FOOTER_LINKS } from '@/utilities/legalPages'
+import { isManagedLegalPageSlug, LEGACY_LEGAL_REDIRECTS, REQUIRED_LEGAL_FOOTER_LINKS } from '@/utilities/legalPages'
 
 type SupportedLinkType = 'custom' | 'reference' | 'group'
 
@@ -66,15 +66,20 @@ function normalizeLinkRecord(
   if (!isRecord(link)) return null
 
   const linkType = resolveLinkType(link.type)
-  const href = resolveHrefFromCMSLink({
-    type: linkType,
-    url: typeof link.url === 'string' ? link.url : null,
-    reference: link.reference,
-  })
-  if (!href && !(options.allowGroupWithoutHref && linkType === 'group')) return null
+  const href = resolveHrefFromCMSLink(
+    {
+      type: linkType,
+      url: typeof link.url === 'string' ? link.url : null,
+      reference: link.reference,
+    },
+    { locale: 'en' },
+  )
+  const legalSlug = href?.startsWith('/en/') ? href.slice('/en/'.length) : undefined
+  const publicHref = isManagedLegalPageSlug(legalSlug) && linkType === 'reference' ? `/${legalSlug}` : href
+  if (!publicHref && !(options.allowGroupWithoutHref && linkType === 'group')) return null
 
   return {
-    ...(href ? { href } : {}),
+    ...(publicHref ? { href: publicHref } : {}),
     label: typeof link.label === 'string' ? link.label : null,
     newTab: linkType === 'group' ? false : typeof link.newTab === 'boolean' ? link.newTab : false,
   }
@@ -155,7 +160,7 @@ export function normalizeFooterNavGroups(
 
 /**
  * Normalises header CMS data into a flat-friendly shape that supports optional subItems.
- * Used exclusively by the Header component (the Footer keeps using `normalizeNavItems`).
+ * Resolves references against the English documents loaded for site navigation.
  */
 export function normalizeHeaderNavItems(
   data: { navItems?: Array<{ link?: unknown; subItems?: Array<{ link?: unknown }> | null }> | null } | null | undefined,

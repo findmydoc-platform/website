@@ -3,7 +3,7 @@ import type { Access } from 'payload'
 
 import { buildUserMatrix, createMatrixAccessTest, getMatrixRow } from './matrix-helpers'
 
-// The generic matrix suite validates CRUD only. Matrix `admin` is a business-level
+// The generic matrix suite validates CRUD and declared version reads. Matrix `admin` is a business-level
 // classification in this repo, so distinct admin-only behavior is covered by
 // focused auth, moderation, and field-level access tests where applicable.
 interface CrudAccess {
@@ -83,7 +83,10 @@ export function makePermissionSuite(slug: string, collection: CollectionWithCrud
         '%s delete access',
         createMatrixAccessTest(slug, 'delete', access.delete, matrixRow.operations.delete),
       )
-      if (access.readVersions && matrixRow.operations.readVersions) {
+      if (matrixRow.operations.readVersions) {
+        if (!access.readVersions) {
+          throw new Error(`${slug} must explicitly configure access.readVersions as declared in the permission matrix.`)
+        }
         test.each(userMatrix)(
           '%s version read access',
           createMatrixAccessTest(slug, 'readVersions', access.readVersions, matrixRow.operations.readVersions),

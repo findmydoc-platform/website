@@ -88,6 +88,21 @@ describe('Pages revalidation hooks', () => {
     expect(getTagCalls()).toEqual([])
   })
 
+  it('invalidates a published Page even when the update has the Payload draft flag', async () => {
+    const req = buildReq()
+    capturePageDraftSaveIntent({
+      args: { draft: true, data: { _status: 'published' } },
+      context: req.context,
+      collection: { slug: 'pages' } as AfterChangeArgs['collection'],
+      operation: 'update',
+      req,
+    } as unknown as Parameters<typeof capturePageDraftSaveIntent>[0])
+    await savePage(req, { en: 'old-about' }, { en: 'about' })
+
+    expect(getPathCalls()).toEqual(['/en/about', '/en/old-about'])
+    expect(getTagCalls()).toContain('surface:sitemap:pages')
+  })
+
   it('skips revalidation when disabled via context', async () => {
     const req = buildReq(true)
     await savePage(req, {}, { de: 'pricing' })

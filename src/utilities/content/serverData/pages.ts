@@ -1,7 +1,7 @@
 import type { Payload, Where } from 'payload'
 
 import type { Page, PagesSelect } from '@/payload-types'
-import type { ContentLocale } from '@/utilities/contentLocalization'
+import { isReservedPageSlug, type ContentLocale } from '@/utilities/contentLocalization'
 import { buildPagePath } from '@/utilities/cachePolicy'
 
 import { mergePublishedWhere, type LocalizedDocQuery, type PagedResult } from './shared'
@@ -90,7 +90,7 @@ export async function findPageBySlug(
 ): Promise<PageDetailDoc | null> {
   const result = await queryPages<PageDetailDoc>(payload, {
     contentLocale,
-    depth: 0,
+    depth: 1,
     draft,
     limit: 1,
     pagination: false,
@@ -105,9 +105,16 @@ export async function findPageBySlug(
   return result.docs[0] ?? null
 }
 
-async function findPublicPage<TDoc>(payload: Payload, locale: ContentLocale, where: Where, select: PagesSelect<true>) {
+async function findPublicPage<TDoc>(
+  payload: Payload,
+  locale: ContentLocale,
+  where: Where,
+  select: PagesSelect<true>,
+  depth = 0,
+) {
   const result = await queryPages<TDoc>(payload, {
     contentLocale: { locale, fallbackLocale: false },
+    depth,
     limit: 1,
     pagination: false,
     where,
@@ -121,6 +128,8 @@ export async function findPublicPageRoute(
   slug: string,
   locale: ContentLocale,
 ): Promise<PublicPageRoute | null> {
+  if (isReservedPageSlug(slug, locale)) return null
+
   const page = await findPageBySlug(payload, slug, false, { locale })
   if (!page?.slug) {
     if (locale === 'en') return null
@@ -130,6 +139,7 @@ export async function findPublicPageRoute(
       'en',
       { legacyEnglishSlug: { equals: slug } },
       PAGE_DETAIL_SELECT,
+      1,
     )
     if (!legacyPage?.slug) return null
 
@@ -144,7 +154,7 @@ export async function findPublicPageRoute(
     PAGE_SLUG_SELECT,
   )
   const canonicalPath = buildPagePath(page.slug, locale)
-  if (!alternate?.slug) return { page, locale, canonicalPath }
+  if (!alternate?.slug || isReservedPageSlug(alternate.slug, alternateLocale)) return { page, locale, canonicalPath }
 
   const alternatePath = buildPagePath(alternate.slug, alternateLocale)
   const de = locale === 'de' ? canonicalPath : alternatePath
@@ -161,7 +171,7 @@ export async function findPageSitemapDocs(payload: Payload, locale: ContentLocal
     select: PAGE_SITEMAP_SELECT,
   })
 
-  return result.docs
+  return result.docs.filter(({ slug }) => !slug || !isReservedPageSlug(slug, locale))
 }
 
 export { PAGE_DETAIL_SELECT, PAGE_SITEMAP_SELECT }

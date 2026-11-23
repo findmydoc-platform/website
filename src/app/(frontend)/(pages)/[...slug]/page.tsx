@@ -1,17 +1,12 @@
 import type { Metadata } from 'next'
 
 import { PayloadRedirects } from '@/app/(frontend)/_components/PayloadRedirects'
-import configPromise from '@payload-config'
-import { getPayload } from 'payload'
-import { draftMode } from 'next/headers'
-import React, { cache } from 'react'
 
 import { RenderBlocks } from '@/blocks/RenderBlocks'
 import { generateMeta } from '@/utilities/generateMeta'
-import { findPageBySlug, findPublicPageRoute } from '@/utilities/content/serverData'
-import { buildPagePath } from '@/utilities/cachePolicy'
+import { loadPageRoute } from '@/app/(frontend)/_data/loadPageRoute'
 import { LivePreviewListener } from '@/components/organisms/LivePreviewListener'
-import type { ContentLocale } from '@/utilities/contentLocalization'
+import { CmsDocumentLanguage } from '@/features/uiCopy/DocumentLanguage.client'
 
 type Args = {
   params: Promise<{
@@ -22,23 +17,9 @@ type Args = {
   }>
 }
 
-const queryPage = cache(async (slug: string, locale: ContentLocale, draft: boolean) => {
-  const payload = await getPayload({ config: configPromise })
-  if (!draft) return findPublicPageRoute(payload, slug, locale)
-
-  const page = await findPageBySlug(payload, slug, true, { locale, fallbackLocale: false })
-  return page ? { page, locale, canonicalPath: buildPagePath(slug, locale), languagePaths: undefined } : null
-})
-
 async function loadRoute({ params, searchParams }: Args) {
-  const [{ isEnabled: draft }, { slug: pathSegments = ['home'] }] = await Promise.all([draftMode(), params])
-  const isEnglishPath = pathSegments[0] === 'en'
-  const slugSegments = isEnglishPath ? pathSegments.slice(1) : pathSegments
-  const previewLocale = draft ? (await searchParams).locale : undefined
-  const locale = previewLocale === 'de' || previewLocale === 'en' ? previewLocale : isEnglishPath ? 'en' : 'de'
-  const url = '/' + pathSegments.join('/')
-  const route = await queryPage(slugSegments.join('/') || 'home', locale, draft)
-  return { route, draft, url }
+  const [{ slug = ['home'] }, { locale }] = await Promise.all([params, searchParams])
+  return loadPageRoute(slug, locale)
 }
 
 export default async function Page(args: Args) {
@@ -47,6 +28,7 @@ export default async function Page(args: Args) {
 
   return (
     <article className="pt-12 pb-20 sm:pt-16 sm:pb-24" lang={route.locale}>
+      <CmsDocumentLanguage locale={route.locale} />
       <PayloadRedirects disableNotFound url={url} />
       {draft && <LivePreviewListener />}
       <RenderBlocks blocks={route.page.layout} contentLocale={{ locale: route.locale, fallbackLocale: false }} />

@@ -24,12 +24,12 @@ policy. An optional route `clinicId` must match the actual source clinic. Collec
 still apply; group access grants neither group administration nor Payload Admin access. Public clinic reads retain
 their existing publication filter.
 
-The legacy `readClinicAccessState` adapter remains explicitly local-only. Bootstrap and workspace wire conversion
-belongs to Dashboard #230. Other source-domain adapters remain closed to group access until Dashboard #231–238
-and their Website dependencies convert them. They must use the current policy, explicit target and actual source
-ownership; none may select a first clinic or infer access from bootstrap data. Clinic membership transfer and detachment use the [group movement operation](clinic-groups.md#transfer-and-detachment).
-New-person invitations belong to Website #2181. These boundaries leave the
-cross-repository acceptance criteria open.
+The legacy `readClinicAccessState` adapter remains local-only. The `clinic-scope-v1` bootstrap returns the person's
+current eligible clinics. The group-aware profile, treatment, gallery, doctor, inquiry, review and reporting
+operations recheck the requested clinic and source ownership where applicable. The personal notification feed
+uses the current authorized clinic set. Each operation keeps its existing permissions. Clinic membership transfer
+and detachment use the [group movement operation](clinic-groups.md#transfer-and-detachment). The
+[Website API contract](../integrations/clinic-dashboard-api.md) documents the routes and personal group invitation.
 
 ## Native mutation ordering
 
@@ -61,6 +61,9 @@ eligibility, an empty group, staff reference protection, untrusted and partial i
 clinic business update against revocation or group replacement. Earlier notification and moderation fixtures use the
 same trusted complete assignment boundary when simulating offboarding.
 
-Authenticated Admin visual QA remains unverified because no authorized local Admin session is available. The local
-fixture evidence does not establish Preview qualification, Production acceptance or complete downstream adapter
-conversion.
+The [bootstrap and reporting integration test](../../tests/integration/clinicDashboardScope.lifecycle.test.ts)
+checks current group membership, a foreign target and revocation. The
+[profile integration test](../../tests/integration/clinicDashboardProfile.scope.test.ts) checks group access and
+denial after detachment. These tests establish source behavior under fixtures. For hosted evidence, see the
+separate [Preview](https://github.com/findmydoc-platform/clinic-dashboard/issues/239) and
+[Production](https://github.com/findmydoc-platform/clinic-dashboard/issues/240) acceptance records.

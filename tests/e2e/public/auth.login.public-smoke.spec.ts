@@ -173,6 +173,18 @@ test('patient login announces registration and password reset in the requested l
   await expectNoBrowserIssues(issues)
 })
 
+test('patient login omits ambiguous redirect targets when switching language @smoke', async ({ page }) => {
+  const response = await page.goto('/login/patient?next=%2Fpatient%2Finquiries&next=%2F')
+  expect(response?.ok()).toBe(true)
+
+  await page
+    .getByRole('banner')
+    .getByRole('button', { name: /Sprache/ })
+    .click()
+  await page.getByRole('dialog', { name: 'Sprache', exact: true }).getByRole('link', { name: 'English' }).click()
+  await expect(page).toHaveURL('/en/login/patient')
+})
+
 test('patient login switches languages and confirms before discarding a password @smoke', async ({
   page,
 }, testInfo) => {

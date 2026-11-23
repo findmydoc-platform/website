@@ -11,6 +11,7 @@ import {
   executeCollectionChangeRevalidation,
   executeCollectionDeleteRevalidation,
 } from '@/hooks/cacheRevalidationAdapters'
+import { buildCmsRedirectPath } from '@/utilities/content/cmsRedirectPaths'
 import { CONTENT_LOCALES, type ContentLocale } from '@/utilities/contentLocalization'
 import { localizedDraftIntent } from './localizedDraftIntent'
 
@@ -18,7 +19,7 @@ type Collection = 'pages' | 'posts'
 type PublishedSlugs = Partial<Record<ContentLocale, string>>
 type DocumentId = TypeWithID['id']
 
-export function localizedPublicationRevalidation<T extends TypeWithID>(collection: Collection) {
+export function localizedPublicationRevalidation<T extends { id: number }>(collection: Collection) {
   const previousPublishedSlugsKey = `${collection}PublicSlugsBeforeMutation`
   const { beforeOperation, isDraftSave } = localizedDraftIntent(collection)
 
@@ -72,18 +73,75 @@ export function localizedPublicationRevalidation<T extends TypeWithID>(collectio
     }
   }
 
+  async function recordPublishedSlugRedirect(
+    req: PayloadRequest,
+    id: number,
+    locale: ContentLocale,
+    previousSlug: string,
+  ) {
+    const from = buildCmsRedirectPath(collection, locale, previousSlug)
+    if (!from) return
+
+    const request = { ...req, query: { ...req.query } }
+    const existing = await req.payload.find({
+      collection: 'redirects',
+      req: request,
+      overrideAccess: true,
+      depth: 0,
+      limit: 1,
+      pagination: false,
+      select: { type: true, to: { reference: true } },
+      where: { from: { equals: from } },
+    })
+    const rule = existing.docs[0]
+    const to = { type: 'reference' as const, reference: { relationTo: collection, value: id } }
+    if (rule) {
+      if (rule.type !== '301') return
+      const reference = rule.to?.reference
+      if (reference?.relationTo === collection && reference.value === id) return
+
+      await req.payload.update({
+        collection: 'redirects',
+        id: rule.id,
+        req: request,
+        overrideAccess: true,
+        depth: 0,
+        data: { to },
+      })
+      return
+    }
+
+    await req.payload.create({
+      collection: 'redirects',
+      req: request,
+      overrideAccess: true,
+      depth: 0,
+      data: {
+        from,
+        type: '301',
+        to,
+      },
+    })
+  }
+
   const afterChange: CollectionAfterChangeHook<T> = async ({ doc, req }) => {
     if (req.context.disableRevalidate || isDraftSave(req.context)) return doc
 
     const before = takeSnapshot(req, doc.id)
     const after = await getPublishedSlugs(req, doc.id)
     for (const locale of CONTENT_LOCALES) {
-      if (!before[locale] && !after[locale]) continue
+      const previousSlug = before[locale]
+      const publishedSlug = after[locale]
+      if (!previousSlug && !publishedSlug) continue
+      // A withdrawn URL can resolve again when this locale is republished.
+      if (previousSlug && previousSlug !== publishedSlug) {
+        await recordPublishedSlugRedirect(req, doc.id, locale, previousSlug)
+      }
       executeCollectionChangeRevalidation({
         collection,
         locale,
-        doc: { id: doc.id, slug: after[locale], _status: after[locale] ? 'published' : 'draft' },
-        previousDoc: before[locale] ? { id: doc.id, slug: before[locale], _status: 'published' } : undefined,
+        doc: { id: doc.id, slug: publishedSlug, _status: publishedSlug ? 'published' : 'draft' },
+        previousDoc: previousSlug ? { id: doc.id, slug: previousSlug, _status: 'published' } : undefined,
         logger: req.payload.logger,
       })
     }

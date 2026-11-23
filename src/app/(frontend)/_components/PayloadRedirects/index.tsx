@@ -2,7 +2,7 @@ import type React from 'react'
 
 import { getCachedRedirects } from '@/utilities/getRedirects'
 import { notFound, redirect } from 'next/navigation'
-import { resolveRedirectTargetPath } from './resolveRedirectTargetPath'
+import { resolveRedirectTargetPath } from '@/app/(frontend)/_data/resolveRedirectTargetPath'
 
 interface Props {
   disableNotFound?: boolean
@@ -13,7 +13,7 @@ interface Props {
 export const PayloadRedirects: React.FC<Props> = async ({ disableNotFound, url }) => {
   const redirects = await getCachedRedirects()()
 
-  const redirectItem = redirects.find((redirect) => redirect.from === url)
+  const redirectItem = redirects.find((redirect) => redirect.type !== '301' && redirect.from === url)
 
   if (redirectItem) {
     if (redirectItem.to?.url) {

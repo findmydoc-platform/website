@@ -5,6 +5,7 @@ import { getPayload } from 'payload'
 
 import type { Page, Post, Redirect } from '@/payload-types'
 import { buildPagePath, buildPostPath } from '@/utilities/cachePolicy'
+import { buildCmsRedirectPath, type CmsRedirectSource } from '@/utilities/content/cmsRedirectPaths'
 import { isReservedPageSlug, type ContentLocale } from '@/utilities/contentLocalization'
 import { sanitizeInternalRedirectPathOrNull } from '@/utilities/routing/sanitizeInternalRedirectPath'
 
@@ -37,16 +38,44 @@ export async function resolveRedirectTargetPath(
   return resolveRedirectTargetPathById({ collection, id, locale: 'en', payload })
 }
 
+export async function resolveSameLocaleRedirectTargetPath(
+  reference: RedirectTargetReference,
+  source: CmsRedirectSource,
+): Promise<string | null> {
+  const { collection, locale, slug } = source
+  const id = normalizeReferenceId(reference.value)
+  if (reference.relationTo !== collection || id === null) return null
+
+  const payload = await getPayload({ config: configPromise })
+  const current = await payload.find({
+    collection,
+    locale,
+    draft: false,
+    fallbackLocale: false,
+    overrideAccess: false,
+    depth: 0,
+    limit: 1,
+    pagination: false,
+    select: { slug: true },
+    where: { and: [{ slug: { equals: slug } }, { _status: { equals: 'published' } }] },
+  })
+  if (current.docs.length > 0) return null
+
+  return resolveRedirectTargetPathById({ collection, id, locale, payload, sameLocale: true })
+}
+
 async function resolveRedirectTargetPathById({
   collection,
   id,
   locale,
   payload,
+  sameLocale = false,
 }: {
   collection: SupportedRedirectTargetCollection
   id: string | number
   locale: ContentLocale
   payload: Payload
+  sameLocale?: boolean
 }): Promise<string | null> {
   let target: RedirectTargetDocument | null
 
@@ -68,7 +97,9 @@ async function resolveRedirectTargetPathById({
   if (!target || target._status !== 'published' || target.deletedAt) return null
 
   const slug = typeof target.slug === 'string' ? target.slug.trim() : ''
-  if (!slug || (collection === 'pages' && isReservedPageSlug(slug, locale))) return null
+  if (!slug) return null
+  if (sameLocale) return buildCmsRedirectPath(collection, locale, slug)
+  if (collection === 'pages' && isReservedPageSlug(slug, locale)) return null
 
   let targetPath: string
 

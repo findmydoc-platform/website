@@ -57,6 +57,7 @@ describe('PayloadRedirects', () => {
     mocks.redirectsLoader.mockResolvedValue([
       {
         from: '/old',
+        type: '307',
         to: { type: 'custom', url: '/new' },
       },
     ])

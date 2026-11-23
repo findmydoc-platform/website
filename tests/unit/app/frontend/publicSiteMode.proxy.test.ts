@@ -33,6 +33,8 @@ vi.mock('@/features/temporaryLandingMode/resolver', () => ({
   resolveHoldingMode: mocks.resolveHoldingMode,
 }))
 
+vi.mock('@/utilities/routing/requestCmsRedirect', () => ({ requestCmsRedirect: vi.fn(async () => null) }))
+
 import { config, proxy } from '@/proxy'
 import { FRONTEND_PATH_HEADER, FRONTEND_PREVIEW_LOCALE_HEADER } from '@/i18n/requestLocale'
 

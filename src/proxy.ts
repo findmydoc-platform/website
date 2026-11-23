@@ -20,6 +20,9 @@ import {
   SEARCH_ROBOTS_HEADER,
   SEARCH_ROBOTS_HEADER_VALUE,
 } from '@/features/searchIndexing'
+import { requestCmsRedirect } from '@/utilities/routing/requestCmsRedirect'
+import { isPublicStaticAssetPath } from '@/utilities/routing/publicStaticAssets'
+import { parseCmsRedirectPath } from '@/utilities/content/cmsRedirectPaths'
 import { logCrawlerRequest } from '@/features/publicDiscovery/crawlerMonitoring'
 import { PUBLIC_DISCOVERY_SURFACE_PATHS } from '@/features/publicDiscovery/site'
 import {
@@ -40,9 +43,7 @@ const shouldBypassProxy = (pathname: string): boolean => {
 
   if (isPathFamily(pathname, '/_next')) return true
   if (NON_PAGE_PATHS.has(normalizedPath)) return true
-  // Next replaces this inventory with the actual public asset URLs during compilation.
-  const publicStaticAssetPaths: string[] = JSON.parse(process.env.PUBLIC_STATIC_ASSET_PATHS ?? '[]')
-  if (publicStaticAssetPaths.includes(pathname)) return true
+  if (isPublicStaticAssetPath(pathname)) return true
   return false
 }
 
@@ -153,6 +154,22 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   const privateResponse = (response: NextResponse): NextResponse => {
     if (!discovery) response.headers.set('Cache-Control', 'private, no-store')
     return response
+  }
+
+  if (
+    (request.method === 'GET' || request.method === 'HEAD') &&
+    !request.cookies.has('__prerender_bypass') &&
+    !discovery &&
+    (holdingMode === 'full' || isTemporaryLandingIndexablePath(pathname))
+  ) {
+    const source = parseCmsRedirectPath(pathname)
+    if (source) {
+      const destination = await requestCmsRedirect(request, source, holdingMode === 'holding')
+      if (destination) {
+        const response = NextResponse.redirect(new URL(destination, request.url), 301)
+        return privateResponse(previewDeployment ? withSearchRobotsHeader(response) : response)
+      }
+    }
   }
 
   if (holdingMode === 'full') {

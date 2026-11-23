@@ -234,16 +234,18 @@ export const executeGlobalChangeRevalidation = ({
 export const executeRedirectChangeRevalidation = ({
   doc,
   logger,
+  operation = 'update',
 }: {
   readonly doc: RevalidatableRedirectDoc
   readonly logger: RevalidationLogger
+  readonly operation?: 'update' | 'delete'
 }): void => {
   const id = normalizeId(doc.id, 'redirect id')
 
   executePlan(
     {
       kind: 'redirects',
-      operation: 'update',
+      operation,
       source: {
         kind: 'redirect-hook',
         id: `redirects:${id}`,

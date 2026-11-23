@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type Ref } from 'react'
 import { Alert } from '@/components/atoms/alert'
 import { Button } from '@/components/atoms/button'
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/atoms/card'
@@ -10,6 +10,8 @@ import { Label } from '@/components/atoms/label'
 import { Heading } from '@/components/atoms/Heading'
 import { usePublicFormValidation } from '@/components/molecules/PublicFormValidation'
 import type { PatientVerificationResendCopy } from '@/features/uiCopy/patientVerification'
+
+export const PATIENT_VERIFICATION_RESEND_ID = 'patient-verification-resend'
 
 async function requestVerification(email: string) {
   const response = await fetch('/api/auth/register/patient/resend', {
@@ -25,14 +27,15 @@ async function requestVerification(email: string) {
 export function PatientVerificationResendForm({
   copy,
   onRequest = requestVerification,
-  initialEmail = '',
+  initialEmail,
+  formRef,
 }: Readonly<{
   copy: PatientVerificationResendCopy
   onRequest?: (email: string) => Promise<void>
   initialEmail?: string
+  formRef?: Ref<HTMLFormElement>
 }>) {
   const [state, setState] = useState<'idle' | 'pending' | 'success' | 'error'>('idle')
-  const [email, setEmail] = useState(initialEmail)
   const validation = usePublicFormValidation({
     messages: {
       email: copy.emailValidation,
@@ -43,10 +46,14 @@ export function PatientVerificationResendForm({
     const form = event.currentTarget
     setState('idle')
     if (!validation.validateForm(form)) return
+    const email = new FormData(form).get('email')
+    if (typeof email !== 'string') return
+
     setState('pending')
     try {
       await onRequest(email)
-      setEmail('')
+      const emailField = form.elements.namedItem('email')
+      if (emailField instanceof HTMLInputElement) emailField.value = ''
       setState('success')
     } catch {
       setState('error')
@@ -55,13 +62,14 @@ export function PatientVerificationResendForm({
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
-        <Heading as="h2" size="h5" align="left" id="patient-verification-resend" tabIndex={-1}>
+        <Heading as="h2" size="h5" align="left" id={PATIENT_VERIFICATION_RESEND_ID} tabIndex={-1}>
           {copy.title}
         </Heading>
         <CardDescription className="text-foreground">{copy.description}</CardDescription>
       </CardHeader>
       <CardContent>
         <form
+          ref={formRef}
           method="post"
           action="/api/auth/register/patient/resend"
           onSubmit={submit}
@@ -94,11 +102,8 @@ export function PatientVerificationResendForm({
               autoComplete="email"
               required
               disabled={state === 'pending'}
-              value={email}
-              onChange={(event) => {
-                setEmail(event.target.value)
-                validation.handleFieldChange(event)
-              }}
+              defaultValue={initialEmail}
+              onChange={validation.handleFieldChange}
               {...validation.getFieldProps('email')}
             />
             <FieldError id={validation.getFieldErrorId('email')}>{validation.getFieldError('email')}</FieldError>

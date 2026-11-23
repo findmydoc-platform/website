@@ -5,6 +5,7 @@ import '@fontsource/dm-sans'
 
 import { resolveCmsDocumentLocale } from './_data/documentLocale'
 import { AdminBarClientAdapter } from '@/app/(frontend)/AdminBarClientAdapter.client'
+import { TreatmentSearchHandoffProvider } from '@/app/(frontend)/listing-comparison/TreatmentSearchHandoff.client'
 import { SupabaseAuthHashUrlScrubber } from '@/app/(frontend)/_components/SupabaseAuthHashUrlScrubber.client'
 import { createSiteMetadata } from '@/utilities/generateMeta'
 import { getGlobal } from '@/utilities/getGlobals'
@@ -28,6 +29,8 @@ import {
   isTemporaryLandingModeRequest,
   TEMPORARY_LANDING_DEFAULT_LOCALE,
 } from '@/features/temporaryLandingMode'
+import { LanguageSwitchRouteProvider } from '@/features/languageSwitch/LanguageSwitchRouteProvider.client'
+import { PatientAuthFormHandoffProvider } from '@/features/languageSwitch/PatientAuthFormHandoff.client'
 import { DocumentLanguage } from '@/features/uiCopy/DocumentLanguage.client'
 import { uiCopyLocaleFromHeaders } from '@/i18n/requestLocale'
 import { VercelToolbar } from '@vercel/toolbar/next'
@@ -66,7 +69,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {!blockSearchIndexing ? <JsonLdScript data={buildSiteBaseJsonLd({ description: holdingDescription })} /> : null}
         <div className="flex min-h-screen min-h-svh flex-col">
           <AdminBarClientAdapter preview={isEnabled} />
-          <DocumentLanguage initialCmsLocale={cmsLocale}>{children}</DocumentLanguage>
+          <LanguageSwitchRouteProvider>
+            <PatientAuthFormHandoffProvider>
+              <TreatmentSearchHandoffProvider>
+                <DocumentLanguage initialCmsLocale={cmsLocale}>{children}</DocumentLanguage>
+              </TreatmentSearchHandoffProvider>
+            </PatientAuthFormHandoffProvider>
+          </LanguageSwitchRouteProvider>
         </div>
         <CookieConsentClientAdapter
           config={cookieConsentContext.config}

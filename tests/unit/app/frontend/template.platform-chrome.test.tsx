@@ -14,7 +14,10 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('next/headers', () => ({ headers: mocks.headers }))
-vi.mock('next/navigation', () => ({ usePathname: () => mocks.pathname }))
+vi.mock('next/navigation', () => ({
+  usePathname: () => mocks.pathname,
+  useRouter: () => ({ push: vi.fn() }),
+}))
 vi.mock('next/link', () => ({
   default: ({ children, href, ...props }: { children: React.ReactNode; href: string }) => (
     <a href={href} {...props}>

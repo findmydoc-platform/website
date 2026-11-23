@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import { z } from 'zod'
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/atoms/card'
 import { Field, FieldError } from '@/components/atoms/field'
@@ -11,6 +11,16 @@ import { Alert } from '@/components/atoms/alert'
 import { Heading } from '@/components/atoms/Heading'
 import { usePublicFormValidation } from '@/components/molecules/PublicFormValidation'
 import type { RecoveryRequestFormCopy } from '@/features/uiCopy/passwordRecovery'
+import {
+  readChangedPatientAuthInput,
+  patientAuthFormInput,
+  usePatientAuthFormHandoff,
+} from '@/features/languageSwitch/PatientAuthFormHandoff.client'
+import {
+  useLanguageSwitchRoute,
+  type LanguageSwitchTargets,
+} from '@/features/languageSwitch/LanguageSwitchRouteProvider.client'
+import type { UiCopyLocale } from '@/i18n/requestLocale'
 
 const formSchema = z.object({
   email: z.string().email(),
@@ -39,14 +49,38 @@ export function ResetPasswordRequestForm({
   onRequest = submitRequest,
   initialEmail,
   preparationNotice,
+  languageSwitch,
 }: {
   copy: RecoveryRequestFormCopy
   reason?: ResetPasswordReason | null
   onRequest?: (data: ParsedData) => Promise<RecoveryRequestFailure | void>
   initialEmail?: string
   preparationNotice?: string
+  languageSwitch?: { locale: UiCopyLocale; targets: LanguageSwitchTargets }
 }) {
   const [formState, setFormState] = useState<FormState>({ status: 'idle' })
+  const formRef = useRef<HTMLFormElement>(null)
+  const handoff = usePatientAuthFormHandoff()
+  const onNavigate = useCallback(
+    (href: string) => {
+      const email = readChangedPatientAuthInput(formRef.current, 'email')
+      if (email !== undefined) handoff?.save(href, { form: 'recovery', email })
+    },
+    [handoff],
+  )
+
+  useLanguageSwitchRoute(languageSwitch && { ...languageSwitch, onNavigate })
+
+  useLayoutEffect(() => {
+    if (!languageSwitch) return
+
+    const draft = handoff?.take()
+    if (draft?.form !== 'recovery') return
+
+    const email = patientAuthFormInput(formRef.current, 'email')
+    if (email) email.value = draft.email
+  }, [handoff, languageSwitch])
+
   const formValidation = usePublicFormValidation({
     messages: {
       email: {
@@ -103,6 +137,7 @@ export function ResetPasswordRequestForm({
         </CardHeader>
         <CardContent className="pt-6">
           <form
+            ref={formRef}
             method="post"
             action="/api/auth/password/reset"
             onSubmit={handleSubmit}

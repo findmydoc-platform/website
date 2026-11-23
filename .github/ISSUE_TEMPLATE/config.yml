@@ -1,0 +1,4 @@
+contact_links:
+  - name: Engineering Spec (findmydoc team)
+    url: https://github.com/findmydoc-platform/platform-architecture/blob/main/templates/engineering-spec.md
+    about: Use the internal template in one lead issue for consequential changes before opening implementation tickets.

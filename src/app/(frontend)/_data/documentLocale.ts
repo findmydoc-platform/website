@@ -16,6 +16,7 @@ const DEDICATED_PATHS = new Set([
   '/auth/en/password/reset/complete',
   '/contact',
   '/en/auth/password/reset',
+  '/en/listing-comparison',
   '/en/login/patient',
   '/en/register/patient',
   '/listing-comparison',

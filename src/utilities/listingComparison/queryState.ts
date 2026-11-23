@@ -1,3 +1,5 @@
+import { LISTING_COMPARISON_PATHS } from '@/i18n/listingComparisonPath'
+import type { UiCopyLocale } from '@/i18n/requestLocale'
 import type { SortOption } from '@/utilities/listingComparison/sort'
 
 export const LISTING_COMPARISON_PER_PAGE = 24
@@ -188,9 +190,10 @@ export function buildListingComparisonSearchParams(
 
 export function buildListingComparisonHref(
   state: ListingComparisonQueryState,
-  defaults: ListingComparisonSearchParamDefaults = {},
+  defaults: ListingComparisonSearchParamDefaults & { locale?: UiCopyLocale } = {},
 ): string {
   const params = buildListingComparisonSearchParams(state, defaults)
   const query = params.toString()
-  return query ? `/listing-comparison?${query}` : '/listing-comparison'
+  const pathname = LISTING_COMPARISON_PATHS[defaults.locale ?? 'de']
+  return query ? `${pathname}?${query}` : pathname
 }

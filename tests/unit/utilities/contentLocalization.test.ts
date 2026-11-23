@@ -29,6 +29,7 @@ describe('isReservedPageSlug', () => {
     ['de', 'english-team', false],
     ['en', 'posts/article', true],
     ['en', 'posts/page/2', false],
+    ['en', 'listing-comparison', true],
     ['en', 'login/patient', true],
     ['en', 'register/patient', true],
     ['en', 'auth/password/reset', true],

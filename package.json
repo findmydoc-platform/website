@@ -75,7 +75,7 @@
     "@aws-sdk/client-s3": "3.1161.0",
     "@aws-sdk/s3-request-presigner": "3.1161.0",
     "@findmydoc-platform/email-templates": "0.3.0",
-    "@findmydoc-platform/ui-copy": "1.1.0",
+    "@findmydoc-platform/ui-copy": "1.2.0",
     "@payloadcms/db-postgres": "3.92.1",
     "@payloadcms/live-preview-react": "3.92.1",
     "@payloadcms/next": "3.92.1",

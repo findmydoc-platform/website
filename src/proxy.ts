@@ -28,6 +28,7 @@ import { PUBLIC_DISCOVERY_SURFACE_PATHS } from '@/features/publicDiscovery/site'
 import {
   FRONTEND_PATH_HEADER,
   FRONTEND_PREVIEW_LOCALE_HEADER,
+  patientAuthLocaleFromPath,
   uiCopyLocaleFromPath,
   UI_COPY_LOCALE_HEADER,
 } from '@/i18n/requestLocale'
@@ -193,7 +194,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
 
     if (
       isTemporaryLandingModeExemptPath(pathname) ||
-      uiCopyLocaleFromPath(pathname, request.nextUrl.searchParams) === 'en'
+      patientAuthLocaleFromPath(pathname, request.nextUrl.searchParams) === 'en'
     ) {
       return privateResponse(withSearchRobotsHeader(nextWithTemporaryLandingHeaders(request, holdingMode)))
     }

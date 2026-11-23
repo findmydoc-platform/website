@@ -49,8 +49,8 @@ importers:
         specifier: 0.3.0
         version: 0.3.0(react-dom@19.3.1(react@19.3.1))(react-email@6.11.8(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react@19.3.1)
       '@findmydoc-platform/ui-copy':
-        specifier: 1.1.0
-        version: 1.1.0
+        specifier: 1.2.0
+        version: 1.2.0
       '@payloadcms/db-postgres':
         specifier: 3.92.1
         version: 3.92.1(@opentelemetry/api@1.9.1)(payload@3.92.1(patch_hash=d619cc7564394fe89688c3152c13ddc08799351b056167a6237675201daea2b6)(graphql@16.15.0)(typescript@7.0.2))
@@ -1080,8 +1080,8 @@ packages:
       react-dom: ^18.0.0 || ^19.0.0
       react-email: ^6.0.0
 
-  '@findmydoc-platform/ui-copy@1.1.0':
-    resolution: {integrity: sha512-ky2l8ff01J80VnYBD2RCTk3P5G34geZpW1RbCNdb08/5cW1ozbi2s5wA2/R0mxqX6YPYonmjL+VKftZ9x5iFgA==, tarball: https://npm.pkg.github.com/download/@findmydoc-platform/ui-copy/1.1.0/87cc61430d867e6fe67ca43982e18f3495ed2687}
+  '@findmydoc-platform/ui-copy@1.2.0':
+    resolution: {integrity: sha512-A1zdJn2k5WB/8FN549EjSnnNKiXZOmDdaazpHbM8oz/ZBmSFcBSS2F3NlaP+muSZBQI1XhWmJe40gL3Lvoq+9A==, tarball: https://npm.pkg.github.com/download/@findmydoc-platform/ui-copy/1.2.0/3725bb0d113a601936a20d0b8e5b7809c9263a68}
 
   '@floating-ui/core@1.8.0':
     resolution: {integrity: sha512-0CIZ5itps/8x7BG8dEIhs53BvCUH2PCoogtakwRTut+Arm58sJooJ0AuZhLw2HJYIR5cMLNPBSS728sPho2khQ==}
@@ -9612,7 +9612,7 @@ snapshots:
       react-dom: 19.3.1(react@19.3.1)
       react-email: 6.11.8(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
 
-  '@findmydoc-platform/ui-copy@1.1.0': {}
+  '@findmydoc-platform/ui-copy@1.2.0': {}
 
   '@floating-ui/core@1.8.0':
     dependencies:

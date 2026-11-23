@@ -318,3 +318,91 @@ test('patient login follows the language in each public URL @smoke', async ({ ba
   await expect(page.locator('html')).toHaveAttribute('lang', 'en')
   await expectNoBrowserIssues(issues)
 })
+
+test('patient registration carries both forms across languages and asks before losing passwords @smoke', async ({
+  page,
+}, testInfo) => {
+  const issues = createBrowserIssueCollector(page)
+  const [de, en] = patientRegistrationLocales
+  const main = page.getByRole('main')
+  const header = page.getByRole('banner')
+  const germanLanguage = header.getByRole('button', { name: /Sprache/ })
+  const englishLanguage = header.getByRole('button', { name: /Language/ })
+  const englishOption = page.getByRole('link', { name: 'English', exact: true })
+  const resend = main.locator('form[action="/api/auth/register/patient/resend"]').getByRole('textbox')
+  const resendStep = '#patient-verification-resend'
+  const registration = '/register/patient'
+  const firstName = 'Ada'
+  const lastName = 'Lovelace'
+  const registrationEmail = 'ada.incomplete@'
+  const resendEmail = 'another.incomplete@'
+  const confirmationPassword = 'IncompleteFixture' // pragma: allowlist secret
+
+  await page.setViewportSize({ width: 320, height: 345 })
+  const startingUrl = `${registration}?lang=en&inquiry=unverified-fixture${resendStep}`
+  await page.goto(startingUrl)
+  await expect(page.locator('html')).toHaveAttribute('lang', 'de')
+  const germanForm = main.getByRole('form', { name: de.submit })
+  await germanForm.getByLabel(de.firstName, { exact: true }).fill(firstName)
+  await germanForm.getByLabel(de.lastName, { exact: true }).fill(lastName)
+  await germanForm.getByLabel(de.email, { exact: true }).fill(registrationEmail)
+  await germanForm.getByLabel(de.confirmation, { exact: true }).fill(confirmationPassword)
+  await resend.fill(resendEmail)
+
+  const confirmation = page.getByRole('dialog', { name: /Sprache wechseln/ })
+  for (const dismissal of ['Escape', 'Schließen', 'Enter']) {
+    await germanLanguage.click()
+    await expect(englishOption).toBeVisible()
+    await englishOption.click()
+    await expect(confirmation).toHaveAccessibleDescription(/\S/)
+    await expect(confirmation.getByRole('button', { name: 'Im Formular bleiben' })).toBeFocused()
+    if (dismissal === 'Escape') {
+      await page.screenshot({ path: testInfo.outputPath('patient-registration-switch-confirm-320x345.png') })
+    }
+    if (dismissal === 'Schließen') {
+      await confirmation.getByRole('button', { name: dismissal, exact: true }).click()
+    } else {
+      await page.keyboard.press(dismissal)
+    }
+    await expect(germanLanguage).toBeFocused()
+    await expect(page).toHaveURL(startingUrl)
+    await expect(germanForm.getByLabel(de.email, { exact: true })).toHaveValue(registrationEmail)
+    await expect(germanForm.getByLabel(de.confirmation, { exact: true })).toHaveValue(confirmationPassword)
+    await expect(resend).toHaveValue(resendEmail)
+  }
+
+  await germanLanguage.click()
+  await englishOption.click()
+  await confirmation.getByRole('button', { name: 'Trotzdem zu Englisch wechseln' }).click()
+  await expect(page).toHaveURL(`/en${registration}${resendStep}`)
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en')
+  const englishForm = main.getByRole('form', { name: en.submit })
+  await expect(englishForm.getByLabel(en.firstName, { exact: true })).toHaveValue(firstName)
+  await expect(englishForm.getByLabel(en.lastName, { exact: true })).toHaveValue(lastName)
+  await expect(englishForm.getByLabel(en.email, { exact: true })).toHaveValue(registrationEmail)
+  await expect(englishForm.getByLabel(en.password, { exact: true })).toBeEmpty()
+  await expect(englishForm.getByLabel(en.confirmation, { exact: true })).toBeEmpty()
+  await expect(resend).toHaveValue(resendEmail)
+
+  for (const width of [320, 375, 640, 768, 1024]) {
+    await page.setViewportSize({ width, height: 800 })
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width)
+    await page.screenshot({
+      path: testInfo.outputPath(`patient-registration-switch-preserved-${width}.png`),
+      fullPage: true,
+    })
+  }
+
+  await englishLanguage.click()
+  await page.getByRole('link', { name: 'Deutsch', exact: true }).click()
+  await expect(page).toHaveURL(`${registration}${resendStep}`)
+  await expect(page.locator('html')).toHaveAttribute('lang', 'de')
+  await expect(germanForm.getByLabel(de.firstName, { exact: true })).toHaveValue(firstName)
+  await expect(germanForm.getByLabel(de.email, { exact: true })).toHaveValue(registrationEmail)
+  await expect(resend).toHaveValue(resendEmail)
+
+  await page.reload()
+  await expect(germanForm.getByLabel(de.email, { exact: true })).toBeEmpty()
+  await expect(resend).toBeEmpty()
+  await expectNoBrowserIssues(issues)
+})

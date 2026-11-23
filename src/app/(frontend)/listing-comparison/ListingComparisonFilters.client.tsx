@@ -8,6 +8,7 @@ import { CheckboxWithLabel } from '@/components/molecules/CheckboxWithLabel'
 import { ListingFilters } from '@/components/organisms/Listing'
 import type { RatingFilterValue } from '@/components/molecules/RatingFilter'
 import type { CheckboxOption } from '@/components/molecules/CheckboxGroup'
+import type { UiCopyLocale } from '@/i18n/requestLocale'
 import { clampPriceRange, normalizePriceBounds, type PriceBounds } from '@/utilities/listingComparison/priceRange'
 import { cn } from '@/utilities/ui'
 
@@ -46,6 +47,9 @@ type ListingComparisonFilterValues = {
 }
 
 export type ListingComparisonFiltersProps = {
+  locale?: UiCopyLocale
+  treatmentSearchValue?: string
+  onTreatmentSearchChange?: (value: string) => void
   cityOptions?: CheckboxOption[]
   specialtyOptions?: ListingSpecialtyOption[]
   waitTimeOptions?: Array<{ label: string; minWeeks: number; maxWeeks?: number }>
@@ -250,7 +254,32 @@ function RadioOptionWithLabel({ name, label, checked, disabled, onSelect }: Radi
   )
 }
 
+// Comparison copy has not shipped in the shared UI catalog yet.
+const treatmentSearchCopy = {
+  de: {
+    section: 'Behandlungen',
+    all: 'Alle Behandlungen',
+    search: 'Behandlungen suchen',
+    clear: 'Löschen',
+    clearSearch: 'Behandlungssuche löschen',
+    noMatches: 'Keine Behandlungen passen zur Suche.',
+    noTreatments: 'Für das gewählte Fachgebiet sind keine Behandlungen verfügbar.',
+  },
+  en: {
+    section: 'Treatment',
+    all: 'All treatments',
+    search: 'Search treatments',
+    clear: 'Clear',
+    clearSearch: 'Clear treatment search',
+    noMatches: 'No treatments match your search.',
+    noTreatments: 'No treatments available for the current specialty scope.',
+  },
+}
+
 export function ListingComparisonFilters({
+  locale = 'en',
+  treatmentSearchValue,
+  onTreatmentSearchChange,
   cityOptions = [],
   specialtyOptions = [],
   waitTimeOptions = [],
@@ -260,6 +289,7 @@ export function ListingComparisonFilters({
   onChange,
   defaultOpenSections,
 }: ListingComparisonFiltersProps) {
+  const copy = treatmentSearchCopy[locale]
   const normalizedPriceBounds = React.useMemo(() => normalizePriceBounds(priceBounds), [priceBounds])
   const activePriceBounds = React.useMemo(
     () => ({
@@ -278,7 +308,7 @@ export function ListingComparisonFilters({
     waitTime: defaultOpenSections?.waitTime ?? false,
     medicalSpecialty: defaultOpenSections?.medicalSpecialty ?? false,
     subspecialty: defaultOpenSections?.subspecialty ?? false,
-    treatment: defaultOpenSections?.treatment ?? false,
+    treatment: defaultOpenSections?.treatment,
   })
 
   const [cities, setCities] = React.useState<string[]>(initialValues?.cities ?? [])
@@ -292,12 +322,22 @@ export function ListingComparisonFilters({
     }),
   )
   const [treatments, setTreatments] = React.useState<string[]>(initialValues?.treatments ?? [])
-  const [treatmentSearch, setTreatmentSearch] = React.useState('')
+  const [localTreatmentSearch, setLocalTreatmentSearch] = React.useState('')
+  const treatmentSearch = treatmentSearchValue ?? localTreatmentSearch
+  const setTreatmentSearch = onTreatmentSearchChange ?? setLocalTreatmentSearch
+  const treatmentIsOpen = openSections.treatment ?? treatmentSearch.length > 0
   const [priceRange, setPriceRange] = React.useState<[number, number]>(initialPriceRange)
   const [rating, setRating] = React.useState<RatingFilterValue>(initialValues?.rating ?? null)
   const medicalSpecialtyGroupName = React.useId()
   const subspecialtyGroupName = React.useId()
   const treatmentSearchId = React.useId()
+  const treatmentSearchInput = React.useRef<HTMLInputElement>(null)
+
+  const clearTreatmentSearch = () => {
+    setOpenSections((current) => ({ ...current, treatment: true }))
+    setTreatmentSearch('')
+    treatmentSearchInput.current?.focus()
+  }
 
   const normalizedCityOptions = React.useMemo(
     () => cityOptions.map((option) => normalizeCheckboxOption(option)),
@@ -433,17 +473,14 @@ export function ListingComparisonFilters({
 
   const treatmentSummary = React.useMemo(() => {
     const selectedTreatmentLabels = treatments.map((value) => treatmentPlainLabelByValue.get(value) ?? value)
-    if (selectedTreatmentLabels.length === 0) return 'All treatments'
-    if (selectedTreatmentLabels.length === 1) return selectedTreatmentLabels[0] ?? 'All treatments'
+    if (selectedTreatmentLabels.length === 0) return copy.all
+    if (selectedTreatmentLabels.length === 1) return selectedTreatmentLabels[0] ?? copy.all
 
-    const first = selectedTreatmentLabels[0] ?? 'Treatment'
+    const first = selectedTreatmentLabels[0] ?? copy.section
     return `${first} +${selectedTreatmentLabels.length - 1}`
-  }, [treatments, treatmentPlainLabelByValue])
+  }, [copy, treatments, treatmentPlainLabelByValue])
 
-  const treatmentEmptyStateMessage =
-    normalizedTreatmentSearch.length > 0
-      ? 'No treatments match your search.'
-      : 'No treatments available for the current specialty scope.'
+  const treatmentEmptyStateMessage = normalizedTreatmentSearch.length > 0 ? copy.noMatches : copy.noTreatments
 
   const onChangeRef = React.useRef<typeof onChange>(onChange)
   // Update ref synchronously during render (standard pattern for storing latest callback)
@@ -467,7 +504,7 @@ export function ListingComparisonFilters({
     setSpecialty(null)
     setTreatments([])
     setTreatmentSearch('')
-  }, [specialty, specialtyValues])
+  }, [setTreatmentSearch, specialty, specialtyValues])
 
   React.useEffect(() => {
     setTreatments((currentTreatments) => {
@@ -495,7 +532,7 @@ export function ListingComparisonFilters({
         }),
       )
     },
-    [specialtyScopeByValue, treatmentSpecialtyByValue],
+    [setTreatmentSearch, specialtyScopeByValue, treatmentSpecialtyByValue],
   )
 
   const handleTreatmentToggle = React.useCallback(
@@ -673,37 +710,38 @@ export function ListingComparisonFilters({
 
       {treatmentGroups.length > 0 ? (
         <CollapsibleFilterSection
-          label="Treatment"
+          label={copy.section}
           summary={treatmentSummary}
-          isOpen={openSections.treatment}
-          onToggle={() => toggleOpenSection('treatment')}
+          isOpen={treatmentIsOpen}
+          onToggle={() => setOpenSections((current) => ({ ...current, treatment: !treatmentIsOpen }))}
         >
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <Label htmlFor={treatmentSearchId} className="sr-only">
-                Search treatments
+                {copy.search}
               </Label>
               <Input
+                ref={treatmentSearchInput}
                 id={treatmentSearchId}
                 type="text"
                 value={treatmentSearch}
-                placeholder="Search treatments"
+                placeholder={copy.search}
                 onChange={(event) => setTreatmentSearch(event.currentTarget.value)}
                 onKeyDown={(event) => {
                   if (event.key !== 'Escape') return
                   if (treatmentSearch.length === 0) return
                   event.preventDefault()
-                  setTreatmentSearch('')
+                  clearTreatmentSearch()
                 }}
               />
               {treatmentSearch.length > 0 ? (
                 <button
                   type="button"
                   className="cursor-pointer rounded-md border border-border bg-background px-2 py-2 text-xs font-medium text-foreground hover:bg-muted"
-                  onClick={() => setTreatmentSearch('')}
-                  aria-label="Clear treatment search"
+                  onClick={clearTreatmentSearch}
+                  aria-label={copy.clearSearch}
                 >
-                  Clear
+                  {copy.clear}
                 </button>
               ) : null}
             </div>

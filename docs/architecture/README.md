@@ -9,6 +9,8 @@ work together. [Shared platform architecture](https://github.com/findmydoc-platf
 
 ## Building blocks
 
+See the [Website container diagram](https://github.com/findmydoc-platform/platform-architecture/blob/main/05_building_block_view.md#website-containers) for the runtime, data store, and external systems.
+
 - The Next.js App Router hosts the public portal and Payload Admin in one application. Server-side loaders and route
   adapters read Payload and prepare data for reusable UI components. [Frontend data access](../frontend/content-data-access.md)
 - Payload registers collections, globals, and business endpoints in its [configuration](../../src/payload.config.ts).

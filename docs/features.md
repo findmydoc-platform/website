@@ -32,7 +32,7 @@ vary by locale. [ADR 038](./adrs/038-adr-native-payload-locale-publication.md) r
 independent native locale publication.
 
 The [landing-page global](../src/globals/LandingPages) supplies the homepage and clinic-partner landing content. The
-[baseline seed](./seeding.md) supplies its initial text and media references.
+[baseline seed](./seeding.md) supplies its initial text and media references. In Full mode, missing required content on either page fails visibly so static or Storybook content cannot hide an incomplete CMS or seed. [Why the fallback was removed](https://github.com/findmydoc-platform/website/pull/1307#management-summary)
 
 ## Temporary Landing Mode
 

@@ -96,8 +96,7 @@ Main full integration follows validation relevance independently of the applicat
 therefore run the full suite when CI omits the build. Manual workflow dispatch runs the full build and integration suite.
 
 Full CI integration runs two native Vitest shards on isolated runners. Each runner prepares a baseline and restores a
-separate database copy per test file. The collector verifies that every expected file appears once, every case passes, and
-every report comes from the same source revision. Native blob replay combines both suites and one seed report, then
+separate database copy per test file. Both seed executions count as runner work. The collector verifies that every expected file appears once, every case passes, and every report comes from the same source revision. Native blob replay combines both suites with one seed report so the shared preparation test is counted once, then
 checks 50% coverage for statements, branches, functions and lines before publishing `coverage-integration`. The selected
 PR path uses a single runner with the same fixture and cleanup rules. Teardown stops managed test services and preserves
 matching database templates and S3Mock state. A teardown failure fails the execution.

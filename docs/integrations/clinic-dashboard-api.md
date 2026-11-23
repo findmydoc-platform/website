@@ -118,8 +118,7 @@ sanitized `503` responses.
 
 Active-workspace recovery consumes these existing source contracts. A clinic assignment replacement, revocation or group
 membership change takes effect on the next scoped operation; stale identity or bootstrap claims cannot authorize it. The
-Dashboard then reads a new personal bootstrap and offers only current eligible choices. `403` preserves the valid personal
-session, including an approved empty set. Source outages remain distinct from confirmed denial. Recovery introduces no
+Dashboard then reads a new personal bootstrap and offers only current eligible choices. A scoped `403` preserves the valid personal session. If the new bootstrap returns an approved empty set, the Dashboard restricts the workspace and preserves the session. Source outages remain distinct from confirmed denial. Recovery introduces no
 new source endpoint, stored draft transport, revocation channel, age policy or public-cache invalidation.
 
 

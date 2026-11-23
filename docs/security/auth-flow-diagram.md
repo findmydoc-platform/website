@@ -41,21 +41,30 @@ sequenceDiagram
 
     User->>Browser: Submit email and password
     Browser->>BFF: Same-origin login with CSRF proof
-    BFF->>Supabase: signInWithPassword
-    BFF-->>Browser: Secure HttpOnly session cookies
-    Browser->>BFF: Request Dashboard data
-    BFF->>Payload: Bearer access token
-    Payload->>Payload: Validate token and select clinicStaff
-    Payload->>DB: Read staff status, auth sync, clinic status, and permissions
-    alt Staff and clinic are access-ready
-        DB-->>Payload: Current clinic principal
-        Payload-->>BFF: Purpose-specific DTO
-        BFF-->>Browser: Private no-store response
-    else Missing, conflicting, ineligible, or forbidden
-        Payload-->>BFF: 401 or 403 without clinic data
-        BFF-->>Browser: Controlled login or access state
+    BFF->>Supabase: Authenticate clinic account
+    alt Supabase authenticates the account
+        Supabase-->>BFF: Session
+        BFF->>Payload: Check current staff access with clinic-scope-v1
+        Payload->>DB: Resolve staff eligibility and current clinic set
+        DB-->>Payload: Current staff and clinic state
+        alt Eligible staff
+            Payload-->>BFF: 200 with eligible clinics, possibly empty
+            BFF-->>Browser: Complete sign-in with host-bound HttpOnly cookies
+            Note over Browser,BFF: An empty clinic set opens a restricted workspace
+        else Access denied or source temporarily unavailable
+            Payload-->>BFF: 403 or 503
+            BFF-->>Browser: Preserve session and direct to access or retry state
+        else Invalid or unmatched identity
+            Payload-->>BFF: 401
+            BFF-->>Browser: Retry once after refresh, then clear rejected session if still invalid
+        end
+    else Invalid credentials or Auth unavailable
+        Supabase-->>BFF: Authentication failed or unavailable
+        BFF-->>Browser: Controlled sign-in error
     end
 ```
+
+The [Website bootstrap contract](../integrations/clinic-dashboard-api.md#payload-bootstrap-contract) defines the upstream outcomes. The [Dashboard BFF guide](https://github.com/findmydoc-platform/clinic-dashboard/blob/main/docs/authentication-and-bff.md#error-and-ui-state-mapping) explains how the Dashboard maps them to user states.
 
 Invite and recovery emails use a separate prefetch-safe sequence: the callback `GET` validates `TokenHash`, fixed flow,
 and internal destination without consuming the token; the user confirms on `/auth/confirm`; only the same-origin

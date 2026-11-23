@@ -42,30 +42,11 @@ All tests live under `tests/`:
 - `tests/integration` — payload + supabase flows with controlled fixtures
 - `tests/setup` — global setup scripts (Docker lifecycle, Vitest glue)
 
-## Coverage Expectations
+## Coverage
 
-- Access control and permission matrix suites: ~100%
-- Hooks and auth flows: ≥80%
-- Collections: ≥70%
-- Overall project: ≥50% (statements/lines), ≥60% (functions), ≥80% (branches)
-
-### Coverage Enforcement
-
-Coverage thresholds are enforced via Vitest's native configuration (`vitest.config.ts`).
-
-**Local Auto-Ratcheting:**
-When running tests locally (outside CI), Vitest will automatically update thresholds in `vitest.config.ts` if your coverage meaningfully exceeds the current floor. This prevents coverage regression without manual intervention.
-
-**How It Works:**
-- CI runs with `CI=true`, which disables auto-update to keep thresholds stable
-- Locally, `autoUpdate: true` allows Vitest to bump thresholds when coverage improves
-- After a local run that increases coverage, commit the updated `vitest.config.ts` to raise the bar for everyone
-
-**Best Practices:**
-- Run `pnpm tests --coverage` locally to see current coverage levels
-- If coverage increases significantly (e.g., +5%), the thresholds will auto-update
-- Review the updated thresholds in `vitest.config.ts` before committing
-- Document any intentional coverage increases in your PR description
+Vitest applies [per-suite thresholds](../../config/coverage) through [its configuration](../../vitest.config.ts).
+See [CI results and full integration](./strategy.md#ci-results-and-full-integration) for full and partial coverage
+rules and how to read Combined Coverage.
 
 ## Shared Expectations
 

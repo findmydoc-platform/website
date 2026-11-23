@@ -5,6 +5,7 @@ import {
   countPublishedPosts,
   findLatestPosts,
   findPageBySlug,
+  findPublicPageRoute,
   findPageSitemapDocs,
   findPostBySlug,
   findPostSitemapDocs,
@@ -324,6 +325,15 @@ describe('content server data helpers', () => {
     })
 
     expect(await findPageSitemapDocs(payload, locale)).toEqual([{ id: 9, slug: 'open-page' }])
+  })
+
+  it('does not advertise a shadowed English canonical from a legacy Page alias', async () => {
+    const { payload, findMock } = createPayloadMock()
+    findMock
+      .mockResolvedValueOnce({ docs: [] })
+      .mockResolvedValueOnce({ docs: [{ id: 7, slug: 'posts/old-page', layout: [] }] })
+
+    expect(await findPublicPageRoute(payload, 'old-alias', 'de')).toBeNull()
   })
 
   it('passes locale-aware lookup options through page detail queries', async () => {

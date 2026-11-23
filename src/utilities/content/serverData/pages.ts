@@ -141,7 +141,7 @@ export async function findPublicPageRoute(
       PAGE_DETAIL_SELECT,
       1,
     )
-    if (!legacyPage?.slug) return null
+    if (!legacyPage?.slug || isReservedPageSlug(legacyPage.slug, 'en')) return null
 
     return { page: legacyPage, locale: 'en', canonicalPath: buildPagePath(legacyPage.slug, 'en') }
   }

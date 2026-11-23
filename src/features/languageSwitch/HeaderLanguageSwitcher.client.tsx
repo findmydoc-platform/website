@@ -12,12 +12,21 @@ import { useActiveLanguageSwitchRoute } from './LanguageSwitchRouteProvider.clie
 
 const languages: UiCopyLocale[] = ['de', 'en']
 
-export function HeaderLanguageSwitcher({ copyByLocale }: { copyByLocale: typeof languageSwitcherCopy }) {
+export function HeaderLanguageSwitcher({
+  copyByLocale,
+  hideWithoutRoute = false,
+}: {
+  copyByLocale: typeof languageSwitcherCopy
+  hideWithoutRoute?: boolean
+}) {
   const pathname = usePathname()
   const router = useRouter()
   const route = useActiveLanguageSwitchRoute()
   if (!pathname) return null
-  if (!route && (isAuthConfirmationPath(pathname) || pathname === '/admin' || pathname.startsWith('/admin/'))) {
+  if (
+    !route &&
+    (hideWithoutRoute || isAuthConfirmationPath(pathname) || pathname === '/admin' || pathname.startsWith('/admin/'))
+  ) {
     return null
   }
 

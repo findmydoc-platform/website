@@ -97,7 +97,7 @@ export default async function FrontendTemplate({ children }: { children: React.R
             <Header
               navItems={headerNavItems}
               languageSwitcher={
-                isHoldingPublicView ? null : <HeaderLanguageSwitcher copyByLocale={languageSwitcherCopy} />
+                <HeaderLanguageSwitcher copyByLocale={languageSwitcherCopy} hideWithoutRoute={isHoldingPublicView} />
               }
               logoSrc={headerLogoSrc}
               rightActions={

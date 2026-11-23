@@ -1,4 +1,4 @@
-import { resolveCmsPermanentRedirect } from '@/app/(frontend)/_data/resolveCmsPermanentRedirect'
+import { resolveCmsRequest } from '@/app/(frontend)/_data/resolveCmsRequest'
 import { SEARCH_ROBOTS_HEADER, SEARCH_ROBOTS_HEADER_VALUE } from '@/features/searchIndexing'
 import { isTemporaryLandingIndexablePath } from '@/features/temporaryLandingMode'
 import { parseCmsRedirectPath } from '@/utilities/content/cmsRedirectPaths'
@@ -24,8 +24,8 @@ export async function POST(request: Request): Promise<Response> {
       return new Response(null, { status: 204, headers })
     }
 
-    const destination = await resolveCmsPermanentRedirect(pathname, source, holding)
-    return new Response(destination, { status: destination ? 200 : 204, headers })
+    const result = await resolveCmsRequest(pathname, source, holding)
+    return result ? Response.json(result, { headers }) : new Response(null, { status: 204, headers })
   } catch {
     return new Response(null, { status: 503, headers })
   }

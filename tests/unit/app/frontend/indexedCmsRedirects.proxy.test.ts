@@ -63,6 +63,38 @@ describe('permanent CMS redirects', () => {
     expect(response.headers.get('location')).toBe(`${origin}/en/posts/new-article`)
   })
 
+  it('temporarily redirects a German-slug English link to the same published English Post', async () => {
+    const findOtherwise = payload.find.getMockImplementation()!
+    payload.find.mockImplementation(async (args) =>
+      args.collection === 'posts' && args.locale === 'de'
+        ? { docs: [{ id: 42, slug: 'deutscher-artikel' }] }
+        : findOtherwise(args),
+    )
+    payload.findByID.mockResolvedValue({ slug: 'english-article', _status: 'published' })
+
+    const response = await proxy(new NextRequest(`${origin}/en/posts/deutscher-artikel`))
+
+    expect(response.status).toBe(302)
+    expect(response.headers.get('location')).toBe(`${origin}/en/posts/english-article`)
+    expect(response.headers.get('cache-control')).toBe('private, no-store')
+  })
+
+  it('marks a recognizable English path noindex while only the German Page is published', async () => {
+    const findOtherwise = payload.find.getMockImplementation()!
+    payload.find.mockImplementation(async (args) =>
+      args.collection === 'pages' && args.locale === 'de'
+        ? { docs: [{ id: 42, slug: 'deutsche-seite' }] }
+        : findOtherwise(args),
+    )
+    payload.findByID.mockResolvedValue({ slug: 'private-english-page', _status: 'draft' })
+
+    const response = await proxy(new NextRequest(`${origin}/en/deutsche-seite`))
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('location')).toBeNull()
+    expect(response.headers.get('x-robots-tag')).toContain('noindex')
+  })
+
   it('passes through when a Page or Post currently owns that canonical path', async () => {
     const findOtherwise = payload.find.getMockImplementation()!
     payload.find.mockImplementation(async (args) =>
@@ -76,11 +108,11 @@ describe('permanent CMS redirects', () => {
     expect(payload.findByID).not.toHaveBeenCalled()
   })
 
-  it('does not read the target of any stored rule on a canonical path without a rule', async () => {
+  it('leaves unrelated stored redirect targets alone for an unknown path', async () => {
     const response = await proxy(new NextRequest(`${origin}/en/posts/current-article`))
 
     expect(response.status).toBe(200)
-    expect(payload.find).toHaveBeenCalledTimes(1)
+    expect(response.headers.get('location')).toBeNull()
     expect(payload.findByID).not.toHaveBeenCalled()
   })
 
@@ -92,7 +124,7 @@ describe('permanent CMS redirects', () => {
     expect(payload.findByID).not.toHaveBeenCalled()
   })
 
-  it('does not redirect to a translation when the same-locale target is withdrawn', async () => {
+  it('shows a noindex response at a previously public English path after withdrawal', async () => {
     payload.findByID.mockImplementation(async ({ locale }) =>
       locale === 'de' ? { slug: 'german-article', _status: 'published' } : null,
     )
@@ -101,8 +133,7 @@ describe('permanent CMS redirects', () => {
 
     expect(response.status).toBe(200)
     expect(response.headers.get('location')).toBeNull()
-    expect(payload.findByID).toHaveBeenCalledTimes(1)
-    expect(payload.findByID).toHaveBeenCalledWith(expect.objectContaining({ locale: 'en', fallbackLocale: false }))
+    expect(response.headers.get('x-robots-tag')).toContain('noindex')
   })
 
   it('keeps discovery URLs out of CMS redirect destinations', async () => {

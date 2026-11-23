@@ -1,7 +1,15 @@
 import { randomUUID } from 'node:crypto'
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { getPayload, type Payload } from 'payload'
 import config from '@payload-config'
+import { NextRequest } from 'next/server'
+
+import { POST } from '@/app/api/internal/cms-redirects/route'
+import { proxy } from '@/proxy'
+
+vi.mock('@/features/temporaryLandingMode/resolver', () => ({
+  resolveHoldingMode: async () => ({ mode: 'full' }),
+}))
 
 import { buildRichText } from '../fixtures/richText'
 import { testSlug } from '../fixtures/testSlug'
@@ -68,6 +76,88 @@ describe('CMS slug redirects after publication', () => {
       draft: false,
       data: { slug, generateSlug: false, _status: 'published' },
     })
+
+  for (const collection of ['pages', 'posts'] as const) {
+    it(`keeps ${collection} direct links aligned with native English publication and withdrawal`, async () => {
+      const germanSlug = `${fixture}-${collection}-german`
+      const englishSlug = `${fixture}-${collection}-english`
+      const body = (title: string, slug: string) => ({
+        title,
+        slug,
+        generateSlug: false,
+        excerpt: title,
+        content: buildRichText(title),
+        layout: [
+          {
+            blockType: 'content' as const,
+            columns: [{ size: 'full' as const, richText: buildRichText(title) }],
+          },
+        ],
+      })
+
+      const document = await payload.create({
+        collection,
+        locale: 'de',
+        fallbackLocale: false,
+        draft: false,
+        data: { ...body('German content', germanSlug), _status: 'published' },
+      })
+      documents.push({ collection, id: document.id })
+
+      const englishInput = {
+        collection,
+        id: document.id,
+        locale: 'en',
+        fallbackLocale: false,
+      } as const
+      await payload.update({
+        ...englishInput,
+        draft: true,
+        data: { ...body('English content', englishSlug), _status: 'draft' },
+      })
+
+      const origin = 'https://findmydoc.eu'
+      const prefix = collection === 'posts' ? '/posts/' : '/'
+      const germanPath = `${prefix}${germanSlug}`
+      const recognizablePath = `/en${germanPath}`
+      const englishPath = `/en${prefix}${englishSlug}`
+      const open = (path: string) => proxy(new NextRequest(`${origin}${path}`))
+
+      vi.stubEnv('VERCEL', undefined)
+      vi.stubEnv('VERCEL_URL', undefined)
+      vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'production')
+      vi.stubEnv('NEXT_PUBLIC_SERVER_URL', origin)
+      vi.stubGlobal('fetch', async (url: URL, init: RequestInit) => POST(new Request(url, init)))
+
+      try {
+        const draftNotice = await open(recognizablePath)
+        expect(draftNotice.status).toBe(200)
+        expect(draftNotice.headers.get('location')).toBeNull()
+        expect(draftNotice.headers.get('x-robots-tag')).toContain('noindex')
+        expect((await open(englishPath)).headers.get('x-robots-tag')).toBeNull()
+
+        await payload.update({
+          ...englishInput,
+          publishSpecificLocale: 'en',
+          draft: false,
+          data: { ...body('English content', englishSlug), _status: 'published' },
+        })
+        const afterPublishing = await open(recognizablePath)
+        expect(afterPublishing.status).toBe(302)
+        expect(afterPublishing.headers.get('location')).toBe(`${origin}${englishPath}`)
+        expect((await open(englishPath)).headers.get('location')).toBeNull()
+
+        await payload.update({ ...englishInput, draft: false, data: { _status: 'draft' } })
+        const withdrawn = await open(englishPath)
+        expect(withdrawn.status).toBe(200)
+        expect(withdrawn.headers.get('location')).toBeNull()
+        expect(withdrawn.headers.get('x-robots-tag')).toContain('noindex')
+      } finally {
+        vi.unstubAllEnvs()
+        vi.unstubAllGlobals()
+      }
+    })
+  }
 
   it('records the previous English Post path when an editor publishes a new English slug', async () => {
     const oldSlug = `${fixture}-old`

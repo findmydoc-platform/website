@@ -1,7 +1,9 @@
 import type { Metadata } from 'next'
+import { headers } from 'next/headers'
 
 import { resolvePost } from '@/app/(frontend)/_data/resolvePost'
 import { RelatedPosts } from '@/blocks/RelatedPosts/Component'
+import { CmsTranslationUnavailable } from '@/app/(frontend)/_components/CmsTranslationUnavailable'
 import { PayloadRedirects } from '@/app/(frontend)/_components/PayloadRedirects'
 import RichText from '@/blocks/_shared/RichText'
 
@@ -15,6 +17,8 @@ import { calculateReadTime } from '@/utilities/blog/calculateReadTime'
 import { DISCLAIMER_COPY } from '@/utilities/legal/disclaimers'
 import { resolveMediaImage } from '@/utilities/media/resolveMediaImage'
 import { PostShareActionBar } from './PostShareActionBar'
+import { CmsLanguageSwitchRoute } from '@/features/languageSwitch/CmsLanguageSwitchRoute.client'
+import { CMS_TRANSLATION_SOURCE_HEADER } from '@/utilities/routing/cmsRedirectRequest'
 import { CmsDocumentLanguage } from '@/features/uiCopy/DocumentLanguage.client'
 import type { ContentLocale, ContentLocaleContext } from '@/utilities/contentLocalization'
 import { buildPostsIndexPath } from '@/utilities/content/postPaths'
@@ -32,7 +36,10 @@ export type PostPageArgs = {
 
 export async function renderPost(args: PostPageArgs, pathLocale: ContentLocale) {
   const { draft, requestPath, route } = await loadPostRoute(args, pathLocale)
-  if (!route) return <PayloadRedirects url={requestPath} />
+  if (!route) {
+    const germanPath = !draft && pathLocale === 'en' && (await headers()).get(CMS_TRANSLATION_SOURCE_HEADER)
+    return germanPath ? <CmsTranslationUnavailable germanPath={germanPath} /> : <PayloadRedirects url={requestPath} />
+  }
 
   const { post, locale, canonicalPath } = route
   const contentLocale: ContentLocaleContext = { locale, fallbackLocale: false }
@@ -66,6 +73,9 @@ export async function renderPost(args: PostPageArgs, pathLocale: ContentLocale) 
   return (
     <article className="pb-16 sm:pb-20" lang={locale}>
       <CmsDocumentLanguage locale={locale} />
+      {!draft && (
+        <CmsLanguageSwitchRoute locale={locale} targets={route.languagePaths ?? { [locale]: canonicalPath }} />
+      )}
       <PageClient />
       <JsonLdScript
         data={

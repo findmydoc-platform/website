@@ -1,5 +1,9 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
 
+export type CmsRedirectResult = { status: 200 | 301 | 302; path: string }
+
+export const CMS_TRANSLATION_SOURCE_HEADER = 'x-fmd-cms-translation-source'
+
 export const CMS_REDIRECT_RESOLVER_PATH = '/api/internal/cms-redirects'
 
 export function cmsRedirectRequestToken(): string | null {

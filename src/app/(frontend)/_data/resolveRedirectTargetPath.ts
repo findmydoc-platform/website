@@ -5,7 +5,11 @@ import { getPayload } from 'payload'
 
 import type { Page, Post, Redirect } from '@/payload-types'
 import { buildPagePath, buildPostPath } from '@/utilities/cachePolicy'
-import { buildCmsRedirectPath, type CmsRedirectSource } from '@/utilities/content/cmsRedirectPaths'
+import {
+  buildCmsRedirectPath,
+  type CmsRedirectCollection,
+  type CmsRedirectSource,
+} from '@/utilities/content/cmsRedirectPaths'
 import { isReservedPageSlug, type ContentLocale } from '@/utilities/contentLocalization'
 import { sanitizeInternalRedirectPathOrNull } from '@/utilities/routing/sanitizeInternalRedirectPath'
 
@@ -38,16 +42,9 @@ export async function resolveRedirectTargetPath(
   return resolveRedirectTargetPathById({ collection, id, locale: 'en', payload })
 }
 
-export async function resolveSameLocaleRedirectTargetPath(
-  reference: RedirectTargetReference,
-  source: CmsRedirectSource,
-): Promise<string | null> {
-  const { collection, locale, slug } = source
-  const id = normalizeReferenceId(reference.value)
-  if (reference.relationTo !== collection || id === null) return null
-
+export async function findPublicCmsCanonicalBySlug({ collection, locale, slug }: CmsRedirectSource) {
   const payload = await getPayload({ config: configPromise })
-  const current = await payload.find({
+  const result = await payload.find({
     collection,
     locale,
     draft: false,
@@ -59,8 +56,20 @@ export async function resolveSameLocaleRedirectTargetPath(
     select: { slug: true },
     where: { and: [{ slug: { equals: slug } }, { _status: { equals: 'published' } }] },
   })
-  if (current.docs.length > 0) return null
+  const doc = result.docs[0]
+  const path = doc?.slug && buildCmsRedirectPath(collection, locale, doc.slug)
+  return path ? { id: doc.id, path } : null
+}
 
+export async function resolveSameLocaleRedirectTargetPath(
+  reference: RedirectTargetReference,
+  collection: CmsRedirectCollection,
+  locale: ContentLocale,
+): Promise<string | null> {
+  const id = normalizeReferenceId(reference.value)
+  if (reference.relationTo !== collection || id === null) return null
+
+  const payload = await getPayload({ config: configPromise })
   return resolveRedirectTargetPathById({ collection, id, locale, payload, sameLocale: true })
 }
 

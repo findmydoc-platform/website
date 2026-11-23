@@ -4,7 +4,7 @@ import { resolveServerRuntimeEnvironment } from '@/features/runtimePolicy'
 import { getServerSideURL } from '@/utilities/getURL'
 import { parseCmsRedirectPath, type CmsRedirectSource } from '@/utilities/content/cmsRedirectPaths'
 import { fallbackConsoleLogger } from '@/utilities/logging/consoleLogger'
-import { CMS_REDIRECT_RESOLVER_PATH, cmsRedirectRequestToken } from './cmsRedirectRequest'
+import { CMS_REDIRECT_RESOLVER_PATH, cmsRedirectRequestToken, type CmsRedirectResult } from './cmsRedirectRequest'
 
 const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]'])
 const REDIRECT_LOOKUP_TIMEOUT_MS = 1000
@@ -39,7 +39,7 @@ export async function requestCmsRedirect(
   request: NextRequest,
   source: CmsRedirectSource,
   holding: boolean,
-): Promise<string | null> {
+): Promise<CmsRedirectResult | null> {
   const token = cmsRedirectRequestToken()
   if (!token) return null
 
@@ -67,11 +67,17 @@ export async function requestCmsRedirect(
     if (response.status === 204) return null
     if (!response.ok) throw new Error('CMS redirect lookup failed')
 
-    const destination = await response.text()
-    const target = parseCmsRedirectPath(destination)
-    return destination !== pathname && target?.locale === source.locale && target.collection === source.collection
-      ? destination
-      : null
+    const result = (await response.json()) as { status?: unknown; path?: unknown } | null
+    if (typeof result?.path !== 'string') return null
+    const { status, path } = result
+    if (status !== 200 && status !== 301 && status !== 302) return null
+    if (status !== 301 && source.locale !== 'en') return null
+
+    const target = parseCmsRedirectPath(path)
+    const expectedLocale = status === 200 ? 'de' : source.locale
+    if (path === pathname || target?.locale !== expectedLocale || target.collection !== source.collection) return null
+
+    return { status, path }
   } catch {
     fallbackConsoleLogger.warn(
       { event: 'cms_permanent_redirect.lookup_failed' },

@@ -20,6 +20,7 @@ import {
   SEARCH_ROBOTS_HEADER,
   SEARCH_ROBOTS_HEADER_VALUE,
 } from '@/features/searchIndexing'
+import { CMS_TRANSLATION_SOURCE_HEADER } from '@/utilities/routing/cmsRedirectRequest'
 import { requestCmsRedirect } from '@/utilities/routing/requestCmsRedirect'
 import { isPublicStaticAssetPath } from '@/utilities/routing/publicStaticAssets'
 import { parseCmsRedirectPath } from '@/utilities/content/cmsRedirectPaths'
@@ -87,6 +88,7 @@ const nextWithRequestHeaders = (request: NextRequest, headersToSet: Record<strin
   requestHeaders.delete(TEMPORARY_LANDING_MODE_REQUEST_HEADER)
   requestHeaders.delete(HOLDING_VIEW_REQUEST_HEADER)
   requestHeaders.delete(SEARCH_INDEXING_REQUEST_HEADER)
+  requestHeaders.delete(CMS_TRANSLATION_SOURCE_HEADER)
   Object.entries(headersToSet).forEach(([key, value]) => {
     if (value === null) {
       requestHeaders.delete(key)
@@ -114,16 +116,23 @@ const nextWithTemporaryLandingHeaders = (request: NextRequest, publicMode: Publi
 const nextWithTemporaryLandingPublicHeaders = (
   request: NextRequest,
   publicMode: PublicSiteMode = 'holding',
+  translationSource: string | null = null,
 ): NextResponse =>
   nextWithRequestHeaders(request, {
+    [CMS_TRANSLATION_SOURCE_HEADER]: translationSource,
     [HOLDING_VIEW_REQUEST_HEADER]: 'public',
     [PUBLIC_SITE_MODE_REQUEST_HEADER]: publicMode,
     [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: publicMode === 'holding' ? '1' : null,
   })
 
-const nextWithPublicMode = (request: NextRequest, publicMode?: PublicSiteMode): NextResponse =>
+const nextWithPublicMode = (
+  request: NextRequest,
+  publicMode: PublicSiteMode,
+  translationSource: string | null,
+): NextResponse =>
   nextWithRequestHeaders(request, {
-    [PUBLIC_SITE_MODE_REQUEST_HEADER]: publicMode ?? null,
+    [CMS_TRANSLATION_SOURCE_HEADER]: translationSource,
+    [PUBLIC_SITE_MODE_REQUEST_HEADER]: publicMode,
     [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: null,
   })
 
@@ -157,6 +166,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     return response
   }
 
+  let translationSource: string | null = null
   if (
     (request.method === 'GET' || request.method === 'HEAD') &&
     !request.cookies.has('__prerender_bypass') &&
@@ -165,17 +175,19 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   ) {
     const source = parseCmsRedirectPath(pathname)
     if (source) {
-      const destination = await requestCmsRedirect(request, source, holdingMode === 'holding')
-      if (destination) {
-        const response = NextResponse.redirect(new URL(destination, request.url), 301)
+      const result = await requestCmsRedirect(request, source, holdingMode === 'holding')
+      if (result?.status === 200) {
+        translationSource = result.path
+      } else if (result) {
+        const response = NextResponse.redirect(new URL(result.path, request.url), result.status)
         return privateResponse(previewDeployment ? withSearchRobotsHeader(response) : response)
       }
     }
   }
 
   if (holdingMode === 'full') {
-    const response = nextWithPublicMode(request, holdingMode)
-    return privateResponse(previewDeployment ? withSearchRobotsHeader(response) : response)
+    const response = nextWithPublicMode(request, holdingMode, translationSource)
+    return privateResponse(previewDeployment || translationSource ? withSearchRobotsHeader(response) : response)
   }
 
   const platformUser = isPlatformUser(await getVerifiedUser())
@@ -185,8 +197,8 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
       if (isTemporaryLandingIndexablePath(pathname)) {
         const response = isTemporaryLandingRootPath(pathname)
           ? nextWithTemporaryLandingHeaders(request, holdingMode)
-          : nextWithTemporaryLandingPublicHeaders(request, holdingMode)
-        return privateResponse(previewDeployment ? withSearchRobotsHeader(response) : response)
+          : nextWithTemporaryLandingPublicHeaders(request, holdingMode, translationSource)
+        return privateResponse(previewDeployment || translationSource ? withSearchRobotsHeader(response) : response)
       }
 
       return privateResponse(withSearchRobotsHeader(nextWithTemporaryLandingHeaders(request, holdingMode)))
@@ -202,7 +214,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     return privateResponse(withSearchRobotsHeader(new NextResponse('Not Found', { status: 404 })))
   }
 
-  return privateResponse(withSearchRobotsHeader(nextWithPublicMode(request, holdingMode)))
+  return privateResponse(withSearchRobotsHeader(nextWithPublicMode(request, holdingMode, translationSource)))
 }
 
 export const config = {

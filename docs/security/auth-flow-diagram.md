@@ -56,7 +56,12 @@ sequenceDiagram
             BFF-->>Browser: Preserve session and direct to access or retry state
         else Invalid or unmatched identity
             Payload-->>BFF: 401
-            BFF-->>Browser: Retry once after refresh, then clear rejected session if still invalid
+            BFF->>Supabase: Attempt one server-side session refresh
+            opt Session refresh succeeds
+                BFF->>Payload: Retry bootstrap with refreshed session
+                Payload-->>BFF: Current access result
+            end
+            BFF-->>Browser: Return login result after retry or clear invalid session
         end
     else Invalid credentials or Auth unavailable
         Supabase-->>BFF: Authentication failed or unavailable

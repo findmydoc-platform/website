@@ -1,25 +1,36 @@
 import Link from 'next/link'
 
 import { Button } from '@/components/atoms/button'
-import { Heading } from '@/components/atoms/Heading'
-import { Container } from '@/components/molecules/Container'
+import type { BreadcrumbItem } from '@/components/molecules/Breadcrumb'
+import { BlogHero } from '@/components/organisms/Blog/BlogHero'
 import { CmsLanguageSwitchRoute } from '@/features/languageSwitch/CmsLanguageSwitchRoute.client'
-import { languageSwitcherCopy } from '@/features/languageSwitch/copy'
 import { CmsDocumentLanguage } from '@/features/uiCopy/DocumentLanguage.client'
 
-export function CmsTranslationUnavailable({ germanPath }: { germanPath: string }) {
+export const cmsTranslationNoticeTitle = 'This page is currently available in German.'
+
+export function CmsTranslationUnavailable({
+  germanPath,
+  breadcrumbs,
+}: {
+  germanPath: string
+  breadcrumbs?: BreadcrumbItem[]
+}) {
   return (
-    <Container className="space-y-6 py-8 sm:py-12" lang="en">
+    <div lang="en">
       <CmsDocumentLanguage locale="en" />
       <CmsLanguageSwitchRoute locale="en" targets={{ de: germanPath }} />
-      <Heading as="h1" size="h3" align="left">
-        {languageSwitcherCopy.en.unavailable}
-      </Heading>
-      <Button asChild size="lg" className="hover:bg-primary-hover">
-        <Link href={germanPath} hrefLang="de" lang="de" prefetch={false}>
-          Auf Deutsch lesen
-        </Link>
-      </Button>
-    </Container>
+      <BlogHero
+        title={cmsTranslationNoticeTitle}
+        subtitle={null}
+        breadcrumbs={breadcrumbs}
+        action={
+          <Button asChild size="lg" className="hover:bg-primary-hover">
+            <Link href={germanPath} hrefLang="de" lang="de" prefetch={false}>
+              Auf Deutsch lesen
+            </Link>
+          </Button>
+        }
+      />
+    </div>
   )
 }

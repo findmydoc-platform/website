@@ -3,7 +3,10 @@ import { headers } from 'next/headers'
 
 import { resolvePost } from '@/app/(frontend)/_data/resolvePost'
 import { RelatedPosts } from '@/blocks/RelatedPosts/Component'
-import { CmsTranslationUnavailable } from '@/app/(frontend)/_components/CmsTranslationUnavailable'
+import {
+  CmsTranslationUnavailable,
+  cmsTranslationNoticeTitle,
+} from '@/app/(frontend)/_components/CmsTranslationUnavailable'
 import { PayloadRedirects } from '@/app/(frontend)/_components/PayloadRedirects'
 import RichText from '@/blocks/_shared/RichText'
 
@@ -17,7 +20,6 @@ import { calculateReadTime } from '@/utilities/blog/calculateReadTime'
 import { DISCLAIMER_COPY } from '@/utilities/legal/disclaimers'
 import { resolveMediaImage } from '@/utilities/media/resolveMediaImage'
 import { PostShareActionBar } from './PostShareActionBar'
-import { languageSwitcherCopy } from '@/features/languageSwitch/copy'
 import { CmsLanguageSwitchRoute } from '@/features/languageSwitch/CmsLanguageSwitchRoute.client'
 import { CMS_TRANSLATION_SOURCE_HEADER } from '@/utilities/routing/cmsRedirectRequest'
 import { CmsDocumentLanguage } from '@/features/uiCopy/DocumentLanguage.client'
@@ -38,7 +40,15 @@ export type PostPageArgs = {
 export async function renderPost(args: PostPageArgs, pathLocale: ContentLocale) {
   const { draft, requestPath, route, germanPath } = await loadPostRoute(args, pathLocale)
   if (!route) {
-    return germanPath ? <CmsTranslationUnavailable germanPath={germanPath} /> : <PayloadRedirects url={requestPath} />
+    if (!germanPath) return <PayloadRedirects url={requestPath} />
+
+    const blogBreadcrumb = createBlogBreadcrumb(buildPostsIndexPath({ locale: 'en' }))
+    return (
+      <CmsTranslationUnavailable
+        germanPath={germanPath}
+        breadcrumbs={[HOME_BREADCRUMB, { ...blogBreadcrumb, current: false }]}
+      />
+    )
   }
 
   const { post, locale, canonicalPath } = route
@@ -160,7 +170,7 @@ export async function generatePostMetadata(args: PostPageArgs, pathLocale: Conte
   if (!route) {
     return {
       robots: { index: false, follow: false },
-      ...(germanPath ? { title: languageSwitcherCopy.en.unavailable } : {}),
+      ...(germanPath ? { title: cmsTranslationNoticeTitle } : {}),
     }
   }
 

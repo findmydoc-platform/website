@@ -59,10 +59,11 @@ describe('frontend CMS page route metadata', () => {
     const args = routeArgs('en/pflege/deutschland')
     const renderedPage = renderToStaticMarkup(await Page(args))
 
-    expect(renderedPage).toMatch(/<h1[\s>]/)
+    expect(renderedPage).toContain('This page is currently available in German.')
+    expect(renderedPage).not.toContain('aria-label="Breadcrumb"')
     expect(renderedPage).toMatch(/<a[^>]+href="\/pflege\/deutschland"/)
     expect(await generateMetadata(args)).toEqual({
-      title: 'This page isn’t available in English yet.',
+      title: 'This page is currently available in German.',
       robots: { index: false, follow: false },
     })
     mocks.headers.mockResolvedValue(new Headers())

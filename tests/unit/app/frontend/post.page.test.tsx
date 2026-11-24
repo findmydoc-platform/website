@@ -1,3 +1,4 @@
+import { renderToStaticMarkup } from 'react-dom/server'
 import React from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -329,11 +330,14 @@ describe('frontend post detail route', () => {
     mocks.getCachedPublicPostRouteMock.mockResolvedValue(null)
     mocks.headersMock.mockResolvedValue(new Headers({ 'x-fmd-cms-translation-source': '/posts/gruener-tee' }))
 
-    const { generateMetadata } = await import('@/app/(frontend)/en/posts/[slug]/page')
+    const { default: PostPage, generateMetadata } = await import('@/app/(frontend)/en/posts/[slug]/page')
     const args = { params: Promise.resolve({ slug: 'green-tea' }), searchParams: Promise.resolve({}) }
+    const notice = renderToStaticMarkup(await PostPage(args))
 
+    expect(notice).toContain('This page is currently available in German.')
+    expect(notice).toMatch(/<a[^>]+href="\/posts"[^>]*>Blog<\/a>/)
     expect(await generateMetadata(args)).toEqual({
-      title: 'This page isn’t available in English yet.',
+      title: 'This page is currently available in German.',
       robots: { index: false, follow: false },
     })
 

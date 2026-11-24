@@ -6,7 +6,8 @@ import { cn } from '@/utilities/ui'
 
 export type BlogHeroProps = {
   title?: string
-  subtitle?: string
+  subtitle?: string | null
+  action?: React.ReactNode
   breadcrumbs?: BreadcrumbItem[]
   className?: string
 }
@@ -26,6 +27,7 @@ export const BlogHero: React.FC<BlogHeroProps> = ({
   title = 'Our Blog',
   subtitle = 'Expert insights, practical guidance, and the latest updates in health and medicine.',
   breadcrumbs,
+  action,
   className,
 }) => {
   return (
@@ -35,7 +37,10 @@ export const BlogHero: React.FC<BlogHeroProps> = ({
           <Container className="py-4 sm:py-5">
             <Breadcrumb
               items={breadcrumbs}
-              className="text-xs sm:text-sm [&_ol]:justify-center lg:[&_ol]:justify-start"
+              className={cn(
+                'text-xs sm:text-sm [&_ol]:justify-center lg:[&_ol]:justify-start',
+                action && 'text-foreground',
+              )}
             />
           </Container>
         </div>
@@ -50,9 +55,22 @@ export const BlogHero: React.FC<BlogHeroProps> = ({
         <div className="absolute inset-0 z-0 bg-white/70" aria-hidden="true" />
 
         {/* Content */}
-        <Container className="relative z-10 flex flex-col items-center justify-center py-12 text-center sm:py-14 md:min-h-[20rem] md:py-12 lg:min-h-[22rem] lg:items-start lg:py-14 lg:text-left xl:min-h-[24rem]">
+        <Container
+          className={cn(
+            'relative z-10 flex flex-col items-center justify-center py-12 text-center sm:py-14 lg:items-start lg:text-left',
+            !action && 'md:min-h-[20rem] md:py-12 lg:min-h-[22rem] lg:py-14 xl:min-h-[24rem]',
+          )}
+        >
           <div className="mx-auto max-w-2xl text-center lg:mx-0 lg:max-w-xl lg:text-left">
-            <Heading as="h1" size="h1" align="center" className="mb-4 text-4xl sm:text-5xl lg:text-left lg:text-6xl">
+            <Heading
+              as="h1"
+              size="h1"
+              align="center"
+              className={cn(
+                'mb-4 lg:text-left',
+                action ? 'text-3xl sm:text-4xl lg:text-5xl' : 'text-4xl sm:text-5xl lg:text-6xl',
+              )}
+            >
               {title}
             </Heading>
             {subtitle && (
@@ -60,6 +78,7 @@ export const BlogHero: React.FC<BlogHeroProps> = ({
                 {subtitle}
               </p>
             )}
+            {action}
           </div>
         </Container>
       </section>

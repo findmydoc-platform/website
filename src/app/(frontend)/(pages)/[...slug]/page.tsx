@@ -1,14 +1,16 @@
 import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 
-import { CmsTranslationUnavailable } from '@/app/(frontend)/_components/CmsTranslationUnavailable'
+import {
+  CmsTranslationUnavailable,
+  cmsTranslationNoticeTitle,
+} from '@/app/(frontend)/_components/CmsTranslationUnavailable'
 import { PayloadRedirects } from '@/app/(frontend)/_components/PayloadRedirects'
 
 import { RenderBlocks } from '@/blocks/RenderBlocks'
 import { generateMeta } from '@/utilities/generateMeta'
 import { loadPageRoute } from '@/app/(frontend)/_data/loadPageRoute'
 import { LivePreviewListener } from '@/components/organisms/LivePreviewListener'
-import { languageSwitcherCopy } from '@/features/languageSwitch/copy'
 import { CmsLanguageSwitchRoute } from '@/features/languageSwitch/CmsLanguageSwitchRoute.client'
 import { CMS_TRANSLATION_SOURCE_HEADER } from '@/utilities/routing/cmsRedirectRequest'
 import { CmsDocumentLanguage } from '@/features/uiCopy/DocumentLanguage.client'
@@ -60,7 +62,7 @@ export async function generateMetadata(args: Args): Promise<Metadata> {
   if (!route) {
     return {
       robots: { index: false, follow: false },
-      ...(germanPath ? { title: languageSwitcherCopy.en.unavailable } : {}),
+      ...(germanPath ? { title: cmsTranslationNoticeTitle } : {}),
     }
   }
 

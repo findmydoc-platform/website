@@ -28,6 +28,10 @@ See the [Website container diagram](https://github.com/findmydoc-platform/platfo
   the [Website provider contract](../integrations/clinic-dashboard-api.md).
 - Cacheable public reads have named invalidation owners so publication changes can refresh the affected content.
   Private, draft, and preview reads stay live. [Cache revalidation runtime](../engineering/cache-revalidation-runtime.md)
+- Payload publishes website Pages and Posts per language. The route adapters resolve the public URLs, and the Website
+  invalidates affected public output. See [localized Page and Post reads](../frontend/content-data-access.md#localized-page-and-post-reads)
+  and [publication revalidation](../engineering/cache-revalidation-runtime.md#surface-ownership).
+  The [CMS localization inventory](../cms-localization-inventory.md) records the rollout baseline.
 - Clinic notifications have their own [v1 wire contract](./clinic-notifications-v1.md), with separate explanations for
   [inquiry moderation capture](./clinic-notification-inquiry-moderation.md) and [retention](./clinic-notification-retention.md).
 

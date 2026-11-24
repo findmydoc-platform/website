@@ -11,6 +11,7 @@ Use this index as the main entry point for project documentation.
 
 - [Domain Glossary](../GLOSSARY.md)
 - [Website architecture](./architecture/README.md)
+- [CMS localization rollout inventory](./cms-localization-inventory.md)
 - [Shared Platform Architecture](https://github.com/findmydoc-platform/platform-architecture) (private repository; GitHub access required)
 - [Engineering Spec template for consequential changes](https://github.com/findmydoc-platform/platform-architecture/blob/main/templates/engineering-spec.md) (private repository)
 - [Setup & Development](./setup.md)

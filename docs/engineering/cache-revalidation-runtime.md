@@ -125,7 +125,11 @@ flowchart TD
   Private -.-> Planner
 ```
 
-Pages and posts use entity, slug, collection, sitemap, surface, and concrete public path invalidation. Slug changes invalidate both old and new public identifiers when known.
+Pages and Posts use entity, slug, collection, sitemap, surface, and concrete public path invalidation. The shared
+[publication hooks](../../src/collections/common/localizedPublicationRevalidation.ts) compare the public slugs before
+and after a mutation for each locale. Draft saves skip public invalidation. The planner invalidates the affected
+language's old and new identifiers when known, along with the related public discovery output.
+[Localized public reads](../frontend/content-data-access.md#localized-page-and-post-reads)
 
 Globals use `global:*` tags and known consuming surfaces. Header and Footer are shared public chrome. LandingPages and CookieConsent add declared surface ownership without caching private consent state.
 

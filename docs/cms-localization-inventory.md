@@ -1,5 +1,9 @@
 # CMS localization inventory
 
+> Rollout baseline and planning reference. For current implementation, see
+> [localized Page and Post reads](frontend/content-data-access.md#localized-page-and-post-reads) and
+> [publication revalidation](engineering/cache-revalidation-runtime.md#surface-ownership).
+
 The inventory covers the 65 collections and four globals registered at the start of the Page and Post rollout. It uses the Payload config for application models, generated types for plugin and system models, and the MCP config for available tools. The tables recommend field ownership for subsequent stages. The authoring column describes the operations available at that baseline. [Payload config](../src/payload.config.ts) · [Generated types](../src/payload-types.ts) · [MCP config](../src/plugins/mcp.ts)
 
 ## Publication and authoring

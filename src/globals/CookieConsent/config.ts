@@ -226,7 +226,7 @@ export const CookieConsent: GlobalConfig = {
                         width: '70%',
                       },
                       filterOptions: {
-                        slug: {
+                        legacyEnglishSlug: {
                           in: MANAGED_LEGAL_PAGE_SLUGS,
                         },
                       },

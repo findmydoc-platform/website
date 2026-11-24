@@ -110,6 +110,9 @@ import * as migration_20261109_005746_clinic_group_mcp_read from './20261109_005
 import * as migration_20261109_100853_read_doctor_image_mcp from './20261109_100853_read_doctor_image_mcp'
 import * as migration_20261111_092853_align_localized_parent_indexes from './20261111_092853_align_localized_parent_indexes'
 import * as migration_20261111_145406_cookie_consent_approved_prompt from './20261111_145406_cookie_consent_approved_prompt'
+import * as migration_20261122_215857_localize_page_publication from './20261122_215857_localize_page_publication'
+import * as migration_20261122_221913_localize_post_publication from './20261122_221913_localize_post_publication'
+import * as migration_20261123_095220_add_redirect_http_status from './20261123_095220_add_redirect_http_status'
 
 export const migrations = [
   {
@@ -671,5 +674,20 @@ export const migrations = [
     up: migration_20261111_145406_cookie_consent_approved_prompt.up,
     down: migration_20261111_145406_cookie_consent_approved_prompt.down,
     name: '20261111_145406_cookie_consent_approved_prompt',
+  },
+  {
+    up: migration_20261122_215857_localize_page_publication.up,
+    down: migration_20261122_215857_localize_page_publication.down,
+    name: '20261122_215857_localize_page_publication',
+  },
+  {
+    up: migration_20261122_221913_localize_post_publication.up,
+    down: migration_20261122_221913_localize_post_publication.down,
+    name: '20261122_221913_localize_post_publication',
+  },
+  {
+    up: migration_20261123_095220_add_redirect_http_status.up,
+    down: migration_20261123_095220_add_redirect_http_status.down,
+    name: '20261123_095220_add_redirect_http_status',
   },
 ]

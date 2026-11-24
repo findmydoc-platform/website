@@ -315,11 +315,22 @@ export async function importCollection(options: CollectionImportOptions): Promis
       }
 
       const localizedUpdates = extractLocalizedFieldUpdates(draft, localizedFields)
+      if (collection === 'posts' && kind === 'demo') {
+        for (const data of Object.values(localizedUpdates)) {
+          if (draft._status === 'published' || draft._status === 'draft') {
+            data._status ??= draft._status
+          }
+          if (data.slug === undefined && typeof draft.slug === 'string') {
+            data.slug = draft.slug
+            data.generateSlug = false
+          }
+        }
+      }
 
       const result = await upsertByStableId(payload, collection, draft, {
         filePath,
         context,
-        req,
+        req: collection === 'posts' ? { ...req, locale: DEFAULT_CONTENT_LOCALE } : req,
         policy: upsertPolicy,
       })
       if (result.created) created += 1

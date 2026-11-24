@@ -1,6 +1,7 @@
 // Temporary direct invalidation exception. Remove this legacy path-level behavior with #1468.
 import { revalidatePath, revalidateTag } from 'next/cache.js'
 import type { CollectionAfterChangeHook, CollectionAfterDeleteHook, PayloadRequest } from 'payload'
+import { executeRevalidationPlan, planRevalidation } from '@/utilities/cacheRevalidation'
 
 const PLATFORM_CONTENT_MEDIA_LANDING_TAGS = ['global_landingPages', 'pages-sitemap'] as const
 const PLATFORM_CONTENT_MEDIA_LANDING_PATHS = ['/', '/about', '/partners/clinics'] as const
@@ -89,18 +90,20 @@ async function revalidatePublishedPosts(req: PayloadRequest): Promise<void> {
     revalidatePath(`/posts/${slug}`)
   }
 
-  revalidatePath('/posts')
-
   const totalPages = Math.ceil(countResult.totalDocs / POSTS_PER_PAGE)
   for (let page = 2; page <= totalPages; page += 1) {
     revalidatePath(`/posts/page/${page}`)
   }
-
-  revalidateTag('posts-sitemap', { expire: 0 })
 }
 
 async function revalidatePlatformContentMediaConsumerCaches(req: PayloadRequest): Promise<void> {
   req.payload.logger.info('Revalidating platform content media consumers')
+
+  // Both locale detail caches use the Post collection tag, which the posts-list plan invalidates.
+  executeRevalidationPlan(
+    planRevalidation({ kind: 'posts-list', operation: 'update', source: { kind: 'payload-hook' } }),
+    { logger: req.payload.logger },
+  )
 
   revalidateLandingConsumers()
   await revalidatePublishedPages(req)

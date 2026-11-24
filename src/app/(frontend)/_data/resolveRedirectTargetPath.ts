@@ -5,6 +5,12 @@ import { getPayload } from 'payload'
 
 import type { Page, Post, Redirect } from '@/payload-types'
 import { buildPagePath, buildPostPath } from '@/utilities/cachePolicy'
+import {
+  buildCmsRedirectPath,
+  type CmsRedirectCollection,
+  type CmsRedirectSource,
+} from '@/utilities/content/cmsRedirectPaths'
+import { isReservedPageSlug, type ContentLocale } from '@/utilities/contentLocalization'
 import { sanitizeInternalRedirectPathOrNull } from '@/utilities/routing/sanitizeInternalRedirectPath'
 
 type RedirectReference = NonNullable<NonNullable<Redirect['to']>['reference']>
@@ -20,6 +26,7 @@ const PUBLIC_TARGET_SELECT = {
 
 export async function resolveRedirectTargetPath(
   reference: RedirectTargetReference | null | undefined,
+  sourcePath: string,
 ): Promise<string | null> {
   const collection = normalizeSupportedCollection(reference?.relationTo)
   const id = normalizeReferenceId(reference?.value)
@@ -28,17 +35,56 @@ export async function resolveRedirectTargetPath(
 
   const payload = await getPayload({ config: configPromise })
 
-  return resolveRedirectTargetPathById({ collection, id, payload })
+  const locale = sourcePath === '/en' || sourcePath.startsWith('/en/') ? 'en' : 'de'
+  const targetPath = await resolveRedirectTargetPathById({ collection, id, locale, payload })
+  if (targetPath || locale !== 'de') return targetPath
+
+  return resolveRedirectTargetPathById({ collection, id, locale: 'en', payload })
+}
+
+export async function findPublicCmsCanonicalBySlug({ collection, locale, slug }: CmsRedirectSource) {
+  const payload = await getPayload({ config: configPromise })
+  const result = await payload.find({
+    collection,
+    locale,
+    draft: false,
+    fallbackLocale: false,
+    overrideAccess: false,
+    depth: 0,
+    limit: 1,
+    pagination: false,
+    select: { slug: true },
+    where: { and: [{ slug: { equals: slug } }, { _status: { equals: 'published' } }] },
+  })
+  const doc = result.docs[0]
+  const path = doc?.slug && buildCmsRedirectPath(collection, locale, doc.slug)
+  return path ? { id: doc.id, path } : null
+}
+
+export async function resolveSameLocaleRedirectTargetPath(
+  reference: RedirectTargetReference,
+  collection: CmsRedirectCollection,
+  locale: ContentLocale,
+): Promise<string | null> {
+  const id = normalizeReferenceId(reference.value)
+  if (reference.relationTo !== collection || id === null) return null
+
+  const payload = await getPayload({ config: configPromise })
+  return resolveRedirectTargetPathById({ collection, id, locale, payload, sameLocale: true })
 }
 
 async function resolveRedirectTargetPathById({
   collection,
   id,
+  locale,
   payload,
+  sameLocale = false,
 }: {
   collection: SupportedRedirectTargetCollection
   id: string | number
+  locale: ContentLocale
   payload: Payload
+  sameLocale?: boolean
 }): Promise<string | null> {
   let target: RedirectTargetDocument | null
 
@@ -49,6 +95,8 @@ async function resolveRedirectTargetPathById({
       depth: 0,
       draft: false,
       overrideAccess: false,
+      locale,
+      fallbackLocale: false,
       select: PUBLIC_TARGET_SELECT,
     })) as RedirectTargetDocument | null
   } catch {
@@ -59,11 +107,13 @@ async function resolveRedirectTargetPathById({
 
   const slug = typeof target.slug === 'string' ? target.slug.trim() : ''
   if (!slug) return null
+  if (sameLocale) return buildCmsRedirectPath(collection, locale, slug)
+  if (collection === 'pages' && isReservedPageSlug(slug, locale)) return null
 
   let targetPath: string
 
   try {
-    targetPath = collection === 'pages' ? buildPagePath(slug) : buildPostPath(slug)
+    targetPath = collection === 'pages' ? buildPagePath(slug, locale) : buildPostPath(slug, locale)
   } catch {
     return null
   }

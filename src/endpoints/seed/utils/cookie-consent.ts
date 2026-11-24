@@ -45,6 +45,8 @@ async function resolveManagedLegalPageId(payload: Payload, value: unknown): Prom
       for (let attempt = 0; attempt < 2; attempt += 1) {
         const result = await payload.find({
           collection: 'pages',
+          locale: 'en',
+          fallbackLocale: false,
           where: {
             slug: {
               equals: objectSlug,
@@ -71,6 +73,8 @@ async function resolveManagedLegalPageId(payload: Payload, value: unknown): Prom
     for (let attempt = 0; attempt < 2; attempt += 1) {
       const result = await payload.find({
         collection: 'pages',
+        locale: 'en',
+        fallbackLocale: false,
         where: {
           slug: {
             equals: slug,

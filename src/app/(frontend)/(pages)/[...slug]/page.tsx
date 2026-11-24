@@ -1,35 +1,19 @@
 import type { Metadata } from 'next'
+import { headers } from 'next/headers'
 
+import {
+  CmsTranslationUnavailable,
+  cmsTranslationNoticeTitle,
+} from '@/app/(frontend)/_components/CmsTranslationUnavailable'
 import { PayloadRedirects } from '@/app/(frontend)/_components/PayloadRedirects'
-import configPromise from '@payload-config'
-import { getPayload } from 'payload'
-import { draftMode } from 'next/headers'
-import React, { cache } from 'react'
 
 import { RenderBlocks } from '@/blocks/RenderBlocks'
 import { generateMeta } from '@/utilities/generateMeta'
-import { findPageBySlug, findPageSlugs, type PageDetailDoc } from '@/utilities/content/serverData'
+import { loadPageRoute } from '@/app/(frontend)/_data/loadPageRoute'
 import { LivePreviewListener } from '@/components/organisms/LivePreviewListener'
-import {
-  appendContentLocaleToPath,
-  resolveContentLocaleContext,
-  type ContentLocaleContext,
-} from '@/utilities/contentLocalization'
-
-export async function generateStaticParams() {
-  const payload = await getPayload({ config: configPromise })
-  const pages = await findPageSlugs(payload)
-
-  const params = pages
-    ?.filter((doc) => {
-      return doc.slug && doc.slug !== 'home'
-    })
-    .map(({ slug }) => {
-      return { slug: slug!.split('/') }
-    })
-
-  return params
-}
+import { CmsLanguageSwitchRoute } from '@/features/languageSwitch/CmsLanguageSwitchRoute.client'
+import { CMS_TRANSLATION_SOURCE_HEADER } from '@/utilities/routing/cmsRedirectRequest'
+import { CmsDocumentLanguage } from '@/features/uiCopy/DocumentLanguage.client'
 
 type Args = {
   params: Promise<{
@@ -40,63 +24,54 @@ type Args = {
   }>
 }
 
-export default async function Page({ params: paramsPromise, searchParams: searchParamsPromise }: Args) {
-  const { isEnabled: draft } = await draftMode()
-  const { slug = ['home'] } = await paramsPromise
-  const searchParams = await searchParamsPromise
-  const contentLocale = resolveContentLocaleContext(searchParams.locale)
-  const url = '/' + slug.join('/')
+async function loadRoute({ params, searchParams }: Args) {
+  const [{ slug = ['home'] }, { locale }] = await Promise.all([params, searchParams])
+  const result = await loadPageRoute(slug, locale)
+  const { route, draft, url } = result
+  const germanPath =
+    !route && !draft && (url === '/en' || url.startsWith('/en/'))
+      ? (await headers()).get(CMS_TRANSLATION_SOURCE_HEADER)
+      : null
+  return { ...result, germanPath }
+}
 
-  const page: PageDetailDoc | null = await queryPageBySlug({
-    contentLocale,
-    slug: slug.join('/'),
-  })
-
-  if (!page) {
-    return <PayloadRedirects url={url} />
+export default async function Page(args: Args) {
+  const { route, draft, url, germanPath } = await loadRoute(args)
+  if (!route) {
+    return germanPath ? <CmsTranslationUnavailable germanPath={germanPath} /> : <PayloadRedirects url={url} />
   }
 
-  const { layout } = page
-
   return (
-    <article className="pt-12 pb-20 sm:pt-16 sm:pb-24">
-      {/* Allows redirects for valid pages too */}
+    <article className="pt-12 pb-20 sm:pt-16 sm:pb-24" lang={route.locale}>
+      <CmsDocumentLanguage locale={route.locale} />
+      {!draft && (
+        <CmsLanguageSwitchRoute
+          locale={route.locale}
+          targets={route.languagePaths ?? { [route.locale]: route.canonicalPath }}
+        />
+      )}
       <PayloadRedirects disableNotFound url={url} />
-
       {draft && <LivePreviewListener />}
-
-      <RenderBlocks blocks={layout} contentLocale={contentLocale} />
+      <RenderBlocks blocks={route.page.layout} contentLocale={{ locale: route.locale, fallbackLocale: false }} />
     </article>
   )
 }
 
-export async function generateMetadata({
-  params: paramsPromise,
-  searchParams: searchParamsPromise,
-}: Args): Promise<Metadata> {
-  const { slug = ['home'] } = await paramsPromise
-  const searchParams = await searchParamsPromise
-  const contentLocale = resolveContentLocaleContext(searchParams.locale)
-  const page = await queryPageBySlug({
-    contentLocale,
-    slug: slug.join('/'),
-  })
+export async function generateMetadata(args: Args): Promise<Metadata> {
+  const { route, draft, germanPath } = await loadRoute(args)
+  if (!route) {
+    return {
+      robots: { index: false, follow: false },
+      ...(germanPath ? { title: cmsTranslationNoticeTitle } : {}),
+    }
+  }
 
-  return generateMeta({
-    doc: page,
-    path: appendContentLocaleToPath(`/${slug.join('/')}`, contentLocale.locale),
-    sourceCollection: 'pages',
-  })
+  const metadata = await generateMeta({ doc: route.page, path: route.canonicalPath, sourceCollection: 'pages' })
+  if (draft) return { ...metadata, robots: { index: false, follow: false } }
+  if (!route.languagePaths) return metadata
+
+  return {
+    ...metadata,
+    alternates: { canonical: route.canonicalPath, languages: route.languagePaths },
+  }
 }
-
-const queryPageBySlug = cache(
-  async ({ slug, contentLocale }: { contentLocale?: ContentLocaleContext; slug: string }) => {
-    const normalizedContentLocale = contentLocale ?? {}
-
-    const { isEnabled: draft } = await draftMode()
-
-    const payload = await getPayload({ config: configPromise })
-
-    return findPageBySlug(payload, slug, draft, normalizedContentLocale)
-  },
-)

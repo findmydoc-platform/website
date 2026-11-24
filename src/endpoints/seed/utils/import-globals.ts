@@ -55,6 +55,7 @@ export async function importGlobals(payload: Payload): Promise<{
       await payload.updateGlobal({
         slug,
         data,
+        ...(slug === 'cookieConsent' ? { locale: 'en', fallbackLocale: false } : {}),
         overrideAccess: true,
         context: { disableRevalidate: true },
       })

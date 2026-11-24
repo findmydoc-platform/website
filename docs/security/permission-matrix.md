@@ -18,6 +18,8 @@ An Admin entry describes expected administrative access or authority. It does no
   for Dashboard writes, review history, and private AuthAction commands.
   [Clinic Dashboard API](../integrations/clinic-dashboard-api.md) · [Review access and audit](../review-modification-process.md) ·
   [Auth actions](./auth-actions.md)
+- Public Page and Post reads require publication in the requested locale and return only that locale.
+  Platform staff can read drafts and version history.
 - A media file request and a media document read are different operations. File delivery follows the collection's
   publication and ownership rules. [Media access and storage](../integrations/storage.md)
 

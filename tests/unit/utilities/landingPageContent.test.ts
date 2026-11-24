@@ -341,6 +341,19 @@ describe('landingPageContent normalizers', () => {
     )
   })
 
+  it.each([123, null])('keeps clinic landing content available for unresolved CTA destination %s', (value) => {
+    const landingPages = attachRequiredMedia(cloneBaselineLandingPages())
+    landingPages.clinicPartners.teamCta.link = {
+      type: 'reference',
+      reference: { relationTo: 'pages', value: value as number },
+    }
+
+    const content = normalizeClinicPartnerLandingContent(landingPages)
+
+    expect(content.teamCta.buttonLink).toBeUndefined()
+    expect(content.metadata.title).toBe(landingPages.clinicPartners.seo.title)
+  })
+
   it('resolves CTA reference links through the shared CMS link shape', () => {
     const landingPages = attachRequiredMedia(cloneBaselineLandingPages())
     landingPages.clinicPartners.cta.link = {

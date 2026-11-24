@@ -278,6 +278,7 @@ describe('frontend home page route', () => {
     expect(mocks.payloadFindGlobalMock).toHaveBeenCalledWith({
       slug: 'landingPages',
       depth: 2,
+      overrideAccess: false,
     })
   })
 
@@ -303,6 +304,7 @@ describe('frontend home page route', () => {
     expect(mocks.payloadFindGlobalMock).toHaveBeenCalledWith({
       slug: 'landingPages',
       depth: 2,
+      overrideAccess: false,
     })
     expect(metadata).toMatchObject({
       title: 'Test homepage title | findmydoc',

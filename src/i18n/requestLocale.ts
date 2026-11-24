@@ -7,6 +7,8 @@ import {
   localizedPatientAuthPath,
 } from '@/i18n/patientAuthPath'
 
+export const FRONTEND_PATH_HEADER = 'x-findmydoc-frontend-path'
+export const FRONTEND_PREVIEW_LOCALE_HEADER = 'x-findmydoc-frontend-preview-locale'
 export const UI_COPY_LOCALE_HEADER = 'x-findmydoc-ui-copy-locale'
 export const ENGLISH_PATIENT_LOGIN_PATH = localizedPatientAuthPath(PATIENT_LOGIN_PATH, 'en')
 

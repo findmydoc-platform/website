@@ -20,9 +20,19 @@ import {
   SEARCH_ROBOTS_HEADER,
   SEARCH_ROBOTS_HEADER_VALUE,
 } from '@/features/searchIndexing'
+import { CMS_TRANSLATION_SOURCE_HEADER } from '@/utilities/routing/cmsRedirectRequest'
+import { requestCmsRedirect } from '@/utilities/routing/requestCmsRedirect'
+import { isPublicStaticAssetPath } from '@/utilities/routing/publicStaticAssets'
+import { parseCmsRedirectPath } from '@/utilities/content/cmsRedirectPaths'
 import { logCrawlerRequest } from '@/features/publicDiscovery/crawlerMonitoring'
 import { PUBLIC_DISCOVERY_SURFACE_PATHS } from '@/features/publicDiscovery/site'
-import { patientAuthLocaleFromPath, uiCopyLocaleFromPath, UI_COPY_LOCALE_HEADER } from '@/i18n/requestLocale'
+import {
+  FRONTEND_PATH_HEADER,
+  FRONTEND_PREVIEW_LOCALE_HEADER,
+  patientAuthLocaleFromPath,
+  uiCopyLocaleFromPath,
+  UI_COPY_LOCALE_HEADER,
+} from '@/i18n/requestLocale'
 
 const NON_PAGE_PATHS = new Set(['/next/exit-preview', '/next/preview'])
 const PUBLIC_DISCOVERY_PATHS = new Set<string>(PUBLIC_DISCOVERY_SURFACE_PATHS)
@@ -35,9 +45,7 @@ const shouldBypassProxy = (pathname: string): boolean => {
 
   if (isPathFamily(pathname, '/_next')) return true
   if (NON_PAGE_PATHS.has(normalizedPath)) return true
-  // Next replaces this inventory with the actual public asset URLs during compilation.
-  const publicStaticAssetPaths: string[] = JSON.parse(process.env.PUBLIC_STATIC_ASSET_PATHS ?? '[]')
-  if (publicStaticAssetPaths.includes(pathname)) return true
+  if (isPublicStaticAssetPath(pathname)) return true
   return false
 }
 
@@ -67,6 +75,12 @@ const getHoldingRequestUser = async (request: NextRequest): Promise<User | null>
 
 const nextWithRequestHeaders = (request: NextRequest, headersToSet: Record<string, string | null>): NextResponse => {
   const requestHeaders = new Headers(request.headers)
+  requestHeaders.set(FRONTEND_PATH_HEADER, request.nextUrl.pathname)
+  requestHeaders.delete(FRONTEND_PREVIEW_LOCALE_HEADER)
+  const [previewLocale, ...otherLocales] = request.nextUrl.searchParams.getAll('locale')
+  if ((previewLocale === 'de' || previewLocale === 'en') && otherLocales.length === 0) {
+    requestHeaders.set(FRONTEND_PREVIEW_LOCALE_HEADER, previewLocale)
+  }
   requestHeaders.delete(UI_COPY_LOCALE_HEADER)
   const uiCopyLocale = uiCopyLocaleFromPath(request.nextUrl.pathname, request.nextUrl.searchParams)
   if (uiCopyLocale) requestHeaders.set(UI_COPY_LOCALE_HEADER, uiCopyLocale)
@@ -74,6 +88,7 @@ const nextWithRequestHeaders = (request: NextRequest, headersToSet: Record<strin
   requestHeaders.delete(TEMPORARY_LANDING_MODE_REQUEST_HEADER)
   requestHeaders.delete(HOLDING_VIEW_REQUEST_HEADER)
   requestHeaders.delete(SEARCH_INDEXING_REQUEST_HEADER)
+  requestHeaders.delete(CMS_TRANSLATION_SOURCE_HEADER)
   Object.entries(headersToSet).forEach(([key, value]) => {
     if (value === null) {
       requestHeaders.delete(key)
@@ -101,16 +116,23 @@ const nextWithTemporaryLandingHeaders = (request: NextRequest, publicMode: Publi
 const nextWithTemporaryLandingPublicHeaders = (
   request: NextRequest,
   publicMode: PublicSiteMode = 'holding',
+  translationSource: string | null = null,
 ): NextResponse =>
   nextWithRequestHeaders(request, {
+    [CMS_TRANSLATION_SOURCE_HEADER]: translationSource,
     [HOLDING_VIEW_REQUEST_HEADER]: 'public',
     [PUBLIC_SITE_MODE_REQUEST_HEADER]: publicMode,
     [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: publicMode === 'holding' ? '1' : null,
   })
 
-const nextWithPublicMode = (request: NextRequest, publicMode?: PublicSiteMode): NextResponse =>
+const nextWithPublicMode = (
+  request: NextRequest,
+  publicMode: PublicSiteMode,
+  translationSource: string | null,
+): NextResponse =>
   nextWithRequestHeaders(request, {
-    [PUBLIC_SITE_MODE_REQUEST_HEADER]: publicMode ?? null,
+    [CMS_TRANSLATION_SOURCE_HEADER]: translationSource,
+    [PUBLIC_SITE_MODE_REQUEST_HEADER]: publicMode,
     [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: null,
   })
 
@@ -144,9 +166,28 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     return response
   }
 
+  let translationSource: string | null = null
+  if (
+    (request.method === 'GET' || request.method === 'HEAD') &&
+    !request.cookies.has('__prerender_bypass') &&
+    !discovery &&
+    (holdingMode === 'full' || isTemporaryLandingIndexablePath(pathname))
+  ) {
+    const source = parseCmsRedirectPath(pathname)
+    if (source) {
+      const result = await requestCmsRedirect(request, source, holdingMode === 'holding')
+      if (result?.status === 200) {
+        translationSource = result.path
+      } else if (result) {
+        const response = NextResponse.redirect(new URL(result.path, request.url), result.status)
+        return privateResponse(previewDeployment ? withSearchRobotsHeader(response) : response)
+      }
+    }
+  }
+
   if (holdingMode === 'full') {
-    const response = nextWithPublicMode(request, holdingMode)
-    return privateResponse(previewDeployment ? withSearchRobotsHeader(response) : response)
+    const response = nextWithPublicMode(request, holdingMode, translationSource)
+    return privateResponse(previewDeployment || translationSource ? withSearchRobotsHeader(response) : response)
   }
 
   const platformUser = isPlatformUser(await getVerifiedUser())
@@ -156,8 +197,8 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
       if (isTemporaryLandingIndexablePath(pathname)) {
         const response = isTemporaryLandingRootPath(pathname)
           ? nextWithTemporaryLandingHeaders(request, holdingMode)
-          : nextWithTemporaryLandingPublicHeaders(request, holdingMode)
-        return privateResponse(previewDeployment ? withSearchRobotsHeader(response) : response)
+          : nextWithTemporaryLandingPublicHeaders(request, holdingMode, translationSource)
+        return privateResponse(previewDeployment || translationSource ? withSearchRobotsHeader(response) : response)
       }
 
       return privateResponse(withSearchRobotsHeader(nextWithTemporaryLandingHeaders(request, holdingMode)))
@@ -173,7 +214,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     return privateResponse(withSearchRobotsHeader(new NextResponse('Not Found', { status: 404 })))
   }
 
-  return privateResponse(withSearchRobotsHeader(nextWithPublicMode(request, holdingMode)))
+  return privateResponse(withSearchRobotsHeader(nextWithPublicMode(request, holdingMode, translationSource)))
 }
 
 export const config = {

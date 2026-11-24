@@ -6,6 +6,7 @@ import { PostActionBar, type PostActionBarProps } from '@/components/molecules/P
 import { sharePostUrl } from '@/utilities/blog/sharePostUrl'
 
 type PostShareActionBarProps = {
+  lang?: string
   shareUrl?: string
   shareTitle?: string
   shareDescription?: string
@@ -14,6 +15,7 @@ type PostShareActionBarProps = {
 }
 
 export const PostShareActionBar: React.FC<PostShareActionBarProps> = ({
+  lang,
   shareUrl,
   shareTitle,
   shareDescription,
@@ -28,5 +30,5 @@ export const PostShareActionBar: React.FC<PostShareActionBarProps> = ({
     })
   }, [shareDescription, shareTitle, shareUrl])
 
-  return <PostActionBar backLink={backLink} shareButton={{ label: shareLabel, onClick: handleShare }} />
+  return <PostActionBar lang={lang} backLink={backLink} shareButton={{ label: shareLabel, onClick: handleShare }} />
 }

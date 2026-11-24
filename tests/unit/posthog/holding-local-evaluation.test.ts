@@ -41,6 +41,8 @@ vi.mock('@/posthog/server', () => ({
 // Keep concurrent dynamic CMS imports on the same mocked module exports.
 vi.mock('@/utilities/getGlobals', { spy: true })
 
+vi.mock('@/utilities/routing/requestCmsRedirect', () => ({ requestCmsRedirect: vi.fn(async () => null) }))
+
 import { proxy } from '@/proxy'
 import { PUBLIC_DISCOVERY_SURFACE_PATHS } from '@/features/publicDiscovery/site'
 import { PUBLIC_SITE_MODE_REQUEST_HEADER } from '@/features/temporaryLandingMode'

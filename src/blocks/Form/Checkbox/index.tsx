@@ -40,7 +40,10 @@ export const Checkbox: React.FC<
           <Label htmlFor={name}>
             {required && (
               <span className="required">
-                * <span className="sr-only">(required)</span>
+                *{' '}
+                <span className="sr-only" lang="en">
+                  (required)
+                </span>
               </span>
             )}
             {label}

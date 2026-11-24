@@ -75,7 +75,7 @@ export function PublicLanguageSwitcher({
           lang={locale}
           align="center"
           sideOffset={8}
-          className="max-h-[var(--radix-popover-content-available-height)] w-48 max-w-[var(--radix-popover-content-available-width)] overflow-y-auto p-1"
+          className="max-h-[var(--radix-popover-content-available-height)] w-48 max-w-[var(--radix-popover-content-available-width)] overflow-y-auto p-1 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring focus-visible:outline-solid"
           onOpenAutoFocus={(event) => {
             const panel = optionsPanel.current
             if (!panel) return
@@ -107,7 +107,7 @@ export function PublicLanguageSwitcher({
                 ) : (
                   <div className="px-3 py-2 text-sm">
                     <p className="font-medium">{option.name}</p>
-                    <p className="mt-1 text-xs leading-5 text-muted-foreground">{option.unavailable}</p>
+                    <p className="mt-1 text-xs leading-5">{option.unavailable}</p>
                   </div>
                 )}
               </li>

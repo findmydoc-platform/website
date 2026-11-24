@@ -46,7 +46,7 @@ describe('generatePreviewPath', () => {
     )
   })
 
-  it('should ignore the default locale in preview paths', () => {
+  it('identifies the selected English locale in the Page preview target', () => {
     process.env.PREVIEW_SECRET = 'default-locale-secret'
 
     const result = generatePreviewPath({
@@ -56,7 +56,7 @@ describe('generatePreviewPath', () => {
     })
 
     expect(result).toBe(
-      '/next/preview?slug=about-us&collection=pages&path=%2Fabout-us&previewSecret=default-locale-secret',
+      '/next/preview?slug=about-us&collection=pages&path=%2Fabout-us%3Flocale%3Den&previewSecret=default-locale-secret',
     )
   })
 

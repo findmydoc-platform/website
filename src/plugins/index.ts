@@ -5,7 +5,8 @@ import { redirectsPlugin } from '@payloadcms/plugin-redirects'
 import { seoPlugin } from '@payloadcms/plugin-seo'
 import { s3Storage } from '@payloadcms/storage-s3'
 import { Plugin, type Field } from 'payload'
-import { revalidateRedirects } from '@/hooks/revalidateRedirects'
+import { revalidateDeletedRedirect, revalidateRedirects } from '@/hooks/revalidateRedirects'
+import { validateCmsPermanentRedirect } from '@/hooks/validateCmsPermanentRedirect'
 import { GenerateTitle, GenerateURL } from '@payloadcms/plugin-seo/types'
 import { FixedToolbarFeature, HeadingFeature, lexicalEditor } from '@payloadcms/richtext-lexical'
 import { createMcpPlugin } from './mcp'
@@ -95,6 +96,13 @@ const s3StoragePlugin = s3Storage({
 export const plugins: Plugin[] = [
   redirectsPlugin({
     collections: ['pages', 'posts'],
+    redirectTypes: ['301', '307'],
+    redirectTypeFieldOverride: {
+      defaultValue: '307',
+      required: false,
+      access: { create: () => false, update: () => false },
+      admin: { hidden: true },
+    },
     overrides: {
       access: generatedCollectionAccess.redirects,
       admin: {
@@ -116,6 +124,8 @@ export const plugins: Plugin[] = [
       },
       hooks: {
         afterChange: [revalidateRedirects],
+        afterDelete: [revalidateDeletedRedirect],
+        beforeValidate: [validateCmsPermanentRedirect],
       },
     },
   }),

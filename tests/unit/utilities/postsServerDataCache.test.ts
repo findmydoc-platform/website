@@ -35,7 +35,7 @@ describe('posts server data cache contract', () => {
     vi.clearAllMocks()
   })
 
-  it('caches published post detail reads by slug and locale with canonical invalidation tags', async () => {
+  it('versions cached post canonicals by policy, slug, and locale with canonical invalidation tags', async () => {
     const payload = {
       find: vi.fn().mockResolvedValue({ docs: [{ id: 7, slug: 'hello-world', title: 'Hallo Welt' }] }),
     }
@@ -48,7 +48,7 @@ describe('posts server data cache contract', () => {
     expect(buildPostDetailDataCacheTags('hello-world')).toEqual(['collection:posts', 'slug:posts:hello-world'])
     expect(cacheMocks.unstableCache).toHaveBeenCalledWith(
       expect.any(Function),
-      ['post-detail-localized', 'hello-world', 'de'],
+      ['post-detail-localized-canonical-transition', 'hello-world', 'de'],
       {
         tags: ['collection:posts', 'slug:posts:hello-world'],
       },

@@ -12,6 +12,7 @@ import {
   buildSlugTag,
   buildSurfaceTag,
 } from '@/utilities/cachePolicy'
+import { buildEnglishPostCanonicalPath } from '@/utilities/content/postPaths'
 
 import { mergePublishedWhere, type LocalizedDocQuery, type PaginatedResult, type PagedResult } from './shared'
 
@@ -47,6 +48,7 @@ export type PostDetailDoc = Omit<
     | 'updatedAt'
     | 'heroImage'
     | 'relatedPosts'
+    | 'legacyEnglishSlug'
     | 'meta'
   >,
   'relatedPosts'
@@ -54,7 +56,7 @@ export type PostDetailDoc = Omit<
   relatedPosts?: Array<number | PostSummaryDoc> | null
 }
 
-export type PostSitemapDoc = Pick<Post, 'id' | 'slug' | 'updatedAt'>
+export type PostSitemapDoc = Pick<Post, 'id' | 'slug' | 'legacyEnglishSlug' | 'updatedAt'>
 
 export type PublicPostRoute = {
   post: PostDetailDoc
@@ -117,6 +119,7 @@ const POST_RELATED_SELECT = {
 const POST_DETAIL_SELECT = {
   title: true,
   slug: true,
+  legacyEnglishSlug: true,
   excerpt: true,
   content: true,
   categories: true,
@@ -135,6 +138,7 @@ const POST_DETAIL_SELECT = {
 
 const POST_SITEMAP_SELECT = {
   slug: true,
+  legacyEnglishSlug: true,
   updatedAt: true,
 } satisfies PostsSelect<true>
 
@@ -404,13 +408,13 @@ async function findPostDetail(
   return hydrateRelatedPostCards(payload, post, draft, contentLocale)
 }
 
-async function findPostSlugById(payload: Payload, id: number, locale: ContentLocale) {
+async function findPublishedPostSlug(payload: Payload, where: Where, locale: ContentLocale) {
   const result = await queryPosts<Pick<Post, 'slug'>>(payload, {
     contentLocale: { locale },
     depth: 0,
     limit: 1,
     pagination: false,
-    where: { id: { equals: id } },
+    where,
     select: { slug: true },
   })
   return result.docs[0]?.slug
@@ -428,9 +432,9 @@ export async function findPublicPostRoute(
     const legacyPost = await findPostDetail(payload, { legacyEnglishSlug: { equals: slug } }, false, { locale: 'en' })
     if (!legacyPost?.slug || !isValidPublicPostSlug(legacyPost.slug)) return null
 
-    const germanSlug = await findPostSlugById(payload, legacyPost.id, 'de')
+    const germanSlug = await findPublishedPostSlug(payload, { id: { equals: legacyPost.id } }, 'de')
     if (!germanSlug || !isValidPublicPostSlug(germanSlug)) {
-      return { post: legacyPost, locale: 'en', canonicalPath: buildPostPath(legacyPost.slug, 'en') }
+      return { post: legacyPost, locale: 'en', canonicalPath: buildEnglishPostCanonicalPath(legacyPost.slug, slug) }
     }
 
     post = await findPostBySlug(payload, germanSlug, false, { locale: 'de' })
@@ -439,8 +443,15 @@ export async function findPublicPostRoute(
 
   const canonicalPath = buildPostPath(post.slug, locale)
   const alternateLocale = locale === 'de' ? 'en' : 'de'
-  const alternateSlug = await findPostSlugById(payload, post.id, alternateLocale)
-  if (!alternateSlug || !isValidPublicPostSlug(alternateSlug)) return { post, locale, canonicalPath }
+  const alternateSlug = await findPublishedPostSlug(payload, { id: { equals: post.id } }, alternateLocale)
+  if (!alternateSlug || !isValidPublicPostSlug(alternateSlug)) {
+    const legacySlug = post.legacyEnglishSlug
+    if (locale === 'en' && legacySlug && isValidPublicPostSlug(legacySlug)) {
+      const occupied = await findPublishedPostSlug(payload, { slug: { equals: legacySlug } }, 'de')
+      if (!occupied) return { post, locale, canonicalPath: buildEnglishPostCanonicalPath(post.slug, legacySlug) }
+    }
+    return { post, locale, canonicalPath }
+  }
 
   const alternatePath = buildPostPath(alternateSlug, alternateLocale)
   const de = locale === 'de' ? canonicalPath : alternatePath
@@ -456,7 +467,7 @@ export async function getCachedPublicPostRoute(slug: string, locale: ContentLoca
 
       return findPublicPostRoute(payload, slug, locale)
     },
-    ['post-detail-localized', slug, locale],
+    ['post-detail-localized-canonical-transition', slug, locale],
     { tags: buildPostDetailDataCacheTags(slug) },
   )()
 }

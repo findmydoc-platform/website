@@ -240,4 +240,24 @@ describe('frontend sitemap routes', () => {
       tags: ['surface:sitemap:posts'],
     })
   })
+
+  it('keeps the migrated article’s existing URL in the sitemap until German is published', async () => {
+    const english = { id: 41, slug: 'english-post', legacyEnglishSlug: 'existing-post' }
+    const german = { id: 41, slug: 'german-post' }
+    let germanPublished = false
+    routeMocks.findPostSitemapDocs.mockImplementation(async (_payload, locale) =>
+      locale === 'en' ? [english] : germanPublished ? [german] : [],
+    )
+    const request = new Request('https://findmydoc.eu/posts-sitemap.xml')
+    const { GET } = await import('@/app/(frontend)/(sitemaps)/posts-sitemap.xml/route')
+    const locations = async () => getEntryLocations((await readSitemap(await GET(request))).entries)
+
+    expect(await locations()).toEqual(['https://findmydoc.eu/posts/existing-post'])
+
+    germanPublished = true
+    expect(await locations()).toEqual([
+      'https://findmydoc.eu/posts/german-post',
+      'https://findmydoc.eu/en/posts/english-post',
+    ])
+  })
 })

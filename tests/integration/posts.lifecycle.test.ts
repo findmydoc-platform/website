@@ -213,7 +213,7 @@ describe('Posts integration - lifecycle and access', () => {
     })
   })
 
-  it('keeps a migrated article path reachable while German awaits publication', async () => {
+  it('keeps the existing English canonical until the migrated article is published in German', async () => {
     const englishTitle = `${slugPrefix} Existing blog article`
     const legacySlug = slugify(englishTitle)
     const migrated = await payload.create({
@@ -228,24 +228,36 @@ describe('Posts integration - lifecycle and access', () => {
     })
 
     try {
+      const germanTitle = `${slugPrefix} Bestehender Blogartikel`
+      const german = { ...buildPostData({ title: germanTitle }), generateSlug: false, slug: legacySlug }
+      await payload.update({
+        collection: 'posts',
+        id: migrated.id,
+        locale: 'de',
+        fallbackLocale: false,
+        data: german,
+        draft: true,
+        context: { disableRevalidate: true },
+      })
+
       await expect(findPublicPostRoute(payload, legacySlug, 'de')).resolves.toMatchObject({
         locale: 'en',
         post: { id: migrated.id, title: englishTitle },
-        canonicalPath: `/en/posts/${legacySlug}`,
+        canonicalPath: `/posts/${legacySlug}`,
+      })
+      await expect(findPublicPostRoute(payload, legacySlug, 'en')).resolves.toMatchObject({
+        locale: 'en',
+        post: { id: migrated.id, title: englishTitle },
+        canonicalPath: `/posts/${legacySlug}`,
       })
 
-      const germanTitle = `${slugPrefix} Bestehender Blogartikel`
       await payload.update({
         collection: 'posts',
         id: migrated.id,
         locale: 'de',
         publishSpecificLocale: 'de',
         fallbackLocale: false,
-        data: {
-          ...buildPostData({ title: germanTitle, status: 'published' }),
-          generateSlug: false,
-          slug: legacySlug,
-        },
+        data: { ...german, _status: 'published' },
         context: { disableRevalidate: true },
       })
 

@@ -38,9 +38,10 @@ Use these helpers whenever multiple routes or blocks need the same Payload query
 ## Localized Page and Post reads
 
 Pages and Posts use Payload publication status per locale. Public detail reads use the language in the URL and
-disable Payload content fallback. Each published locale has its own canonical URL. The route data links the published
-equivalent by document identity when it exists. The Post resolver also handles the legacy English paths documented
-for the rollout. [Routing and SEO](../adrs/022-adr-public-localization-routing-seo-and-domain-strategy.md) ·
+disable Payload content fallback. The route data links published equivalents by document identity. During the Post
+rollout, both English routes can serve a migrated article while German is unpublished. The original unprefixed URL
+remains canonical and stays in the sitemap until German is published. Each published language then has its own
+canonical URL. [Routing and SEO](../adrs/022-adr-public-localization-routing-seo-and-domain-strategy.md) ·
 [Native locale publication](../adrs/038-adr-native-payload-locale-publication.md)
 
 Page detail reads stay live. Post detail reads use the public Data Cache. Published slug changes and withdrawals refresh

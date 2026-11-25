@@ -113,6 +113,7 @@ import * as migration_20261111_145406_cookie_consent_approved_prompt from './202
 import * as migration_20261122_215857_localize_page_publication from './20261122_215857_localize_page_publication'
 import * as migration_20261122_221913_localize_post_publication from './20261122_221913_localize_post_publication'
 import * as migration_20261123_095220_add_redirect_http_status from './20261123_095220_add_redirect_http_status'
+import * as migration_20261125_151218_repair_empty_german_post_publication from './20261125_151218_repair_empty_german_post_publication'
 
 export const migrations = [
   {
@@ -689,5 +690,10 @@ export const migrations = [
     up: migration_20261123_095220_add_redirect_http_status.up,
     down: migration_20261123_095220_add_redirect_http_status.down,
     name: '20261123_095220_add_redirect_http_status',
+  },
+  {
+    up: migration_20261125_151218_repair_empty_german_post_publication.up,
+    down: migration_20261125_151218_repair_empty_german_post_publication.down,
+    name: '20261125_151218_repair_empty_german_post_publication',
   },
 ]

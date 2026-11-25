@@ -48,7 +48,7 @@ describe('posts server data cache contract', () => {
     expect(buildPostDetailDataCacheTags('hello-world')).toEqual(['collection:posts', 'slug:posts:hello-world'])
     expect(cacheMocks.unstableCache).toHaveBeenCalledWith(
       expect.any(Function),
-      ['post-detail-localized-canonical-transition', 'hello-world', 'de'],
+      ['post-detail-localized-repaired-status', 'hello-world', 'de'],
       {
         tags: ['collection:posts', 'slug:posts:hello-world'],
       },
@@ -176,7 +176,7 @@ describe('posts server data cache contract', () => {
       buildPostListDataCacheKey({ contentLocale: { locale: 'de', fallbackLocale: 'en' }, limit: 12, page: 2 }),
     ).toBe(
       JSON.stringify({
-        version: 'localized-publication',
+        version: 'localized-publication-repaired-status',
         locale: 'de',
         fallbackLocale: 'en',
         limit: 12,

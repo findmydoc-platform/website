@@ -142,7 +142,7 @@ const POST_SITEMAP_SELECT = {
   updatedAt: true,
 } satisfies PostsSelect<true>
 
-const POSTS_LIST_DATA_CACHE_KEY_VERSION = 'localized-publication'
+const POSTS_LIST_DATA_CACHE_KEY_VERSION = 'localized-publication-repaired-status'
 
 export const buildPostListDataCacheTags = (): string[] => [
   buildCollectionTag('posts'),
@@ -467,7 +467,7 @@ export async function getCachedPublicPostRoute(slug: string, locale: ContentLoca
 
       return findPublicPostRoute(payload, slug, locale)
     },
-    ['post-detail-localized-canonical-transition', slug, locale],
+    ['post-detail-localized-repaired-status', slug, locale],
     { tags: buildPostDetailDataCacheTags(slug) },
   )()
 }

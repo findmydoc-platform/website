@@ -4,6 +4,7 @@ import { drizzle, type NodePgClient } from '@payloadcms/db-postgres/drizzle/node
 import { describe, expect, it } from 'vitest'
 
 import { up } from '@/migrations/20261122_221913_localize_post_publication'
+import { up as repairEmptyGermanPublication } from '@/migrations/20261125_151218_repair_empty_german_post_publication'
 import { deriveDatabaseConfig } from '../../../scripts/test-database-harness.mjs'
 
 const legacyPostFixture = `
@@ -46,6 +47,69 @@ const legacyPostFixture = `
 `
 
 describe('Post locale publication migration', () => {
+  it('repairs empty German publications from legacy all-locale history without changing real publications', async () => {
+    const { connectionString } = deriveDatabaseConfig(process.env.DATABASE_URI)
+    const client = new Client({ connectionString })
+    await client.connect()
+    const db = drizzle(client as unknown as NodePgClient)
+    const schema = `post_locales_${randomUUID().replaceAll('-', '')}`
+
+    try {
+      await client.query(`BEGIN; CREATE SCHEMA "${schema}"; SET LOCAL search_path TO "${schema}";`)
+      await client.query(legacyPostFixture)
+      await client.query(`
+        ALTER TABLE _posts_v_locales ADD COLUMN version_content jsonb;
+        INSERT INTO posts VALUES (43, 'empty-german', true, 'published'), (44, 'public-german', true, 'published');
+        INSERT INTO posts_locales (_locale, _parent_id, title, content) VALUES
+          ('en', 43, 'Existing English article', '{"article": "English article body"}'),
+          ('de', 43, NULL, NULL),
+          ('en', 44, 'Bilingual article', '{"article": "English article body"}'),
+          ('de', 44, 'Deutscher Artikel', '{"article": "Deutscher Artikeltext"}');
+        INSERT INTO _posts_v (id, parent_id, published_locale, version_slug, version_generate_slug, version__status) VALUES
+          (103, 43, NULL, 'empty-german', true, 'published'),
+          (104, 44, NULL, 'public-german', true, 'published');
+        INSERT INTO _posts_v_locales (_locale, _parent_id, version_title, version_content) VALUES
+          ('en', 103, 'Existing English article', '{"article": "English article body"}'),
+          ('de', 103, NULL, NULL),
+          ('en', 104, 'Bilingual article', '{"article": "English article body"}'),
+          ('de', 104, 'Deutscher Artikel', '{"article": "Deutscher Artikeltext"}');
+      `)
+      await up({ db } as unknown as Parameters<typeof up>[0])
+
+      const readPublications = async () =>
+        (
+          await client.query(`
+        SELECT live._parent_id AS id, live._locale, live._status, live.slug, live.title, live.content,
+               historical.version__status, historical.version_title, historical.version_content
+        FROM posts_locales live
+        JOIN _posts_v version ON version.parent_id = live._parent_id
+        JOIN _posts_v_locales historical ON historical._parent_id = version.id AND historical._locale = live._locale
+        WHERE live._parent_id IN (43, 44)
+        ORDER BY live._parent_id, live._locale
+      `)
+        ).rows
+      const before = await readPublications()
+      const emptyGerman = before.find((row) => row.id === 43 && row._locale === 'de')
+      expect(emptyGerman).toMatchObject({
+        title: null,
+        content: null,
+        _status: 'published',
+        version__status: 'published',
+      })
+
+      await repairEmptyGermanPublication({ db } as unknown as Parameters<typeof repairEmptyGermanPublication>[0])
+      const after = await readPublications()
+      expect(after).toEqual(
+        before.map((row) => (row === emptyGerman ? { ...row, _status: 'draft', version__status: 'draft' } : row)),
+      )
+      await repairEmptyGermanPublication({ db } as unknown as Parameters<typeof repairEmptyGermanPublication>[0])
+      expect(await readPublications()).toEqual(after)
+    } finally {
+      await client.query('ROLLBACK')
+      await client.end()
+    }
+  })
+
   it('preserves published and draft English Posts and retains untranslated publication separately', async () => {
     const { connectionString } = deriveDatabaseConfig(process.env.DATABASE_URI)
     const client = new Client({ connectionString })

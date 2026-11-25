@@ -62,7 +62,7 @@ const getPostsSitemap = unstable_cache(
       }),
     )
   },
-  ['posts-sitemap', 'localized'],
+  ['posts-sitemap', 'localized-repaired-status'],
   {
     tags: [buildSitemapTag('posts')],
   },

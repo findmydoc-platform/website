@@ -236,9 +236,13 @@ describe('frontend sitemap routes', () => {
       'https://findmydoc.eu/en/posts/english-post',
     ])
     expect(body.entries[0]).toMatchObject({ lastmod: '2026-01-01T00:00:00.000Z' })
-    expect(routeMocks.unstableCache).toHaveBeenCalledWith(expect.any(Function), ['posts-sitemap', 'localized'], {
-      tags: ['surface:sitemap:posts'],
-    })
+    expect(routeMocks.unstableCache).toHaveBeenCalledWith(
+      expect.any(Function),
+      ['posts-sitemap', 'localized-repaired-status'],
+      {
+        tags: ['surface:sitemap:posts'],
+      },
+    )
   })
 
   it('keeps the migrated article’s existing URL in the sitemap until German is published', async () => {

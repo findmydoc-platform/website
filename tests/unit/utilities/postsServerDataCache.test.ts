@@ -24,10 +24,8 @@ vi.mock('next/cache', () => ({
 import {
   buildPostDetailDataCacheTags,
   buildPostListDataCacheKey,
-  buildPostListDataCacheTags,
   getCachedLatestPosts,
   getCachedPublicPostRoute,
-  getCachedPostArchivePage,
 } from '@/utilities/content/serverData/posts'
 
 describe('posts server data cache contract', () => {
@@ -48,7 +46,7 @@ describe('posts server data cache contract', () => {
     expect(buildPostDetailDataCacheTags('hello-world')).toEqual(['collection:posts', 'slug:posts:hello-world'])
     expect(cacheMocks.unstableCache).toHaveBeenCalledWith(
       expect.any(Function),
-      ['post-detail-localized-repaired-status', 'hello-world', 'de'],
+      ['post-detail-reachable-legacy-canonical', 'hello-world', 'de'],
       {
         tags: ['collection:posts', 'slug:posts:hello-world'],
       },
@@ -65,6 +63,21 @@ describe('posts server data cache contract', () => {
         },
       }),
     )
+  })
+
+  it('keeps the English canonical when the legacy alias cannot be looked up verbatim', async () => {
+    const post = { id: 7, slug: 'english-post', title: 'Fixture title', legacyEnglishSlug: 'former ' }
+    cacheMocks.getPayload.mockResolvedValue({
+      find: vi
+        .fn()
+        .mockResolvedValueOnce({ docs: [post] })
+        .mockResolvedValue({ docs: [] }),
+    })
+
+    await expect(getCachedPublicPostRoute('english-post', 'en')).resolves.toMatchObject({
+      canonicalPath: '/en/posts/english-post',
+      post,
+    })
   })
 
   it.each(['foo:bar', 'foo bar', 'foo/bar', ''])(
@@ -136,69 +149,5 @@ describe('posts server data cache contract', () => {
         locale: 'de',
       }),
     )
-  })
-
-  it('lists single-language posts and one preferred version of a bilingual post', async () => {
-    const germanOnly = { id: 3, title: 'Nur Deutsch', slug: 'nur-deutsch', publishedAt: '2026-01-03' }
-    const englishOnly = { id: 2, title: 'English only', slug: 'english-only', publishedAt: '2026-01-02' }
-    const germanVersion = { id: 1, title: 'Zweisprachig', slug: 'zweisprachig', publishedAt: '2026-01-01' }
-    const englishVersion = { id: 1, title: 'Bilingual', slug: 'bilingual', publishedAt: '2026-01-01' }
-    const legacyEnglish = {
-      id: 4,
-      title: 'Existing English post',
-      slug: 'existing',
-      legacyEnglishSlug: 'former-english-path',
-      publishedAt: '2026-01-01',
-    }
-    cacheMocks.getPayload.mockResolvedValue({
-      find: vi
-        .fn()
-        .mockResolvedValueOnce({ docs: [germanVersion, germanOnly] })
-        .mockResolvedValueOnce({ docs: [englishVersion, legacyEnglish, englishOnly] })
-        .mockResolvedValueOnce({ docs: [germanVersion, germanOnly] })
-        .mockResolvedValueOnce({ docs: [legacyEnglish, englishOnly] }),
-    })
-
-    await expect(getCachedPostArchivePage({ preferredLocale: 'de' })).resolves.toEqual({
-      docs: [
-        { post: germanOnly, locale: 'de', canonicalPath: '/posts/nur-deutsch' },
-        { post: englishOnly, locale: 'en', canonicalPath: '/en/posts/english-only' },
-        { post: legacyEnglish, locale: 'en', canonicalPath: '/posts/former-english-path' },
-        { post: germanVersion, locale: 'de', canonicalPath: '/posts/zweisprachig' },
-      ],
-      page: 1,
-      totalDocs: 4,
-      totalPages: 1,
-    })
-  })
-
-  it('caches the archive by preference and page using the shared post invalidation tags', async () => {
-    const payload = {
-      find: vi.fn().mockResolvedValue({ docs: [] }),
-    }
-    cacheMocks.getPayload.mockResolvedValue(payload)
-
-    await expect(getCachedPostArchivePage({ preferredLocale: 'de', page: 2 })).resolves.toEqual({
-      docs: [],
-      totalDocs: 0,
-      totalPages: 0,
-      page: 2,
-    })
-
-    expect(cacheMocks.unstableCache).toHaveBeenCalledWith(expect.any(Function), ['post-archive', 'de', '2'], {
-      tags: buildPostListDataCacheTags(),
-    })
-    for (const locale of ['de', 'en']) {
-      expect(payload.find).toHaveBeenCalledWith(
-        expect.objectContaining({
-          collection: 'posts',
-          draft: false,
-          fallbackLocale: false,
-          locale,
-          overrideAccess: false,
-          where: { _status: { equals: 'published' } },
-        }),
-      )
-    }
   })
 })

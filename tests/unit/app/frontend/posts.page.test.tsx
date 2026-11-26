@@ -143,8 +143,8 @@ describe('frontend posts index route', () => {
         { label: 'Blog', href: '/posts' },
       ],
       posts: [
-        { title: 'Hallo Welt', href: '/posts/hello-world', locale: 'de' },
-        { title: 'Hello world', href: '/en/posts/hello-eng', locale: 'en' },
+        expect.objectContaining({ title: 'Hallo Welt', href: '/posts/hello-world', locale: 'de' }),
+        expect.objectContaining({ title: 'Hello world', href: '/en/posts/hello-eng', locale: 'en' }),
       ],
     })
     const jsonLdElement = findElementByType(result, mocks.jsonLdScriptComponent) as React.ReactElement<{

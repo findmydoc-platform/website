@@ -238,7 +238,7 @@ describe('frontend sitemap routes', () => {
     expect(body.entries[0]).toMatchObject({ lastmod: '2026-01-01T00:00:00.000Z' })
     expect(routeMocks.unstableCache).toHaveBeenCalledWith(
       expect.any(Function),
-      ['posts-sitemap', 'localized-repaired-status'],
+      ['posts-sitemap', 'reachable-legacy-canonical'],
       {
         tags: ['surface:sitemap:posts'],
       },
@@ -261,6 +261,19 @@ describe('frontend sitemap routes', () => {
     germanPublished = true
     expect(await locations()).toEqual([
       'https://findmydoc.eu/posts/german-post',
+      'https://findmydoc.eu/en/posts/english-post',
+    ])
+  })
+
+  it('skips a legacy alias whose stored spelling cannot resolve to the normalized URL', async () => {
+    routeMocks.findPostSitemapDocs.mockImplementation(async (_payload, locale) =>
+      locale === 'en' ? [{ id: 41, slug: 'english-post', legacyEnglishSlug: 'former ' }] : [{ id: 42, slug: 'former' }],
+    )
+    const { GET } = await import('@/app/(frontend)/(sitemaps)/posts-sitemap.xml/route')
+    const sitemap = await readSitemap(await GET(new Request('https://findmydoc.eu/posts-sitemap.xml')))
+
+    expect(getEntryLocations(sitemap.entries)).toEqual([
+      'https://findmydoc.eu/posts/former',
       'https://findmydoc.eu/en/posts/english-post',
     ])
   })

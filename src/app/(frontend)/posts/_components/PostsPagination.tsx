@@ -1,21 +1,91 @@
-'use client'
-
-import { Pagination, type PaginationProps } from '@/components/molecules/Pagination'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { Button, buttonVariants } from '@/components/atoms/button'
+import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem } from '@/components/atoms/pagination'
+import { UiLink } from '@/components/molecules/Link'
 import { buildPostsPagePath } from '@/utilities/content/postPaths'
 import type { ContentLocaleContext } from '@/utilities/contentLocalization'
-import { useRouter } from 'next/navigation'
-import React from 'react'
 
-type Props = Omit<PaginationProps, 'getPathForPage' | 'onNavigate'> & { contentLocale: ContentLocaleContext }
+type Props = {
+  contentLocale: ContentLocaleContext
+  page: number
+  totalPages: number
+}
 
-export const PostsPagination: React.FC<Props> = ({ contentLocale, ...props }) => {
-  const router = useRouter()
+function PageStep({ href, direction }: { href?: string; direction: 'previous' | 'next' }) {
+  const previous = direction === 'previous'
+  const label = previous ? 'Go to previous page' : 'Go to next page'
+  const Icon = previous ? ChevronLeft : ChevronRight
+  const text = previous ? 'Previous' : 'Next'
+  const className = previous ? 'gap-2 pl-2' : 'flex-row-reverse gap-2 pr-2'
+
+  if (!href) {
+    return (
+      <Button aria-label={label} className={className} disabled type="button" variant="ghost">
+        <Icon aria-hidden="true" className="h-4 w-4" />
+        <span className="hidden sm:inline">{text}</span>
+      </Button>
+    )
+  }
 
   return (
-    <Pagination
-      {...props}
-      getPathForPage={(page) => buildPostsPagePath(page, contentLocale)}
-      onNavigate={router.push}
-    />
+    <UiLink href={href} appearance="ghost" className={className}>
+      <Icon aria-hidden="true" className="h-4 w-4" />
+      <span>
+        <span className="sr-only">{label}</span>
+        <span aria-hidden="true" className="hidden sm:inline">
+          {text}
+        </span>
+      </span>
+    </UiLink>
+  )
+}
+
+export function PostsPagination({ contentLocale, page, totalPages }: Props) {
+  const previous = page > 1 ? buildPostsPagePath(page - 1, contentLocale) : undefined
+  const next = page < totalPages ? buildPostsPagePath(page + 1, contentLocale) : undefined
+
+  return (
+    <Pagination className="my-12">
+      <PaginationContent>
+        <PaginationItem>
+          <PageStep href={previous} direction="previous" />
+        </PaginationItem>
+        {page > 2 && (
+          <PaginationItem>
+            <PaginationEllipsis />
+          </PaginationItem>
+        )}
+        {previous && (
+          <PaginationItem>
+            <UiLink href={previous} appearance="ghost" size="icon">
+              {page - 1}
+            </UiLink>
+          </PaginationItem>
+        )}
+        <PaginationItem>
+          <span
+            aria-current="page"
+            className={buttonVariants({ variant: 'outline', size: 'icon', className: 'cursor-default' })}
+          >
+            {page}
+          </span>
+        </PaginationItem>
+        {next && (
+          <PaginationItem>
+            <UiLink href={next} appearance="ghost" size="icon">
+              {page + 1}
+            </UiLink>
+          </PaginationItem>
+        )}
+        {page + 1 < totalPages && (
+          <PaginationItem>
+            <PaginationEllipsis />
+          </PaginationItem>
+        )}
+        <PaginationItem>
+          <PageStep href={next} direction="next" />
+        </PaginationItem>
+      </PaginationContent>
+    </Pagination>
   )
 }

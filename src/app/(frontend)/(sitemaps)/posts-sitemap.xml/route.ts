@@ -6,7 +6,7 @@ import { findPostSitemapDocs } from '@/utilities/content/serverData'
 import { SEARCH_ROBOTS_HEADER, SEARCH_ROBOTS_HEADER_VALUE } from '@/features/searchIndexing'
 import { resolveSitemapIndexingAccessForRequest } from '@/features/searchIndexing/sitemapGuards'
 import { buildPostPath, buildSitemapTag } from '@/utilities/cachePolicy'
-import { buildEnglishPostCanonicalPath } from '@/utilities/content/postPaths'
+import { buildEnglishPostCanonicalPath, resolveLegacyEnglishPostSlug } from '@/utilities/content/postPaths'
 
 const buildSitemapLocation = (siteUrl: string, path: string): string => {
   const baseUrl = siteUrl.replace(/\/+$/, '')
@@ -50,7 +50,7 @@ const getPostsSitemap = unstable_cache(
           publishedGermanIds.add(post.id)
           germanPaths.add(path)
         } else {
-          const legacySlug = normalizePostSitemapSlug(post.legacyEnglishSlug)
+          const legacySlug = resolveLegacyEnglishPostSlug(post.legacyEnglishSlug)
           if (legacySlug && !publishedGermanIds.has(post.id) && !germanPaths.has(buildPostPath(legacySlug))) {
             path = buildEnglishPostCanonicalPath(slug, legacySlug)
           }
@@ -62,7 +62,7 @@ const getPostsSitemap = unstable_cache(
       }),
     )
   },
-  ['posts-sitemap', 'localized-repaired-status'],
+  ['posts-sitemap', 'reachable-legacy-canonical'],
   {
     tags: [buildSitemapTag('posts')],
   },

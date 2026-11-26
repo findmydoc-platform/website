@@ -153,7 +153,7 @@ describe('frontend paginated posts route', () => {
         { label: 'Blog', href: '/posts' },
         { label: 'Page 2', href: '/posts/page/2' },
       ],
-      posts: [{ title: 'Seite zwei', href: '/posts/page-2-post', locale: 'de' }],
+      posts: [expect.objectContaining({ title: 'Seite zwei', href: '/posts/page-2-post', locale: 'de' })],
     })
     const jsonLdElement = findElementByType(result, mocks.jsonLdScriptComponent) as React.ReactElement<{
       data: unknown

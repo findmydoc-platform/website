@@ -12,8 +12,14 @@ export type PatientVerificationState = 'idle' | 'pending' | 'invalid' | 'retry' 
 export function PatientVerificationForm({
   copy,
   csrf,
+  invalidTitle,
   inquiryContinuationPending = false,
-}: Readonly<{ copy: PatientVerificationCopy; csrf: string | null; inquiryContinuationPending?: boolean }>) {
+}: Readonly<{
+  copy: PatientVerificationCopy
+  csrf: string | null
+  invalidTitle?: string
+  inquiryContinuationPending?: boolean
+}>) {
   const [state, setState] = useState<PatientVerificationState>(
     csrf ? (inquiryContinuationPending ? 'inquiry-continuation' : 'idle') : 'invalid',
   )
@@ -39,21 +45,29 @@ export function PatientVerificationForm({
       setState('retry')
     }
   }
-  return <PatientVerificationView copy={copy} state={state} onConfirm={confirm} />
+  return <PatientVerificationView copy={copy} state={state} onConfirm={confirm} invalidTitle={invalidTitle} />
 }
 
 export function PatientVerificationView({
   copy,
   state,
   onConfirm,
-}: Readonly<{ copy: PatientVerificationCopy; state: PatientVerificationState; onConfirm: () => void }>) {
+  invalidTitle,
+}: Readonly<{
+  copy: PatientVerificationCopy
+  state: PatientVerificationState
+  onConfirm: () => void
+  invalidTitle?: string
+}>) {
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
         <Heading as="h1" size="h4" align="center">
-          {copy.title}
+          {state === 'invalid' ? (invalidTitle ?? copy.title) : copy.title}
         </Heading>
-        <CardDescription className="text-center text-foreground">{copy.description}</CardDescription>
+        {state !== 'invalid' && (
+          <CardDescription className="text-center text-foreground">{copy.description}</CardDescription>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
         {state === 'pending' ? (
@@ -82,7 +96,11 @@ export function PatientVerificationView({
           </Alert>
         ) : null}
         {state !== 'invalid' && state !== 'completed' ? (
-          <Button className="w-full" disabled={state === 'pending'} onClick={onConfirm}>
+          <Button
+            className="h-auto min-h-11 w-full whitespace-normal"
+            disabled={state === 'pending'}
+            onClick={onConfirm}
+          >
             {state === 'pending'
               ? copy.confirming
               : state === 'retry'
@@ -92,7 +110,16 @@ export function PatientVerificationView({
                   : copy.confirm}
           </Button>
         ) : null}
-        <UiLink href={copy.resendHref} className="flex min-h-11 items-center text-primary underline underline-offset-4">
+        <UiLink
+          href={copy.resendHref}
+          appearance={state === 'invalid' ? 'default' : 'inline'}
+          prefetch={false}
+          className={
+            state === 'invalid'
+              ? 'h-auto min-h-11 w-full text-center whitespace-normal no-underline hover:bg-primary-hover'
+              : 'flex min-h-11 items-center text-primary underline underline-offset-4'
+          }
+        >
           {copy.resendLink}
         </UiLink>
       </CardContent>

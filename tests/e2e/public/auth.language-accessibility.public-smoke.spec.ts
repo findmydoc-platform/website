@@ -36,6 +36,12 @@ test('German patient sign-in gives English site controls and dialogs their own l
 
   const cookieSettings = page.getByRole('button', { name: 'Cookie settings' })
   await expectLanguage(cookieSettings, 'en')
+  const form = page.getByRole('main').getByRole('heading', { level: 1 }).locator('xpath=ancestor::section')
+  await cookieSettings.scrollIntoViewIfNeeded()
+  const [formBox, settingsBox] = await Promise.all([form.boundingBox(), cookieSettings.boundingBox()])
+  expect(formBox).not.toBeNull()
+  expect(settingsBox).not.toBeNull()
+  expect(settingsBox!.y - (formBox!.y + formBox!.height)).toBeGreaterThanOrEqual(27)
   await cookieSettings.click()
   await expectLanguage(page.getByRole('dialog'), 'en')
   await page.screenshot({ path: test.info().outputPath('patient-login-cookie-settings-375.png'), fullPage: true })
@@ -43,6 +49,11 @@ test('German patient sign-in gives English site controls and dialogs their own l
   await expect(page.getByRole('dialog')).toHaveCount(0)
   await expect(cookieSettings).toBeFocused()
   await expectLanguage(heading, 'de')
+  await footer.getByRole('link', { name: 'Privacy Policy' }).click()
+  await expect(page).toHaveURL(/\/privacy-policy$/)
+  await expect(cookieSettings).toHaveCount(1)
+  await cookieSettings.click()
+  await expect(page.getByRole('dialog')).toBeVisible()
 })
 
 test('the English consent prompt is marked on German patient registration @smoke', async ({ page }) => {
@@ -52,5 +63,7 @@ test('the English consent prompt is marked on German patient registration @smoke
   await expectLanguage(prompt, 'en')
   await prompt.getByRole('button', { name: 'Reject all' }).click()
   await expect(prompt).toHaveCount(0)
-  await expectLanguage(page.getByRole('main').getByRole('heading', { level: 1 }), 'de')
+  const heading = page.getByRole('main').getByRole('heading', { level: 1 })
+  await expectLanguage(heading, 'de')
+  await expect(heading).toBeFocused()
 })

@@ -20,6 +20,7 @@ type LanguageSwitchRouteProps = {
   targets: LanguageSwitchTargets
   requiresConfirmation?: () => boolean
   onNavigate?: (href: string) => void
+  onMenuOpenChange?: (open: boolean) => void
 }
 
 type RouteRegistration = LanguageSwitchRouteProps & { pathname: string }
@@ -45,7 +46,7 @@ export function useActiveLanguageSwitchRoute() {
 }
 
 export function useLanguageSwitchRoute(config?: LanguageSwitchRouteProps) {
-  const { locale, targets, requiresConfirmation, onNavigate } = config ?? {}
+  const { locale, targets, requiresConfirmation, onNavigate, onMenuOpenChange } = config ?? {}
   const { de, en } = targets ?? {}
   const pathname = usePathname()
   const registerRoute = useContext(RegisterRoute)
@@ -53,8 +54,20 @@ export function useLanguageSwitchRoute(config?: LanguageSwitchRouteProps) {
   useLayoutEffect(() => {
     if (!pathname || !locale || !registerRoute) return
 
-    const registration: RouteRegistration = { pathname, locale, targets: { de, en }, requiresConfirmation, onNavigate }
+    const registration: RouteRegistration = {
+      pathname,
+      locale,
+      targets: { de, en },
+      requiresConfirmation,
+      onNavigate,
+      onMenuOpenChange,
+    }
     registerRoute(registration)
     return () => registerRoute((current) => (current === registration ? null : current))
-  }, [de, en, locale, onNavigate, pathname, registerRoute, requiresConfirmation])
+  }, [de, en, locale, onNavigate, onMenuOpenChange, pathname, registerRoute, requiresConfirmation])
+}
+
+export function LanguageSwitchRoute({ locale, targets }: Pick<LanguageSwitchRouteProps, 'locale' | 'targets'>) {
+  useLanguageSwitchRoute({ locale, targets })
+  return null
 }

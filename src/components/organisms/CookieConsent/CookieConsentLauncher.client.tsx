@@ -8,13 +8,26 @@ import { Button } from '@/components/atoms/button'
 type CookieConsentLauncherProps = {
   buttonRef?: Ref<HTMLButtonElement>
   ready: boolean
+  inFlow?: boolean
   label: string
   onOpenSettings: () => void
 }
 
-export function CookieConsentLauncher({ buttonRef, ready, label, onOpenSettings }: CookieConsentLauncherProps) {
+export function CookieConsentLauncher({
+  buttonRef,
+  ready,
+  label,
+  onOpenSettings,
+  inFlow = false,
+}: CookieConsentLauncherProps) {
   return (
-    <div className="fixed right-3 [bottom:calc(env(safe-area-inset-bottom)+0.875rem)] z-40 sm:right-6 sm:[bottom:calc(env(safe-area-inset-bottom)+1.5rem)]">
+    <div
+      className={
+        inFlow
+          ? undefined
+          : 'fixed right-3 [bottom:calc(env(safe-area-inset-bottom)+0.875rem)] z-40 sm:right-6 sm:[bottom:calc(env(safe-area-inset-bottom)+1.5rem)]'
+      }
+    >
       <Button
         ref={buttonRef}
         type="button"

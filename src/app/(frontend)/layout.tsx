@@ -14,6 +14,7 @@ import { cookies, draftMode, headers } from 'next/headers'
 
 import './globals.css'
 import { COOKIE_CONSENT_COOKIE_NAME, resolveCookieConsentContext } from '@/features/cookieConsent'
+import { CookieConsentLauncherSlotProvider } from '@/features/cookieConsent/CookieConsentLauncherSlot.client'
 import { CookieConsentClientAdapter } from '@/features/cookieConsent/CookieConsentClientAdapter.client'
 import {
   SEARCH_ROBOTS_HEADER_VALUE,
@@ -67,20 +68,22 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className="min-h-screen bg-site-canvas text-foreground antialiased">
         <SupabaseAuthHashUrlScrubber />
         {!blockSearchIndexing ? <JsonLdScript data={buildSiteBaseJsonLd({ description: holdingDescription })} /> : null}
-        <div className="flex min-h-screen min-h-svh flex-col">
-          <AdminBarClientAdapter preview={isEnabled} />
-          <LanguageSwitchRouteProvider>
-            <PatientAuthFormHandoffProvider>
-              <TreatmentSearchHandoffProvider>
-                <DocumentLanguage initialCmsLocale={cmsLocale}>{children}</DocumentLanguage>
-              </TreatmentSearchHandoffProvider>
-            </PatientAuthFormHandoffProvider>
-          </LanguageSwitchRouteProvider>
-        </div>
-        <CookieConsentClientAdapter
-          config={cookieConsentContext.config}
-          initialConsent={cookieConsentContext.initialConsent}
-        />
+        <CookieConsentLauncherSlotProvider>
+          <div className="flex min-h-screen min-h-svh flex-col">
+            <AdminBarClientAdapter preview={isEnabled} />
+            <LanguageSwitchRouteProvider>
+              <PatientAuthFormHandoffProvider>
+                <TreatmentSearchHandoffProvider>
+                  <DocumentLanguage initialCmsLocale={cmsLocale}>{children}</DocumentLanguage>
+                </TreatmentSearchHandoffProvider>
+              </PatientAuthFormHandoffProvider>
+            </LanguageSwitchRouteProvider>
+          </div>
+          <CookieConsentClientAdapter
+            config={cookieConsentContext.config}
+            initialConsent={cookieConsentContext.initialConsent}
+          />
+        </CookieConsentLauncherSlotProvider>
         {isPreviewRuntime(process.env) ? <VercelToolbar /> : null}
       </body>
     </html>

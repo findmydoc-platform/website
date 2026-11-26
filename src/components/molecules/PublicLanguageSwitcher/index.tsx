@@ -18,6 +18,7 @@ type LanguageOption = {
   locale: string
   name: string
   unavailable: string
+  unavailableLocale?: string
   href?: string
 }
 
@@ -33,6 +34,7 @@ type PublicLanguageSwitcherProps = {
     close: string
   }
   requiresConfirmation?: () => boolean
+  onMenuOpenChange?: (open: boolean) => void
   onConfirm: (href: string) => void
   renderLink: (option: LanguageOption & { href: string }, shouldNavigate: () => boolean) => ReactNode
 }
@@ -43,6 +45,7 @@ export function PublicLanguageSwitcher({
   options,
   confirmation,
   requiresConfirmation,
+  onMenuOpenChange,
   onConfirm,
   renderLink,
 }: PublicLanguageSwitcherProps) {
@@ -52,9 +55,14 @@ export function PublicLanguageSwitcher({
   const optionsPanel = useRef<HTMLDivElement>(null)
   const stay = useRef<HTMLButtonElement>(null)
 
+  function changeMenuOpen(next: boolean) {
+    setOpen(next)
+    onMenuOpenChange?.(next)
+  }
+
   return (
     <>
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover open={open} onOpenChange={changeMenuOpen}>
         <PopoverTrigger asChild>
           <Button
             ref={trigger}
@@ -98,16 +106,18 @@ export function PublicLanguageSwitcher({
                   </span>
                 ) : option.href ? (
                   renderLink({ ...option, href: option.href }, () => {
-                    setOpen(false)
+                    changeMenuOpen(false)
                     if (!requiresConfirmation?.()) return true
 
                     setPendingHref(option.href ?? null)
                     return false
                   })
                 ) : (
-                  <div className="px-3 py-2 text-sm">
+                  <div aria-disabled="true" className="px-3 py-2 text-sm">
                     <p className="font-medium">{option.name}</p>
-                    <p className="mt-1 text-xs leading-5">{option.unavailable}</p>
+                    <p className="mt-1 text-xs leading-5" lang={option.unavailableLocale}>
+                      {option.unavailable}
+                    </p>
                   </div>
                 )}
               </li>
@@ -118,6 +128,7 @@ export function PublicLanguageSwitcher({
       <Dialog open={pendingHref !== null} onOpenChange={(nextOpen) => !nextOpen && setPendingHref(null)}>
         <DialogContent
           lang={locale}
+          aria-modal={true}
           closeLabel={confirmation.close}
           className="max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-sm overflow-y-auto rounded-lg"
           onOpenAutoFocus={(event) => {

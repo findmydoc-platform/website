@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef } from 'react'
+import { createPortal } from 'react-dom'
 
 import type { CookieConsentConfig, CookieConsentState } from '@/features/cookieConsent'
 import { CookieConsentBanner } from './CookieConsentBanner.client'
@@ -12,6 +13,8 @@ export type CookieConsentManagerProps = {
   config: CookieConsentConfig | null
   initialConsent: CookieConsentState | null
   deferInitialPrompt?: boolean
+  launcherContainer?: HTMLElement | null
+  onInitialPromptClose?: () => boolean
   onAnalyticsConsentChange: (enabled: boolean) => void
   onPersistConsent: (consent: CookieConsentState) => void
   readConsent: (expectedVersion: number) => CookieConsentState | null
@@ -21,12 +24,18 @@ export function CookieConsentManager({
   config,
   initialConsent,
   deferInitialPrompt = false,
+  launcherContainer,
+  onInitialPromptClose,
   onAnalyticsConsentChange,
   onPersistConsent,
   readConsent,
 }: CookieConsentManagerProps) {
   const launcherRef = useRef<HTMLButtonElement>(null)
+  const openedFromLauncher = useRef(false)
   const restoreLauncherFocus = () => launcherRef.current?.focus()
+  const restoreInitialFocus = () => {
+    if (!onInitialPromptClose?.()) restoreLauncherFocus()
+  }
   const controller = useCookieConsentController({
     config,
     initialConsent,
@@ -39,31 +48,43 @@ export function CookieConsentManager({
     return null
   }
 
+  const launcher =
+    controller.isLauncherVisible || deferInitialPrompt ? (
+      <CookieConsentLauncher
+        buttonRef={launcherRef}
+        ready={controller.isReady}
+        label={config.reopenLabel}
+        onOpenSettings={() => {
+          openedFromLauncher.current = true
+          controller.openSettings()
+        }}
+        inFlow={Boolean(launcherContainer)}
+      />
+    ) : null
+
   return (
     <>
       {controller.isBannerVisible && !deferInitialPrompt ? (
         <CookieConsentBanner
           ready={controller.isReady}
-          onClose={restoreLauncherFocus}
+          onClose={restoreInitialFocus}
           config={config}
           onAcceptAll={() => controller.persistConsent('accepted', controller.acceptAllCategories)}
-          onCustomize={controller.openSettings}
+          onCustomize={() => {
+            openedFromLauncher.current = false
+            controller.openSettings()
+          }}
           onRejectAll={() => controller.persistConsent('rejected', controller.rejectAllCategories)}
         />
       ) : null}
 
-      {controller.isLauncherVisible || deferInitialPrompt ? (
-        <CookieConsentLauncher
-          buttonRef={launcherRef}
-          ready={controller.isReady}
-          label={config.reopenLabel}
-          onOpenSettings={controller.openSettings}
-        />
-      ) : null}
-
+      {launcher && (launcherContainer ? createPortal(launcher, launcherContainer) : launcher)}
       <CookieConsentDialog
         open={controller.settingsOpen}
-        onClose={restoreLauncherFocus}
+        onClose={() => {
+          if (openedFromLauncher.current) restoreLauncherFocus()
+          else restoreInitialFocus()
+        }}
         config={config}
         categoryDrafts={controller.categoryDrafts}
         onOpenChange={(open) => {

@@ -108,7 +108,12 @@ export function PatientVerificationResendForm({
             />
             <FieldError id={validation.getFieldErrorId('email')}>{validation.getFieldError('email')}</FieldError>
           </Field>
-          <Button type="submit" className="w-full" disabled={state === 'pending'}>
+          <Button
+            type="submit"
+            variant="outline"
+            className="h-auto min-h-11 w-full border-primary whitespace-normal text-primary hover:bg-muted hover:text-primary-hover"
+            disabled={state === 'pending'}
+          >
             {state === 'pending' ? copy.requesting : copy.submit}
           </Button>
         </form>

@@ -1,6 +1,7 @@
 import { getFormatter, getLocale, getTranslations } from 'next-intl/server'
 
 import type { UiCopyLocale } from '@/i18n/requestLocale'
+import { authCopySentences } from './patientAuthPresentation'
 
 export async function patientLoginCopy(inquiryExpiresAt?: string) {
   const [translate, locale, formatter] = await Promise.all([
@@ -10,6 +11,13 @@ export async function patientLoginCopy(inquiryExpiresAt?: string) {
   ])
   const required = translate('validation.required')
   const routeLocale: UiCopyLocale = locale === 'de' ? 'de' : 'en'
+
+  const checkEmail = translate('status.checkEmail')
+  const [intro, ...details] = authCopySentences(checkEmail, routeLocale)
+  const registrationConfirmation = {
+    title: details.length ? (intro ?? translate('title')) : translate('title'),
+    message: details.join(' ') || checkEmail,
+  }
 
   return {
     locale: routeLocale,
@@ -25,7 +33,7 @@ export async function patientLoginCopy(inquiryExpiresAt?: string) {
     register: translate('register'),
     backHome: translate('backHome'),
     requestVerificationEmail: translate('requestVerificationEmail'),
-    checkEmail: translate('status.checkEmail'),
+    registrationConfirmation,
     passwordResetComplete: translate('status.passwordResetComplete'),
     inquirySaved:
       inquiryExpiresAt && formatter

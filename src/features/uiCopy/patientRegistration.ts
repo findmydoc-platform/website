@@ -84,6 +84,7 @@ export async function patientRegistrationCopy(preparationExpiresAt?: string): Pr
         autoComplete: 'new-password',
         required: true,
         minLength: minimumPasswordLength,
+        hint: passwordValidation.tooShort,
       },
       {
         name: 'confirmPassword',

@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { ResetPasswordRequestForm, type ResetPasswordReason } from './ResetPasswordRequestForm'
 import { recoveryRequestMetadata } from './recoveryRequestMetadata'
 import { headers } from 'next/headers'
+import { PublicAuthRouteShell } from '@/app/(frontend)/_components/PublicAuthRouteShell'
 import { createLocalReq, getPayload } from 'payload'
 import config from '@payload-config'
 import { readPreparationBinding } from '@/features/inquiryPreparations/context'
@@ -15,7 +16,7 @@ export function generateMetadata() {
 }
 
 const signInOptionLinkClassName =
-  'inline-flex min-h-11 items-center rounded-md px-3 text-sm font-medium text-primary transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+  'inline-flex min-h-11 items-center rounded-sm text-sm text-primary underline underline-offset-4 hover:text-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
 
 type ResetPasswordPageProps = {
   searchParams?: Promise<{
@@ -56,10 +57,13 @@ export default async function ResetPasswordPage({ searchParams }: ResetPasswordP
   const suffix = languageSwitchParams.size ? `?${languageSwitchParams}` : ''
 
   return (
-    <main className="min-h-svh bg-site-canvas py-6 sm:py-12">
-      <div className="mx-auto max-w-4xl px-4">
-        <div className="mb-2 sm:mb-6">
-          <nav aria-label={copy.signInOptions} className="-mx-3 flex flex-wrap gap-1">
+    <PublicAuthRouteShell>
+      <ResetPasswordRequestForm
+        signInOptions={
+          <nav
+            aria-label={copy.signInOptions}
+            className="mt-4 flex flex-wrap gap-x-4 border-t border-site-divider pt-1"
+          >
             <Link href={patientSignInHref} className={signInOptionLinkClassName}>
               {copy.patientSignIn}
             </Link>
@@ -67,21 +71,19 @@ export default async function ResetPasswordPage({ searchParams }: ResetPasswordP
               {copy.staffSignIn}
             </Link>
           </nav>
-        </div>
-        <ResetPasswordRequestForm
-          copy={copy.form}
-          reason={reason}
-          initialEmail={preparation?.email}
-          preparationNotice={copy.preparationNotice}
-          languageSwitch={{
-            locale: uiCopyLocaleFromHeaders(requestHeaders),
-            targets: {
-              de: localizedPatientAuthPath('/auth/password/reset', 'de') + suffix,
-              en: localizedPatientAuthPath('/auth/password/reset', 'en') + suffix,
-            },
-          }}
-        />
-      </div>
-    </main>
+        }
+        copy={copy.form}
+        reason={reason}
+        initialEmail={preparation?.email}
+        preparationNotice={copy.preparationNotice}
+        languageSwitch={{
+          locale: uiCopyLocaleFromHeaders(requestHeaders),
+          targets: {
+            de: localizedPatientAuthPath('/auth/password/reset', 'de') + suffix,
+            en: localizedPatientAuthPath('/auth/password/reset', 'en') + suffix,
+          },
+        }}
+      />
+    </PublicAuthRouteShell>
   )
 }

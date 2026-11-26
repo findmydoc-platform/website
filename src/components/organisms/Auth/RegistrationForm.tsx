@@ -25,6 +25,7 @@ interface FormField {
   placeholder?: string
   required?: boolean
   minLength?: number
+  hint?: string
   gridCol?: '1' | '2'
 }
 
@@ -118,10 +119,17 @@ export function RegistrationForm({
   const renderField = (field: FormField) => {
     const fieldError = formValidation.getFieldError(field.name)
     const fieldErrorId = formValidation.getFieldErrorId(field.name)
+    const hintId = field.hint ? `${headingId}-${field.name}-hint` : undefined
+    const fieldProps = formValidation.getFieldProps(field.name)
 
     return (
       <Field key={field.name} data-invalid={fieldError ? true : undefined}>
         <Label htmlFor={field.name}>{field.label}</Label>
+        {field.hint && (
+          <p id={hintId} className="text-xs text-foreground">
+            {field.hint}
+          </p>
+        )}
         <Input
           id={field.name}
           name={field.name}
@@ -138,7 +146,8 @@ export function RegistrationForm({
               formValidation.clearFieldError('confirmPassword')
             }
           }}
-          {...formValidation.getFieldProps(field.name)}
+          {...fieldProps}
+          aria-describedby={[hintId, fieldProps['aria-describedby']].filter(Boolean).join(' ') || undefined}
         />
         <FieldError id={fieldErrorId}>{fieldError}</FieldError>
       </Field>

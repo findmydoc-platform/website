@@ -69,7 +69,8 @@ test('an invalid patient verification link leads to the German resend form @smok
   await expect(page.locator('html')).toHaveAttribute('lang', 'de')
   const main = page.getByRole('main')
   await expect(main.getByRole('alert').filter({ hasText: /\S/ })).toBeVisible()
-  await expect(main.getByRole('button')).toHaveCount(0)
+  await expect(main.getByRole('button', { name: 'E-Mail-Adresse bestätigen' })).toHaveCount(0)
+  await expect(page.getByRole('banner').getByRole('button', { name: 'Sprache, DE' })).toBeVisible()
 
   const resendPath = '/register/patient#patient-verification-resend'
   await main.locator(`a[href="${resendPath}"]`).click()

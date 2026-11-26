@@ -187,7 +187,7 @@ describe('dead-code push hook', () => {
   it.each(['docs/latest.md', 'src/feature.ts'])('runs Knip on every push, including %s', (file) => {
     commit(file, 'changed\n')
     expect(runHook('pre-push').status).toBe(0)
-    expect(calls()).toEqual([['deadcode:report:production'], ['deadcode:check'], ['ai:slop-check:prepush']])
+    expect(calls()).toEqual([['deadcode:report:production'], ['deadcode:check']])
   })
 
   it.each([1, 2])('blocks the push when Knip exits with status %s', (status) => {

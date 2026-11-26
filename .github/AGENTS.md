@@ -45,5 +45,4 @@ when comparing a new optimization with the alternatives considered before rollou
 ## Validation
 
 - Workflow, GitHub script, or CI-critical changes still require the root validation policy: run `pnpm check`.
-- Instruction changes to this file require `pnpm ai:slop-check`.
 - If a workflow change alters permissions, secrets, token scope, third-party actions, or shell execution, recommend the security reviewer before handoff.

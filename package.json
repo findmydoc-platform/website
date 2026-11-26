@@ -58,8 +58,6 @@
     "stories:governance:check": "node scripts/storybook/validate-story-governance.mjs",
     "check:payload-types": "bash .github/scripts/ci/check-payload-types.sh",
     "coverage:merge": "node scripts/coverage/merge-coverage.mjs",
-    "ai:slop-check": "node scripts/ai-slop-policy-check.mjs",
-    "ai:slop-check:prepush": "node scripts/ai-slop-pre-push-check.mjs",
     "hooks:install": "node scripts/setup-hooks.mjs",
     "cleanup": "node scripts/cleanup.mjs",
     "deadcode:check": "cross-env NODE_OPTIONS=\"--no-deprecation -r tsconfig-paths/register\" knip --include files,exports",

@@ -3,4 +3,3 @@ set -euo pipefail
 
 pnpm deadcode:report:production
 pnpm deadcode:check
-pnpm ai:slop-check:prepush

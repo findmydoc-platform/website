@@ -44,7 +44,7 @@ After a plugin update, verify that each configured skill name still resolves. Do
 - `storybook_reviewer`
   - Read-only reviewer for Storybook preview setup, story isolation, MSW usage, play functions, and story governance.
 - `agent_instruction_reviewer`
-  - Read-only reviewer for `AGENTS.md`, `.codex/agents`, `.codex/rules`, local `.codex/skills`, and AI instruction governance docs.
+  - Read-only reviewer for changes to approval rules, instruction precedence, or skill scope.
 
 All specialist agents are intentionally read-only. They gather evidence and findings; they do not edit code.
 
@@ -61,7 +61,7 @@ Have security_reviewer review src/app/api and src/hooks for privilege-boundary o
 ```
 
 ```text
-Have agent_instruction_reviewer audit AGENTS.md, .codex/agents, .codex/rules, and local .codex/skills for instruction conflicts, stale research claims, and trigger quality.
+Have agent_instruction_reviewer review the changed approval rules in .codex/rules and check the documented direct and wrapped command forms.
 ```
 
 Use a direct orchestration prompt when you want multiple specialists:

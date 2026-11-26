@@ -7,7 +7,7 @@
 | Author  | Sebastian Schütze |
 | Version | 1.3 |
 | Date    | 18.08.2026 |
-| Status  | accepted |
+| Status  | superseded |
 
 ## Background
 
@@ -77,3 +77,7 @@ It also aligns with research findings that shorter, clearer, non-conflicting ins
 - MOSAIC (arXiv:2601.18554)
 - RIFT (arXiv:2601.18924)
 - Prompt Underspecification Revisited (arXiv:2602.04297)
+
+## Superseded by
+
+[ADR 042](./042-adr-review-changes-to-agent-instructions.md)

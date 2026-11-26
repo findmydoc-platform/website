@@ -40,7 +40,8 @@ Use these public methods only for the stated concern. Repository-specific rules 
 - For changed behavior or tests, module boundaries or dependency direction, and frontend UI, recommend `test_reviewer`, `architecture_reviewer`, and `mobile_ui_reviewer` respectively. Change review is the default; a repository audit requires an explicit request and reviews one method at a time.
 - Run those reviewers only after explicit user confirmation, and after a reviewer run, present all findings before making fixes so the user can confirm the fixing step.
 - Treat findings with severity `6/10` or higher as fix-before-handoff; treat `5/10` as a documented user decision gate; document skipped or declined reviewers with concrete reasons.
-- When instruction surfaces change, include `agent_instruction_reviewer` after `pnpm ai:slop-check` and before PR/final handoff; for cache/revalidation, collection/global, public route or loader, hook, sitemap/discovery, or seed-flow diffs, also recommend `cache_architecture_reviewer`; skip each for unrelated changes.
+- Recommend `agent_instruction_reviewer` only for changes to approval rules, instruction precedence, or skill scope.
+- For cache/revalidation, collection/global, public route or loader, hook, sitemap/discovery, or seed-flow diffs, also recommend `cache_architecture_reviewer`.
 
 ### Review Severity Scale
 
@@ -71,8 +72,6 @@ For review outputs:
 - If required `check` or `build` fails, fix the cause and rerun the failed check.
 - `pnpm build` requires `PAYLOAD_SECRET` and network access to the Postgres Docker DB.
 - Keep `detect-secrets` and `.secrets.baseline` in sync with the branch before push; include baseline drift in the same change set so CI `Detect secrets` does not fail.
-- AI-slop enforcement mode is `pre-commit + pre-push + deep-quality-lane`; AI-slop itself remains intentionally non-blocking in the main PR CI workflow.
-- When changing instruction sources (`AGENTS.md`, `**/AGENTS.md`, `**/AGENTS.override.md`, `docs/frontend/mobile-ai-playbook.md`, `docs/engineering/*ai*playbook.md`, `docs/engineering/*instruction*playbook.md`, `.codex/agents/**`, `.codex/rules/**`, `.codex/skills/**`), run `pnpm ai:slop-check` locally.
 - For UI changes, always save Playwright screenshots in an ignored Playwright artifacts folder, review the change via those screenshots and runtime logs, and fix it immediately if the result is not correct or not good enough.
 - For frontend UI work, follow the closest frontend `AGENTS.md` and `docs/frontend/mobile-ai-playbook.md` for mobile-first viewport coverage, interaction and runtime evidence, browser-engine limits, and the final QA note.
 - When local Playwright verification needs authenticated admin access, prefer the shared session file `output/playwright/sessions/admin.local.json`; refresh it with `pnpm playwright:session:record -- --persona admin` and validate it with `pnpm playwright:session:check -- --persona admin` using an existing local or test platform admin account.

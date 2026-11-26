@@ -56,17 +56,14 @@ With pnpm 10.28.2, duplicate bins from the two packages select the higher `types
 
 ## Quality Gates
 
-AI anti-slop and quality hygiene are enforced through local and CI lanes:
-
-- Local lane: staged-file `pre-commit` checks plus a `pre-push` dead-code check and scoped AI-slop check.
+- Local lane: staged-file `pre-commit` checks plus `pre-push` dead-code checks.
 - Fast lane (PR blocking): merge-critical validation, tests, and build readiness.
 - Security lane: workflow and secret scanning for CI/security-relevant changes plus scheduled runs.
 - Semgrep lane: blocking SAST scans for application changes in pull requests and on `main`.
-- Deep lane (main + nightly): anti-slop and repository hygiene checks such as dead-code and dependency health.
+- Deep lane (nightly and manual): Semgrep, dead-code, and dependency checks.
 
 Key quality commands:
 
-- `pnpm ai:slop-check`
 - `pnpm deadcode:check`
 - `pnpm deps:graph:check`
 - `pnpm deps:dedupe:check`
@@ -81,8 +78,6 @@ Hook setup:
 - Knip analyzes the Payload config and admin importmap statically to avoid executing server and JSX modules during configuration loading.
 - `pnpm deadcode:report:production` is advisory. When it reports a finding, check for operator scripts, tests, and
   stories that still use the symbol before deciding to remove it.
-
-Reference: [AI Anti-Slop Playbook](docs/engineering/ai-anti-slop-playbook.md)
 
 See [CI results and full integration](docs/testing/strategy.md#ci-results-and-full-integration) for build and Preview
 routing, required checks, integration selection, and coverage reporting. Use the

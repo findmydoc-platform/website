@@ -4,7 +4,7 @@ This playbook is the repository-local source snapshot for reviewing Codex instru
 
 ## Scope
 
-Review these instruction surfaces together:
+Use this review for changes to approval rules, instruction precedence, or skill scope. Follow the affected instructions across the relevant files:
 
 - `AGENTS.md` and nested `AGENTS.md` or `AGENTS.override.md`
 - `.codex/agents/*.toml`
@@ -45,21 +45,6 @@ Use these checks before recommending more prompt text:
 
 The reviewer reports every credible finding from `1/10` upward. Findings scored `6/10` or higher are fix-before-handoff. Findings scored exactly `5/10` are decision gates.
 
-## Deterministic Gate Coverage
-
-`pnpm ai:slop-check` is the blocking deterministic gate for instruction quality. It should scan:
-
-- layered `AGENTS.md` and `AGENTS.override.md`
-- `docs/frontend/mobile-ai-playbook.md`
-- `docs/engineering/*ai*playbook.md`
-- `docs/engineering/*instruction*playbook.md`
-- `.codex/agents/*.toml`
-- `.codex/rules/*.rules`
-- `.codex/skills/**/*.md`
-- `.codex/skills/**/agents/openai.yaml`
-
-Use the reviewer for semantic issues the checker cannot prove, such as stale research interpretation, unclear ownership, weak trigger boundaries, and tradeoffs around `5/10` findings.
-
 ## Source Snapshot
 
 Vendor guidance refreshed: 2026-08-28. The research-paper set below retains its 2026-06-02 snapshot unless a source is dated separately. Re-check the web when the user asks for latest/current guidance or when a source-sensitive claim would change implementation.
@@ -98,7 +83,6 @@ Instruction reviews should include:
 - Findings ordered by `1-10` severity
 - Decision Gates for exactly `5/10` findings
 - Knowledge Gaps
-- Deterministic Gate Coverage
 - Recommendation: `fix now`, `ask user`, or `accept residual risk`
 
 Each finding must cite a file, heading, command, or source snapshot item. Separate local facts from research-based recommendations.

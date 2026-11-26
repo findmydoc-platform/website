@@ -31,11 +31,6 @@ icon = "test"
 command = "pnpm format && pnpm check"
 
 [[actions]]
-name = "AI slop check"
-icon = "test"
-command = "pnpm ai:slop-check"
-
-[[actions]]
 name = "Admin session check"
 icon = "tool"
 command = "pnpm playwright:session:check -- --persona admin"

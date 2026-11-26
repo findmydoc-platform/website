@@ -4,10 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({
   breadcrumbComponent: vi.fn(() => null),
   buildPostsIndexJsonLdMock: vi.fn(() => [{ '@type': 'ItemList' }]),
-  countPublishedPostsMock: vi.fn(),
   createSiteMetadataMock: vi.fn((args: unknown) => args),
-  getCachedPublishedPostsPageMock: vi.fn(),
-  getPayloadMock: vi.fn(),
+  getCachedPostArchivePageMock: vi.fn(),
   jsonLdScriptComponent: vi.fn(() => null),
   normalizePostMock: vi.fn(),
   notFoundMock: vi.fn(),
@@ -15,26 +13,13 @@ const mocks = vi.hoisted(() => ({
   redirectMock: vi.fn(),
 }))
 
-vi.mock('@payload-config', () => ({
-  default: {},
-}))
-
-vi.mock('payload', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('payload')>()
-  return {
-    ...actual,
-    getPayload: mocks.getPayloadMock,
-  }
-})
-
 vi.mock('next/navigation', () => ({
   notFound: mocks.notFoundMock,
   redirect: mocks.redirectMock,
 }))
 
 vi.mock('@/utilities/content/serverData', () => ({
-  countPublishedPosts: mocks.countPublishedPostsMock,
-  getCachedPublishedPostsPage: mocks.getCachedPublishedPostsPageMock,
+  getCachedPostArchivePage: mocks.getCachedPostArchivePageMock,
 }))
 
 vi.mock('@/utilities/blog/normalizePost', () => ({
@@ -90,9 +75,14 @@ describe('frontend paginated posts route', () => {
     vi.resetModules()
     vi.clearAllMocks()
 
-    mocks.getPayloadMock.mockResolvedValue({})
-    mocks.getCachedPublishedPostsPageMock.mockResolvedValue({
-      docs: [{ id: 2, slug: 'page-2-post', title: 'Seite zwei' }],
+    mocks.getCachedPostArchivePageMock.mockResolvedValue({
+      docs: [
+        {
+          post: { id: 2, slug: 'page-2-post', title: 'Seite zwei' },
+          locale: 'de',
+          canonicalPath: '/posts/page-2-post',
+        },
+      ],
       totalDocs: 24,
       totalPages: 2,
       page: 2,
@@ -121,20 +111,16 @@ describe('frontend paginated posts route', () => {
     expect(mocks.redirectMock).toHaveBeenCalledWith('/posts?locale=de')
   })
 
-  it('keeps locale-aware queries and pagination paths on deeper paginated pages', async () => {
+  it('keeps the locale preference and uses canonical card paths on later pages', async () => {
     const pageModule = await import('@/app/(frontend)/posts/page/[pageNumber]/page')
     const result = await pageModule.default({
       params: Promise.resolve({ pageNumber: '2' }),
       searchParams: Promise.resolve({ locale: 'de' }),
     })
 
-    expect(mocks.getCachedPublishedPostsPageMock).toHaveBeenCalledWith(
+    expect(mocks.getCachedPostArchivePageMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        contentLocale: {
-          locale: 'de',
-          fallbackLocale: 'en',
-        },
-        limit: 12,
+        preferredLocale: 'de',
         page: 2,
       }),
     )
@@ -143,17 +129,13 @@ describe('frontend paginated posts route', () => {
       {
         contentLocale: {
           locale: 'de',
-          fallbackLocale: 'en',
+          fallbackLocale: false,
         },
       },
     )
 
-    const paginationElement = findElementByType(result, mocks.postsPaginationComponent) as React.ReactElement<{
-      getPathForPage: (page: number) => string
-    }> | null
-    expect(paginationElement).not.toBeNull()
-    expect(paginationElement?.props.getPathForPage(1)).toBe('/posts?locale=de')
-    expect(paginationElement?.props.getPathForPage(2)).toBe('/posts/page/2?locale=de')
+    const paginationElement = findElementByType(result, mocks.postsPaginationComponent)
+    expect(paginationElement?.props).toMatchObject({ contentLocale: { locale: 'de' }, totalPages: 2 })
 
     const expectedBreadcrumbs = [
       { label: 'Home', href: '/' },
@@ -166,8 +148,12 @@ describe('frontend paginated posts route', () => {
     expect(breadcrumbElement?.props.items).toEqual(expectedBreadcrumbs)
 
     expect(mocks.buildPostsIndexJsonLdMock).toHaveBeenCalledWith({
-      breadcrumbs: expectedBreadcrumbs,
-      posts: [{ title: 'Seite zwei', href: '/posts/page-2-post?locale=de' }],
+      breadcrumbs: [
+        { label: 'Home', href: '/' },
+        { label: 'Blog', href: '/posts' },
+        { label: 'Page 2', href: '/posts/page/2' },
+      ],
+      posts: [{ title: 'Seite zwei', href: '/posts/page-2-post', locale: 'de' }],
     })
     const jsonLdElement = findElementByType(result, mocks.jsonLdScriptComponent) as React.ReactElement<{
       data: unknown
@@ -175,7 +161,7 @@ describe('frontend paginated posts route', () => {
     expect(jsonLdElement?.props.data).toEqual([{ '@type': 'ItemList' }])
   })
 
-  it('uses the requested content locale in metadata paths', async () => {
+  it('keeps the canonical archive URL free of the locale query', async () => {
     const pageModule = await import('@/app/(frontend)/posts/page/[pageNumber]/page')
 
     await pageModule.generateMetadata({
@@ -185,7 +171,7 @@ describe('frontend paginated posts route', () => {
 
     expect(mocks.createSiteMetadataMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        path: '/posts/page/2?locale=de',
+        path: '/posts/page/2',
       }),
     )
   })

@@ -351,27 +351,100 @@ export async function findPublishedPostsPage(
   return result as unknown as PaginatedResult<PostSummaryDoc>
 }
 
-const getCachedPublishedPostsPageByArgs = (args: CachedPublishedPostsPageArgs = {}) =>
-  unstable_cache(
+type PostArchiveIndexDoc = Pick<Post, 'id' | 'slug' | 'legacyEnglishSlug' | 'publishedAt'>
+
+export type PostArchiveEntry = {
+  post: PostSummaryDoc
+  locale: ContentLocale
+  canonicalPath: string
+}
+
+type PostArchiveOptions = {
+  preferredLocale: ContentLocale
+  page?: number
+}
+
+const POSTS_PER_ARCHIVE_PAGE = 12
+
+export async function findPublicPostArchivePage(
+  payload: Payload,
+  { preferredLocale, page = 1 }: PostArchiveOptions,
+): Promise<PaginatedResult<PostArchiveEntry>> {
+  const readIndex = async (locale: ContentLocale) => {
+    const result = await queryPosts<PostArchiveIndexDoc>(payload, {
+      contentLocale: { locale },
+      depth: 0,
+      limit: 0,
+      pagination: false,
+      select: { slug: true, legacyEnglishSlug: true, publishedAt: true },
+    })
+
+    return result.docs.filter(({ slug }) => slug && isValidPublicPostSlug(slug))
+  }
+  const [german, english] = await Promise.all([readIndex('de'), readIndex('en')])
+  const germanIds = new Set(german.map(({ id }) => id))
+  const germanSlugs = new Set(german.map(({ slug }) => slug))
+  const entries = new Map<
+    number,
+    { id: number; locale: ContentLocale; canonicalPath: string; publishedAt?: string | null }
+  >()
+
+  for (const { id, slug, legacyEnglishSlug, publishedAt } of english) {
+    const legacySlug =
+      legacyEnglishSlug &&
+      isValidPublicPostSlug(legacyEnglishSlug) &&
+      !germanIds.has(id) &&
+      !germanSlugs.has(legacyEnglishSlug)
+        ? legacyEnglishSlug
+        : undefined
+    entries.set(id, { id, locale: 'en', canonicalPath: buildEnglishPostCanonicalPath(slug, legacySlug), publishedAt })
+  }
+
+  for (const { id, slug, publishedAt } of german) {
+    if (preferredLocale === 'de' || !entries.has(id)) {
+      entries.set(id, { id, locale: 'de', canonicalPath: buildPostPath(slug), publishedAt })
+    }
+  }
+
+  const start = (page - 1) * POSTS_PER_ARCHIVE_PAGE
+  const pageEntries = [...entries.values()]
+    .sort((a, b) => (b.publishedAt ?? '').localeCompare(a.publishedAt ?? '') || b.id - a.id)
+    .slice(start, start + POSTS_PER_ARCHIVE_PAGE)
+
+  const readCards = async (locale: ContentLocale) => {
+    const ids = pageEntries.filter((entry) => entry.locale === locale).map(({ id }) => id)
+    if (!ids.length) return []
+    const result = await queryPosts<PostSummaryDoc>(payload, {
+      contentLocale: { locale },
+      limit: ids.length,
+      pagination: false,
+      where: { id: { in: ids } },
+    })
+    return result.docs
+  }
+  const cards = await Promise.all([readCards('de'), readCards('en')])
+  const postsById = new Map(cards.flat().map((post) => [post.id, post]))
+
+  return {
+    docs: pageEntries.flatMap(({ id, locale, canonicalPath }) => {
+      const post = postsById.get(id)
+      return post ? [{ post, locale, canonicalPath }] : []
+    }),
+    page,
+    totalDocs: entries.size,
+    totalPages: Math.ceil(entries.size / POSTS_PER_ARCHIVE_PAGE),
+  }
+}
+
+export async function getCachedPostArchivePage({ preferredLocale, page = 1 }: PostArchiveOptions) {
+  return unstable_cache(
     async () => {
       const payload = await getPayload({ config: configPromise })
-
-      return findPublishedPostsPage(payload, {
-        contentLocale: args.contentLocale,
-        limit: args.limit ?? 12,
-        page: args.page ?? 1,
-      })
+      return findPublicPostArchivePage(payload, { preferredLocale, page })
     },
-    ['posts-list-page', buildPostListDataCacheKey(args)],
-    {
-      tags: buildPostListDataCacheTags(),
-    },
-  )
-
-export async function getCachedPublishedPostsPage(
-  args: CachedPublishedPostsPageArgs = {},
-): Promise<PaginatedResult<PostSummaryDoc>> {
-  return getCachedPublishedPostsPageByArgs(args)()
+    ['post-archive', preferredLocale, String(page)],
+    { tags: buildPostListDataCacheTags() },
+  )()
 }
 
 export async function findPostBySlug(

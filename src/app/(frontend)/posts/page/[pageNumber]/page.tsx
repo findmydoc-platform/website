@@ -1,25 +1,22 @@
 import type { Metadata } from 'next/types'
 
-import { CollectionArchive } from '@/components/organisms/CollectionArchive'
-import configPromise from '@payload-config'
-import { getPayload } from 'payload'
+import { Simple as BlogCard } from '@/components/organisms/Blog/BlogCard/Simple'
 import React from 'react'
 import PageClient from './page.client'
 import { Breadcrumb, type BreadcrumbItem } from '@/components/molecules/Breadcrumb'
 import { Heading } from '@/components/atoms/Heading'
 import { notFound, redirect } from 'next/navigation'
 import { Container } from '@/components/molecules/Container'
-import { normalizePost } from '@/utilities/blog/normalizePost'
+import { normalizeArchiveCard } from '../../archiveCards'
 import { createBlogBreadcrumb, HOME_BREADCRUMB } from '@/utilities/breadcrumbs'
 import { buildPostsIndexPath, buildPostsPagePath } from '@/utilities/content/postPaths'
-import { countPublishedPosts, getCachedPublishedPostsPage } from '@/utilities/content/serverData'
-import { resolveContentLocaleContext } from '@/utilities/contentLocalization'
+import { getCachedPostArchivePage } from '@/utilities/content/serverData'
+import { DEFAULT_CONTENT_LOCALE, resolveContentLocaleContext } from '@/utilities/contentLocalization'
 import { createSiteMetadata } from '@/utilities/generateMeta'
 import { JsonLdScript, buildPostsIndexJsonLd } from '@/utilities/structuredData'
 import { PostsPagination } from '../../_components/PostsPagination'
 
 export const revalidate = 600
-const POSTS_PER_PAGE = 12
 
 type Args = {
   params: Promise<{
@@ -42,15 +39,14 @@ export default async function Page({ params: paramsPromise, searchParams: search
   if (!Number.isSafeInteger(sanitizedPageNumber) || sanitizedPageNumber < 1) notFound()
   if (sanitizedPageNumber === 1) redirect(buildPostsIndexPath(contentLocale))
 
-  const posts = await getCachedPublishedPostsPage({
-    contentLocale,
-    limit: POSTS_PER_PAGE,
+  const posts = await getCachedPostArchivePage({
+    preferredLocale: contentLocale.locale ?? DEFAULT_CONTENT_LOCALE,
     page: sanitizedPageNumber,
   })
 
   if (!posts.docs.length || sanitizedPageNumber > posts.totalPages) notFound()
 
-  const normalizedPosts = posts.docs.map((post) => normalizePost(post, { contentLocale }))
+  const normalizedPosts = posts.docs.map(normalizeArchiveCard)
   const remainingArticlesCount = Math.max((posts.totalDocs || 0) - 1, 0)
   const pagePath = buildPostsPagePath(sanitizedPageNumber, contentLocale)
   const breadcrumbs: BreadcrumbItem[] = [
@@ -60,9 +56,18 @@ export default async function Page({ params: paramsPromise, searchParams: search
   ]
 
   return (
-    <div className="pt-16 pb-20 sm:pt-24 sm:pb-24">
+    <div className="pt-16 pb-20 sm:pt-24 sm:pb-24" lang="en">
       <PageClient />
-      <JsonLdScript data={buildPostsIndexJsonLd({ breadcrumbs, posts: normalizedPosts })} />
+      <JsonLdScript
+        data={buildPostsIndexJsonLd({
+          breadcrumbs: [
+            HOME_BREADCRUMB,
+            createBlogBreadcrumb(buildPostsIndexPath()),
+            { label: `Page ${sanitizedPageNumber}`, href: buildPostsPagePath(sanitizedPageNumber) },
+          ],
+          posts: normalizedPosts,
+        })}
+      />
       <Container className="mb-12 sm:mb-16">
         <div className="prose max-w-none">
           <Breadcrumb items={breadcrumbs} className="mb-6 [&_ol]:justify-center" />
@@ -81,49 +86,31 @@ export default async function Page({ params: paramsPromise, searchParams: search
         </p>
       </Container>
 
-      <CollectionArchive posts={normalizedPosts} />
+      <Container>
+        <div className="grid grid-cols-4 gap-4 sm:grid-cols-8 lg:grid-cols-12 lg:gap-8">
+          {normalizedPosts.map((post) => (
+            <div key={post.href} lang={post.locale} className="col-span-4 min-w-0">
+              <BlogCard {...post} />
+            </div>
+          ))}
+        </div>
+      </Container>
 
       <Container>
         {posts?.page && posts?.totalPages > 1 && (
-          <PostsPagination
-            getPathForPage={(page) => buildPostsPagePath(page, contentLocale)}
-            page={posts.page}
-            totalPages={posts.totalPages}
-          />
+          <PostsPagination contentLocale={contentLocale} page={posts.page} totalPages={posts.totalPages} />
         )}
       </Container>
     </div>
   )
 }
 
-export async function generateMetadata({
-  params: paramsPromise,
-  searchParams: searchParamsPromise,
-}: Args): Promise<Metadata> {
+export async function generateMetadata({ params: paramsPromise }: Args): Promise<Metadata> {
   const { pageNumber } = await paramsPromise
-  const searchParams = await searchParamsPromise
-  const contentLocale = resolveContentLocaleContext(searchParams.locale)
-  const metadataPath = /^\d+$/.test(pageNumber)
-    ? buildPostsPagePath(Number.parseInt(pageNumber, 10), contentLocale)
-    : `/posts/page/${pageNumber}`
+  const metadataPath = /^\d+$/.test(pageNumber) ? buildPostsPagePath(Number(pageNumber)) : `/posts/page/${pageNumber}`
 
   return createSiteMetadata({
     title: `Posts Page ${pageNumber || ''}`,
     path: metadataPath,
   })
-}
-
-export async function generateStaticParams() {
-  const payload = await getPayload({ config: configPromise })
-  const totalDocs = await countPublishedPosts(payload)
-
-  const totalPages = Math.ceil(totalDocs / POSTS_PER_PAGE)
-
-  const pages: { pageNumber: string }[] = []
-
-  for (let i = 2; i <= totalPages; i++) {
-    pages.push({ pageNumber: String(i) })
-  }
-
-  return pages
 }

@@ -27,7 +27,7 @@ import {
   buildPostListDataCacheTags,
   getCachedLatestPosts,
   getCachedPublicPostRoute,
-  getCachedPublishedPostsPage,
+  getCachedPostArchivePage,
 } from '@/utilities/content/serverData/posts'
 
 describe('posts server data cache contract', () => {
@@ -138,75 +138,67 @@ describe('posts server data cache contract', () => {
     )
   })
 
-  it('keys public post list cache entries from stable public inputs only', async () => {
+  it('lists single-language posts and one preferred version of a bilingual post', async () => {
+    const germanOnly = { id: 3, title: 'Nur Deutsch', slug: 'nur-deutsch', publishedAt: '2026-01-03' }
+    const englishOnly = { id: 2, title: 'English only', slug: 'english-only', publishedAt: '2026-01-02' }
+    const germanVersion = { id: 1, title: 'Zweisprachig', slug: 'zweisprachig', publishedAt: '2026-01-01' }
+    const englishVersion = { id: 1, title: 'Bilingual', slug: 'bilingual', publishedAt: '2026-01-01' }
+    const legacyEnglish = {
+      id: 4,
+      title: 'Existing English post',
+      slug: 'existing',
+      legacyEnglishSlug: 'former-english-path',
+      publishedAt: '2026-01-01',
+    }
+    cacheMocks.getPayload.mockResolvedValue({
+      find: vi
+        .fn()
+        .mockResolvedValueOnce({ docs: [germanVersion, germanOnly] })
+        .mockResolvedValueOnce({ docs: [englishVersion, legacyEnglish, englishOnly] })
+        .mockResolvedValueOnce({ docs: [germanVersion, germanOnly] })
+        .mockResolvedValueOnce({ docs: [legacyEnglish, englishOnly] }),
+    })
+
+    await expect(getCachedPostArchivePage({ preferredLocale: 'de' })).resolves.toEqual({
+      docs: [
+        { post: germanOnly, locale: 'de', canonicalPath: '/posts/nur-deutsch' },
+        { post: englishOnly, locale: 'en', canonicalPath: '/en/posts/english-only' },
+        { post: legacyEnglish, locale: 'en', canonicalPath: '/posts/former-english-path' },
+        { post: germanVersion, locale: 'de', canonicalPath: '/posts/zweisprachig' },
+      ],
+      page: 1,
+      totalDocs: 4,
+      totalPages: 1,
+    })
+  })
+
+  it('caches the archive by preference and page using the shared post invalidation tags', async () => {
     const payload = {
-      find: vi.fn().mockResolvedValue({
-        docs: [{ id: 2, slug: 'page-2-post' }],
-        totalDocs: 24,
-        totalPages: 2,
-        page: 2,
-      }),
+      find: vi.fn().mockResolvedValue({ docs: [] }),
     }
     cacheMocks.getPayload.mockResolvedValue(payload)
 
-    await expect(
-      getCachedPublishedPostsPage({
-        contentLocale: {
-          locale: 'de',
-          fallbackLocale: 'en',
-        },
-        limit: 12,
-        page: 2,
-      }),
-    ).resolves.toMatchObject({
-      docs: [{ id: 2, slug: 'page-2-post' }],
-      totalDocs: 24,
-      totalPages: 2,
+    await expect(getCachedPostArchivePage({ preferredLocale: 'de', page: 2 })).resolves.toEqual({
+      docs: [],
+      totalDocs: 0,
+      totalPages: 0,
       page: 2,
     })
 
-    expect(buildPostListDataCacheTags()).toEqual([
-      'collection:posts',
-      'surface:posts-list',
-      'surface:home',
-      'surface:partners-clinics',
-      'surface:sitemap:posts',
-    ])
-    expect(
-      buildPostListDataCacheKey({ contentLocale: { locale: 'de', fallbackLocale: 'en' }, limit: 12, page: 2 }),
-    ).toBe(
-      JSON.stringify({
-        version: 'localized-publication-repaired-status',
-        locale: 'de',
-        fallbackLocale: 'en',
-        limit: 12,
-        page: 2,
-      }),
-    )
-    expect(cacheMocks.unstableCache).toHaveBeenCalledWith(
-      expect.any(Function),
-      [
-        'posts-list-page',
-        buildPostListDataCacheKey({ contentLocale: { locale: 'de', fallbackLocale: 'en' }, limit: 12, page: 2 }),
-      ],
-      {
-        tags: [
-          'collection:posts',
-          'surface:posts-list',
-          'surface:home',
-          'surface:partners-clinics',
-          'surface:sitemap:posts',
-        ],
-      },
-    )
-    expect(payload.find).toHaveBeenCalledWith(
-      expect.objectContaining({
-        collection: 'posts',
-        draft: false,
-        fallbackLocale: false,
-        locale: 'de',
-        overrideAccess: false,
-      }),
-    )
+    expect(cacheMocks.unstableCache).toHaveBeenCalledWith(expect.any(Function), ['post-archive', 'de', '2'], {
+      tags: buildPostListDataCacheTags(),
+    })
+    for (const locale of ['de', 'en']) {
+      expect(payload.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          collection: 'posts',
+          draft: false,
+          fallbackLocale: false,
+          locale,
+          overrideAccess: false,
+          where: { _status: { equals: 'published' } },
+        }),
+      )
+    }
   })
 })

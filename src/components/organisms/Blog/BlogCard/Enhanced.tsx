@@ -26,6 +26,7 @@ export const Enhanced: React.FC<EnhancedProps> = ({
   href,
   dateLabel,
   category,
+  categoryLang,
   image,
   author,
   variant = 'dark',
@@ -63,7 +64,10 @@ export const Enhanced: React.FC<EnhancedProps> = ({
           {/* Category Badge - Top Right */}
           {category && (
             <div className="absolute top-4 right-4">
-              <span className="inline-block rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-foreground shadow-md">
+              <span
+                lang={categoryLang}
+                className="inline-block rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-foreground shadow-md"
+              >
                 {category}
               </span>
             </div>

@@ -21,6 +21,7 @@ export const Overview: React.FC<BlogCardBaseProps & { readTimeLang?: string }> =
   readTime,
   readTimeLang,
   category,
+  categoryLang,
   image,
   author,
   className,
@@ -56,7 +57,10 @@ export const Overview: React.FC<BlogCardBaseProps & { readTimeLang?: string }> =
         {/* Category Pill */}
         {category && (
           <div className="mb-3">
-            <span className="inline-block rounded-full bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary">
+            <span
+              lang={categoryLang}
+              className="inline-block rounded-full bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary"
+            >
               {category}
             </span>
           </div>

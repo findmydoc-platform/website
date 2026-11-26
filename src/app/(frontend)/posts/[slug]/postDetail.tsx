@@ -112,7 +112,8 @@ export async function renderPost(args: PostPageArgs, pathLocale: ContentLocale) 
       <PostHero
         title={post.title}
         excerpt={post.excerpt || undefined}
-        categories={post.categories?.map((c) => (typeof c === 'object' ? c.title || '' : '')).filter(Boolean)}
+        categories={post.categoryLabel ? [post.categoryLabel.title] : undefined}
+        categoryLang={post.categoryLabel?.lang}
         author={authorData}
         publishedAt={post.publishedAt || undefined}
         readTime={readTime}

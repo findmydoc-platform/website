@@ -3,7 +3,7 @@ import { formatDate } from './formatDate'
 import { calculateReadTime } from './calculateReadTime'
 import { resolveMediaImage, type ResolvedMediaImage } from '@/utilities/media/resolveMediaImage'
 import { buildPostPath } from '@/utilities/content/postPaths'
-import type { ContentLocaleContext } from '@/utilities/contentLocalization'
+import type { ContentLocale, ContentLocaleContext } from '@/utilities/contentLocalization'
 
 export type BlogCardImageProps = Pick<ResolvedMediaImage, 'alt' | 'height' | 'src' | 'width'> &
   Partial<Pick<ResolvedMediaImage, 'quality' | 'sizes'>>
@@ -21,10 +21,13 @@ export type BlogCardBaseProps = {
   dateLabel?: string
   readTime?: string
   category?: string
+  categoryLang?: string
   image?: BlogCardImageProps
   author?: BlogCardAuthorProps
   className?: string
 }
+
+export type PostCategoryLabel = { title: string; lang: ContentLocale }
 
 export type NormalizePostOptions = {
   contentLocale?: ContentLocaleContext
@@ -37,7 +40,7 @@ export type NormalizePostOptions = {
  * Works with both full Post objects and partial selections from queries
  */
 export function normalizePost(
-  post: Partial<Post> & Pick<Post, 'title' | 'slug'>,
+  post: Partial<Post> & Pick<Post, 'title' | 'slug'> & { categoryLabel?: PostCategoryLabel },
   options: NormalizePostOptions = {},
 ): BlogCardBaseProps {
   const { contentLocale } = options
@@ -84,7 +87,8 @@ export function normalizePost(
     href: buildPostPath(post.slug, contentLocale),
     dateLabel,
     readTime,
-    category: categoryName,
+    category: post.categoryLabel?.title ?? categoryName,
+    categoryLang: post.categoryLabel?.lang,
     image: imageProps,
     author: authorProps,
   }

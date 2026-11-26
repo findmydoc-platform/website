@@ -4,6 +4,7 @@ import configPromise from '@payload-config'
 import { unstable_cache } from 'next/cache'
 import { getPayload } from 'payload'
 import type { Post, PostsSelect } from '@/payload-types'
+import type { PostCategoryLabel } from '@/utilities/blog/normalizePost'
 import type { ContentLocale } from '@/utilities/contentLocalization'
 import {
   buildCollectionTag,
@@ -15,6 +16,8 @@ import {
 import { buildEnglishPostCanonicalPath } from '@/utilities/content/postPaths'
 
 import { mergePublishedWhere, type LocalizedDocQuery, type PaginatedResult, type PagedResult } from './shared'
+
+type PostWithCategoryLabel = { categoryLabel?: PostCategoryLabel }
 
 export type PostSummaryDoc = Pick<
   Post,
@@ -29,7 +32,8 @@ export type PostSummaryDoc = Pick<
   | 'updatedAt'
   | 'heroImage'
   | 'meta'
->
+> &
+  PostWithCategoryLabel
 
 export type PostLatestDoc = PostSummaryDoc
 
@@ -52,9 +56,10 @@ export type PostDetailDoc = Omit<
     | 'meta'
   >,
   'relatedPosts'
-> & {
-  relatedPosts?: Array<number | PostSummaryDoc> | null
-}
+> &
+  PostWithCategoryLabel & {
+    relatedPosts?: Array<number | PostSummaryDoc> | null
+  }
 
 export type PostSitemapDoc = Pick<Post, 'id' | 'slug' | 'legacyEnglishSlug' | 'updatedAt'>
 
@@ -142,10 +147,11 @@ const POST_SITEMAP_SELECT = {
   updatedAt: true,
 } satisfies PostsSelect<true>
 
-const POSTS_LIST_DATA_CACHE_KEY_VERSION = 'localized-publication-repaired-status'
+const POSTS_LIST_DATA_CACHE_KEY_VERSION = 'localized-category-titles'
 
 export const buildPostListDataCacheTags = (): string[] => [
   buildCollectionTag('posts'),
+  buildCollectionTag('categories'),
   buildSurfaceTag('posts-list'),
   buildSurfaceTag('home'),
   buildSurfaceTag('partners-clinics'),
@@ -167,6 +173,7 @@ export const buildPostListDataCacheKey = ({
 
 export const buildPostDetailDataCacheTags = (slug: string): string[] => [
   buildCollectionTag('posts'),
+  buildCollectionTag('categories'),
   buildSlugTag('posts', slug),
 ]
 
@@ -251,6 +258,49 @@ async function hydrateRelatedPostCards(
   }
 }
 
+type CategoryTitles = Partial<Record<ContentLocale, string | null>>
+
+const categoryId = (category: NonNullable<Post['categories']>[number]): number | undefined =>
+  typeof category === 'number' ? category : category?.id
+
+async function loadPostCategoryLabels<T extends Pick<Post, 'categories'>>(
+  payload: Payload,
+  posts: T[],
+  locale: ContentLocale,
+): Promise<Array<T & PostWithCategoryLabel>> {
+  const ids = [...new Set(posts.flatMap((post) => post.categories?.map(categoryId) ?? []).filter((id) => id != null))]
+  if (ids.length === 0) return posts
+
+  const { docs } = await payload.find({
+    collection: 'categories',
+    locale: 'all',
+    fallbackLocale: false,
+    overrideAccess: false,
+    depth: 0,
+    pagination: false,
+    select: { title: true },
+    where: { id: { in: ids } },
+  })
+
+  // Payload returns the native locale map for localized fields with locale: 'all'.
+  const titlesById = new Map(docs.map(({ id, title }) => [id, title as unknown as CategoryTitles]))
+  const alternate = locale === 'de' ? 'en' : 'de'
+
+  return posts.map((post) => {
+    for (const category of post.categories ?? []) {
+      const id = categoryId(category)
+      if (id == null) continue
+      const titles = titlesById.get(id)
+      const preferredTitle = titles?.[locale]?.trim()
+      if (preferredTitle) return { ...post, categoryLabel: { title: preferredTitle, lang: locale } }
+
+      const alternateTitle = titles?.[alternate]?.trim()
+      if (alternateTitle) return { ...post, categoryLabel: { title: alternateTitle, lang: alternate } }
+    }
+    return post
+  })
+}
+
 async function queryPosts<TDoc>(
   payload: Payload,
   {
@@ -280,7 +330,11 @@ async function queryPosts<TDoc>(
     select,
   })
 
-  return result as unknown as PagedResult<TDoc>
+  const paged = result as unknown as PagedResult<TDoc & Pick<Post, 'categories'>>
+
+  return select.categories
+    ? { ...paged, docs: await loadPostCategoryLabels(payload, paged.docs, contentLocale?.locale ?? 'en') }
+    : paged
 }
 
 export async function findLatestPosts(
@@ -467,7 +521,7 @@ export async function getCachedPublicPostRoute(slug: string, locale: ContentLoca
 
       return findPublicPostRoute(payload, slug, locale)
     },
-    ['post-detail-localized-repaired-status', slug, locale],
+    ['post-detail-localized-category-titles', slug, locale],
     { tags: buildPostDetailDataCacheTags(slug) },
   )()
 }

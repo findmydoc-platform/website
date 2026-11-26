@@ -16,6 +16,7 @@ export const Simple: React.FC<BlogCardBaseProps> = ({
   href,
   dateLabel,
   category,
+  categoryLang,
   image,
   author,
   className,
@@ -56,6 +57,7 @@ export const Simple: React.FC<BlogCardBaseProps> = ({
             <div className="absolute top-3 right-3 left-3 flex justify-end sm:top-4 sm:right-4 sm:left-4">
               <span
                 title={category}
+                lang={categoryLang}
                 className="line-clamp-2 max-w-full rounded-full bg-white px-2.5 py-1 text-[11px] leading-tight font-semibold break-words text-foreground shadow-sm sm:px-3 sm:text-xs"
               >
                 {category}

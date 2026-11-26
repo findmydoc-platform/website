@@ -213,6 +213,79 @@ describe('Posts integration - lifecycle and access', () => {
     })
   })
 
+  it('shows the available category title on both public post locales and keeps the assignment', async () => {
+    const category = await payload.create({
+      collection: 'categories',
+      locale: 'en',
+      data: { title: `${slugPrefix} Aftercare`, slug: `${slugPrefix}-aftercare` },
+      context: { disableRevalidate: true },
+    })
+
+    try {
+      const de = buildPostData({
+        title: `${slugPrefix} Nachsorge im Ausland`,
+        categoryId: category.id,
+        status: 'published',
+      })
+      const en = buildPostData({
+        title: `${slugPrefix} Aftercare abroad`,
+        status: 'published',
+      })
+
+      const post = await payload.create({
+        collection: 'posts',
+        locale: 'de',
+        data: de,
+        context: { disableRevalidate: true },
+      })
+      await payload.update({
+        collection: 'posts',
+        id: post.id,
+        locale: 'en',
+        publishSpecificLocale: 'en',
+        data: { title: en.title, slug: en.slug, content: en.content, excerpt: en.excerpt, _status: 'published' },
+        context: { disableRevalidate: true },
+      })
+
+      await expect(findPublicPostRoute(payload, de.slug, 'de')).resolves.toMatchObject({
+        locale: 'de',
+        post: {
+          categories: [{ id: category.id }],
+          categoryLabel: { title: `${slugPrefix} Aftercare`, lang: 'en' },
+        },
+      })
+      await expect(findPublicPostRoute(payload, en.slug, 'en')).resolves.toMatchObject({
+        locale: 'en',
+        post: { categories: [{ id: category.id }], categoryLabel: { title: `${slugPrefix} Aftercare`, lang: 'en' } },
+      })
+
+      await payload.update({
+        collection: 'categories',
+        id: category.id,
+        locale: 'de',
+        data: { title: 'Nachsorge' },
+        context: { disableRevalidate: true },
+      })
+
+      await expect(findPublicPostRoute(payload, de.slug, 'de')).resolves.toMatchObject({
+        post: {
+          categories: [{ id: category.id, slug: category.slug }],
+          categoryLabel: { title: 'Nachsorge', lang: 'de' },
+        },
+      })
+      await expect(
+        findPublishedPostsPage(payload, {
+          contentLocale: { locale: 'de' },
+          where: { id: { equals: post.id } },
+        }),
+      ).resolves.toMatchObject({
+        docs: [{ id: post.id, categoryLabel: { title: 'Nachsorge', lang: 'de' } }],
+      })
+    } finally {
+      await payload.delete({ collection: 'categories', id: category.id, context: { disableRevalidate: true } })
+    }
+  })
+
   it('keeps the existing English canonical until the migrated article is published in German', async () => {
     const englishTitle = `${slugPrefix} Existing blog article`
     const legacySlug = slugify(englishTitle)

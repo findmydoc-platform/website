@@ -45,12 +45,16 @@ describe('posts server data cache contract', () => {
       post: { id: 7, slug: 'hello-world', title: 'Hallo Welt' },
     })
 
-    expect(buildPostDetailDataCacheTags('hello-world')).toEqual(['collection:posts', 'slug:posts:hello-world'])
+    expect(buildPostDetailDataCacheTags('hello-world')).toEqual([
+      'collection:posts',
+      'collection:categories',
+      'slug:posts:hello-world',
+    ])
     expect(cacheMocks.unstableCache).toHaveBeenCalledWith(
       expect.any(Function),
-      ['post-detail-localized-repaired-status', 'hello-world', 'de'],
+      ['post-detail-localized-category-titles', 'hello-world', 'de'],
       {
-        tags: ['collection:posts', 'slug:posts:hello-world'],
+        tags: ['collection:posts', 'collection:categories', 'slug:posts:hello-world'],
       },
     )
     expect(payload.find).toHaveBeenCalledWith(
@@ -93,6 +97,7 @@ describe('posts server data cache contract', () => {
       {
         tags: [
           'collection:posts',
+          'collection:categories',
           'surface:posts-list',
           'surface:home',
           'surface:partners-clinics',
@@ -138,6 +143,59 @@ describe('posts server data cache contract', () => {
     )
   })
 
+  it.each([
+    { locale: 'de', preferred: { title: 'Nachsorge', lang: 'de' }, fallback: { title: 'Recovery', lang: 'en' } },
+    { locale: 'en', preferred: { title: 'Aftercare', lang: 'en' }, fallback: { title: 'Vorbereitung', lang: 'de' } },
+  ] as const)(
+    'chooses category titles for $locale without falling back on the post',
+    async ({ locale, preferred, fallback }) => {
+      const fallbackId = locale === 'de' ? 10 : 11
+      const payload = {
+        find: vi
+          .fn()
+          .mockResolvedValueOnce({
+            docs: [
+              { id: 1, categories: [9] },
+              { id: 2, categories: [fallbackId] },
+            ],
+          })
+          .mockResolvedValueOnce({
+            docs: [
+              { id: 9, title: { de: 'Nachsorge', en: 'Aftercare' } },
+              { id: 10, title: { en: 'Recovery' } },
+              { id: 11, title: { de: 'Vorbereitung' } },
+            ],
+          }),
+      }
+      cacheMocks.getPayload.mockResolvedValue(payload)
+
+      await expect(getCachedPublishedPostsPage({ contentLocale: { locale } })).resolves.toMatchObject({
+        docs: [
+          { id: 1, categories: [9], categoryLabel: preferred },
+          { id: 2, categories: [fallbackId], categoryLabel: fallback },
+        ],
+      })
+      expect(payload.find).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          collection: 'posts',
+          locale,
+          fallbackLocale: false,
+        }),
+      )
+      expect(payload.find).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          collection: 'categories',
+          locale: 'all',
+          fallbackLocale: false,
+          overrideAccess: false,
+          where: { id: { in: [9, fallbackId] } },
+        }),
+      )
+    },
+  )
+
   it('keys public post list cache entries from stable public inputs only', async () => {
     const payload = {
       find: vi.fn().mockResolvedValue({
@@ -167,6 +225,7 @@ describe('posts server data cache contract', () => {
 
     expect(buildPostListDataCacheTags()).toEqual([
       'collection:posts',
+      'collection:categories',
       'surface:posts-list',
       'surface:home',
       'surface:partners-clinics',
@@ -176,7 +235,7 @@ describe('posts server data cache contract', () => {
       buildPostListDataCacheKey({ contentLocale: { locale: 'de', fallbackLocale: 'en' }, limit: 12, page: 2 }),
     ).toBe(
       JSON.stringify({
-        version: 'localized-publication-repaired-status',
+        version: 'localized-category-titles',
         locale: 'de',
         fallbackLocale: 'en',
         limit: 12,
@@ -192,6 +251,7 @@ describe('posts server data cache contract', () => {
       {
         tags: [
           'collection:posts',
+          'collection:categories',
           'surface:posts-list',
           'surface:home',
           'surface:partners-clinics',

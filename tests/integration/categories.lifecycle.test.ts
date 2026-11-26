@@ -1,7 +1,8 @@
-import { describe, it, expect, beforeAll, afterEach } from 'vitest'
+import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest'
 import { getPayload } from 'payload'
 import type { Payload } from 'payload'
 import config from '@payload-config'
+import { revalidateTag } from 'next/cache'
 
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
@@ -121,6 +122,45 @@ describe('Categories integration - lifecycle and access', () => {
     })
 
     expect(afterSlugUpdate.slug).toBe(explicitSlug)
+  })
+
+  it('stores both titles under one shared slug and invalidates post labels when a translation is added', async () => {
+    const category = await payload.create({
+      collection: 'categories',
+      locale: 'en',
+      data: { title: `${slugPrefix} Aftercare`, slug: `${slugPrefix}-aftercare` },
+    })
+
+    const german = await payload.findByID({
+      collection: 'categories',
+      id: category.id,
+      locale: 'de',
+      fallbackLocale: false,
+    })
+    expect(german.title).toBeFalsy()
+
+    vi.mocked(revalidateTag).mockClear()
+    await payload.update({
+      collection: 'categories',
+      id: category.id,
+      locale: 'de',
+      data: { title: 'Nachsorge' },
+    })
+
+    const translations = await payload.findByID({
+      collection: 'categories',
+      id: category.id,
+      locale: 'all',
+      fallbackLocale: false,
+      overrideAccess: false,
+    })
+
+    expect(revalidateTag).toHaveBeenCalledWith('collection:categories', { expire: 0 })
+    expect(translations).toMatchObject({
+      id: category.id,
+      slug: `${slugPrefix}-aftercare`,
+      title: { en: `${slugPrefix} Aftercare`, de: 'Nachsorge' },
+    })
   })
 
   it('deletes a category and removes it from queries', async () => {

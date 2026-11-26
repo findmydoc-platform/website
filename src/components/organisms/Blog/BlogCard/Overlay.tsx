@@ -22,6 +22,7 @@ export const Overlay: React.FC<OverlayProps> = ({
   href,
   dateLabel,
   category,
+  categoryLang,
   image,
   author,
   overlayOpacity = 80,
@@ -76,6 +77,7 @@ export const Overlay: React.FC<OverlayProps> = ({
             <div className="absolute top-3 right-3 left-3 sm:top-6 sm:right-auto sm:left-6">
               <span
                 title={category}
+                lang={categoryLang}
                 className="line-clamp-2 max-w-full rounded-full bg-white px-3 py-1 text-[11px] leading-tight font-semibold break-words text-foreground shadow-md sm:px-4 sm:py-1.5 sm:text-xs"
               >
                 {category}

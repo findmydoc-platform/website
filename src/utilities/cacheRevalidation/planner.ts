@@ -16,6 +16,7 @@ import {
   getCachePolicyEntry,
 } from '@/utilities/cachePolicy'
 import type {
+  CategoryRevalidationEvent,
   ClinicSurfacePublicStatus,
   ClinicSurfaceRevalidationCollection,
   ClinicSurfaceRevalidationEvent,
@@ -714,10 +715,26 @@ const throwDeferred = (event: DeferredRevalidationEvent): never => {
   throw new DeferredRevalidationError(event.area)
 }
 
+const buildCategoryPlan = (event: CategoryRevalidationEvent): RevalidationPlan => {
+  const policy = getCachePolicyEntry('collection:categories')
+
+  return createPlan({
+    operation: event.operation,
+    source: event.source,
+    subject: { kind: 'category', id: normalizeRequiredText(event.subject.id, 'subject id') },
+    cacheClasses: [policy.cacheClass],
+    surfaceIds: policy.surfaces ?? [],
+    tags: [buildCollectionTag('categories')],
+    paths: [],
+  })
+}
+
 export const planRevalidation = (event: RevalidationEvent): RevalidationPlan => {
   switch (event.kind) {
     case 'collection':
       return buildCollectionPlan(event)
+    case 'category':
+      return buildCategoryPlan(event)
     case 'global':
       return buildGlobalPlan(event.global, event)
     case 'redirects':

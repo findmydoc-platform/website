@@ -15,6 +15,7 @@ export type PostHeroProps = {
   title: string
   excerpt?: string
   categories?: string[]
+  categoryLang?: string
   author?: {
     name: string
     role?: string
@@ -42,6 +43,7 @@ export const PostHero: React.FC<PostHeroProps> = ({
   title,
   excerpt,
   categories,
+  categoryLang,
   author,
   authors, // deprecated
   publishedAt,
@@ -106,7 +108,10 @@ export const PostHero: React.FC<PostHeroProps> = ({
 
             {/* Category Badge */}
             {primaryCategory && (
-              <span className="mb-4 inline-block rounded-full bg-primary px-3 py-1 text-xs text-white sm:mb-6 sm:px-4 sm:py-1.5 sm:text-sm">
+              <span
+                lang={categoryLang}
+                className="mb-4 inline-block rounded-full bg-primary px-3 py-1 text-xs text-white sm:mb-6 sm:px-4 sm:py-1.5 sm:text-sm"
+              >
                 {primaryCategory}
               </span>
             )}

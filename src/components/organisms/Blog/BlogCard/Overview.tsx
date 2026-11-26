@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useId } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowRight, Calendar, Clock } from 'lucide-react'
@@ -21,10 +21,12 @@ export const Overview: React.FC<BlogCardBaseProps & { readTimeLang?: string }> =
   readTime,
   readTimeLang,
   category,
+  categoryLang,
   image,
   author,
   className,
 }) => {
+  const titleId = useId()
   const resolvedImage = image ?? {
     src: '/images/blog-placeholder-1600-900.svg',
     alt: '',
@@ -39,7 +41,7 @@ export const Overview: React.FC<BlogCardBaseProps & { readTimeLang?: string }> =
   const authorAvatar = author?.avatar || avatarFallback
 
   return (
-    <Link href={href} className={cn('group block', className)}>
+    <Link href={href} aria-labelledby={titleId} className={cn('group block', className)}>
       <article className="flex h-full flex-col">
         {/* Image */}
         <div className="relative mb-5 aspect-[16/10] overflow-hidden rounded-xl">
@@ -56,7 +58,10 @@ export const Overview: React.FC<BlogCardBaseProps & { readTimeLang?: string }> =
         {/* Category Pill */}
         {category && (
           <div className="mb-3">
-            <span className="inline-block rounded-full bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary">
+            <span
+              lang={categoryLang}
+              className="inline-block max-w-full rounded-full bg-primary/10 px-4 py-1.5 text-xs font-semibold wrap-anywhere text-primary"
+            >
               {category}
             </span>
           </div>
@@ -64,6 +69,7 @@ export const Overview: React.FC<BlogCardBaseProps & { readTimeLang?: string }> =
 
         {/* Title */}
         <Heading
+          id={titleId}
           as="h3"
           size="h5"
           align="left"

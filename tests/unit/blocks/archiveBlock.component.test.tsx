@@ -73,6 +73,7 @@ describe('ArchiveBlock', () => {
     mocks.normalizePostMock.mockImplementation((post) => ({
       title: post.title,
       href: `/posts/${post.slug}?locale=de`,
+      ...(post.categoryLabel && { category: post.categoryLabel.title, categoryLang: post.categoryLabel.lang }),
     }))
   })
 
@@ -125,7 +126,15 @@ describe('ArchiveBlock', () => {
 
   it('keeps the same locale propagation for selection-backed archives', async () => {
     mocks.findPublishedPostsPageMock.mockResolvedValueOnce({
-      docs: [{ id: 42, slug: 'selected-fetch', title: 'Nachgeladen' }],
+      docs: [
+        { id: 42, slug: 'selected-fetch', title: 'Nachgeladen' },
+        {
+          id: 77,
+          slug: 'selected-post',
+          title: 'Manuell gewahlt',
+          categoryLabel: { title: 'Patient Guides', lang: 'en' },
+        },
+      ],
       totalDocs: 1,
       totalPages: 1,
     })
@@ -168,6 +177,8 @@ describe('ArchiveBlock', () => {
       {
         title: 'Manuell gewahlt',
         href: '/posts/selected-post?locale=de',
+        category: 'Patient Guides',
+        categoryLang: 'en',
       },
     ])
   })

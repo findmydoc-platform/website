@@ -4,7 +4,7 @@
  *   pnpm seed:run -- --type <baseline|demo> [--runtime-env <production|preview|development|test>] [--reset]
  *
  * Runs baseline or demo seeds through a single, policy-aware entrypoint.
- * - Baseline: can run in all environments.
+ * - Use the Developer Dashboard for baseline seeds in preview or production.
  * - Demo: blocked in production.
  * - Reset: blocked in production for both baseline and demo.
  */
@@ -146,16 +146,21 @@ async function reportCounts(seedType: SeedType) {
 
 export async function runSeedFromCliArgs(argv: string[], env: NodeJS.ProcessEnv = process.env) {
   const options = parseSeedRunArgs(argv)
-  const runtimeEnv = resolveSeedRuntimeEnv(options.runtimeEnv, env)
-  assertSeedRunPolicy({ runtimeEnv, type: options.type, reset: options.reset })
-
-  process.stderr.write(
-    `[seed:run] starting type=${options.type} reset=${String(options.reset)} runtimeEnv=${runtimeEnv}\n`,
-  )
   ;(process.env as Record<string, string | undefined>).NODE_ENV ||= 'development'
 
   dotenvConfig({ path: path.resolve(process.cwd(), '.env.local'), quiet: true })
   dotenvConfig({ path: path.resolve(process.cwd(), '.env'), quiet: true })
+
+  const runtimeEnv = resolveSeedRuntimeEnv(options.runtimeEnv, env)
+  const configuredRuntime = resolveSeedRuntimeEnv(undefined, env)
+  assertSeedRunPolicy({ runtimeEnv, type: options.type, reset: options.reset })
+  if ([runtimeEnv, configuredRuntime].some((runtime) => runtime === 'preview' || runtime === 'production')) {
+    throw new Error('Run hosted seeds in the Developer Dashboard so public caches are invalidated.')
+  }
+
+  process.stderr.write(
+    `[seed:run] starting type=${options.type} reset=${String(options.reset)} runtimeEnv=${runtimeEnv}\n`,
+  )
 
   if (!process.env.PAYLOAD_SECRET && process.env.PAYLOAD_SECRET_KEY) {
     process.env.PAYLOAD_SECRET = process.env.PAYLOAD_SECRET_KEY

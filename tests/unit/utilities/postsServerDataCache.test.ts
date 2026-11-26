@@ -25,6 +25,7 @@ import {
   buildPostDetailDataCacheTags,
   buildPostListDataCacheKey,
   getCachedLatestPosts,
+  getCachedPostArchivePage,
   getCachedPublicPostRoute,
 } from '@/utilities/content/serverData/posts'
 
@@ -43,12 +44,16 @@ describe('posts server data cache contract', () => {
       post: { id: 7, slug: 'hello-world', title: 'Hallo Welt' },
     })
 
-    expect(buildPostDetailDataCacheTags('hello-world')).toEqual(['collection:posts', 'slug:posts:hello-world'])
+    expect(buildPostDetailDataCacheTags('hello-world')).toEqual([
+      'collection:posts',
+      'collection:categories',
+      'slug:posts:hello-world',
+    ])
     expect(cacheMocks.unstableCache).toHaveBeenCalledWith(
       expect.any(Function),
-      ['post-detail-reachable-legacy-canonical', 'hello-world', 'de'],
+      ['post-detail-localized-category-titles-reachable-legacy-canonical', 'hello-world', 'de'],
       {
-        tags: ['collection:posts', 'slug:posts:hello-world'],
+        tags: ['collection:posts', 'collection:categories', 'slug:posts:hello-world'],
       },
     )
     expect(payload.find).toHaveBeenCalledWith(
@@ -106,6 +111,7 @@ describe('posts server data cache contract', () => {
       {
         tags: [
           'collection:posts',
+          'collection:categories',
           'surface:posts-list',
           'surface:home',
           'surface:partners-clinics',
@@ -150,4 +156,67 @@ describe('posts server data cache contract', () => {
       }),
     )
   })
+
+  it.each([
+    { locale: 'de', preferred: { title: 'Nachsorge', lang: 'de' }, fallback: { title: 'Recovery', lang: 'en' } },
+    { locale: 'en', preferred: { title: 'Aftercare', lang: 'en' }, fallback: { title: 'Vorbereitung', lang: 'de' } },
+  ] as const)(
+    'chooses category titles for $locale archive cards without falling back on the post',
+    async ({ locale, preferred, fallback }) => {
+      const fallbackId = locale === 'de' ? 10 : 11
+      const posts = [
+        { id: 1, slug: 'preferred-category', publishedAt: '2026-01-02', updatedAt: '2026-01-02', categories: [9] },
+        {
+          id: 2,
+          slug: 'fallback-category',
+          publishedAt: '2026-01-01',
+          updatedAt: '2026-01-01',
+          categories: [fallbackId],
+        },
+      ]
+      const categories = [
+        { id: 9, title: { de: 'Nachsorge', en: 'Aftercare' } },
+        { id: 10, title: { en: 'Recovery' } },
+        { id: 11, title: { de: 'Vorbereitung' } },
+      ]
+      const payload = {
+        find: vi.fn(async (query: { collection: string; locale: string }) => {
+          if (query.collection === 'categories') return { docs: categories }
+          return { docs: query.locale === locale ? posts : [] }
+        }),
+      }
+      cacheMocks.getPayload.mockResolvedValue(payload)
+
+      await expect(getCachedPostArchivePage({ preferredLocale: locale })).resolves.toMatchObject({
+        docs: [
+          { locale, post: { id: 1, categories: [9], categoryLabel: preferred } },
+          { locale, post: { id: 2, categories: [fallbackId], categoryLabel: fallback } },
+        ],
+      })
+      expect(payload.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          collection: 'posts',
+          locale,
+          overrideAccess: false,
+          fallbackLocale: false,
+        }),
+      )
+      expect(payload.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          collection: 'categories',
+          locale: 'all',
+          fallbackLocale: false,
+          overrideAccess: false,
+          where: { id: { in: [9, fallbackId] } },
+        }),
+      )
+      expect(cacheMocks.unstableCache).toHaveBeenCalledWith(
+        expect.any(Function),
+        ['post-archive-cards'],
+        expect.objectContaining({
+          tags: expect.arrayContaining(['collection:posts', 'collection:categories', 'surface:posts-list']),
+        }),
+      )
+    },
+  )
 })

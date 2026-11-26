@@ -34,6 +34,7 @@ export const CollectionArchive: React.FC<Props> = (props) => {
                     dateLabel={result.dateLabel || ''}
                     readTime={result.readTime || ''}
                     category={result.category}
+                    categoryLang={result.categoryLang}
                     image={result.image}
                     author={result.author}
                   />

@@ -55,6 +55,11 @@ export interface CollectionRevalidationSubject {
   readonly previousStatus?: PublicDocumentStatus
 }
 
+export interface CategoryRevalidationSubject {
+  readonly kind: 'category'
+  readonly id: string | number
+}
+
 export interface GlobalRevalidationSubject {
   readonly kind: 'global'
   readonly global: CoreGlobalRevalidationSlug
@@ -125,6 +130,7 @@ export interface DeferredRevalidationSubject {
 
 export type RevalidationSubject =
   | CollectionRevalidationSubject
+  | CategoryRevalidationSubject
   | GlobalRevalidationSubject
   | RedirectRevalidationSubject
   | ClinicSurfaceRevalidationSubject
@@ -141,6 +147,13 @@ export interface CollectionRevalidationEvent {
   readonly operation: Extract<CacheOperation, 'publish' | 'update' | 'unpublish' | 'delete' | 'slug-change'>
   readonly source: RevalidationSource
   readonly subject: Omit<CollectionRevalidationSubject, 'kind' | 'collection'>
+}
+
+export interface CategoryRevalidationEvent {
+  readonly kind: 'category'
+  readonly operation: Extract<CacheOperation, 'update' | 'delete'>
+  readonly source: RevalidationSource
+  readonly subject: Omit<CategoryRevalidationSubject, 'kind'>
 }
 
 export interface GlobalRevalidationEvent {
@@ -215,6 +228,7 @@ export interface DeferredRevalidationEvent {
 
 export type RevalidationEvent =
   | CollectionRevalidationEvent
+  | CategoryRevalidationEvent
   | GlobalRevalidationEvent
   | RedirectRevalidationEvent
   | ClinicSurfaceRevalidationEvent

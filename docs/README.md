@@ -23,6 +23,7 @@ Use this index as the main entry point for project documentation.
 - [Clinic Dashboard Application and API Architecture](./integrations/clinic-dashboard-api.md)
 - [Codex Specialist Subagents](./integrations/codex-specialists.md)
 - [Deployment & Migration Runbook](./deployment-runbook.md)
+- [Data cutover archive](./cutovers/README.md)
 - [CI validation and coverage](./testing/strategy.md#ci-results-and-full-integration)
 - [Local Database Reset (Test Only)](./database-reset.md)
 - [Seeding System](./seeding.md)

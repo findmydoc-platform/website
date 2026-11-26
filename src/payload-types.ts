@@ -2271,6 +2271,8 @@ export interface Category {
    * Category name
    */
   title: string;
+  titleSearch?: string | null;
+  titleRevision?: number | null;
   /**
    * When enabled, the slug will auto-generate from the title field on save and autosave.
    */
@@ -5254,6 +5256,8 @@ export interface UserProfileMediaSelect<T extends boolean = true> {
 export interface CategoriesSelect<T extends boolean = true> {
   stableId?: T;
   title?: T;
+  titleSearch?: T;
+  titleRevision?: T;
   generateSlug?: T;
   slug?: T;
   parent?: T;

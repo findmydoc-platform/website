@@ -5,27 +5,14 @@ const mocks = vi.hoisted(() => ({
   blogHeroComponent: vi.fn(() => null),
   buildPostsIndexJsonLdMock: vi.fn(() => [{ '@type': 'ItemList' }]),
   createSiteMetadataMock: vi.fn((args: unknown) => args),
-  getCachedPublishedPostsPageMock: vi.fn(),
-  getPayloadMock: vi.fn(),
+  getCachedPostArchivePageMock: vi.fn(),
   jsonLdScriptComponent: vi.fn(() => null),
   normalizePostMock: vi.fn(),
   postsPaginationComponent: vi.fn(() => null),
 }))
 
-vi.mock('@payload-config', () => ({
-  default: {},
-}))
-
-vi.mock('payload', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('payload')>()
-  return {
-    ...actual,
-    getPayload: mocks.getPayloadMock,
-  }
-})
-
 vi.mock('@/utilities/content/serverData', () => ({
-  getCachedPublishedPostsPage: mocks.getCachedPublishedPostsPageMock,
+  getCachedPostArchivePage: mocks.getCachedPostArchivePageMock,
 }))
 
 vi.mock('@/utilities/blog/normalizePost', () => ({
@@ -89,9 +76,19 @@ describe('frontend posts index route', () => {
     vi.resetModules()
     vi.clearAllMocks()
 
-    mocks.getPayloadMock.mockResolvedValue({})
-    mocks.getCachedPublishedPostsPageMock.mockResolvedValue({
-      docs: [{ id: 1, slug: 'hello-world', title: 'Hallo Welt' }],
+    mocks.getCachedPostArchivePageMock.mockResolvedValue({
+      docs: [
+        {
+          post: { id: 1, slug: 'hello-world', title: 'Hallo Welt' },
+          locale: 'de',
+          canonicalPath: '/posts/hello-world',
+        },
+        {
+          post: { id: 2, slug: 'hello-eng', title: 'Hello world' },
+          locale: 'en',
+          canonicalPath: '/en/posts/hello-eng',
+        },
+      ],
       totalDocs: 13,
       totalPages: 2,
       page: 1,
@@ -102,19 +99,15 @@ describe('frontend posts index route', () => {
     }))
   })
 
-  it('passes the shared content locale through list queries, card normalization, and pagination paths', async () => {
+  it('shows both card languages with their canonical paths and carries the locale preference to the next page', async () => {
     const pageModule = await import('@/app/(frontend)/posts/page')
     const result = await pageModule.default({
       searchParams: Promise.resolve({ locale: 'de' }),
     })
 
-    expect(mocks.getCachedPublishedPostsPageMock).toHaveBeenCalledWith(
+    expect(mocks.getCachedPostArchivePageMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        contentLocale: {
-          locale: 'de',
-          fallbackLocale: 'en',
-        },
-        limit: 12,
+        preferredLocale: 'de',
       }),
     )
     expect(mocks.normalizePostMock).toHaveBeenCalledWith(
@@ -122,17 +115,18 @@ describe('frontend posts index route', () => {
       {
         contentLocale: {
           locale: 'de',
-          fallbackLocale: 'en',
+          fallbackLocale: false,
         },
       },
     )
 
-    const paginationElement = findElementByType(result, mocks.postsPaginationComponent) as React.ReactElement<{
-      getPathForPage: (page: number) => string
-    }> | null
-    expect(paginationElement).not.toBeNull()
-    expect(paginationElement?.props.getPathForPage(1)).toBe('/posts?locale=de')
-    expect(paginationElement?.props.getPathForPage(2)).toBe('/posts/page/2?locale=de')
+    expect(mocks.normalizePostMock).toHaveBeenCalledWith(
+      { id: 2, slug: 'hello-eng', title: 'Hello world' },
+      { contentLocale: { locale: 'en', fallbackLocale: false } },
+    )
+
+    const paginationElement = findElementByType(result, mocks.postsPaginationComponent)
+    expect(paginationElement?.props).toMatchObject({ contentLocale: { locale: 'de' }, totalPages: 2 })
 
     const expectedBreadcrumbs = [
       { label: 'Home', href: '/' },
@@ -144,8 +138,14 @@ describe('frontend posts index route', () => {
     expect(heroElement?.props.breadcrumbs).toEqual(expectedBreadcrumbs)
 
     expect(mocks.buildPostsIndexJsonLdMock).toHaveBeenCalledWith({
-      breadcrumbs: expectedBreadcrumbs,
-      posts: [{ title: 'Hallo Welt', href: '/posts/hello-world?locale=de' }],
+      breadcrumbs: [
+        { label: 'Home', href: '/' },
+        { label: 'Blog', href: '/posts' },
+      ],
+      posts: [
+        expect.objectContaining({ title: 'Hallo Welt', href: '/posts/hello-world', locale: 'de' }),
+        expect.objectContaining({ title: 'Hello world', href: '/en/posts/hello-eng', locale: 'en' }),
+      ],
     })
     const jsonLdElement = findElementByType(result, mocks.jsonLdScriptComponent) as React.ReactElement<{
       data: unknown
@@ -153,22 +153,20 @@ describe('frontend posts index route', () => {
     expect(jsonLdElement?.props.data).toEqual([{ '@type': 'ItemList' }])
   })
 
-  it('uses the requested content locale in metadata paths', async () => {
+  it('uses the shared archive canonical URL', async () => {
     const pageModule = await import('@/app/(frontend)/posts/page')
 
-    await pageModule.generateMetadata({
-      searchParams: Promise.resolve({ locale: 'de' }),
-    })
+    pageModule.generateMetadata()
 
     expect(mocks.createSiteMetadataMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        path: '/posts?locale=de',
+        path: '/posts',
       }),
     )
   })
 
   it('renders a visible localized empty state when no posts are published', async () => {
-    mocks.getCachedPublishedPostsPageMock.mockResolvedValue({
+    mocks.getCachedPostArchivePageMock.mockResolvedValue({
       docs: [],
       totalDocs: 0,
       totalPages: 0,

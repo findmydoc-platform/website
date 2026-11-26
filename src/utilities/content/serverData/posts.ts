@@ -13,7 +13,7 @@ import {
   buildSlugTag,
   buildSurfaceTag,
 } from '@/utilities/cachePolicy'
-import { buildEnglishPostCanonicalPath } from '@/utilities/content/postPaths'
+import { buildEnglishPostCanonicalPath, resolveLegacyEnglishPostSlug } from '@/utilities/content/postPaths'
 
 import { mergePublishedWhere, type LocalizedDocQuery, type PaginatedResult, type PagedResult } from './shared'
 
@@ -149,7 +149,7 @@ const POST_SITEMAP_SELECT = {
 
 const POSTS_LIST_DATA_CACHE_KEY_VERSION = 'localized-category-titles'
 
-export const buildPostListDataCacheTags = (): string[] => [
+const buildPostListDataCacheTags = (): string[] => [
   buildCollectionTag('posts'),
   buildCollectionTag('categories'),
   buildSurfaceTag('posts-list'),
@@ -413,27 +413,143 @@ export async function findPublishedPostsPage(
   return result as unknown as PaginatedResult<PostSummaryDoc>
 }
 
-const getCachedPublishedPostsPageByArgs = (args: CachedPublishedPostsPageArgs = {}) =>
-  unstable_cache(
-    async () => {
-      const payload = await getPayload({ config: configPromise })
+type PostArchiveIndexDoc = Pick<Post, 'id' | 'slug' | 'legacyEnglishSlug' | 'publishedAt' | 'updatedAt'>
 
-      return findPublishedPostsPage(payload, {
-        contentLocale: args.contentLocale,
-        limit: args.limit ?? 12,
-        page: args.page ?? 1,
-      })
-    },
-    ['posts-list-page', buildPostListDataCacheKey(args)],
-    {
-      tags: buildPostListDataCacheTags(),
-    },
+export type PostArchiveEntry = {
+  post: PostSummaryDoc
+  locale: ContentLocale
+  canonicalPath: string
+}
+
+type PostArchiveOptions = {
+  preferredLocale: ContentLocale
+  page?: number
+}
+
+type ArchivePublication = Pick<PostArchiveIndexDoc, 'id' | 'slug' | 'updatedAt'> & {
+  locale: ContentLocale
+  canonicalPath: string
+}
+
+type ArchivePost = {
+  id: number
+  publishedAt?: string | null
+} & Partial<Record<ContentLocale, ArchivePublication>>
+
+const POSTS_PER_ARCHIVE_PAGE = 12
+const POST_ARCHIVE_REVALIDATE_SECONDS = 600
+
+async function readPostArchiveIndex(payload: Payload): Promise<ArchivePost[]> {
+  const readIndex = async (locale: ContentLocale) => {
+    const result = await queryPosts<PostArchiveIndexDoc>(payload, {
+      contentLocale: { locale },
+      depth: 0,
+      limit: 0,
+      pagination: false,
+      select: { slug: true, legacyEnglishSlug: true, publishedAt: true, updatedAt: true },
+    })
+
+    return result.docs.filter(({ slug }) => slug && isValidPublicPostSlug(slug))
+  }
+  const [german, english] = await Promise.all([readIndex('de'), readIndex('en')])
+  const posts = new Map<number, ArchivePost>()
+  const germanPaths = new Set<string>()
+
+  for (const { id, slug, publishedAt, updatedAt } of german) {
+    const canonicalPath = buildPostPath(slug)
+    germanPaths.add(canonicalPath)
+    posts.set(id, { id, publishedAt, de: { id, slug, updatedAt, locale: 'de', canonicalPath } })
+  }
+
+  for (const { id, slug, legacyEnglishSlug, publishedAt, updatedAt } of english) {
+    const post = posts.get(id)
+    const legacySlug = resolveLegacyEnglishPostSlug(legacyEnglishSlug)
+    const availableLegacySlug =
+      legacySlug && !post && !germanPaths.has(buildPostPath(legacySlug)) ? legacySlug : undefined
+    const canonicalPath = buildEnglishPostCanonicalPath(slug, availableLegacySlug)
+    posts.set(id, {
+      ...post,
+      id,
+      publishedAt,
+      en: { id, slug, updatedAt, locale: 'en', canonicalPath },
+    })
+  }
+
+  return [...posts.values()].sort((a, b) => (b.publishedAt ?? '').localeCompare(a.publishedAt ?? '') || b.id - a.id)
+}
+
+class PostArchiveIndexChanged extends Error {}
+
+async function readPostArchiveCards(payload: Payload, publications: ArchivePublication[]): Promise<PostArchiveEntry[]> {
+  const readCards = async (locale: ContentLocale) => {
+    const ids = publications.filter((publication) => publication.locale === locale).map(({ id }) => id)
+    if (!ids.length) return new Map<number, PostSummaryDoc>()
+    const result = await queryPosts<PostSummaryDoc>(payload, {
+      contentLocale: { locale },
+      limit: ids.length,
+      pagination: false,
+      where: { id: { in: ids } },
+    })
+    return new Map(result.docs.map((post) => [post.id, post]))
+  }
+
+  const [de, en] = await Promise.all([readCards('de'), readCards('en')])
+  const cards = { de, en }
+
+  return publications.map(({ id, slug, updatedAt, locale, canonicalPath }) => {
+    const post = cards[locale].get(id)
+    if (!post || post.slug !== slug || post.updatedAt !== updatedAt) {
+      throw new PostArchiveIndexChanged('Post publication changed while loading the archive')
+    }
+    return { post, locale, canonicalPath }
+  })
+}
+
+async function assemblePostArchivePage(
+  index: ArchivePost[],
+  { preferredLocale, page = 1 }: PostArchiveOptions,
+  readCards: (publications: ArchivePublication[]) => Promise<PostArchiveEntry[]>,
+): Promise<PaginatedResult<PostArchiveEntry>> {
+  const start = (page - 1) * POSTS_PER_ARCHIVE_PAGE
+  const publications = index.slice(start, start + POSTS_PER_ARCHIVE_PAGE).flatMap((post) => {
+    const publication = post[preferredLocale] ?? post.de ?? post.en
+    return publication ? [publication] : []
+  })
+
+  return {
+    docs: publications.length > 0 ? await readCards(publications) : [],
+    page,
+    totalDocs: index.length,
+    totalPages: Math.ceil(index.length / POSTS_PER_ARCHIVE_PAGE),
+  }
+}
+
+export async function getCachedPostArchivePage(
+  options: PostArchiveOptions,
+): Promise<PaginatedResult<PostArchiveEntry>> {
+  const readIndex = unstable_cache(
+    async () => readPostArchiveIndex(await getPayload({ config: configPromise })),
+    ['post-archive-index'],
+    { tags: buildPostListDataCacheTags(), revalidate: POST_ARCHIVE_REVALIDATE_SECONDS },
+  )
+  const readCards = unstable_cache(
+    async (publications: ArchivePublication[]) =>
+      readPostArchiveCards(await getPayload({ config: configPromise }), publications),
+    ['post-archive-cards'],
+    { tags: buildPostListDataCacheTags(), revalidate: POST_ARCHIVE_REVALIDATE_SECONDS },
   )
 
-export async function getCachedPublishedPostsPage(
-  args: CachedPublishedPostsPageArgs = {},
-): Promise<PaginatedResult<PostSummaryDoc>> {
-  return getCachedPublishedPostsPageByArgs(args)()
+  try {
+    return await assemblePostArchivePage(await readIndex(), options, readCards)
+  } catch (error) {
+    if (!(error instanceof PostArchiveIndexChanged)) throw error
+
+    // A rejected card read is never cached. Rebuild the selection once from the current publication state.
+    const payload = await getPayload({ config: configPromise })
+    return assemblePostArchivePage(await readPostArchiveIndex(payload), options, (publications) =>
+      readPostArchiveCards(payload, publications),
+    )
+  }
 }
 
 export async function findPostBySlug(
@@ -506,6 +622,8 @@ export async function findPublicPostRoute(
 
   let post = await findPostBySlug(payload, slug, false, { locale })
   if (!post?.slug && locale === 'de') {
+    if (!resolveLegacyEnglishPostSlug(slug)) return null
+
     const legacyPost = await findPostDetail(payload, { legacyEnglishSlug: { equals: slug } }, false, { locale: 'en' })
     if (!legacyPost?.slug || !isValidPublicPostSlug(legacyPost.slug)) return null
 
@@ -522,8 +640,8 @@ export async function findPublicPostRoute(
   const alternateLocale = locale === 'de' ? 'en' : 'de'
   const alternateSlug = await findPublishedPostSlug(payload, { id: { equals: post.id } }, alternateLocale)
   if (!alternateSlug || !isValidPublicPostSlug(alternateSlug)) {
-    const legacySlug = post.legacyEnglishSlug
-    if (locale === 'en' && legacySlug && isValidPublicPostSlug(legacySlug)) {
+    const legacySlug = resolveLegacyEnglishPostSlug(post.legacyEnglishSlug)
+    if (locale === 'en' && legacySlug) {
       const occupied = await findPublishedPostSlug(payload, { slug: { equals: legacySlug } }, 'de')
       if (!occupied) return { post, locale, canonicalPath: buildEnglishPostCanonicalPath(post.slug, legacySlug) }
     }
@@ -544,7 +662,7 @@ export async function getCachedPublicPostRoute(slug: string, locale: ContentLoca
 
       return findPublicPostRoute(payload, slug, locale)
     },
-    ['post-detail-localized-category-titles', slug, locale],
+    ['post-detail-localized-category-titles-reachable-legacy-canonical', slug, locale],
     { tags: buildPostDetailDataCacheTags(slug) },
   )()
 }

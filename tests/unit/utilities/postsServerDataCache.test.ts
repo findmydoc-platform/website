@@ -24,10 +24,9 @@ vi.mock('next/cache', () => ({
 import {
   buildPostDetailDataCacheTags,
   buildPostListDataCacheKey,
-  buildPostListDataCacheTags,
   getCachedLatestPosts,
+  getCachedPostArchivePage,
   getCachedPublicPostRoute,
-  getCachedPublishedPostsPage,
 } from '@/utilities/content/serverData/posts'
 
 describe('posts server data cache contract', () => {
@@ -52,7 +51,7 @@ describe('posts server data cache contract', () => {
     ])
     expect(cacheMocks.unstableCache).toHaveBeenCalledWith(
       expect.any(Function),
-      ['post-detail-localized-category-titles', 'hello-world', 'de'],
+      ['post-detail-localized-category-titles-reachable-legacy-canonical', 'hello-world', 'de'],
       {
         tags: ['collection:posts', 'collection:categories', 'slug:posts:hello-world'],
       },
@@ -69,6 +68,21 @@ describe('posts server data cache contract', () => {
         },
       }),
     )
+  })
+
+  it('keeps the English canonical when the legacy alias cannot be looked up verbatim', async () => {
+    const post = { id: 7, slug: 'english-post', title: 'Fixture title', legacyEnglishSlug: 'former ' }
+    cacheMocks.getPayload.mockResolvedValue({
+      find: vi
+        .fn()
+        .mockResolvedValueOnce({ docs: [post] })
+        .mockResolvedValue({ docs: [] }),
+    })
+
+    await expect(getCachedPublicPostRoute('english-post', 'en')).resolves.toMatchObject({
+      canonicalPath: '/en/posts/english-post',
+      post,
+    })
   })
 
   it.each(['foo:bar', 'foo bar', 'foo/bar', ''])(
@@ -147,44 +161,47 @@ describe('posts server data cache contract', () => {
     { locale: 'de', preferred: { title: 'Nachsorge', lang: 'de' }, fallback: { title: 'Recovery', lang: 'en' } },
     { locale: 'en', preferred: { title: 'Aftercare', lang: 'en' }, fallback: { title: 'Vorbereitung', lang: 'de' } },
   ] as const)(
-    'chooses category titles for $locale without falling back on the post',
+    'chooses category titles for $locale archive cards without falling back on the post',
     async ({ locale, preferred, fallback }) => {
       const fallbackId = locale === 'de' ? 10 : 11
+      const posts = [
+        { id: 1, slug: 'preferred-category', publishedAt: '2026-01-02', updatedAt: '2026-01-02', categories: [9] },
+        {
+          id: 2,
+          slug: 'fallback-category',
+          publishedAt: '2026-01-01',
+          updatedAt: '2026-01-01',
+          categories: [fallbackId],
+        },
+      ]
+      const categories = [
+        { id: 9, title: { de: 'Nachsorge', en: 'Aftercare' } },
+        { id: 10, title: { en: 'Recovery' } },
+        { id: 11, title: { de: 'Vorbereitung' } },
+      ]
       const payload = {
-        find: vi
-          .fn()
-          .mockResolvedValueOnce({
-            docs: [
-              { id: 1, categories: [9] },
-              { id: 2, categories: [fallbackId] },
-            ],
-          })
-          .mockResolvedValueOnce({
-            docs: [
-              { id: 9, title: { de: 'Nachsorge', en: 'Aftercare' } },
-              { id: 10, title: { en: 'Recovery' } },
-              { id: 11, title: { de: 'Vorbereitung' } },
-            ],
-          }),
+        find: vi.fn(async (query: { collection: string; locale: string }) => {
+          if (query.collection === 'categories') return { docs: categories }
+          return { docs: query.locale === locale ? posts : [] }
+        }),
       }
       cacheMocks.getPayload.mockResolvedValue(payload)
 
-      await expect(getCachedPublishedPostsPage({ contentLocale: { locale } })).resolves.toMatchObject({
+      await expect(getCachedPostArchivePage({ preferredLocale: locale })).resolves.toMatchObject({
         docs: [
-          { id: 1, categories: [9], categoryLabel: preferred },
-          { id: 2, categories: [fallbackId], categoryLabel: fallback },
+          { locale, post: { id: 1, categories: [9], categoryLabel: preferred } },
+          { locale, post: { id: 2, categories: [fallbackId], categoryLabel: fallback } },
         ],
       })
-      expect(payload.find).toHaveBeenNthCalledWith(
-        1,
+      expect(payload.find).toHaveBeenCalledWith(
         expect.objectContaining({
           collection: 'posts',
           locale,
+          overrideAccess: false,
           fallbackLocale: false,
         }),
       )
-      expect(payload.find).toHaveBeenNthCalledWith(
-        2,
+      expect(payload.find).toHaveBeenCalledWith(
         expect.objectContaining({
           collection: 'categories',
           locale: 'all',
@@ -193,80 +210,13 @@ describe('posts server data cache contract', () => {
           where: { id: { in: [9, fallbackId] } },
         }),
       )
+      expect(cacheMocks.unstableCache).toHaveBeenCalledWith(
+        expect.any(Function),
+        ['post-archive-cards'],
+        expect.objectContaining({
+          tags: expect.arrayContaining(['collection:posts', 'collection:categories', 'surface:posts-list']),
+        }),
+      )
     },
   )
-
-  it('keys public post list cache entries from stable public inputs only', async () => {
-    const payload = {
-      find: vi.fn().mockResolvedValue({
-        docs: [{ id: 2, slug: 'page-2-post' }],
-        totalDocs: 24,
-        totalPages: 2,
-        page: 2,
-      }),
-    }
-    cacheMocks.getPayload.mockResolvedValue(payload)
-
-    await expect(
-      getCachedPublishedPostsPage({
-        contentLocale: {
-          locale: 'de',
-          fallbackLocale: 'en',
-        },
-        limit: 12,
-        page: 2,
-      }),
-    ).resolves.toMatchObject({
-      docs: [{ id: 2, slug: 'page-2-post' }],
-      totalDocs: 24,
-      totalPages: 2,
-      page: 2,
-    })
-
-    expect(buildPostListDataCacheTags()).toEqual([
-      'collection:posts',
-      'collection:categories',
-      'surface:posts-list',
-      'surface:home',
-      'surface:partners-clinics',
-      'surface:sitemap:posts',
-    ])
-    expect(
-      buildPostListDataCacheKey({ contentLocale: { locale: 'de', fallbackLocale: 'en' }, limit: 12, page: 2 }),
-    ).toBe(
-      JSON.stringify({
-        version: 'localized-category-titles',
-        locale: 'de',
-        fallbackLocale: 'en',
-        limit: 12,
-        page: 2,
-      }),
-    )
-    expect(cacheMocks.unstableCache).toHaveBeenCalledWith(
-      expect.any(Function),
-      [
-        'posts-list-page',
-        buildPostListDataCacheKey({ contentLocale: { locale: 'de', fallbackLocale: 'en' }, limit: 12, page: 2 }),
-      ],
-      {
-        tags: [
-          'collection:posts',
-          'collection:categories',
-          'surface:posts-list',
-          'surface:home',
-          'surface:partners-clinics',
-          'surface:sitemap:posts',
-        ],
-      },
-    )
-    expect(payload.find).toHaveBeenCalledWith(
-      expect.objectContaining({
-        collection: 'posts',
-        draft: false,
-        fallbackLocale: false,
-        locale: 'de',
-        overrideAccess: false,
-      }),
-    )
-  })
 })

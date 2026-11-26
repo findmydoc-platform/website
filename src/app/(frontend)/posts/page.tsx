@@ -5,17 +5,16 @@ import PageClient from './page.client'
 import { Container } from '@/components/molecules/Container'
 import { BlogHero } from '@/components/organisms/Blog/BlogHero'
 import { BlogCard } from '@/components/organisms/Blog/BlogCard'
-import { normalizePost } from '@/utilities/blog/normalizePost'
+import { normalizeArchiveCard } from './archiveCards'
 import { createBlogBreadcrumb, HOME_BREADCRUMB } from '@/utilities/breadcrumbs'
-import { buildPostsIndexPath, buildPostsPagePath } from '@/utilities/content/postPaths'
-import { getCachedPublishedPostsPage } from '@/utilities/content/serverData'
-import { resolveContentLocaleContext } from '@/utilities/contentLocalization'
+import { buildPostsIndexPath } from '@/utilities/content/postPaths'
+import { getCachedPostArchivePage } from '@/utilities/content/serverData'
+import { DEFAULT_CONTENT_LOCALE, resolveContentLocaleContext } from '@/utilities/contentLocalization'
 import { createSiteMetadata } from '@/utilities/generateMeta'
 import { JsonLdScript, buildPostsIndexJsonLd } from '@/utilities/structuredData'
 import { Heading } from '@/components/atoms/Heading'
 import { PostsPagination } from './_components/PostsPagination'
 
-export const dynamic = 'force-static'
 export const revalidate = 600
 
 const EMPTY_POSTS_COPY = {
@@ -39,21 +38,25 @@ export default async function Page({ searchParams: searchParamsPromise }: Args =
   const searchParams = await searchParamsPromise
   const contentLocale = resolveContentLocaleContext(searchParams?.locale)
 
-  const posts = await getCachedPublishedPostsPage({
-    contentLocale,
-    limit: 12,
+  const posts = await getCachedPostArchivePage({
+    preferredLocale: contentLocale.locale ?? DEFAULT_CONTENT_LOCALE,
   })
 
-  const normalizedPosts = posts.docs.map((post) => normalizePost(post, { contentLocale }))
+  const normalizedPosts = posts.docs.map(normalizeArchiveCard)
   const [featuredPost, ...gridPosts] = normalizedPosts
   const moreArticlesCount = Math.max((posts.totalDocs || 0) - (featuredPost ? 1 : 0), 0)
   const breadcrumbs = [HOME_BREADCRUMB, createBlogBreadcrumb(buildPostsIndexPath(contentLocale))]
   const emptyCopy = contentLocale.locale === 'de' ? EMPTY_POSTS_COPY.de : EMPTY_POSTS_COPY.en
 
   return (
-    <div className="pb-20 sm:pb-24">
+    <div className="pb-20 sm:pb-24" lang="en">
       <PageClient />
-      <JsonLdScript data={buildPostsIndexJsonLd({ breadcrumbs, posts: normalizedPosts })} />
+      <JsonLdScript
+        data={buildPostsIndexJsonLd({
+          breadcrumbs: [HOME_BREADCRUMB, createBlogBreadcrumb(buildPostsIndexPath())],
+          posts: normalizedPosts,
+        })}
+      />
 
       {/* Hero Section */}
       <BlogHero breadcrumbs={breadcrumbs} />
@@ -62,6 +65,7 @@ export default async function Page({ searchParams: searchParamsPromise }: Args =
         <Container className="mt-6 mb-12 sm:mt-8 sm:mb-16">
           <section
             aria-labelledby="empty-posts-heading"
+            lang={contentLocale.locale ?? DEFAULT_CONTENT_LOCALE}
             className="rounded-3xl border border-border bg-muted/30 px-5 py-10 text-center sm:px-8 sm:py-14"
           >
             <Heading id="empty-posts-heading" as="h2" size="h3" align="center">
@@ -80,7 +84,9 @@ export default async function Page({ searchParams: searchParamsPromise }: Args =
           <Heading as="h2" size="h3" align="left" className="mb-6">
             Latest Article
           </Heading>
-          <BlogCard.Overlay {...featuredPost} />
+          <div lang={featuredPost.locale}>
+            <BlogCard.Overlay {...featuredPost} />
+          </div>
         </Container>
       )}
 
@@ -97,7 +103,9 @@ export default async function Page({ searchParams: searchParamsPromise }: Args =
           </div>
           <div className="grid gap-6 sm:grid-cols-2 md:gap-8 xl:grid-cols-3">
             {gridPosts.map((post) => (
-              <BlogCard.Simple key={post.href} {...post} />
+              <div key={post.href} lang={post.locale} className="min-w-0">
+                <BlogCard.Simple {...post} />
+              </div>
             ))}
           </div>
         </Container>
@@ -105,24 +113,17 @@ export default async function Page({ searchParams: searchParamsPromise }: Args =
 
       <Container>
         {posts.totalPages > 1 && posts.page && (
-          <PostsPagination
-            getPathForPage={(page) => buildPostsPagePath(page, contentLocale)}
-            page={posts.page}
-            totalPages={posts.totalPages}
-          />
+          <PostsPagination contentLocale={contentLocale} page={posts.page} totalPages={posts.totalPages} />
         )}
       </Container>
     </div>
   )
 }
 
-export async function generateMetadata({ searchParams: searchParamsPromise }: Args = {}): Promise<Metadata> {
-  const searchParams = await searchParamsPromise
-  const contentLocale = resolveContentLocaleContext(searchParams?.locale)
-
+export function generateMetadata(): Metadata {
   return createSiteMetadata({
     title: 'Our Blog - Health & Medicine',
     description: 'Explore expert insights and current topics across health, medicine, and patient care.',
-    path: buildPostsIndexPath(contentLocale),
+    path: buildPostsIndexPath(),
   })
 }

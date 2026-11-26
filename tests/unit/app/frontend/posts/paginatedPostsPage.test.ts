@@ -1,9 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
-  getPayloadMock: vi.fn(),
-  findMock: vi.fn(),
-  countMock: vi.fn(),
+  getCachedPostArchivePageMock: vi.fn(),
   notFoundMock: vi.fn(() => {
     throw new Error('notFound')
   }),
@@ -17,20 +15,9 @@ vi.mock('next/navigation', () => ({
   redirect: mocks.redirectMock,
 }))
 
-vi.mock('@payload-config', () => ({
-  default: {},
+vi.mock('@/utilities/content/serverData', () => ({
+  getCachedPostArchivePage: mocks.getCachedPostArchivePageMock,
 }))
-
-vi.mock('payload', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('payload')>()
-  return {
-    ...actual,
-    getPayload: mocks.getPayloadMock.mockResolvedValue({
-      find: mocks.findMock,
-      count: mocks.countMock,
-    }),
-  }
-})
 
 describe('Paginated posts page route', () => {
   beforeEach(() => {
@@ -50,8 +37,7 @@ describe('Paginated posts page route', () => {
     ).rejects.toThrow('redirect:/posts')
 
     expect(mocks.redirectMock).toHaveBeenCalledWith('/posts')
-    expect(mocks.getPayloadMock).not.toHaveBeenCalled()
-    expect(mocks.findMock).not.toHaveBeenCalled()
+    expect(mocks.getCachedPostArchivePageMock).not.toHaveBeenCalled()
   })
 
   it('returns notFound for non-numeric page params', async () => {
@@ -65,11 +51,10 @@ describe('Paginated posts page route', () => {
     ).rejects.toThrow('notFound')
 
     expect(mocks.notFoundMock).toHaveBeenCalled()
-    expect(mocks.getPayloadMock).not.toHaveBeenCalled()
-    expect(mocks.findMock).not.toHaveBeenCalled()
+    expect(mocks.getCachedPostArchivePageMock).not.toHaveBeenCalled()
   })
 
-  it('returns notFound for page 0 and skips payload initialization', async () => {
+  it('returns notFound for page 0 and skips the archive lookup', async () => {
     const pageModule = await getModule()
 
     await expect(
@@ -80,12 +65,11 @@ describe('Paginated posts page route', () => {
     ).rejects.toThrow('notFound')
 
     expect(mocks.notFoundMock).toHaveBeenCalled()
-    expect(mocks.getPayloadMock).not.toHaveBeenCalled()
-    expect(mocks.findMock).not.toHaveBeenCalled()
+    expect(mocks.getCachedPostArchivePageMock).not.toHaveBeenCalled()
   })
 
   it('returns notFound for out-of-range pages', async () => {
-    mocks.findMock.mockResolvedValueOnce({
+    mocks.getCachedPostArchivePageMock.mockResolvedValueOnce({
       docs: [],
       totalPages: 2,
       totalDocs: 24,
@@ -101,15 +85,7 @@ describe('Paginated posts page route', () => {
       }),
     ).rejects.toThrow('notFound')
 
-    expect(mocks.findMock).toHaveBeenCalled()
+    expect(mocks.getCachedPostArchivePageMock).toHaveBeenCalled()
     expect(mocks.notFoundMock).toHaveBeenCalled()
-  })
-
-  it('builds static params with page size 12 and skips page 1', async () => {
-    mocks.countMock.mockResolvedValueOnce({ totalDocs: 25 })
-
-    const pageModule = await getModule()
-
-    await expect(pageModule.generateStaticParams()).resolves.toEqual([{ pageNumber: '2' }, { pageNumber: '3' }])
   })
 })

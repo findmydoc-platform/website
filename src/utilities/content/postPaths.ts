@@ -14,6 +14,17 @@ export const buildPostsIndexPath = (contentLocale?: ContentLocaleContext): strin
 export const buildPostPath = (slug: string, contentLocale?: ContentLocaleContext): string =>
   buildCanonicalPostPath(slug, contentLocale?.locale ?? DEFAULT_CONTENT_LOCALE)
 
+// A legacy alias must match the persisted slug verbatim for the detail lookup to resolve it.
+export function resolveLegacyEnglishPostSlug(slug?: string | null): string | undefined {
+  if (!slug || slug.trim() !== slug) return
+  try {
+    buildCanonicalPostPath(slug)
+    return slug
+  } catch {
+    return
+  }
+}
+
 export const buildEnglishPostCanonicalPath = (slug: string, availableLegacySlug?: string): string =>
   availableLegacySlug ? buildCanonicalPostPath(availableLegacySlug) : buildCanonicalPostPath(slug, 'en')
 

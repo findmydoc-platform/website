@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto'
 import path from 'node:path'
 import { config as dotenvConfig } from 'dotenv'
 
@@ -89,6 +90,22 @@ export function applyE2ERuntimeDefaults(env = process.env) {
     env.NEXT_PUBLIC_DEPLOYMENT_ENV = 'test'
     // Regular E2E flows cover the full public experience; the dedicated temporary landing lane evaluates PostHog.
     env.PUBLIC_SITE_FALLBACK_MODE ??= 'full'
+    if (!env.PLAYWRIGHT_BASE_URL) {
+      for (const key of ['AUTH_RECOVERY_CORRELATION_KEYS_JSON', 'AUTH_VERIFICATION_CORRELATION_KEYS_JSON']) {
+        let usesTestKeys = false
+        try {
+          usesTestKeys = JSON.parse(env[key] ?? '').environment === 'test'
+        } catch {
+          // Generate an ephemeral key ring for the local Playwright server.
+        }
+        if (!usesTestKeys) {
+          env[key] = JSON.stringify({
+            environment: 'test',
+            keys: [{ version: 'playwright', secret: randomBytes(32).toString('hex') }],
+          })
+        }
+      }
+    }
   }
 
   env.NEXT_PUBLIC_SERVER_URL = baseUrl

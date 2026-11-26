@@ -52,6 +52,7 @@ export function HeaderLanguageSwitcher({
         close: copy.close,
       }}
       requiresConfirmation={route?.requiresConfirmation}
+      onMenuOpenChange={route?.onMenuOpenChange}
       onConfirm={(href) => {
         route?.onNavigate?.(href)
         router.push(href)

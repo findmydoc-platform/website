@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
-import { getTranslations } from 'next-intl/server'
 import type { ReactNode } from 'react'
+import { LanguageSwitchRoute } from '@/features/languageSwitch/LanguageSwitchRouteProvider.client'
+import { authCopySentences } from '@/features/uiCopy/patientAuthPresentation'
 import { ConfirmTokenHashForm } from './ConfirmTokenHashForm'
 import { createSiteMetadata } from '@/utilities/generateMeta'
 import { cookies } from 'next/headers'
@@ -44,31 +44,22 @@ export async function confirmMetadata(props: ConfirmPageProps, locale: UiCopyLoc
   }
 }
 
-async function LocalizedConfirmation({
+function LocalizedConfirmation({
   children,
   locale,
   type,
 }: Readonly<{ children: ReactNode; locale: UiCopyLocale; type: LocalizedAuthConfirmationType }>) {
-  const translate = await getTranslations('auth.languageSwitch')
-  const alternateLocale = locale === 'de' ? 'en' : 'de'
-  const alternatePath = localizedPatientAuthPath(AUTH_CONFIRMATION_PATH, alternateLocale)
-
+  const suffix = `?type=${type}`
   return (
     <PublicAuthRouteShell>
-      <div className="w-full max-w-md">
-        <nav aria-label={translate('label')} className="mb-2 flex justify-end">
-          <Link
-            className="inline-flex min-h-11 items-center rounded-md px-3 text-sm text-primary underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-            href={`${alternatePath}?type=${type}`}
-            hrefLang={alternateLocale}
-            lang={alternateLocale}
-            prefetch={false}
-          >
-            {translate('alternate')}
-          </Link>
-        </nav>
-        {children}
-      </div>
+      <LanguageSwitchRoute
+        locale={locale}
+        targets={{
+          de: localizedPatientAuthPath(AUTH_CONFIRMATION_PATH, 'de') + suffix,
+          en: localizedPatientAuthPath(AUTH_CONFIRMATION_PATH, 'en') + suffix,
+        }}
+      />
+      {children}
     </PublicAuthRouteShell>
   )
 }
@@ -97,6 +88,7 @@ export async function ConfirmAuthLinkPage({ locale, ...props }: ConfirmPageProps
   }
   if (type === 'patient-verification') {
     const copy = await patientVerificationCopy(locale)
+    const [invalidTitle, ...invalidDetails] = authCopySentences(copy.invalid, locale)
     let csrf: string | null = null
     let inquiryContinuationPending = false
     try {
@@ -117,7 +109,12 @@ export async function ConfirmAuthLinkPage({ locale, ...props }: ConfirmPageProps
     }
     return (
       <LocalizedConfirmation locale={locale} type={type}>
-        <PatientVerificationForm copy={copy} csrf={csrf} inquiryContinuationPending={inquiryContinuationPending} />
+        <PatientVerificationForm
+          copy={{ ...copy, invalid: invalidDetails.join(' ') || copy.invalid }}
+          csrf={csrf}
+          invalidTitle={invalidTitle}
+          inquiryContinuationPending={inquiryContinuationPending}
+        />
       </LocalizedConfirmation>
     )
   }

@@ -1,7 +1,9 @@
 import { getLocale, getTranslations } from 'next-intl/server'
 
 import { localizedPatientAuthPath } from '@/i18n/patientAuthPath'
+import { RECOVERY_PASSWORD_MIN_LENGTH } from '@/auth/actions/websiteRecoveryPassword'
 import type { UiCopyLocale } from '@/i18n/requestLocale'
+import { authCopySentences } from './patientAuthPresentation'
 
 export async function recoveryMetadataTitle(page: 'request' | 'confirmation' | 'completion', locale?: UiCopyLocale) {
   const namespace = `auth.passwordRecovery.${page}` as const
@@ -19,6 +21,7 @@ export async function recoveryRequestCopy(preparationExpiresAt?: string) {
       })
     : undefined
 
+  const success = translate('success')
   return {
     signInOptions: translate('signInOptions'),
     patientSignIn: translate('patientSignIn'),
@@ -34,7 +37,8 @@ export async function recoveryRequestCopy(preparationExpiresAt?: string) {
       requiredEmail: translate('requiredEmail'),
       invalidRequest: translate('invalidRequest'),
       unavailable: translate('unavailable'),
-      success: translate('success'),
+      success,
+      successTitle: translate('pageTitle'),
       sending: translate('sending'),
       submit: translate('submit'),
     },
@@ -45,8 +49,11 @@ export type RecoveryRequestFormCopy = Awaited<ReturnType<typeof recoveryRequestC
 
 async function sharedRecoveryCopy() {
   const [translate, locale] = await Promise.all([getTranslations('auth.passwordRecovery.shared'), getLocale()])
+  const copy = translate('invalidLink')
+  const [title, ...details] = authCopySentences(copy, locale === 'de' ? 'de' : 'en')
   return {
-    invalidLink: translate('invalidLink'),
+    invalidTitle: title ?? copy,
+    invalidLink: details.join(' ') || copy,
     retry: translate('retry'),
     requestLink: {
       label: translate('requestLink'),
@@ -75,10 +82,12 @@ export async function recoveryConfirmationCopy() {
 export type RecoveryConfirmationCopy = Awaited<ReturnType<typeof recoveryConfirmationCopy>>
 
 export async function recoveryCompletionCopy() {
-  const [translate, shared] = await Promise.all([
+  const [translate, shared, registration] = await Promise.all([
     getTranslations('auth.passwordRecovery.completion'),
     sharedRecoveryCopy(),
+    getTranslations('auth.patientRegistration'),
   ])
+  const passwordHint = registration('passwordTooShort', { minimum: RECOVERY_PASSWORD_MIN_LENGTH })
   return {
     shared,
     title: translate('title'),
@@ -88,10 +97,11 @@ export async function recoveryCompletionCopy() {
     inquiryTitle: translate('inquiryTitle'),
     inquiryDescription: translate('inquiryDescription'),
     password: translate('password'),
+    passwordHint,
     confirmPassword: translate('confirmPassword'),
     requiredPassword: translate('requiredPassword'),
     requiredConfirmation: translate('requiredConfirmation'),
-    shortPassword: translate('shortPassword'),
+    shortPassword: passwordHint,
     longPassword: translate('longPassword'),
     mismatchedPassword: translate('mismatchedPassword'),
     pending: translate('pending'),

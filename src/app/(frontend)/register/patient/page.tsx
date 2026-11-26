@@ -45,7 +45,7 @@ export default async function PatientRegistrationPage({
         }}
         registration={{
           copy,
-          containerClassName: PUBLIC_AUTH_FORM_CONTAINER_CLASSNAME,
+          containerClassName: `${PUBLIC_AUTH_FORM_CONTAINER_CLASSNAME} [&_a]:underline [&_a]:underline-offset-4 max-sm:[&_a]:inline-flex max-sm:[&_a]:min-h-11 max-sm:[&_a]:items-center max-sm:[&_a]:align-middle`,
           initialValues: preparation
             ? { firstName: preparation.firstName, lastName: preparation.lastName, email: preparation.email }
             : undefined,

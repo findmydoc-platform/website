@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { cookies, headers } from 'next/headers'
 import { ResetPasswordCompleteForm } from './ResetPasswordCompleteForm'
-import { PublicAuthRouteShell } from '@/app/(frontend)/_components/PublicAuthRouteShell'
+import { RecoveryCompletionShell } from './RecoveryCompletionShell.client'
 import { createSiteMetadata } from '@/utilities/generateMeta'
 import { resolveTransactionalEmailEnvironment } from '@/features/transactionalEmail/environment'
 import { resolveRecoveryKeys } from '@/auth/actions/recoveryConfiguration'
@@ -45,15 +45,16 @@ export default async function CompleteResetPage({
     /* Missing authority shares the safe invalid-link state. */
   }
   const [copy, requestHeaders] = await Promise.all([recoveryCompletionCopy(), headers()])
+  const locale = uiCopyLocaleFromHeaders(requestHeaders)
   return (
-    <PublicAuthRouteShell>
+    <RecoveryCompletionShell locale={locale}>
       <ResetPasswordCompleteForm
         copy={copy}
         csrf={csrf}
-        locale={uiCopyLocaleFromHeaders(requestHeaders)}
+        locale={locale}
         resume={resume}
         inquiryContinuationPending={inquiryContinuationPending}
       />
-    </PublicAuthRouteShell>
+    </RecoveryCompletionShell>
   )
 }

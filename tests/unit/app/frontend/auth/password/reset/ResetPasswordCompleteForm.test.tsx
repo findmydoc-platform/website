@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import '@testing-library/jest-dom'
+import { authCopySentences } from '@/features/uiCopy/patientAuthPresentation'
 import de from '@findmydoc-platform/ui-copy/de.json'
 import en from '@findmydoc-platform/ui-copy/en.json'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
@@ -9,7 +10,9 @@ import { ResetPasswordCompleteForm } from '@/app/(frontend)/auth/password/reset/
 const catalog = en.auth.passwordRecovery
 const englishCopy = {
   ...catalog.completion,
+  passwordHint: catalog.completion.shortPassword,
   shared: {
+    invalidTitle: authCopySentences(catalog.shared.invalidLink, 'en')[0]!,
     invalidLink: catalog.shared.invalidLink,
     retry: catalog.shared.retry,
     requestLink: { href: '/en/auth/password/reset', label: catalog.shared.requestLink },
@@ -35,7 +38,9 @@ describe('Website recovery password completion form', () => {
         csrf="offline-csrf"
         copy={{
           ...catalog.completion,
+          passwordHint: catalog.completion.shortPassword,
           shared: {
+            invalidTitle: authCopySentences(catalog.shared.invalidLink, 'de')[0]!,
             invalidLink: catalog.shared.invalidLink,
             retry: catalog.shared.retry,
             requestLink: { href: '/auth/password/reset', label: catalog.shared.requestLink },
@@ -49,7 +54,9 @@ describe('Website recovery password completion form', () => {
     const submit = screen.getByRole('button', { name: 'Passwort aktualisieren' })
     fireEvent.click(submit)
     expect(password).toHaveFocus()
-    expect(password).toHaveAccessibleDescription(/\S/)
+    expect(password).toHaveAccessibleDescription(
+      `${catalog.completion.shortPassword} ${catalog.completion.requiredPassword}`,
+    )
     fireEvent.change(password, { target: { value: 'OfflinePassword123' } }) // pragma: allowlist secret
     fireEvent.change(confirmation, { target: { value: 'DifferentPassword123' } }) // pragma: allowlist secret
     fireEvent.click(submit)

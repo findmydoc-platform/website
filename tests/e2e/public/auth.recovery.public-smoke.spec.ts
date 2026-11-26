@@ -80,6 +80,9 @@ for (const { locale, prefix, emailLabel } of [
     await page.screenshot({ path: test.info().outputPath(`recovery-${locale}-short-height.png`), fullPage: true })
     await submit.click()
     await expect(form.getByRole('status')).toBeVisible()
+    await expect(page.getByRole('main').getByRole('heading', { level: 1 })).toBeFocused()
+    await expect(emailField).toBeDisabled()
+    await expect(submit).toBeDisabled()
     await expect(emailField).toHaveValue('')
     expect(requests).toEqual([{ email }, { email }])
 
@@ -89,6 +92,10 @@ for (const { locale, prefix, emailLabel } of [
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width)
       await page.screenshot({ path: test.info().outputPath(`recovery-${locale}-${width}.png`), fullPage: true })
     }
+    await page.setViewportSize({ width: 375, height: 400 })
+    await page.getByRole('main').getByRole('navigation').getByRole('link').first().click()
+    await expect(page).toHaveURL(new URL(`${prefix}/login/patient`, baseURL).href)
+    await expect(page.locator('html')).toHaveAttribute('lang', locale)
     await page.goto(`${prefix}${recoveryRoute}?reason=expired`, { waitUntil: 'domcontentloaded' })
     await expect(form.getByRole('status')).toBeVisible()
     await expect(emailField).toHaveValue('')

@@ -15,7 +15,14 @@ test('keeps failed requests on the recovery form without exposing response detai
   const providerDetail = 'synthetic-private-provider-detail'
   const fetch = vi.fn().mockResolvedValue({ status: 503, ok: false, json: async () => ({ error: providerDetail }) })
   vi.stubGlobal('fetch', fetch)
-  render(<ResetPasswordRequestForm copy={en.auth.passwordRecovery.request} />)
+  render(
+    <ResetPasswordRequestForm
+      copy={{
+        ...en.auth.passwordRecovery.request,
+        successTitle: en.auth.passwordRecovery.request.pageTitle,
+      }}
+    />,
+  )
 
   const email = screen.getByRole('textbox', { name: 'Email' })
   expect(email.closest('form')).toHaveAttribute('method', 'post')

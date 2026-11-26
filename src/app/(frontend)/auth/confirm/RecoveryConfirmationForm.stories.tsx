@@ -1,3 +1,4 @@
+import { authCopySentences } from '@/features/uiCopy/patientAuthPresentation'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import en from '@findmydoc-platform/ui-copy/en.json'
 import { expect, fn, userEvent, within } from 'storybook/test'
@@ -12,6 +13,7 @@ const meta = {
     copy: {
       ...catalog.confirmation,
       shared: {
+        invalidTitle: authCopySentences(catalog.shared.invalidLink, 'en')[0]!,
         invalidLink: catalog.shared.invalidLink,
         retry: catalog.shared.retry,
         requestLink: { href: '/en/auth/password/reset', label: catalog.shared.requestLink },

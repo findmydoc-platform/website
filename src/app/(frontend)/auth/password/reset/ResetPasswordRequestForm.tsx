@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useLayoutEffect, useRef, useState } from 'react'
+import { type ReactNode, useCallback, useId, useLayoutEffect, useRef, useState } from 'react'
 import { z } from 'zod'
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/atoms/card'
 import { Field, FieldError } from '@/components/atoms/field'
@@ -50,6 +50,7 @@ export function ResetPasswordRequestForm({
   initialEmail,
   preparationNotice,
   languageSwitch,
+  signInOptions,
 }: {
   copy: RecoveryRequestFormCopy
   reason?: ResetPasswordReason | null
@@ -57,9 +58,12 @@ export function ResetPasswordRequestForm({
   initialEmail?: string
   preparationNotice?: string
   languageSwitch?: { locale: UiCopyLocale; targets: LanguageSwitchTargets }
+  signInOptions?: ReactNode
 }) {
   const [formState, setFormState] = useState<FormState>({ status: 'idle' })
   const formRef = useRef<HTMLFormElement>(null)
+  const emailId = useId()
+  const headingRef = useRef<HTMLHeadingElement>(null)
   const handoff = usePatientAuthFormHandoff()
   const onNavigate = useCallback(
     (href: string) => {
@@ -104,7 +108,7 @@ export function ResetPasswordRequestForm({
 
     if (!result.success) {
       formValidation.setCustomFieldError('email', copy.invalidEmail)
-      document.getElementById('email')?.focus()
+      patientAuthFormInput(form, 'email')?.focus()
       setFormState({ status: 'idle' })
       return
     }
@@ -126,49 +130,56 @@ export function ResetPasswordRequestForm({
   const isSubmitting = formState.status === 'submitting'
   const isSuccess = formState.status === 'success'
 
+  useLayoutEffect(() => {
+    if (isSuccess) headingRef.current?.focus()
+  }, [isSuccess])
+
   return (
-    <div className="flex items-start justify-center py-6 sm:px-4 sm:py-12">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <Heading as="h1" align="center" size="h4" className="font-semibold">
-            {copy.title}
-          </Heading>
-          <CardDescription className="text-center text-foreground">{copy.description}</CardDescription>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <form
-            ref={formRef}
-            method="post"
-            action="/api/auth/password/reset"
-            onSubmit={handleSubmit}
-            onInvalid={formValidation.handleInvalid}
-            className="space-y-4"
-            noValidate
-          >
-            {reason === 'expired' ? (
-              <Alert variant="warning" role="status">
-                {copy.expired}
-              </Alert>
-            ) : null}
-            {preparationNotice ? (
-              <Alert variant="info" role="status">
-                {preparationNotice}
-              </Alert>
-            ) : null}
-            {formState.status === 'failed' && (
-              <Alert variant="error">
-                {formState.failure === 'invalid-email' ? copy.invalidRequest : copy.unavailable}
-              </Alert>
-            )}
-            {isSuccess && (
-              <Alert variant="success" role="status">
-                {copy.success}
-              </Alert>
-            )}
+    <Card className="w-full max-w-md">
+      <CardHeader>
+        <Heading ref={headingRef} tabIndex={-1} as="h1" align="center" size="h4">
+          {isSuccess ? copy.successTitle : copy.title}
+        </Heading>
+        {!isSuccess && <CardDescription className="text-center text-foreground">{copy.description}</CardDescription>}
+      </CardHeader>
+      <CardContent>
+        <form
+          ref={formRef}
+          method="post"
+          action="/api/auth/password/reset"
+          onSubmit={handleSubmit}
+          onInvalid={formValidation.handleInvalid}
+          className="space-y-4"
+          noValidate
+        >
+          <p aria-live="polite" className="sr-only">
+            {isSubmitting ? copy.sending : null}
+          </p>
+          {!isSuccess && reason === 'expired' ? (
+            <Alert variant="warning" role="status">
+              {copy.expired}
+            </Alert>
+          ) : null}
+          {preparationNotice ? (
+            <Alert variant="info" role="status">
+              {preparationNotice}
+            </Alert>
+          ) : null}
+          {formState.status === 'failed' && (
+            <Alert variant="error">
+              {formState.failure === 'invalid-email' ? copy.invalidRequest : copy.unavailable}
+            </Alert>
+          )}
+          {isSuccess && (
+            <Alert variant="success" role="status">
+              {copy.success}
+            </Alert>
+          )}
+          <div className={isSuccess ? 'space-y-4 border-t border-site-divider pt-4' : 'space-y-4'}>
             <Field data-invalid={formValidation.getFieldError('email') ? true : undefined}>
-              <Label htmlFor="email">{copy.email}</Label>
+              <Label htmlFor={emailId}>{copy.email}</Label>
               <Input
-                id="email"
+                id={emailId}
                 name="email"
                 type="email"
                 autoComplete="email"
@@ -184,14 +195,19 @@ export function ResetPasswordRequestForm({
             </Field>
             <Button
               type="submit"
-              className="h-auto min-h-10 w-full whitespace-normal"
+              className={
+                isSuccess
+                  ? 'h-auto min-h-11 w-full whitespace-normal disabled:bg-muted disabled:text-foreground disabled:opacity-100'
+                  : 'h-auto min-h-11 w-full whitespace-normal'
+              }
               disabled={isSubmitting || isSuccess}
             >
               {isSubmitting ? copy.sending : copy.submit}
             </Button>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+          </div>
+        </form>
+        {signInOptions}
+      </CardContent>
+    </Card>
   )
 }

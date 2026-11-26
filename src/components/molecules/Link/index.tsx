@@ -12,6 +12,7 @@ export type UiLinkProps = {
   hoverEffect?: ButtonProps['hoverEffect']
   label?: string | null
   newTab?: boolean
+  prefetch?: boolean
   size?: ButtonProps['size'] | null
   variant?: 'default' | 'footer'
 }
@@ -25,6 +26,7 @@ export const UiLink: React.FC<UiLinkProps> = (props) => {
     hoverEffect,
     label,
     newTab,
+    prefetch,
     size: sizeFromProps,
     variant = 'default',
   } = props
@@ -38,7 +40,7 @@ export const UiLink: React.FC<UiLinkProps> = (props) => {
 
   if (appearance === 'inline') {
     return (
-      <Link className={cn(className, variantClasses)} href={href} {...newTabProps}>
+      <Link className={cn(className, variantClasses)} href={href} prefetch={prefetch} {...newTabProps}>
         {label && label}
         {children && children}
       </Link>
@@ -47,7 +49,7 @@ export const UiLink: React.FC<UiLinkProps> = (props) => {
 
   return (
     <Button asChild className={className} hoverEffect={hoverEffect} size={size} variant={appearance}>
-      <Link className={cn(className, variantClasses)} href={href} {...newTabProps}>
+      <Link className={cn(className, variantClasses)} href={href} prefetch={prefetch} {...newTabProps}>
         {label && label}
         {children && children}
       </Link>

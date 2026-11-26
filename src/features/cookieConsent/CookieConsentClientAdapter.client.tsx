@@ -14,11 +14,16 @@ import {
 } from '@/posthog/client-api'
 
 import { readCookieConsentFromDocument, writeCookieConsentToDocument } from './cookie'
+import { useCookieConsentLauncherSlot } from './CookieConsentLauncherSlot.client'
 
 export function CookieConsentClientAdapter(
-  props: Omit<CookieConsentManagerProps, 'onAnalyticsConsentChange' | 'onPersistConsent' | 'readConsent'>,
+  props: Omit<
+    CookieConsentManagerProps,
+    'onAnalyticsConsentChange' | 'onPersistConsent' | 'readConsent' | 'launcherContainer' | 'onInitialPromptClose'
+  >,
 ) {
   const pathname = usePathname()
+  const launcherSlot = useCookieConsentLauncherSlot()
   const legalHrefs = [props.config?.privacyPolicyHref, props.config?.imprintLink?.href]
   const deferInitialPrompt = legalHrefs.some((href) => {
     if (!href?.startsWith('/') || href.startsWith('//')) return false
@@ -60,6 +65,14 @@ export function CookieConsentClientAdapter(
       <CookieConsentManager
         {...props}
         deferInitialPrompt={deferInitialPrompt}
+        launcherContainer={launcherSlot}
+        onInitialPromptClose={() => {
+          const heading = launcherSlot?.closest('main')?.querySelector('h1')
+          if (!heading) return false
+          heading.tabIndex = -1
+          heading.focus()
+          return document.activeElement === heading
+        }}
         onAnalyticsConsentChange={handleAnalyticsConsentChange}
         onPersistConsent={writeCookieConsentToDocument}
         readConsent={readCookieConsentFromDocument}

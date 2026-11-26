@@ -2,6 +2,7 @@ import {
   PUBLIC_AUTH_FORM_CONTAINER_CLASSNAME,
   PublicAuthRouteShell,
 } from '@/app/(frontend)/_components/PublicAuthRouteShell'
+import { Heading } from '@/components/atoms/Heading'
 import { AuthFlashStatus } from '@/app/(frontend)/_components/AuthFlashStatus'
 import * as LoginForm from '@/components/organisms/Auth/LoginForm'
 import { PATIENT_LOGIN_PATH } from '@/features/favorites/redirects'
@@ -35,7 +36,7 @@ export default async function LoginPage({
       )
     : null
   const copy = await patientLoginCopy(preparation?.expiresAt)
-  const showCheckEmailStatus = resolvedSearchParams?.message === 'patient-check-email'
+  const showCheckEmailStatus = resolvedSearchParams?.message === 'patient-check-email' && !copy.inquirySaved
   const registrationHref = localizedPatientAuthPath('/register/patient', copy.locale)
   const recoveryHref = localizedPatientAuthPath('/auth/password/reset', copy.locale)
   const inquiryQuery = resolvedSearchParams?.inquiry
@@ -72,24 +73,33 @@ export default async function LoginPage({
         validationMessages={copy.validationMessages}
         className={`w-full max-w-md ${PUBLIC_AUTH_FORM_CONTAINER_CLASSNAME}`}
       >
-        <LoginForm.Header title={copy.title} description={copy.description} />
+        {showCheckEmailStatus ? (
+          <Heading as="h1" size="h4" align="center" className="mb-4">
+            {copy.registrationConfirmation.title}
+          </Heading>
+        ) : (
+          <LoginForm.Header title={copy.title} description={copy.description} />
+        )}
         <LoginForm.Status
-          message={copy.inquirySaved ?? (showCheckEmailStatus ? copy.checkEmail : undefined)}
+          message={copy.inquirySaved ?? (showCheckEmailStatus ? copy.registrationConfirmation.message : undefined)}
           variant={showCheckEmailStatus ? 'success' : undefined}
         />
         <AuthFlashStatus messages={{ 'password-reset-complete': copy.passwordResetComplete }} />
-        <LoginForm.Form>
+        <LoginForm.Form className={showCheckEmailStatus ? 'border-t border-site-divider pt-4' : undefined}>
           <LoginForm.EmailField
             label={copy.emailLabel}
             placeholder={copy.emailPlaceholder}
             defaultValue={preparation?.email}
           />
           <LoginForm.PasswordField
+            className="[&_a]:inline-flex [&_a]:min-h-11 [&_a]:items-center [&_a]:underline [&_a]:underline-offset-4"
             label={copy.passwordLabel}
             forgotPasswordLabel={copy.forgotPassword}
             forgotPasswordHref={preparation ? `${recoveryHref}${inquiryQuery}` : recoveryHref}
           />
-          <LoginForm.SubmitButton loadingText={copy.submitting}>{copy.submit}</LoginForm.SubmitButton>
+          <LoginForm.SubmitButton loadingText={copy.submitting} variant={showCheckEmailStatus ? 'outline' : 'default'}>
+            {copy.submit}
+          </LoginForm.SubmitButton>
         </LoginForm.Form>
         <LoginForm.Footer>
           {preparation ? (
@@ -104,12 +114,18 @@ export default async function LoginPage({
           ) : null}
           <p className="text-sm text-muted-foreground">
             {copy.noAccount}{' '}
-            <Link href={registrationHref} className="text-primary hover:underline">
+            <Link
+              href={registrationHref}
+              className="inline-flex min-h-11 items-center align-middle text-primary underline underline-offset-4 sm:inline"
+            >
               {copy.register}
             </Link>
           </p>
           <p className="text-sm text-muted-foreground">
-            <Link href="/" className="text-primary hover:underline">
+            <Link
+              href="/"
+              className="inline-flex min-h-11 items-center align-middle text-primary underline underline-offset-4 sm:inline"
+            >
               {copy.backHome}
             </Link>
           </p>

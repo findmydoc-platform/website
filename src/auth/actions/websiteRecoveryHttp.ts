@@ -1,3 +1,4 @@
+import { RECOVERY_PASSWORD_MAX_LENGTH, RECOVERY_PASSWORD_MIN_LENGTH } from './websiteRecoveryPassword'
 import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
 import { NextRequest, NextResponse } from 'next/server'
@@ -55,14 +56,18 @@ export async function openWebsiteRecovery(request: NextRequest) {
 }
 
 const passwordSchema = z
-  .object({ csrf: z.string(), password: z.string().min(8).max(4096), confirmPassword: z.string().max(4096) })
+  .object({
+    csrf: z.string(),
+    password: z.string().min(RECOVERY_PASSWORD_MIN_LENGTH).max(RECOVERY_PASSWORD_MAX_LENGTH),
+    confirmPassword: z.string().max(RECOVERY_PASSWORD_MAX_LENGTH),
+  })
   .strict()
   .refine((body) => body.password === body.confirmPassword)
 const resumeSchema = z
   .object({
     csrf: z.string(),
-    password: z.string().max(4096).optional(),
-    confirmPassword: z.string().max(4096).optional(),
+    password: z.string().max(RECOVERY_PASSWORD_MAX_LENGTH).optional(),
+    confirmPassword: z.string().max(RECOVERY_PASSWORD_MAX_LENGTH).optional(),
   })
   .strict()
 

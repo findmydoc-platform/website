@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import '@testing-library/jest-dom'
+import { authCopySentences } from '@/features/uiCopy/patientAuthPresentation'
 import de from '@findmydoc-platform/ui-copy/de.json'
 import en from '@findmydoc-platform/ui-copy/en.json'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
@@ -10,6 +11,7 @@ const catalog = en.auth.passwordRecovery
 const englishCopy = {
   ...catalog.confirmation,
   shared: {
+    invalidTitle: authCopySentences(catalog.shared.invalidLink, 'en')[0]!,
     invalidLink: catalog.shared.invalidLink,
     retry: catalog.shared.retry,
     requestLink: { href: '/en/auth/password/reset', label: catalog.shared.requestLink },
@@ -44,6 +46,7 @@ test('shares safe error and request entry for invalid recovery', () => {
       copy={{
         ...catalog.confirmation,
         shared: {
+          invalidTitle: authCopySentences(catalog.shared.invalidLink, 'de')[0]!,
           invalidLink: catalog.shared.invalidLink,
           retry: catalog.shared.retry,
           requestLink: { href: '/auth/password/reset', label: catalog.shared.requestLink },

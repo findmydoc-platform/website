@@ -7,7 +7,13 @@ import { PublicAuthRouteShell } from '@/app/(frontend)/_components/PublicAuthRou
 const meta = {
   title: 'Domain/Auth/Pages/RecoveryRequest',
   component: ResetPasswordRequestForm,
-  args: { copy: en.auth.passwordRecovery.request, onRequest: fn(async () => {}) },
+  args: {
+    copy: {
+      ...en.auth.passwordRecovery.request,
+      successTitle: en.auth.passwordRecovery.request.pageTitle,
+    },
+    onRequest: fn(async () => {}),
+  },
   tags: ['autodocs', 'domain:auth', 'layer:page', 'status:stable', 'used-in:route:/auth/password/reset'],
   decorators: [
     (Story) => (

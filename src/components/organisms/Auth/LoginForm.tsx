@@ -2,7 +2,7 @@
 
 import type React from 'react'
 import { startTransition, useState, createContext, useContext } from 'react'
-import { Button } from '@/components/atoms/button'
+import { Button, type ButtonProps } from '@/components/atoms/button'
 import { Field, FieldError } from '@/components/atoms/field'
 import { Input } from '@/components/atoms/input'
 import { Label } from '@/components/atoms/label'
@@ -300,10 +300,12 @@ export const SubmitButton = ({
   children,
   loadingText = 'Signing in...',
   className,
+  variant = 'default',
 }: {
   children: React.ReactNode
   loadingText?: string
   className?: string
+  variant?: ButtonProps['variant']
 }) => {
   const { state } = useLoginFormContext()
   return (
@@ -311,7 +313,16 @@ export const SubmitButton = ({
       <p className="sr-only" role="status">
         {state.isLoading ? loadingText : null}
       </p>
-      <Button type="submit" className={cn('w-full', className)} disabled={state.isLoading}>
+      <Button
+        type="submit"
+        variant={variant}
+        className={cn(
+          'w-full',
+          variant === 'outline' && 'border-primary text-primary hover:bg-muted hover:text-primary-hover',
+          className,
+        )}
+        disabled={state.isLoading}
+      >
         {state.isLoading ? loadingText : children}
       </Button>
     </>

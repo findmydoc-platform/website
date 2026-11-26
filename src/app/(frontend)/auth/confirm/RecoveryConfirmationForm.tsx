@@ -18,9 +18,22 @@ export function RecoverySafeError({ message }: Readonly<{ message: string }>) {
     </Alert>
   )
 }
-export function RecoveryRequestLink({ href, label }: Readonly<{ href: string; label: string }>) {
+export function RecoveryRequestLink({
+  href,
+  label,
+  prominent = false,
+}: Readonly<{ href: string; label: string; prominent?: boolean }>) {
   return (
-    <UiLink href={href} className="flex min-h-11 items-center text-primary underline underline-offset-4">
+    <UiLink
+      href={href}
+      appearance={prominent ? 'default' : 'inline'}
+      prefetch={false}
+      className={
+        prominent
+          ? 'h-auto min-h-11 w-full text-center whitespace-normal no-underline hover:bg-primary-hover'
+          : 'mx-auto flex min-h-11 w-fit max-w-full items-center justify-center rounded-sm px-2 text-center text-sm font-normal text-foreground underline underline-offset-4 hover:text-foreground hover:decoration-2 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-hidden'
+      }
+    >
       {label}
     </UiLink>
   )
@@ -60,10 +73,12 @@ export function RecoveryConfirmationView({
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
-        <Heading as="h1" size="h4" align="center">
-          {copy.title}
+        <Heading as="h1" size="h4" align="center" className="lg:text-2xl">
+          {state === 'invalid' ? copy.shared.invalidTitle : copy.title}
         </Heading>
-        <CardDescription className="text-center text-foreground">{copy.description}</CardDescription>
+        {state !== 'invalid' && (
+          <CardDescription className="text-center text-foreground">{copy.description}</CardDescription>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
         {state === 'pending' && (
@@ -84,14 +99,14 @@ export function RecoveryConfirmationView({
         )}
         {state !== 'invalid' && state !== 'completed' && (
           <Button
-            className="h-auto min-h-10 w-full whitespace-normal"
+            className="h-auto min-h-11 w-full whitespace-normal"
             disabled={state === 'pending'}
             onClick={onConfirm}
           >
             {state === 'pending' ? copy.confirming : state === 'retry' ? copy.shared.retry : copy.submit}
           </Button>
         )}
-        <RecoveryRequestLink {...copy.shared.requestLink} />
+        <RecoveryRequestLink {...copy.shared.requestLink} prominent={state === 'invalid'} />
       </CardContent>
     </Card>
   )

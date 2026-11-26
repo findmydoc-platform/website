@@ -40,6 +40,11 @@ The current public entity surfaces are:
 
 Doctors, treatments, locations, specialties, tags, and query-filter combinations can support discovery and internal linking, but they are not independently indexable unless a future decision gives them dedicated public routes and sitemap rules.
 
+Public discovery routes put the primary facts, headings, and public links in the initial HTML. Filters, maps, and
+other interactive controls can load on the client. Check that a crawler can find the main content and links before
+hydration, including when consent is pending. Check structure and links without relying on exact clinic listings or
+editorial text.
+
 Public canonical URLs should prefer readable slug routes over query URLs. Query variants remain useful for users, filters, saved links, sorting, and pagination, but they should be canonicalized or marked `noindex` unless they become dedicated landing pages.
 
 Material changes to content caching or publication behavior require a bounded check on a running production build with isolated test database and storage. Prewarm the anonymous posts sitemap, publish a synthetic draft through the authenticated application process, verify anonymous article and sitemap inclusion, then unpublish through the same process and verify exclusion without restarting or clearing caches. Mocked cache contracts do not prove runtime invalidation. Use the existing test admin and record setup, resolved host mode, observations, and cleanup.
@@ -55,6 +60,10 @@ English remains the default Holding language, with the existing German and Turki
 Holding base structured data identifies only the Organization and WebSite. Its description uses the existing English Holding status and visible blog description. The platform vision does not supply claims about available clinic offers, ratings, reviews, verification, or medical quality.
 
 Material changes to Holding presentation, navigation, or the composition of HTTP headers and page metadata require a bounded browser check on a running production build. Check the standalone page, allowed navigation and contact access, language choice, HTTP robots header, canonical, robots and Googlebot metadata, and JSON-LD together.
+
+The [robots configuration](../next-sitemap.config.cjs) owns user-agent rules. WAF and crawler IP allowlisting belong
+to infrastructure operations. Run `pnpm discovery:health` against a running Website to check the discovery endpoints
+and same-origin URLs advertised by the public sitemaps.
 
 findmydoc observes public discovery traffic only as operational visibility. Platform logs may record recognized crawler classes, the requested public path, platform timestamp, runtime environment, and coarse response context so the team can detect crawl problems, sitemap errors, and agent-discovery drift. This is not product analytics or user behavior tracking. Logs must not capture private content, draft content, admin-only surfaces, cookies, authentication data, contact details, medical free text, IP-based user profiles, or individual user identities.
 

@@ -1,5 +1,6 @@
 import type { PayloadRequest } from 'payload'
 import { executeCollectionChangeRevalidation } from '@/hooks/cacheRevalidationAdapters'
+import { CONTENT_LOCALES, type ContentLocale } from '@/utilities/contentLocalization'
 
 type RelationValue = unknown
 
@@ -22,16 +23,24 @@ export async function revalidatePublishedPostsForPlatformAuthors(
   const ids = Array.from(new Set(platformStaffIds.map(String))).filter(Boolean)
   if (ids.length === 0) return
 
+  for (const locale of CONTENT_LOCALES) {
+    await revalidatePostsInLocale(req, ids, locale)
+  }
+}
+
+async function revalidatePostsInLocale(req: PayloadRequest, ids: string[], locale: ContentLocale) {
   let page = 1
   while (true) {
     const posts = await req.payload.find({
       collection: 'posts',
+      locale,
+      fallbackLocale: false,
       depth: 0,
       limit: 100,
       page,
       pagination: true,
       overrideAccess: true,
-      req,
+      req: { ...req, query: { ...req.query } },
       select: { _status: true, authors: true, id: true, slug: true },
       where: {
         and: [{ _status: { equals: 'published' } }, { authors: { in: ids } }],
@@ -40,7 +49,7 @@ export async function revalidatePublishedPostsForPlatformAuthors(
 
     for (const post of posts.docs) {
       if (post._status !== 'published' || !post.slug) continue
-      executeCollectionChangeRevalidation({ collection: 'posts', doc: post, logger: req.payload.logger })
+      executeCollectionChangeRevalidation({ collection: 'posts', locale, doc: post, logger: req.payload.logger })
     }
 
     if (!posts.hasNextPage) return

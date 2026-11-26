@@ -36,7 +36,7 @@ export type FormProps = {
 }
 
 export type FormValues = Record<string, unknown>
-export type FormSubmitError = { message: string; status?: string }
+export type FormSubmitError = { message: string; status?: string; lang?: string }
 
 type FormFieldRenderProps = {
   form: FormConfig
@@ -86,8 +86,12 @@ export const Form: React.FC<FormProps> = (props) => {
           {!isLoading && hasSubmitted && confirmationType === 'message' && (
             <div role="status">{confirmationMessage}</div>
           )}
-          {isLoading && !hasSubmitted && <p role="status">Loading, please wait...</p>}
-          {error && <div role="alert">{`${error.status || '500'}: ${error.message || ''}`}</div>}
+          {isLoading && !hasSubmitted && (
+            <p role="status" lang="en">
+              Loading, please wait...
+            </p>
+          )}
+          {error && <div role="alert" lang={error.lang}>{`${error.status || '500'}: ${error.message || ''}`}</div>}
           {!hasSubmitted && (
             <form id={formID} onSubmit={handleSubmit(handleFormSubmit)} noValidate>
               <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">

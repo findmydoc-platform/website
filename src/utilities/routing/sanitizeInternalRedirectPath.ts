@@ -15,7 +15,7 @@ export function sanitizeInternalRedirectPathOrNull({
 
   try {
     const parsed = new URL(trimmed, 'http://localhost')
-    if (parsed.origin !== 'http://localhost') return null
+    if (parsed.origin !== 'http://localhost' || parsed.pathname.startsWith('//')) return null
 
     const safePath = `${parsed.pathname}${parsed.search}${parsed.hash}`
     const safePathnameForBlockedComparison =

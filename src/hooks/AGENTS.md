@@ -2,7 +2,6 @@
 
 ## Critical Rules
 
-- Keep side effects in hooks, not UI components.
 - Reuse `src/access/**` helpers; avoid duplicated role logic.
 - Maintain soft-delete behavior unless destructive semantics are explicitly required.
 - Keep hook logic deterministic, testable, and scoped to the owning collection/global.

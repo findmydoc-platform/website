@@ -500,6 +500,7 @@ export interface Page {
     description?: string | null;
   };
   publishedAt?: string | null;
+  legacyEnglishSlug?: string | null;
   /**
    * When enabled, the slug will auto-generate from the title field on save and autosave.
    */
@@ -652,6 +653,7 @@ export interface Post {
         avatar?: string | null;
       }[]
     | null;
+  legacyEnglishSlug?: string | null;
   /**
    * When enabled, the slug will auto-generate from the title field on save and autosave.
    */
@@ -3699,6 +3701,7 @@ export interface Redirect {
         } | null);
     url?: string | null;
   };
+  type?: ('301' | '307') | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -4573,6 +4576,7 @@ export interface PagesSelect<T extends boolean = true> {
         description?: T;
       };
   publishedAt?: T;
+  legacyEnglishSlug?: T;
   generateSlug?: T;
   slug?: T;
   parent?: T;
@@ -4716,6 +4720,7 @@ export interface PostsSelect<T extends boolean = true> {
         name?: T;
         avatar?: T;
       };
+  legacyEnglishSlug?: T;
   generateSlug?: T;
   slug?: T;
   updatedAt?: T;
@@ -6325,6 +6330,7 @@ export interface RedirectsSelect<T extends boolean = true> {
         reference?: T;
         url?: T;
       };
+  type?: T;
   updatedAt?: T;
   createdAt?: T;
 }

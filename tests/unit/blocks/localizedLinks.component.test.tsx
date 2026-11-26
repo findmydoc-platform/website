@@ -69,7 +69,7 @@ describe('locale-aware block links', () => {
       | undefined
 
     expect(contentProps?.columns?.[0]?.link).toEqual({
-      href: '/privacy-policy?locale=de',
+      href: '/privacy-policy',
       label: 'Privacy Policy',
       newTab: false,
     })
@@ -123,7 +123,7 @@ describe('locale-aware block links', () => {
 
     expect(ctaProps?.links).toEqual([
       {
-        href: '/posts/localization-guide-post?locale=de',
+        href: '/posts/localization-guide-post',
         label: 'Read the Guide',
         newTab: false,
         appearance: 'inline',

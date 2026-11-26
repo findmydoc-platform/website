@@ -3,7 +3,12 @@
  * These utilities help normalize Payload-shaped links into presentational props.
  */
 
-import { appendContentLocaleToPath, type ContentLocaleContext } from '@/utilities/contentLocalization'
+import {
+  appendContentLocaleToPath,
+  isReservedPageSlug,
+  type ContentLocaleContext,
+} from '@/utilities/contentLocalization'
+import { buildPagePath, buildPostPath } from '@/utilities/cachePolicy'
 
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object'
@@ -50,6 +55,12 @@ export function resolveHrefFromReference(
 
   if (typeof slug !== 'string' || slug.length === 0) {
     return undefined
+  }
+
+  if (relationTo === 'posts') return buildPostPath(slug, contentLocale?.locale)
+  if (relationTo === 'pages' && contentLocale?.locale) {
+    if (isReservedPageSlug(slug, contentLocale.locale)) return undefined
+    return buildPagePath(slug, contentLocale.locale)
   }
 
   return appendContentLocaleToHref(buildReferencePath(relationTo, slug), contentLocale)

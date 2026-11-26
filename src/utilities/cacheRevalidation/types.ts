@@ -1,3 +1,5 @@
+import type { ContentLocale } from '@/utilities/contentLocalization'
+
 import type {
   CacheClass,
   CacheDiscoveryId,
@@ -48,6 +50,7 @@ export interface CollectionRevalidationSubject {
   readonly id: string | number
   readonly slug: string
   readonly previousSlug?: string
+  readonly locale?: ContentLocale
   readonly status: PublicDocumentStatus
   readonly previousStatus?: PublicDocumentStatus
 }

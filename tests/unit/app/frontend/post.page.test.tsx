@@ -1,3 +1,4 @@
+import { renderToStaticMarkup } from 'react-dom/server'
 import React from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -11,7 +12,7 @@ const mocks = vi.hoisted(() => {
     headersMock: vi.fn(),
     findPostBySlugMock: vi.fn(),
     generateMetaMock: vi.fn((args: unknown) => args),
-    getCachedPublishedPostBySlugMock: vi.fn(),
+    getCachedPublicPostRouteMock: vi.fn(),
     getPayloadMock: vi.fn(),
     payloadAuthMock: vi.fn(),
     payloadRedirectsComponent: vi.fn(() => null),
@@ -104,7 +105,7 @@ vi.mock('@/utilities/generateMeta', () => ({
 
 vi.mock('@/utilities/content/serverData', () => ({
   findPostBySlug: mocks.findPostBySlugMock,
-  getCachedPublishedPostBySlug: mocks.getCachedPublishedPostBySlugMock,
+  getCachedPublicPostRoute: mocks.getCachedPublicPostRouteMock,
 }))
 
 vi.mock('@/utilities/structuredData', () => ({
@@ -154,29 +155,42 @@ describe('frontend post detail route', () => {
       sizes: '100vw',
       quality: 75,
     })
-    mocks.getCachedPublishedPostBySlugMock.mockResolvedValue({
-      slug: 'hello-world',
-      title: 'Hallo Welt',
-      excerpt: 'Deutscher Auszug.',
-      heroImage: {
-        url: '/api/platformContentMedia/file/post-hero.webp',
-        alt: 'Hallo Welt',
-      },
-      content: {
-        root: {
-          type: 'root',
-          children: [],
-          direction: null,
-          format: '',
-          indent: 0,
-          version: 1,
+    mocks.getCachedPublicPostRouteMock.mockResolvedValue({
+      locale: 'de',
+      canonicalPath: '/posts/hello-world',
+      post: {
+        slug: 'hello-world',
+        title: 'Hallo Welt',
+        excerpt: 'Deutscher Auszug.',
+        heroImage: {
+          url: '/api/platformContentMedia/file/post-hero.webp',
+          alt: 'Hallo Welt',
         },
+        content: {
+          root: {
+            type: 'root',
+            children: [],
+            direction: null,
+            format: '',
+            indent: 0,
+            version: 1,
+          },
+        },
+        categories: [{ title: 'Dental Care' }],
+        populatedAuthors: [{ name: 'Ada' }],
+        publishedAt: '2026-01-01T00:00:00.000Z',
+        relatedPosts: [{ slug: 'related-post', title: 'Verwandter Beitrag' }],
       },
-      categories: [{ title: 'Dental Care' }],
-      populatedAuthors: [{ name: 'Ada' }],
-      publishedAt: '2026-01-01T00:00:00.000Z',
-      relatedPosts: [{ slug: 'related-post', title: 'Verwandter Beitrag' }],
     })
+  })
+
+  it('uses the unprefixed German canonical for a public transition query URL', async () => {
+    const { generateMetadata } = await import('@/app/(frontend)/posts/[slug]/page')
+    await generateMetadata({
+      params: Promise.resolve({ slug: 'hello-world' }),
+      searchParams: Promise.resolve({ locale: 'de' }),
+    })
+    expect(mocks.generateMetaMock).toHaveBeenCalledWith(expect.objectContaining({ path: '/posts/hello-world' }))
   })
 
   it('keeps localized navigation and share paths while redirect matching stays canonical', async () => {
@@ -187,13 +201,7 @@ describe('frontend post detail route', () => {
     })
 
     expect(pageModule.dynamic).toBe('force-dynamic')
-    expect(mocks.getCachedPublishedPostBySlugMock).toHaveBeenCalledWith({
-      slug: 'hello-world',
-      contentLocale: {
-        locale: 'de',
-        fallbackLocale: 'en',
-      },
-    })
+    expect(mocks.getCachedPublicPostRouteMock).toHaveBeenCalledWith('hello-world', 'de')
     expect(mocks.findPostBySlugMock).not.toHaveBeenCalled()
     expect(mocks.getPayloadMock).not.toHaveBeenCalled()
     expect(mocks.headersMock).not.toHaveBeenCalled()
@@ -227,7 +235,7 @@ describe('frontend post detail route', () => {
     expect(heroElement?.props.breadcrumbs).toEqual([
       { label: 'Home', href: '/' },
       { label: 'Blog', href: '/posts?locale=de' },
-      { label: 'Hallo Welt', href: '/posts/hello-world?locale=de' },
+      { label: 'Hallo Welt', href: '/posts/hello-world', lang: 'de' },
     ])
     expect(heroElement?.props.image).toEqual({
       src: '/api/platformContentMedia/file/post-hero.webp',
@@ -242,7 +250,7 @@ describe('frontend post detail route', () => {
         breadcrumbs: heroElement?.props.breadcrumbs,
         description: 'Deutscher Auszug.',
         imageUrl: '/api/platformContentMedia/file/post-hero.webp',
-        path: '/posts/hello-world?locale=de',
+        path: '/posts/hello-world',
         publishedAt: '2026-01-01T00:00:00.000Z',
         title: 'Hallo Welt',
       }),
@@ -260,14 +268,14 @@ describe('frontend post detail route', () => {
       label: 'Back to Blog',
       href: '/posts?locale=de',
     })
-    expect(shareElement?.props.shareUrl).toBe('/posts/hello-world?locale=de')
+    expect(shareElement?.props.shareUrl).toBe('/posts/hello-world')
 
     const relatedPostsElement = findElementByType(result, mocks.relatedPostsComponent) as React.ReactElement<{
-      contentLocale: { fallbackLocale: 'en'; locale: 'de' }
+      contentLocale: { fallbackLocale: false; locale: 'de' }
     }> | null
     expect(relatedPostsElement?.props.contentLocale).toEqual({
       locale: 'de',
-      fallbackLocale: 'en',
+      fallbackLocale: false,
     })
 
     const richTextElement = findElementByType(result, mocks.richTextComponent)
@@ -284,30 +292,61 @@ describe('frontend post detail route', () => {
     expect(disclaimerElement?.props.standalone).toBe(true)
   })
 
-  it('uses the localized post path for metadata', async () => {
-    const pageModule = await import('@/app/(frontend)/posts/[slug]/page')
-
-    await pageModule.generateMetadata({
+  it('marks English actions and the disclaimer inside a German article', async () => {
+    const { default: PostPage } = await import('@/app/(frontend)/posts/[slug]/page')
+    const result = await PostPage({
       params: Promise.resolve({ slug: 'hello-world' }),
-      searchParams: Promise.resolve({ locale: 'de' }),
+      searchParams: Promise.resolve({}),
     })
 
-    expect(mocks.generateMetaMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        path: '/posts/hello-world?locale=de',
-      }),
-    )
-    expect(mocks.getCachedPublishedPostBySlugMock).toHaveBeenCalledWith({
-      slug: 'hello-world',
-      contentLocale: {
-        locale: 'de',
-        fallbackLocale: 'en',
-      },
+    expect(findElementByType(result, 'article')?.props.lang).toBe('de')
+    expect(findElementByType(result, mocks.postShareActionBarComponent)?.props.lang).toBe('en')
+    expect(findElementByType(result, mocks.disclaimerNoticeComponent)?.props.lang).toBe('en')
+  })
+
+  it('emits the English canonical and bidirectional hreflang for a public pair', async () => {
+    const languagePaths = {
+      de: '/posts/gruener-tee',
+      en: '/en/posts/green-tea',
+      'x-default': '/posts/gruener-tee',
+    }
+    mocks.getCachedPublicPostRouteMock.mockResolvedValueOnce({
+      locale: 'en',
+      canonicalPath: languagePaths.en,
+      languagePaths,
+      post: { slug: 'green-tea', title: 'Green tea' },
     })
+
+    const { generateMetadata } = await import('@/app/(frontend)/en/posts/[slug]/page')
+    const metadata = await generateMetadata({
+      params: Promise.resolve({ slug: 'green-tea' }),
+      searchParams: Promise.resolve({}),
+    })
+
+    expect(metadata.alternates).toEqual({ canonical: languagePaths.en, languages: languagePaths })
+  })
+
+  it('titles a noindex notice for an unavailable English Post', async () => {
+    mocks.getCachedPublicPostRouteMock.mockResolvedValue(null)
+    mocks.headersMock.mockResolvedValue(new Headers({ 'x-fmd-cms-translation-source': '/posts/gruener-tee' }))
+
+    const { default: PostPage, generateMetadata } = await import('@/app/(frontend)/en/posts/[slug]/page')
+    const args = { params: Promise.resolve({ slug: 'green-tea' }), searchParams: Promise.resolve({}) }
+    const notice = renderToStaticMarkup(await PostPage(args))
+
+    expect(notice).toContain('This page is currently available in German.')
+    expect(notice).toMatch(/<a[^>]+href="\/posts"[^>]*>Blog<\/a>/)
+    expect(await generateMetadata(args)).toEqual({
+      title: 'This page is currently available in German.',
+      robots: { index: false, follow: false },
+    })
+
+    mocks.headersMock.mockResolvedValue(new Headers())
+    expect(await generateMetadata(args)).not.toHaveProperty('title')
   })
 
   it('routes unknown public slugs through the redirect and not-found boundary', async () => {
-    mocks.getCachedPublishedPostBySlugMock.mockResolvedValueOnce(null)
+    mocks.getCachedPublicPostRouteMock.mockResolvedValueOnce(null)
 
     const pageModule = await import('@/app/(frontend)/posts/[slug]/page')
     const result = await pageModule.default({
@@ -336,10 +375,10 @@ describe('frontend post detail route', () => {
       searchParams: Promise.resolve({ locale: 'de' }),
     })
 
-    expect(mocks.reactCacheResolverMock).toHaveBeenNthCalledWith(1, 'hello-world', 'de', 'en')
-    expect(mocks.reactCacheResolverMock).toHaveBeenNthCalledWith(2, 'hello-world', 'de', 'en')
+    expect(mocks.reactCacheResolverMock).toHaveBeenNthCalledWith(1, 'hello-world', 'de', 'de')
+    expect(mocks.reactCacheResolverMock).toHaveBeenNthCalledWith(2, 'hello-world', 'de', 'de')
     expect(mocks.draftModeMock).toHaveBeenCalledTimes(1)
-    expect(mocks.getCachedPublishedPostBySlugMock).toHaveBeenCalledTimes(1)
+    expect(mocks.getCachedPublicPostRouteMock).toHaveBeenCalledTimes(1)
   })
 
   it('disables draft access for anonymous temporary landing requests', async () => {
@@ -352,10 +391,7 @@ describe('frontend post detail route', () => {
       searchParams: Promise.resolve({}),
     })
 
-    expect(mocks.getCachedPublishedPostBySlugMock).toHaveBeenCalledWith({
-      slug: 'hello-world',
-      contentLocale: {},
-    })
+    expect(mocks.getCachedPublicPostRouteMock).toHaveBeenCalledWith('hello-world', 'de')
     expect(mocks.findPostBySlugMock).not.toHaveBeenCalled()
     expect(mocks.payloadAuthMock).not.toHaveBeenCalled()
     expect(findElementByType(result, mocks.jsonLdScriptComponent)?.props.data).toEqual([{ '@type': 'Article' }])
@@ -371,10 +407,7 @@ describe('frontend post detail route', () => {
     })
 
     expect(mocks.payloadAuthMock).toHaveBeenCalledWith({ headers: expect.any(Headers) })
-    expect(mocks.getCachedPublishedPostBySlugMock).toHaveBeenCalledWith({
-      slug: 'hello-world',
-      contentLocale: {},
-    })
+    expect(mocks.getCachedPublicPostRouteMock).toHaveBeenCalledWith('hello-world', 'de')
     expect(mocks.findPostBySlugMock).not.toHaveBeenCalled()
     expect(findElementByType(result, mocks.jsonLdScriptComponent)?.props.data).toEqual([{ '@type': 'Article' }])
   })
@@ -389,7 +422,7 @@ describe('frontend post detail route', () => {
       searchParams: Promise.resolve({}),
     })
 
-    expect(mocks.getCachedPublishedPostBySlugMock).toHaveBeenCalledOnce()
+    expect(mocks.getCachedPublicPostRouteMock).toHaveBeenCalledOnce()
     expect(mocks.findPostBySlugMock).not.toHaveBeenCalled()
   })
 
@@ -405,7 +438,7 @@ describe('frontend post detail route', () => {
         searchParams: Promise.resolve({}),
       }),
     ).resolves.toBeDefined()
-    expect(mocks.getCachedPublishedPostBySlugMock).toHaveBeenCalledOnce()
+    expect(mocks.getCachedPublicPostRouteMock).toHaveBeenCalledOnce()
     expect(mocks.findPostBySlugMock).not.toHaveBeenCalled()
   })
 
@@ -428,9 +461,9 @@ describe('frontend post detail route', () => {
       expect.objectContaining({ auth: mocks.payloadAuthMock }),
       'hello-world',
       true,
-      {},
+      { locale: 'de', fallbackLocale: false },
     )
-    expect(mocks.getCachedPublishedPostBySlugMock).not.toHaveBeenCalled()
+    expect(mocks.getCachedPublicPostRouteMock).not.toHaveBeenCalled()
     expect(findElementByType(result, mocks.jsonLdScriptComponent)?.props.data).toBeNull()
   })
 })

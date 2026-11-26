@@ -5,8 +5,8 @@ import {
   countPublishedPosts,
   findLatestPosts,
   findPageBySlug,
+  findPublicPageRoute,
   findPageSitemapDocs,
-  findPageSlugs,
   findPostBySlug,
   findPostSitemapDocs,
   findPublishedPostsPage,
@@ -16,7 +16,6 @@ import {
   POST_SITEMAP_SELECT,
   PAGE_DETAIL_SELECT,
   PAGE_SITEMAP_SELECT,
-  PAGE_SLUG_SELECT,
 } from '@/utilities/content/serverData'
 
 function createPayloadMock() {
@@ -65,7 +64,7 @@ describe('content server data helpers', () => {
 
     expect(findMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        fallbackLocale: 'en',
+        fallbackLocale: false,
         locale: 'de',
         select: POST_LIST_SELECT,
       }),
@@ -117,7 +116,7 @@ describe('content server data helpers', () => {
     await findPublishedPostsPage(payload, {
       contentLocale: {
         locale: 'de',
-        fallbackLocale: 'en',
+        fallbackLocale: false,
       },
       limit: 12,
       pagination: false,
@@ -126,7 +125,7 @@ describe('content server data helpers', () => {
     expect(findMock).toHaveBeenCalledWith(
       expect.objectContaining({
         collection: 'posts',
-        fallbackLocale: 'en',
+        fallbackLocale: false,
         locale: 'de',
         overrideAccess: false,
       }),
@@ -269,29 +268,27 @@ describe('content server data helpers', () => {
     )
     expect(countMock).toHaveBeenCalledWith({
       collection: 'posts',
+      locale: 'en',
       overrideAccess: false,
       where: { _status: { equals: 'published' } },
     })
   })
 
-  it('supports page slugs, page detail reads and sitemap docs', async () => {
+  it('supports page detail reads and sitemap docs', async () => {
     const { payload, findMock } = createPayloadMock()
     findMock.mockResolvedValueOnce({ docs: [{ id: 7, slug: 'about', layout: [] }] })
-    findMock.mockResolvedValueOnce({ docs: [{ id: 8, slug: 'home' }] })
     findMock.mockResolvedValueOnce({ docs: [{ id: 9, slug: 'sitemap-page', updatedAt: '2026-01-01T00:00:00.000Z' }] })
 
     const page = await findPageBySlug(payload, 'about')
-    const pageSlugs = await findPageSlugs(payload)
     const sitemapDocs = await findPageSitemapDocs(payload)
 
     expect(page).toEqual({ id: 7, slug: 'about', layout: [] })
-    expect(pageSlugs).toEqual([{ id: 8, slug: 'home' }])
     expect(sitemapDocs).toEqual([{ id: 9, slug: 'sitemap-page', updatedAt: '2026-01-01T00:00:00.000Z' }])
     expect(findMock).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({
         collection: 'pages',
-        depth: 0,
+        depth: 1,
         draft: false,
         limit: 1,
         pagination: false,
@@ -310,20 +307,33 @@ describe('content server data helpers', () => {
         limit: 1000,
         pagination: false,
         overrideAccess: false,
-        select: PAGE_SLUG_SELECT,
-      }),
-    )
-    expect(findMock).toHaveBeenNthCalledWith(
-      3,
-      expect.objectContaining({
-        collection: 'pages',
-        depth: 0,
-        limit: 1000,
-        pagination: false,
-        overrideAccess: false,
         select: PAGE_SITEMAP_SELECT,
       }),
     )
+  })
+
+  it.each([
+    ['de', 'en/old-page'],
+    ['en', 'posts/old-page'],
+  ] as const)('excludes historical %s Pages shadowed by a different public route', async (locale, slug) => {
+    const { payload, findMock } = createPayloadMock()
+    findMock.mockResolvedValueOnce({
+      docs: [
+        { id: 8, slug },
+        { id: 9, slug: 'open-page' },
+      ],
+    })
+
+    expect(await findPageSitemapDocs(payload, locale)).toEqual([{ id: 9, slug: 'open-page' }])
+  })
+
+  it('does not advertise a shadowed English canonical from a legacy Page alias', async () => {
+    const { payload, findMock } = createPayloadMock()
+    findMock
+      .mockResolvedValueOnce({ docs: [] })
+      .mockResolvedValueOnce({ docs: [{ id: 7, slug: 'posts/old-page', layout: [] }] })
+
+    expect(await findPublicPageRoute(payload, 'old-alias', 'de')).toBeNull()
   })
 
   it('passes locale-aware lookup options through page detail queries', async () => {

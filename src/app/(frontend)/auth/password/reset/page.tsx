@@ -7,6 +7,8 @@ import config from '@payload-config'
 import { readPreparationBinding } from '@/features/inquiryPreparations/context'
 import { readInquiryPreparationRegistration } from '@/features/inquiryCommunication/service'
 import { recoveryRequestCopy } from '@/features/uiCopy/passwordRecovery'
+import { localizedPatientAuthPath } from '@/i18n/patientAuthPath'
+import { uiCopyLocaleFromHeaders } from '@/i18n/requestLocale'
 
 export function generateMetadata() {
   return recoveryRequestMetadata('de')
@@ -18,7 +20,7 @@ const signInOptionLinkClassName =
 type ResetPasswordPageProps = {
   searchParams?: Promise<{
     reason?: string | string[]
-    inquiry?: string
+    inquiry?: string | string[]
   }>
 }
 
@@ -31,19 +33,27 @@ function resolvePasswordResetReason(reason: string | string[] | undefined): Rese
 export default async function ResetPasswordPage({ searchParams }: ResetPasswordPageProps = {}) {
   const params = await searchParams
   const reason = resolvePasswordResetReason(params?.reason)
-  const binding = readPreparationBinding(await headers())
-  const preparation = binding
-    ? await readInquiryPreparationRegistration(
-        await createLocalReq({}, await getPayload({ config })),
-        binding,
-        params?.inquiry,
-      )
-    : null
+  const requestHeaders = await headers()
+  const binding = readPreparationBinding(requestHeaders)
+  const inquiry = typeof params?.inquiry === 'string' ? params.inquiry : undefined
+  const preparation =
+    binding && !Array.isArray(params?.inquiry)
+      ? await readInquiryPreparationRegistration(
+          await createLocalReq({}, await getPayload({ config })),
+          binding,
+          inquiry,
+        )
+      : null
   const copy = await recoveryRequestCopy(preparation?.expiresAt)
   const patientSignInHref =
-    preparation && params?.inquiry
-      ? `${copy.patientSignInHref}?inquiry=${encodeURIComponent(params.inquiry)}&next=/patient/inquiries`
+    preparation && inquiry
+      ? `${copy.patientSignInHref}?inquiry=${encodeURIComponent(inquiry)}&next=/patient/inquiries`
       : copy.patientSignInHref
+
+  const languageSwitchParams = new URLSearchParams()
+  if (reason) languageSwitchParams.set('reason', reason)
+  if (preparation && inquiry) languageSwitchParams.set('inquiry', inquiry)
+  const suffix = languageSwitchParams.size ? `?${languageSwitchParams}` : ''
 
   return (
     <main className="min-h-svh bg-site-canvas py-6 sm:py-12">
@@ -63,6 +73,13 @@ export default async function ResetPasswordPage({ searchParams }: ResetPasswordP
           reason={reason}
           initialEmail={preparation?.email}
           preparationNotice={copy.preparationNotice}
+          languageSwitch={{
+            locale: uiCopyLocaleFromHeaders(requestHeaders),
+            targets: {
+              de: localizedPatientAuthPath('/auth/password/reset', 'de') + suffix,
+              en: localizedPatientAuthPath('/auth/password/reset', 'en') + suffix,
+            },
+          }}
         />
       </div>
     </main>

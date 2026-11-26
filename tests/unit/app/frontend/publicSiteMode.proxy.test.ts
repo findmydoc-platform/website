@@ -33,7 +33,10 @@ vi.mock('@/features/temporaryLandingMode/resolver', () => ({
   resolveHoldingMode: mocks.resolveHoldingMode,
 }))
 
+vi.mock('@/utilities/routing/requestCmsRedirect', () => ({ requestCmsRedirect: vi.fn(async () => null) }))
+
 import { config, proxy } from '@/proxy'
+import { FRONTEND_PATH_HEADER, FRONTEND_PREVIEW_LOCALE_HEADER } from '@/i18n/requestLocale'
 
 const mockHoldingMode = (mode: 'holding' | 'full' = 'full') => {
   mocks.resolveHoldingMode.mockResolvedValue({ mode, source: 'posthog' })
@@ -73,7 +76,7 @@ describe('public site mode proxy', () => {
     process.env = originalEnv
   })
 
-  it.each(['/', '/posts', '/posts/article', '/posts/page/2'])(
+  it.each(['/', '/posts', '/posts/article', '/en/posts/article', '/posts/page/2'])(
     'marks anonymous Preview Holding content on %s',
     async (pathname) => {
       process.env.VERCEL_ENV = 'preview'
@@ -115,6 +118,32 @@ describe('public site mode proxy', () => {
     expect(response.headers.get(`x-middleware-request-${TEMPORARY_LANDING_MODE_REQUEST_HEADER}`)).toBe('1')
     expect(response.headers.get(`x-middleware-request-${HOLDING_VIEW_REQUEST_HEADER}`)).toBe('public')
     expect(response.headers.get(`x-middleware-request-${SEARCH_INDEXING_REQUEST_HEADER}`)).toBeNull()
+  })
+
+  it('forwards the actual path and a single supported preview locale', async () => {
+    const response = await proxy(
+      new NextRequest('https://findmydoc.eu/en/posts/tea?locale=de', {
+        headers: {
+          [FRONTEND_PATH_HEADER]: '/unrelated',
+          [FRONTEND_PREVIEW_LOCALE_HEADER]: 'en',
+        },
+      }),
+    )
+
+    expect(response.headers.get(`x-middleware-request-${FRONTEND_PATH_HEADER}`)).toBe('/en/posts/tea')
+    expect(response.headers.get(`x-middleware-request-${FRONTEND_PREVIEW_LOCALE_HEADER}`)).toBe('de')
+  })
+
+  it('drops the preview locale on ambiguous or unsupported query values', async () => {
+    for (const search of ['', '?locale=fr', '?locale=en&locale=de']) {
+      const response = await proxy(
+        new NextRequest(`https://findmydoc.eu/en/posts/tea${search}`, {
+          headers: { [FRONTEND_PREVIEW_LOCALE_HEADER]: 'de' },
+        }),
+      )
+
+      expect(response.headers.get(`x-middleware-request-${FRONTEND_PREVIEW_LOCALE_HEADER}`)).toBeNull()
+    }
   })
 
   it('logs public discovery crawlers before leaving access to the route contract', async () => {
@@ -213,11 +242,29 @@ describe('public site mode proxy', () => {
     },
   )
 
+  it.each(['/listing-comparison', '/en/listing-comparison'])(
+    'blocks %s during temporary landing mode',
+    async (path) => {
+      mockHoldingMode('holding')
+
+      const response = await proxy(new NextRequest(`https://findmydoc.eu${path}`))
+
+      expect(response.status).toBe(404)
+    },
+  )
+
   it('keeps only exact public blog route shapes reachable in temporary landing mode', async () => {
     mockHoldingMode('holding')
 
-    const allowedPaths = ['/posts', '/posts/', '/posts/example', '/posts/page/2']
-    const blockedPaths = ['/posts-admin', '/postscript', '/posts/foo/bar', '/posts/page/0', '/posts/page/2/extra']
+    const allowedPaths = ['/posts', '/posts/', '/posts/example', '/en/posts/example', '/posts/page/2']
+    const blockedPaths = [
+      '/posts-admin',
+      '/postscript',
+      '/posts/foo/bar',
+      '/posts/page/0',
+      '/posts/page/2/extra',
+      '/en/posts',
+    ]
 
     for (const path of allowedPaths) {
       const response = await proxy(new NextRequest(`https://findmydoc.eu${path}`))

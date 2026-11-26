@@ -1,5 +1,4 @@
 import { PayloadRequest, CollectionSlug } from 'payload'
-import { appendContentLocaleToPath, resolveContentLocaleContext } from '@/utilities/contentLocalization'
 
 /**
  * Maps collection names to their URL prefixes for preview generation.
@@ -22,7 +21,7 @@ type Props = {
  * @param params - Preview path generation parameters
  * @param params.collection - Collection name (must be in collectionPrefixMap)
  * @param params.slug - Content slug to preview
- * @param params.req - PayloadCMS request object (currently unused but part of interface)
+ * @param params.req - PayloadCMS request containing the editor's active locale
  * @returns Preview URL string for Next.js preview mode
  *
  * @example
@@ -30,10 +29,8 @@ type Props = {
  * // Returns "/next/preview?slug=hello-world&collection=posts&path=/posts/hello-world&previewSecret=..."
  */
 export const generatePreviewPath = ({ collection, slug, req }: Props) => {
-  const path = appendContentLocaleToPath(
-    `${collectionPrefixMap[collection]}/${slug}`,
-    resolveContentLocaleContext(req.locale).locale,
-  )
+  const basePath = `${collectionPrefixMap[collection]}/${slug}`
+  const path = req.locale === 'en' || req.locale === 'de' ? `${basePath}?locale=${req.locale}` : basePath
   const encodedParams = new URLSearchParams({
     slug,
     collection,

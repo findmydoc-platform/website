@@ -450,10 +450,11 @@ export const CACHE_POLICY_CATALOG = [
     cacheClass: 'shared-public',
     boundary: 'public',
     owner: 'global-hook',
-    tagFamilies: ['global', 'surface'],
+    tagFamilies: ['global', 'surface', 'collection'],
     pathRelationship: 'tag-first',
     pathFamilies: ['none'],
     globals: ['header'],
+    collections: ['pages', 'posts'],
     surfaces: ['public-chrome'],
   },
   {
@@ -462,10 +463,11 @@ export const CACHE_POLICY_CATALOG = [
     cacheClass: 'shared-public',
     boundary: 'public',
     owner: 'global-hook',
-    tagFamilies: ['global', 'surface'],
+    tagFamilies: ['global', 'surface', 'collection'],
     pathRelationship: 'tag-first',
     pathFamilies: ['none'],
     globals: ['footer'],
+    collections: ['pages', 'posts'],
     surfaces: ['public-chrome'],
   },
   {
@@ -474,10 +476,11 @@ export const CACHE_POLICY_CATALOG = [
     cacheClass: 'aggregated-public',
     boundary: 'public',
     owner: 'global-hook',
-    tagFamilies: ['global', 'surface'],
+    tagFamilies: ['global', 'surface', 'collection'],
     pathRelationship: 'known-paths',
     pathFamilies: ['fixed-public-path'],
     globals: ['landingPages'],
+    collections: ['pages', 'posts'],
     surfaces: ['home', 'about', 'partners-clinics'],
   },
   {
@@ -486,10 +489,11 @@ export const CACHE_POLICY_CATALOG = [
     cacheClass: 'shared-public',
     boundary: 'public',
     owner: 'global-hook',
-    tagFamilies: ['global', 'surface'],
+    tagFamilies: ['global', 'surface', 'collection'],
     pathRelationship: 'tag-first',
     pathFamilies: ['none'],
     globals: ['cookieConsent'],
+    collections: ['pages'],
     surfaces: ['public-chrome'],
   },
   {
@@ -811,18 +815,15 @@ export const buildSitemapTag = (sitemapId: string): string => `surface:sitemap:$
 export const buildDiscoveryTag = (discoveryId: string): string =>
   `surface:discovery:${assertKnownDiscoveryId(discoveryId)}`
 
-export const buildPagePath = (slug: string): string => {
+export const buildPagePath = (slug: string, locale: 'de' | 'en' = 'de'): string => {
   const normalizedSlug = assertPayloadSlug(slug, 'page slug', { allowNested: true })
-
-  if (normalizedSlug === 'home') {
-    return '/'
-  }
-
-  return `/${normalizedSlug}`
+  const prefix = locale === 'en' ? '/en' : ''
+  if (normalizedSlug === 'home') return prefix || '/'
+  return `${prefix}/${normalizedSlug}`
 }
 
-export const buildPostPath = (slug: string): string =>
-  `/posts/${assertPayloadSlug(slug, 'post slug', { allowNested: false })}`
+export const buildPostPath = (slug: string, locale: 'de' | 'en' = 'de'): string =>
+  `${locale === 'en' ? '/en' : ''}/posts/${assertPayloadSlug(slug, 'post slug', { allowNested: false })}`
 
 export const buildClinicPath = (slug: string): string =>
   `/clinics/${assertPayloadSlug(slug, 'clinic slug', { allowNested: false })}`

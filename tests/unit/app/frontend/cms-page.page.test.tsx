@@ -1,85 +1,88 @@
+import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Where } from 'payload'
 
 const mocks = vi.hoisted(() => ({
-  draftModeMock: vi.fn(),
-  findPageBySlugMock: vi.fn(),
-  findPageSlugsMock: vi.fn(),
-  generateMetaMock: vi.fn((args: unknown) => args),
-  getPayloadMock: vi.fn(),
-  livePreviewListenerComponent: vi.fn(() => null),
-  payloadRedirectsComponent: vi.fn(() => null),
-  renderBlocksComponent: vi.fn(() => null),
+  draftMode: vi.fn(),
+  find: vi.fn(),
+  headers: vi.fn(),
 }))
 
-vi.mock('next/headers', () => ({
-  draftMode: mocks.draftModeMock,
+vi.mock('next/headers', () => ({ draftMode: mocks.draftMode, headers: mocks.headers }))
+vi.mock('@payload-config', () => ({ default: {} }))
+vi.mock('payload', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('payload')>()),
+  getPayload: async () => ({ find: mocks.find }),
 }))
+vi.mock('@/app/(frontend)/_components/PayloadRedirects', () => ({ PayloadRedirects: () => null }))
+vi.mock('@/blocks/RenderBlocks', () => ({ RenderBlocks: () => null }))
+vi.mock('@/components/organisms/LivePreviewListener', () => ({ LivePreviewListener: () => null }))
 
-vi.mock('@payload-config', () => ({
-  default: {},
-}))
+const germanPage = { id: 4, slug: 'pflege/deutschland', meta: { title: 'German page' } }
+const englishPage = { id: 4, slug: 'care/germany', meta: { title: 'English page' } }
 
-vi.mock('payload', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('payload')>()
+function findPages(publishedEnglish: boolean) {
+  mocks.find.mockImplementation(({ locale, where }: { locale: string; where: Where }) => {
+    const candidates = locale === 'de' ? [germanPage] : publishedEnglish ? [englishPage] : []
+    const conditions = where?.and ?? [where]
+    const slug = conditions.find((condition) => condition?.slug)?.slug
+    const id = conditions.find((condition) => condition?.id)?.id
+    return {
+      docs: candidates.filter(
+        (page) =>
+          (!slug || (!Array.isArray(slug) && slug.equals === page.slug)) &&
+          (!id || (!Array.isArray(id) && id.equals === page.id)),
+      ),
+    }
+  })
+}
+
+function routeArgs(slug: string, locale?: string) {
   return {
-    ...actual,
-    getPayload: mocks.getPayloadMock,
+    params: Promise.resolve({ slug: slug.split('/') }),
+    searchParams: Promise.resolve({ locale }),
   }
-})
+}
 
-vi.mock('@/app/(frontend)/_components/PayloadRedirects', () => ({
-  PayloadRedirects: mocks.payloadRedirectsComponent,
-}))
-
-vi.mock('@/blocks/RenderBlocks', () => ({
-  RenderBlocks: mocks.renderBlocksComponent,
-}))
-
-vi.mock('@/components/organisms/LivePreviewListener', () => ({
-  LivePreviewListener: mocks.livePreviewListenerComponent,
-}))
-
-vi.mock('@/utilities/generateMeta', () => ({
-  generateMeta: mocks.generateMetaMock,
-}))
-
-vi.mock('@/utilities/content/serverData', () => ({
-  findPageBySlug: mocks.findPageBySlugMock,
-  findPageSlugs: mocks.findPageSlugsMock,
-}))
-
-describe('frontend CMS page route', () => {
+describe('frontend CMS page route metadata', () => {
   beforeEach(() => {
-    vi.resetModules()
     vi.clearAllMocks()
-
-    mocks.draftModeMock.mockResolvedValue({ isEnabled: false })
-    mocks.getPayloadMock.mockResolvedValue({})
-    mocks.findPageBySlugMock.mockResolvedValue({
-      slug: 'care/germany',
-      meta: {
-        title: 'Care in Germany',
-      },
-      layout: [],
-    })
+    mocks.draftMode.mockResolvedValue({ isEnabled: false })
+    mocks.headers.mockResolvedValue(new Headers())
   })
 
-  it('uses the localized page path for metadata', async () => {
-    const pageModule = await import('@/app/(frontend)/(pages)/[...slug]/page')
+  it('links directly to the same German Page from a noindex English notice', async () => {
+    const { default: Page, generateMetadata } = await import('@/app/(frontend)/(pages)/[...slug]/page')
 
-    await pageModule.generateMetadata({
-      params: Promise.resolve({ slug: ['care', 'germany'] }),
-      searchParams: Promise.resolve({ locale: 'de' }),
-    })
+    findPages(false)
+    mocks.headers.mockResolvedValue(new Headers({ 'x-fmd-cms-translation-source': '/pflege/deutschland' }))
+    const args = routeArgs('en/pflege/deutschland')
+    const renderedPage = renderToStaticMarkup(await Page(args))
 
-    expect(mocks.findPageBySlugMock).toHaveBeenCalledWith({}, 'care/germany', false, {
-      locale: 'de',
-      fallbackLocale: 'en',
+    expect(renderedPage).toContain('This page is currently available in German.')
+    expect(renderedPage).not.toContain('aria-label="Breadcrumb"')
+    expect(renderedPage).toMatch(/<a[^>]+href="\/pflege\/deutschland"/)
+    expect(await generateMetadata(args)).toEqual({
+      title: 'This page is currently available in German.',
+      robots: { index: false, follow: false },
     })
-    expect(mocks.generateMetaMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        path: '/care/germany?locale=de',
-      }),
-    )
+    mocks.headers.mockResolvedValue(new Headers())
+    expect(await generateMetadata(routeArgs('en/unknown'))).not.toHaveProperty('title')
+  })
+
+  it('only lists a published equivalent as a language alternate and keeps each canonical self-referential', async () => {
+    const { generateMetadata } = await import('@/app/(frontend)/(pages)/[...slug]/page')
+
+    findPages(false)
+    const germanOnly = await generateMetadata(routeArgs('pflege/deutschland'))
+    expect(germanOnly.alternates).toEqual({ canonical: '/pflege/deutschland' })
+
+    findPages(true)
+    const languages = { de: '/pflege/deutschland', en: '/en/care/germany', 'x-default': '/pflege/deutschland' }
+    const german = await generateMetadata(routeArgs('pflege/deutschland', 'en'))
+    const english = await generateMetadata(routeArgs('en/care/germany'))
+
+    expect(german.alternates).toEqual({ canonical: '/pflege/deutschland', languages })
+    expect(english.alternates).toEqual({ canonical: '/en/care/germany', languages })
   })
 })

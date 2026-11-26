@@ -15,8 +15,6 @@ Production monitoring uses three signal groups:
 3. **Deployment and migration signals**
    GitHub Actions and Vercel deployment logs show build, migration, deploy, and aliasing failures. These signals belong to release operations, not product analytics.
 
-As of the implementation check for this document, the connected PostHog project has error tracking data and no configured `system.logs_alerts` entries. No dashboard matched the search terms `monitoring`, `error`, or `reliability`. Structured visibility exists, but active reliability dashboards and log alerts are a separate follow-up, not part of this documentation change.
-
 ## Reading Production Logs
 
 Use the Vercel project `findmydoc-portal` under the `findmydoc` scope.
@@ -88,12 +86,7 @@ Never log or copy these values into tickets, Notion pages, PR descriptions, scre
 
 Use stable event names, hashed identifiers, collection names, route paths, deployment environment, request IDs, and Vercel IDs instead. If a raw value is required for a controlled local-only debugging session, do not promote it into repository files, Notion, tickets, PRs, or shared screenshots.
 
-## Known Gaps And Follow-Up
+## Alert setup
 
-Structured logs and PostHog error tracking are available, but the reliability operating surface is still mostly manual:
-
-- no confirmed PostHog log alerts are configured
-- no confirmed PostHog dashboard is dedicated to production reliability
-- no escalation automation is documented for repeated P1 events
-
-If active monitoring is required, open a separate website follow-up for a reliability dashboard and alerting setup. That follow-up should define alert thresholds, notification channels, ownership, data-retention expectations, and privacy review before any alert or dashboard is created.
+Use the manual triage steps above when an incident has no alert route. When configuring alerts, record the signal,
+threshold, notification channel, owner, retention, and privacy review in the tracking issue.

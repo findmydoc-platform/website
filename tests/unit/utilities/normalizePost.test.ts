@@ -4,13 +4,13 @@ import type { PlatformContentMedia } from '@/payload-types'
 import { normalizePost } from '@/utilities/blog/normalizePost'
 
 describe('normalizePost', () => {
-  it('keeps canonical post hrefs when no content locale is provided', () => {
+  it('links the current English feed to an English article URL when no locale is given', () => {
     const normalized = normalizePost({
       title: 'Hello World',
       slug: 'hello-world',
     })
 
-    expect(normalized.href).toBe('/posts/hello-world')
+    expect(normalized.href).toBe('/en/posts/hello-world')
   })
 
   it('builds locale-aware post hrefs from the shared content locale context', () => {
@@ -27,7 +27,7 @@ describe('normalizePost', () => {
       },
     )
 
-    expect(normalized.href).toBe('/posts/hello-world?locale=de')
+    expect(normalized.href).toBe('/posts/hello-world')
   })
 
   it('uses original blog card media before thumbnail-only generated sizes', () => {

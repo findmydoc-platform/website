@@ -12,5 +12,9 @@ function getFormFieldErrorMessage(error: unknown): string | undefined {
 export const Error: React.FC<{ error?: unknown; id?: string; message?: string }> = ({ error, id, message }) => {
   const errorMessage = message ?? getFormFieldErrorMessage(error) ?? 'This field is required.'
 
-  return <FieldError id={id}>{errorMessage}</FieldError>
+  return (
+    <FieldError id={id} lang={message ? undefined : 'en'}>
+      {errorMessage}
+    </FieldError>
+  )
 }

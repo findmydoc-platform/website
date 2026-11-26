@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { normalizeFooterNavGroups, normalizeNavItems } from '@/utilities/normalizeNavItems'
+import { normalizeFooterNavGroups, normalizeHeaderNavItems, normalizeNavItems } from '@/utilities/normalizeNavItems'
 import type { UiLinkProps } from '@/components/molecules/Link'
 
 describe('normalizeNavItems', () => {
@@ -589,7 +589,7 @@ describe('normalizeHeaderNavItems', () => {
 
     const result = normalizeHeaderNavItems(data)
 
-    expect(result[0]?.subItems).toEqual([{ href: '/dental', label: 'Dental', newTab: false }])
+    expect(result[0]?.subItems).toEqual([{ href: '/en/dental', label: 'Dental', newTab: false }])
   })
 
   it('should keep group items without href when they have valid subItems', () => {
@@ -814,5 +814,18 @@ describe('normalizeFooterNavGroups', () => {
         { href: '/imprint', label: 'Imprint', newTab: false, appearance: 'inline' },
       ],
     })
+  })
+})
+
+describe('public CMS navigation', () => {
+  it('links populated English references to their canonical routes in the header and footer', () => {
+    const page = { type: 'reference', label: 'Team', reference: { relationTo: 'pages', value: { slug: 'team' } } }
+    const post = { type: 'reference', label: 'News', reference: { relationTo: 'posts', value: { slug: 'news' } } }
+    const header = normalizeHeaderNavItems({ navItems: [{ link: page, subItems: [{ link: post }] }] })
+    const footer = normalizeFooterNavGroups({ aboutLinks: [{ link: page }, { link: post }] })
+
+    expect(header[0]?.href).toBe('/en/team')
+    expect(header[0]?.subItems?.[0]?.href).toBe('/en/posts/news')
+    expect(footer[0]?.items.map(({ href }) => href)).toEqual(['/en/team', '/en/posts/news'])
   })
 })

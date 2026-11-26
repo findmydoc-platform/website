@@ -11,6 +11,8 @@ import {
   type PublicAccountMenuState,
 } from '@/components/templates/Header/PublicAccountMenu'
 import { PreviewDataNotice } from '@/components/templates/PreviewDataNotice/Component'
+import { languageSwitcherCopy } from '@/features/languageSwitch/copy'
+import { HeaderLanguageSwitcher } from '@/features/languageSwitch/HeaderLanguageSwitcher.client'
 import { isNonProductionRuntime } from '@/features/runtimePolicy'
 import { projectHoldingFooterGroups, projectHoldingHeaderNavItems } from '@/features/temporaryLandingMode/navigation'
 import { readHoldingViewRequestHeader, readPublicSiteModeRequestHeader } from '@/features/temporaryLandingMode'
@@ -94,6 +96,9 @@ export default async function FrontendTemplate({ children }: { children: React.R
           <div className="full-width" lang={DEFAULT_CONTENT_LOCALE}>
             <Header
               navItems={headerNavItems}
+              languageSwitcher={
+                <HeaderLanguageSwitcher copyByLocale={languageSwitcherCopy} hideWithoutRoute={isHoldingPublicView} />
+              }
               logoSrc={headerLogoSrc}
               rightActions={
                 isHoldingPublicView ? null : (

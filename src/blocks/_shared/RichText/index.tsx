@@ -1,5 +1,5 @@
 import { MediaBlock } from '@/blocks/MediaBlock/Component'
-import { DefaultNodeTypes, SerializedBlockNode, SerializedLinkNode } from '@payloadcms/richtext-lexical'
+import { DefaultNodeTypes, SerializedBlockNode } from '@payloadcms/richtext-lexical'
 import { SerializedEditorState } from '@payloadcms/richtext-lexical/lexical'
 import {
   JSXConvertersFunction,
@@ -19,35 +19,34 @@ import { cn } from '@/utilities/ui'
 import { containerVariants } from '@/components/molecules/Container'
 import type { ContentLocaleContext } from '@/utilities/contentLocalization'
 
+const linkConverters = LinkJSXConverter({})
+
 type NodeTypes = DefaultNodeTypes | SerializedBlockNode<CTABlockProps | MediaBlockProps | BannerBlockProps>
 
 const createJsxConverters =
   (contentLocale?: ContentLocaleContext): JSXConvertersFunction<NodeTypes> =>
   ({ defaultConverters }) => ({
     ...defaultConverters,
-    ...LinkJSXConverter({
-      internalDocToHref: ({ linkNode }: { linkNode: SerializedLinkNode }) => {
-        const doc = linkNode.fields.doc
+    ...linkConverters,
+    link: ({ node, nodesToJSX }) => {
+      const isInternal = node.fields.linkType === 'internal'
+      const href = isInternal
+        ? node.fields.doc && resolveHrefFromReference(node.fields.doc, contentLocale)
+        : (node.fields.url ?? '')
+      const children = nodesToJSX({ nodes: node.children })
+      if (isInternal && !href) return <>{children}</>
 
-        if (!doc) {
-          throw new Error('Expected doc to exist on internal rich text link')
-        }
-
-        const href = resolveHrefFromReference(
-          {
-            relationTo: doc.relationTo,
-            value: doc.value,
-          },
-          contentLocale,
-        )
-
-        if (!href) {
-          throw new Error('Expected internal rich text link to resolve to a href')
-        }
-
-        return href
-      },
-    }),
+      const newTab = node.fields.newTab
+      return (
+        <a
+          href={href ?? undefined}
+          rel={newTab ? 'noopener noreferrer' : undefined}
+          target={newTab ? '_blank' : undefined}
+        >
+          {children}
+        </a>
+      )
+    },
     blocks: {
       banner: ({ node }) => <BannerBlock className="col-start-2 mb-4" contentLocale={contentLocale} {...node.fields} />,
       mediaBlock: ({ node }) => (

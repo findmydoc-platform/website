@@ -44,7 +44,7 @@ export const RelatedPosts: React.FC<RelatedPostsProps> = (props) => {
           // Normalize Payload Post to presentational props
           const postProps = normalizePost(doc, { contentLocale })
 
-          return <BlogCard.Overview key={index} {...postProps} />
+          return <BlogCard.Overview key={index} {...postProps} readTimeLang="en" />
         })}
       </div>
     </div>

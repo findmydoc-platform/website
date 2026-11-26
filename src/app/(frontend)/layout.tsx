@@ -3,7 +3,9 @@ import type { Metadata } from 'next'
 import React from 'react'
 import '@fontsource/dm-sans'
 
+import { resolveCmsDocumentLocale } from './_data/documentLocale'
 import { AdminBarClientAdapter } from '@/app/(frontend)/AdminBarClientAdapter.client'
+import { TreatmentSearchHandoffProvider } from '@/app/(frontend)/listing-comparison/TreatmentSearchHandoff.client'
 import { SupabaseAuthHashUrlScrubber } from '@/app/(frontend)/_components/SupabaseAuthHashUrlScrubber.client'
 import { createSiteMetadata } from '@/utilities/generateMeta'
 import { getGlobal } from '@/utilities/getGlobals'
@@ -27,6 +29,8 @@ import {
   isTemporaryLandingModeRequest,
   TEMPORARY_LANDING_DEFAULT_LOCALE,
 } from '@/features/temporaryLandingMode'
+import { LanguageSwitchRouteProvider } from '@/features/languageSwitch/LanguageSwitchRouteProvider.client'
+import { PatientAuthFormHandoffProvider } from '@/features/languageSwitch/PatientAuthFormHandoff.client'
 import { DocumentLanguage } from '@/features/uiCopy/DocumentLanguage.client'
 import { uiCopyLocaleFromHeaders } from '@/i18n/requestLocale'
 import { VercelToolbar } from '@vercel/toolbar/next'
@@ -37,15 +41,19 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const holdingDescription = isTemporaryLandingModeRequest(requestHeaders)
     ? `${getTemporaryLandingPageContent(TEMPORARY_LANDING_DEFAULT_LOCALE).statusLabel}. ${getTemporaryLandingBlogCopy(TEMPORARY_LANDING_DEFAULT_LOCALE).description}`
     : undefined
-  const { isEnabled } = await draftMode()
-  const requestCookies = await cookies()
+  const [{ isEnabled }, requestCookies, cookieConsent, cmsLocale] = await Promise.all([
+    draftMode(),
+    cookies(),
+    getGlobal('cookieConsent', 1),
+    resolveCmsDocumentLocale(requestHeaders),
+  ])
   const cookieConsentContext = resolveCookieConsentContext(
-    (await getGlobal('cookieConsent', 1)) as CookieConsentType,
+    cookieConsent as CookieConsentType,
     requestCookies.get(COOKIE_CONSENT_COOKIE_NAME)?.value ?? null,
   )
 
   return (
-    <html lang={uiCopyLocaleFromHeaders(requestHeaders)} suppressHydrationWarning>
+    <html lang={cmsLocale ?? uiCopyLocaleFromHeaders(requestHeaders)} suppressHydrationWarning>
       <head>
         <link href="/favicon.ico" rel="icon" sizes="32x32" />
         <link href="/favicon.svg" rel="icon" type="image/svg+xml" />
@@ -57,12 +65,17 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         ) : null}
       </head>
       <body className="min-h-screen bg-site-canvas text-foreground antialiased">
-        <DocumentLanguage />
         <SupabaseAuthHashUrlScrubber />
         {!blockSearchIndexing ? <JsonLdScript data={buildSiteBaseJsonLd({ description: holdingDescription })} /> : null}
         <div className="flex min-h-screen min-h-svh flex-col">
           <AdminBarClientAdapter preview={isEnabled} />
-          {children}
+          <LanguageSwitchRouteProvider>
+            <PatientAuthFormHandoffProvider>
+              <TreatmentSearchHandoffProvider>
+                <DocumentLanguage initialCmsLocale={cmsLocale}>{children}</DocumentLanguage>
+              </TreatmentSearchHandoffProvider>
+            </PatientAuthFormHandoffProvider>
+          </LanguageSwitchRouteProvider>
         </div>
         <CookieConsentClientAdapter
           config={cookieConsentContext.config}

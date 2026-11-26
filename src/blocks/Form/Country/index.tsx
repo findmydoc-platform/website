@@ -29,7 +29,10 @@ export const Country: React.FC<
 
           {required && (
             <span className="required">
-              * <span className="sr-only">(required)</span>
+              *{' '}
+              <span className="sr-only" lang="en">
+                (required)
+              </span>
             </span>
           )}
         </Label>

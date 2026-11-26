@@ -10,13 +10,13 @@ const germanContentLocale = {
 describe('post path builders', () => {
   it('keeps default paths canonical without locale query params', () => {
     expect(buildPostsIndexPath()).toBe('/posts')
-    expect(buildPostPath('hello-world')).toBe('/posts/hello-world')
+    expect(buildPostPath('hello-world')).toBe('/en/posts/hello-world')
     expect(buildPostsPagePath(2)).toBe('/posts/page/2')
   })
 
-  it('appends the non-default content locale to all post paths', () => {
+  it('keeps the German post canonical unprefixed and preserves listing locale parameters', () => {
     expect(buildPostsIndexPath(germanContentLocale)).toBe('/posts?locale=de')
-    expect(buildPostPath('hello-world', germanContentLocale)).toBe('/posts/hello-world?locale=de')
+    expect(buildPostPath('hello-world', germanContentLocale)).toBe('/posts/hello-world')
     expect(buildPostsPagePath(2, germanContentLocale)).toBe('/posts/page/2?locale=de')
   })
 

@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
 import React from 'react'
 import '@testing-library/jest-dom'
-import { cleanup, render, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { CmsLanguageSwitchRoute } from '@/features/languageSwitch/CmsLanguageSwitchRoute.client'
+import { LanguageSwitchRouteProvider } from '@/features/languageSwitch/LanguageSwitchRouteProvider.client'
 import { HOLDING_VIEW_REQUEST_HEADER, PUBLIC_SITE_MODE_REQUEST_HEADER } from '@/features/temporaryLandingMode'
 
 const mocks = vi.hoisted(() => ({
@@ -14,7 +16,10 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('next/headers', () => ({ headers: mocks.headers }))
-vi.mock('next/navigation', () => ({ usePathname: () => mocks.pathname }))
+vi.mock('next/navigation', () => ({
+  usePathname: () => mocks.pathname,
+  useRouter: () => ({ push: vi.fn() }),
+}))
 vi.mock('next/link', () => ({
   default: ({ children, href, ...props }: { children: React.ReactNode; href: string }) => (
     <a href={href} {...props}>
@@ -73,6 +78,15 @@ describe('platform navigation during Holding mode', () => {
     expect(screen.getByRole('heading', { name: 'Page content' })).toBeInTheDocument()
   })
 
+  it('announces the shared Preview notice in English on a German Post', async () => {
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'preview')
+    mocks.pathname = '/posts/gruener-tee'
+
+    await renderTemplate()
+
+    expect(screen.getByRole('note', { name: 'Preview data notice' })).toHaveAttribute('lang', 'en')
+  })
+
   it.each([null, 'patient', 'clinic'])(
     'keeps the standalone Holding contact page for a visitor with user type %s',
     async (userType) => {
@@ -105,6 +119,23 @@ describe('platform navigation during Holding mode', () => {
     expect(within(footer).getByRole('link', { name: 'Blog' })).toHaveAttribute('href', '/posts')
     expect(screen.queryByRole('link', { name: 'Compare clinics' })).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Instagram' })).not.toBeInTheDocument()
+  })
+
+  it('lets a Holding visitor switch between public versions of the same Post', async () => {
+    mocks.pathname = '/posts/gruener-tee'
+    mocks.extractSupabaseUserData.mockResolvedValue(null)
+    const { default: FrontendTemplate } = await import('@/app/(frontend)/template')
+    const template = await FrontendTemplate({
+      children: (
+        <CmsLanguageSwitchRoute locale="de" targets={{ de: '/posts/gruener-tee', en: '/en/posts/green-tea' }} />
+      ),
+    })
+    render(<LanguageSwitchRouteProvider>{template}</LanguageSwitchRouteProvider>)
+
+    fireEvent.click(within(screen.getByRole('banner')).getByRole('button', { name: /Sprache/i }))
+
+    expect(screen.getByRole('link', { name: 'English' })).toHaveAttribute('href', '/en/posts/green-tea')
+    expect(screen.queryByRole('link', { name: 'Compare clinics' })).not.toBeInTheDocument()
   })
 
   it('keeps full platform navigation when Holding mode is resolved without a request marker', async () => {

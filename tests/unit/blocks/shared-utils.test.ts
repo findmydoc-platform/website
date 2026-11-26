@@ -8,6 +8,18 @@ const germanContentLocale = {
 }
 
 describe('shared CMS link utilities', () => {
+  it('links an English Page reference to its public English route', () => {
+    expect(resolveHrefFromReference({ relationTo: 'pages', value: { slug: 'our-team' } }, { locale: 'en' })).toBe(
+      '/en/our-team',
+    )
+  })
+
+  it('does not link a historical German Page whose slug belongs to the English namespace', () => {
+    expect(
+      resolveHrefFromReference({ relationTo: 'pages', value: { slug: 'en/old-page' } }, { locale: 'de' }),
+    ).toBeUndefined()
+  })
+
   it('localizes internal reference links for pages and posts', () => {
     expect(
       resolveHrefFromReference(
@@ -17,7 +29,7 @@ describe('shared CMS link utilities', () => {
         },
         germanContentLocale,
       ),
-    ).toBe('/privacy-policy?locale=de')
+    ).toBe('/privacy-policy')
 
     expect(
       resolveHrefFromReference(
@@ -27,7 +39,7 @@ describe('shared CMS link utilities', () => {
         },
         germanContentLocale,
       ),
-    ).toBe('/posts/hello-world?locale=de')
+    ).toBe('/posts/hello-world')
   })
 
   it('localizes internal CMS links while leaving external targets untouched', () => {
@@ -42,7 +54,7 @@ describe('shared CMS link utilities', () => {
         },
         germanContentLocale,
       ),
-    ).toBe('/contact?locale=de')
+    ).toBe('/contact')
 
     expect(
       resolveHrefFromCMSLink(

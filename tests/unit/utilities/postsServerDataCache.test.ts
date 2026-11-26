@@ -22,12 +22,11 @@ vi.mock('next/cache', () => ({
 }))
 
 import {
-  buildPostDetailDataCacheKey,
   buildPostDetailDataCacheTags,
   buildPostListDataCacheKey,
   buildPostListDataCacheTags,
   getCachedLatestPosts,
-  getCachedPublishedPostBySlug,
+  getCachedPublicPostRoute,
   getCachedPublishedPostsPage,
 } from '@/utilities/content/serverData/posts'
 
@@ -36,34 +35,20 @@ describe('posts server data cache contract', () => {
     vi.clearAllMocks()
   })
 
-  it('caches published post detail reads by slug and locale with canonical invalidation tags', async () => {
+  it('versions cached post canonicals by policy, slug, and locale with canonical invalidation tags', async () => {
     const payload = {
       find: vi.fn().mockResolvedValue({ docs: [{ id: 7, slug: 'hello-world', title: 'Hallo Welt' }] }),
     }
     cacheMocks.getPayload.mockResolvedValue(payload)
-    const args = {
-      slug: 'hello-world',
-      contentLocale: { locale: 'de' as const, fallbackLocale: false as const },
-    }
-
-    await expect(getCachedPublishedPostBySlug(args)).resolves.toEqual({
-      id: 7,
-      slug: 'hello-world',
-      title: 'Hallo Welt',
+    await expect(getCachedPublicPostRoute('hello-world', 'de')).resolves.toMatchObject({
+      canonicalPath: '/posts/hello-world',
+      post: { id: 7, slug: 'hello-world', title: 'Hallo Welt' },
     })
 
-    expect(buildPostDetailDataCacheKey(args)).toBe(
-      JSON.stringify({
-        version: '2026-07-31',
-        slug: 'hello-world',
-        locale: 'de',
-        fallbackLocale: false,
-      }),
-    )
     expect(buildPostDetailDataCacheTags('hello-world')).toEqual(['collection:posts', 'slug:posts:hello-world'])
     expect(cacheMocks.unstableCache).toHaveBeenCalledWith(
       expect.any(Function),
-      ['post-detail', buildPostDetailDataCacheKey(args)],
+      ['post-detail-localized-repaired-status', 'hello-world', 'de'],
       {
         tags: ['collection:posts', 'slug:posts:hello-world'],
       },
@@ -85,7 +70,7 @@ describe('posts server data cache contract', () => {
   it.each(['foo:bar', 'foo bar', 'foo/bar', ''])(
     'treats invalid public route slug %j as a missing post',
     async (slug) => {
-      await expect(getCachedPublishedPostBySlug({ slug })).resolves.toBeNull()
+      await expect(getCachedPublicPostRoute(slug, 'de')).resolves.toBeNull()
 
       expect(cacheMocks.unstableCache).not.toHaveBeenCalled()
       expect(cacheMocks.getPayload).not.toHaveBeenCalled()
@@ -147,7 +132,7 @@ describe('posts server data cache contract', () => {
     )
     expect(payload.find).toHaveBeenCalledWith(
       expect.objectContaining({
-        fallbackLocale: 'en',
+        fallbackLocale: false,
         locale: 'de',
       }),
     )
@@ -191,7 +176,7 @@ describe('posts server data cache contract', () => {
       buildPostListDataCacheKey({ contentLocale: { locale: 'de', fallbackLocale: 'en' }, limit: 12, page: 2 }),
     ).toBe(
       JSON.stringify({
-        version: '2026-07-08',
+        version: 'localized-publication-repaired-status',
         locale: 'de',
         fallbackLocale: 'en',
         limit: 12,
@@ -218,7 +203,7 @@ describe('posts server data cache contract', () => {
       expect.objectContaining({
         collection: 'posts',
         draft: false,
-        fallbackLocale: 'en',
+        fallbackLocale: false,
         locale: 'de',
         overrideAccess: false,
       }),

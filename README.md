@@ -76,14 +76,12 @@ Hook setup:
 - `pre-commit` runs `pnpm deps:dedupe:check` when `package.json` or `pnpm-lock.yaml` is staged. Only an explicit pnpm dedupe finding triggers `pnpm dedupe --lockfile-only --ignore-scripts`; the cleaned lockfile joins the same commit. Authentication, network, and other check failures stop the commit without attempting a repair. Partially staged files and unstaged manifest or lockfile changes must be staged or stashed first.
 - `pre-push` runs `pnpm deadcode:check` on every push, including documentation-only changes. It does not inspect changed paths or remote refs first. Findings and configuration or loader errors stop the push.
 - Knip analyzes the Payload config and admin importmap statically to avoid executing server and JSX modules during configuration loading.
+- `pnpm deadcode:report:production` is advisory. When it reports a finding, check for operator scripts, tests, and
+  stories that still use the symbol before deciding to remove it.
 
-PR Validation and Preview read the same native path-filter policy. They omit application builds and new Preview deployments only when every changed path is an approved test case, repository metadata or named documentation path. Test support, runtime inputs and unknown paths still require builds. PR Validation records permitted omissions and rejects missing expected test and coverage results. Pure modifications of existing integration cases use native verified file selection plus the collection contract and explicitly incomplete coverage. Uncertain, mixed or shared-input changes run full integration. Main full integration runs independently of the application-build decision. The seven required checks remain unchanged; Integration and Combined Coverage remain optional merge checks. See [CI results and full integration](docs/testing/strategy.md#ci-results-and-full-integration) for the result contract and frozen normal-CI reference.
-
-[The recorded reference runs and acceptance limits](docs/testing/strategy.md#normal-ci-evidence-and-acceptance) distinguish preserved validation from measured savings. Six normal PR/Main pairs meet the observed acceptance criteria: both repetitions in each class complete PR validation sooner and use fewer recurring runner seconds, including Preview and all associated Main attempts. Results cover the preserved Unit-test, issue-template and existing-integration comment changes; they do not establish a universal runtime or billing gain. Investigation work is separate. Complete evidence supports resolution of implementation tickets #2076 through #2079 only; parent spec #2075 and the management deliverable remain open.
-
-## Production
-
-TBD
+See [CI results and full integration](docs/testing/strategy.md#ci-results-and-full-integration) for build and Preview
+routing, required checks, integration selection, and coverage reporting. Use the
+[deployment runbook](docs/deployment-runbook.md) for Preview and Production operations.
 
 ## Documentation
 

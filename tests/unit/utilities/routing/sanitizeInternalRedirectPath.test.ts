@@ -27,6 +27,10 @@ describe('sanitizeInternalRedirectPath', () => {
     expect(sanitizeInternalRedirectPath({ ...args, nextPath: undefined })).toBe('/fallback')
   })
 
+  it('rejects a pathname that normalizes to more than one leading slash', () => {
+    expect(sanitizeInternalRedirectPathOrNull({ nextPath: '/section/..//' })).toBeNull()
+  })
+
   it('falls back for blocked paths', () => {
     expect(
       sanitizeInternalRedirectPath({

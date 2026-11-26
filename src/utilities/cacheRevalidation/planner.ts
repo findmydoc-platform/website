@@ -170,12 +170,16 @@ const wasPublicBefore = (event: CollectionRevalidationEvent): boolean => {
   return false
 }
 
-const buildDocumentPath = (collection: CoreCollectionRevalidationCollection, slug: string): string => {
+const buildDocumentPath = (
+  collection: CoreCollectionRevalidationCollection,
+  slug: string,
+  locale: CollectionRevalidationEvent['subject']['locale'],
+): string => {
   switch (collection) {
     case 'pages':
-      return buildPagePath(slug)
+      return buildPagePath(slug, locale)
     case 'posts':
-      return buildPostPath(slug)
+      return buildPostPath(slug, locale)
   }
 }
 
@@ -195,6 +199,7 @@ const buildCollectionPlan = (event: CollectionRevalidationEvent): RevalidationPl
     id,
     slug,
     ...(previousSlug ? { previousSlug } : {}),
+    ...(event.subject.locale ? { locale: event.subject.locale } : {}),
     status: event.subject.status,
     ...(event.subject.previousStatus ? { previousStatus: event.subject.previousStatus } : {}),
   } satisfies RevalidationSubject
@@ -230,12 +235,12 @@ const buildCollectionPlan = (event: CollectionRevalidationEvent): RevalidationPl
   }
 
   if (publicNow) {
-    paths.push(buildDocumentPath(collection, slug))
+    paths.push(buildDocumentPath(collection, slug, event.subject.locale))
   }
 
   if (publicBefore) {
     const staleSlug = previousSlug ?? slug
-    paths.push(buildDocumentPath(collection, staleSlug))
+    paths.push(buildDocumentPath(collection, staleSlug, event.subject.locale))
   }
 
   if (collection === 'pages') {

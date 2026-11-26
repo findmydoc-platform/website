@@ -1,4 +1,5 @@
 import { PATIENT_LOGIN_PATH } from '@/features/favorites/redirects'
+import { listingComparisonLocaleFromPath } from '@/i18n/listingComparisonPath'
 import {
   AUTH_CONFIRMATION_PATH,
   RECOVERY_COMPLETION_PATH,
@@ -6,6 +7,8 @@ import {
   localizedPatientAuthPath,
 } from '@/i18n/patientAuthPath'
 
+export const FRONTEND_PATH_HEADER = 'x-findmydoc-frontend-path'
+export const FRONTEND_PREVIEW_LOCALE_HEADER = 'x-findmydoc-frontend-preview-locale'
 export const UI_COPY_LOCALE_HEADER = 'x-findmydoc-ui-copy-locale'
 export const ENGLISH_PATIENT_LOGIN_PATH = localizedPatientAuthPath(PATIENT_LOGIN_PATH, 'en')
 
@@ -23,7 +26,7 @@ export function isAuthConfirmationPath(pathname: string): boolean {
   return path === AUTH_CONFIRMATION_PATH || path === ENGLISH_AUTH_CONFIRMATION_PATH
 }
 
-export function uiCopyLocaleFromPath(
+export function patientAuthLocaleFromPath(
   pathname: string,
   searchParams?: Pick<URLSearchParams, 'getAll'> | null,
 ): UiCopyLocale | null {
@@ -46,6 +49,13 @@ export function uiCopyLocaleFromPath(
     return 'en'
   }
   return null
+}
+
+export function uiCopyLocaleFromPath(
+  pathname: string,
+  searchParams?: Pick<URLSearchParams, 'getAll'> | null,
+): UiCopyLocale | null {
+  return listingComparisonLocaleFromPath(pathname) ?? patientAuthLocaleFromPath(pathname, searchParams)
 }
 
 export function uiCopyLocaleFromHeaders(headers: Headers): UiCopyLocale {

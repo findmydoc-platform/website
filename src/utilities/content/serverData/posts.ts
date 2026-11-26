@@ -465,17 +465,16 @@ async function assemblePostArchivePage(
 export async function getCachedPostArchivePage(
   options: PostArchiveOptions,
 ): Promise<PaginatedResult<PostArchiveEntry>> {
-  const cacheOptions = { tags: buildPostListDataCacheTags(), revalidate: POST_ARCHIVE_REVALIDATE_SECONDS }
   const readIndex = unstable_cache(
     async () => readPostArchiveIndex(await getPayload({ config: configPromise })),
     ['post-archive-index'],
-    cacheOptions,
+    { tags: buildPostListDataCacheTags(), revalidate: POST_ARCHIVE_REVALIDATE_SECONDS },
   )
   const readCards = unstable_cache(
     async (publications: ArchivePublication[]) =>
       readPostArchiveCards(await getPayload({ config: configPromise }), publications),
     ['post-archive-cards'],
-    cacheOptions,
+    { tags: buildPostListDataCacheTags(), revalidate: POST_ARCHIVE_REVALIDATE_SECONDS },
   )
 
   try {

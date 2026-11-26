@@ -144,7 +144,7 @@ const POST_SITEMAP_SELECT = {
 
 const POSTS_LIST_DATA_CACHE_KEY_VERSION = 'localized-publication-repaired-status'
 
-export const buildPostListDataCacheTags = (): string[] => [
+const buildPostListDataCacheTags = (): string[] => [
   buildCollectionTag('posts'),
   buildSurfaceTag('posts-list'),
   buildSurfaceTag('home'),

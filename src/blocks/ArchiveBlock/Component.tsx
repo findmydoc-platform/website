@@ -1,3 +1,4 @@
+import type { PostSummaryDoc } from '@/utilities/content/serverData/posts'
 import type { Post, ArchiveBlock as ArchiveBlockProps } from '@/payload-types'
 import type { ContentLocaleContext } from '@/utilities/contentLocalization'
 
@@ -11,7 +12,7 @@ import { Container } from '@/components/molecules/Container'
 import { normalizePost } from '@/utilities/blog/normalizePost'
 import { findPublishedPostsPage } from '@/utilities/content/serverData'
 
-type ArchivePost = Partial<Post> & Pick<Post, 'title' | 'slug'>
+type ArchivePost = Partial<Post> & Pick<PostSummaryDoc, 'title' | 'slug' | 'categoryLabel'>
 
 export const ArchiveBlock: React.FC<
   ArchiveBlockProps & {
@@ -75,11 +76,13 @@ export const ArchiveBlock: React.FC<
         const fetchedMap = new Map(fetchedPosts.docs.map((doc) => [doc.id, doc]))
         posts = selectedValues
           .map((value) => {
-            if (typeof value === 'object' && value !== null) return value
+            if (typeof value === 'object' && value !== null) {
+              return { ...value, categoryLabel: fetchedMap.get(value.id)?.categoryLabel }
+            }
             if (typeof value === 'number') return fetchedMap.get(value)
             return null
           })
-          .filter((value): value is Post => Boolean(value))
+          .filter((value): value is Exclude<typeof value, null | undefined> => value != null)
       }
     }
   }

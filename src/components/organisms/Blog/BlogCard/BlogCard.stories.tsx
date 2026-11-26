@@ -196,6 +196,7 @@ export const EnhancedLight: StoryObj<typeof BlogCard.Enhanced> = {
   args: {
     ...mockPost,
     variant: 'light',
+    categoryLang: 'de',
     image: {
       src: getStoryImageSrc(storyClinicImages.blog.postHeroExamRoom),
       alt: 'Modernes Untersuchungszimmer',
@@ -252,16 +253,17 @@ export const Overview: StoryObj<typeof BlogCard.Overview> = {
     title: 'Wie Sie den richtigen Facharzt finden',
     excerpt: 'Praktische Tipps zur Auswahl des besten Spezialisten für Ihre Gesundheitsbedürfnisse.',
     category: 'Patientenratgeber',
+    categoryLang: 'de',
     image: {
       src: getStoryImageSrc(storyClinicImages.blog.postHeroExamRoom),
       alt: 'Arzt-Patienten-Gespräch',
     },
   },
-  play: async ({ canvasElement }) => {
+  play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement)
     await expect(canvas.getByRole('link')).toBeInTheDocument()
     await expect(canvas.getByText('Wie Sie den richtigen Facharzt finden')).toBeInTheDocument()
-    await expect(canvas.getByText('Patientenratgeber')).toBeInTheDocument()
+    if (args.category) await expect(canvas.getByText(args.category)).toBeInTheDocument()
   },
 }
 

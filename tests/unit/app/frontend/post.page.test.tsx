@@ -176,7 +176,8 @@ describe('frontend post detail route', () => {
             version: 1,
           },
         },
-        categories: [{ title: 'Dental Care' }],
+        categories: [42],
+        categoryLabel: { title: 'Dental Care', lang: 'en' },
         populatedAuthors: [{ name: 'Ada' }],
         publishedAt: '2026-01-01T00:00:00.000Z',
         relatedPosts: [{ slug: 'related-post', title: 'Verwandter Beitrag' }],
@@ -237,6 +238,7 @@ describe('frontend post detail route', () => {
       { label: 'Blog', href: '/posts?locale=de' },
       { label: 'Hallo Welt', href: '/posts/hello-world', lang: 'de' },
     ])
+    expect(heroElement?.props).toMatchObject({ categories: ['Dental Care'], categoryLang: 'en' })
     expect(heroElement?.props.image).toEqual({
       src: '/api/platformContentMedia/file/post-hero.webp',
       alt: 'Hallo Welt',

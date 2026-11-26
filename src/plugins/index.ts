@@ -132,7 +132,10 @@ export const plugins: Plugin[] = [
   nestedDocsPlugin({
     collections: ['categories', 'pages'],
     generateURL: (docs) => docs.reduce((url, doc) => `${url}/${doc.slug}`, ''),
-    generateLabel: (_, doc) => doc.title as string,
+    generateLabel: (_, doc, collection) =>
+      (collection.slug === 'categories' && typeof doc.title !== 'string'
+        ? (doc.titleSearch ?? doc.title)
+        : doc.title) as string,
   }),
   nestedDocsPlugin({
     collections: ['medical-specialties'],

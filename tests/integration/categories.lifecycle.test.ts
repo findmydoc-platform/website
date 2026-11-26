@@ -1,7 +1,8 @@
-import { describe, it, expect, beforeAll, afterEach } from 'vitest'
+import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest'
 import { getPayload } from 'payload'
 import type { Payload } from 'payload'
 import config from '@payload-config'
+import { revalidateTag } from 'next/cache'
 
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
@@ -25,6 +26,7 @@ describe('Categories integration - lifecycle and access', () => {
   it('creates a category and generates slug from title', async () => {
     const title = `${slugPrefix} alpha`
 
+    vi.mocked(revalidateTag).mockClear()
     const created = await payload.create({
       collection: 'categories',
       data: { title } as unknown as Category,
@@ -35,6 +37,7 @@ describe('Categories integration - lifecycle and access', () => {
     expect(created).toBeDefined()
     expect(created.title).toBe(title)
     expect(created.slug).toBe(slugify(title))
+    expect(revalidateTag).not.toHaveBeenCalled()
   })
 
   it('preserves a manually supplied slug on create and later title changes', async () => {
@@ -123,6 +126,140 @@ describe('Categories integration - lifecycle and access', () => {
     expect(afterSlugUpdate.slug).toBe(explicitSlug)
   })
 
+  it('stores both titles under one shared slug and invalidates post labels when a translation is added', async () => {
+    const category = await payload.create({
+      collection: 'categories',
+      locale: 'en',
+      data: { title: `${slugPrefix} Aftercare`, slug: `${slugPrefix}-aftercare` },
+    })
+
+    const german = await payload.findByID({
+      collection: 'categories',
+      id: category.id,
+      locale: 'de',
+      fallbackLocale: false,
+    })
+    expect(german.title).toBeFalsy()
+
+    vi.mocked(revalidateTag).mockClear()
+    await payload.update({
+      collection: 'categories',
+      id: category.id,
+      locale: 'de',
+      data: { title: 'Nachsorge' },
+    })
+
+    const translations = await payload.findByID({
+      collection: 'categories',
+      id: category.id,
+      locale: 'all',
+      fallbackLocale: false,
+      overrideAccess: false,
+    })
+
+    expect(revalidateTag).toHaveBeenCalledWith('collection:categories', { expire: 0 })
+    expect(translations).toMatchObject({
+      id: category.id,
+      slug: `${slugPrefix}-aftercare`,
+      title: { en: `${slugPrefix} Aftercare`, de: 'Nachsorge' },
+    })
+  })
+
+  it('can translate a parent while its English-only child retains its assignment and language', async () => {
+    const parent = await payload.create({
+      collection: 'categories',
+      locale: 'en',
+      data: { title: 'Care', slug: `${slugPrefix}-care` },
+    })
+    const child = await payload.create({
+      collection: 'categories',
+      locale: 'en',
+      data: { title: 'Aftercare', slug: `${slugPrefix}-child`, parent: parent.id },
+    })
+
+    await expect(
+      payload.update({
+        collection: 'categories',
+        id: parent.id,
+        locale: 'de',
+        data: { title: 'Behandlung' },
+      }),
+    ).resolves.toMatchObject({ title: 'Behandlung' })
+
+    await expect(
+      payload.findByID({
+        collection: 'categories',
+        id: child.id,
+        locale: 'all',
+        depth: 0,
+        fallbackLocale: false,
+      }),
+    ).resolves.toMatchObject({
+      parent: parent.id,
+      title: { en: 'Aftercare' },
+      breadcrumbs: {
+        de: [{ label: 'Behandlung' }, { label: 'Aftercare' }],
+        en: [{ label: 'Care' }, { label: 'Aftercare' }],
+      },
+    })
+    const german = await payload.findByID({
+      collection: 'categories',
+      id: child.id,
+      locale: 'de',
+      fallbackLocale: false,
+    })
+    expect(german.title).toBeFalsy()
+
+    for (const search of ['Care', 'Behandlung']) {
+      const result = await payload.find({
+        collection: 'categories',
+        locale: 'de',
+        select: { titleSearch: true },
+        where: { and: [{ id: { equals: parent.id } }, { titleSearch: { contains: search } }] },
+      })
+      expect(result.docs).toMatchObject([{ id: parent.id, titleSearch: 'Behandlung / Care' }])
+    }
+  })
+
+  it('keeps both updates or rejects a stale write when two locales are edited concurrently', async () => {
+    const category = await payload.create({
+      collection: 'categories',
+      locale: 'en',
+      data: { title: 'Care', slug: `${slugPrefix}-concurrent` },
+    })
+    const changes = [
+      { locale: 'en', title: 'Patient care' },
+      { locale: 'de', title: 'Behandlung' },
+    ] as const
+    const update = ({ locale, title }: (typeof changes)[number]) =>
+      payload.update({ collection: 'categories', id: category.id, locale, data: { title } })
+
+    const results = await Promise.allSettled(changes.map(update))
+    expect(results.some(({ status }) => status === 'fulfilled')).toBe(true)
+    const saved = await payload.findByID({
+      collection: 'categories',
+      id: category.id,
+      locale: 'all',
+      fallbackLocale: false,
+    })
+    for (const [index, result] of results.entries()) {
+      const change = changes[index]!
+      if (result.status === 'fulfilled') {
+        expect(saved.title).toMatchObject({ [change.locale]: change.title })
+      } else {
+        expect(result.reason.cause?.message ?? result.reason.message).toMatch(/Category changed while saving/)
+        await expect(update(change)).resolves.toMatchObject({ title: change.title })
+      }
+    }
+    await expect(
+      payload.findByID({
+        collection: 'categories',
+        id: category.id,
+        locale: 'all',
+      }),
+    ).resolves.toMatchObject({ title: { en: 'Patient care', de: 'Behandlung' } })
+  })
+
   it('deletes a category and removes it from queries', async () => {
     const title = `${slugPrefix} delete me`
 
@@ -133,6 +270,7 @@ describe('Categories integration - lifecycle and access', () => {
       overrideAccess: true,
     })
 
+    vi.mocked(revalidateTag).mockClear()
     const deleted = await payload.delete({
       collection: 'categories',
       id: created.id,
@@ -140,6 +278,7 @@ describe('Categories integration - lifecycle and access', () => {
     })
 
     expect(deleted).toBeDefined()
+    expect(revalidateTag).toHaveBeenCalledWith('collection:categories', { expire: 0 })
 
     const findResult = await payload.find({
       collection: 'categories',

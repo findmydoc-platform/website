@@ -68,8 +68,8 @@ Production and other CI workflows do not read this reservation.
 
 For acceptance that requires a fixed Website/Dashboard pair:
 
-1. Set the Website repository variable to a non-secret purpose, issue reference, and qualified deployment ID, for example:
-   `gh variable set PREVIEW_ALIAS_RESERVATION --repo findmydoc-platform/website --body 'group-access #2182; dpl_example'`.
+1. Set the Website repository variable to a non-secret purpose and qualified deployment ID, for example:
+   `gh variable set PREVIEW_ALIAS_RESERVATION --repo findmydoc-platform/website --body 'acceptance dpl_example'`.
 2. Wait for already queued/running Preview workflows to finish. Repository variables are captured by workflow runs;
    setting a reservation does not retroactively stop an older run from assigning the alias.
 3. Assign the approved Website deployment with the named account profile:
@@ -109,8 +109,13 @@ Rules:
 - Before approving a contract migration, verify the running application no longer depends on the removed storage and
   rehearse against a disposable restore. After migration, use a compatible application version. If rollback requires
   deleted data, recover it from the pre-migration backup or roll forward.
-  [Search removal example](https://github.com/findmydoc-platform/website/pull/1799)
 - Prefer soft-delete or archival states before hard deletion when business data may still be needed.
+
+### Controlled cutovers and deferred cleanup
+
+Use a controlled cutover when app versions cannot safely share a write path or an app-only rollback would leave the database in an incompatible state. Define the order of operations, any write pause, the checks required before resuming writes, and the rollback boundary.
+
+Give each controlled cutover or deferred data cleanup its own page in the [cutover archive](./cutovers/README.md). Record what remains in use, who verifies it, and the condition for removing temporary storage or compatibility code. Keep the record after cleanup and link to the evidence that confirms completion.
 
 Production data checks:
 
@@ -170,6 +175,7 @@ Policy guardrails:
 - Demo reset is blocked in production.
 
 Endpoint note:
+- Use the Developer Dashboard for hosted seed runs so the job invalidates public caches. The direct seed CLI is for local and test databases.
 - `POST /api/seed` is the dashboard entrypoint and is available to platform users in `development`, `test`, `preview`, and `production`.
 - `GET /api/seed` restores the run snapshot from the server; `GET /api/seed?runId=...` is the exact-run lookup used after reload.
 
@@ -183,10 +189,9 @@ does not exercise the affected routes.
 Keep `next build --webpack` for deployed builds under [ADR 024](./adrs/024-adr-production-build-webpack-fallback.md).
 Before removing the fallback, verify a stable Next.js release with at least three consecutive Preview and Production
 deployments free of instrumentation errors. Exercise `/admin/login`, `/admin`, and the affected `/api/auth/**` routes
-under real Preview traffic. Record deployment IDs, timestamps, and route checks in
-[rollback issue #777](https://github.com/findmydoc-platform/website/issues/777). If a relevant Next.js upgrade changes
-the runtime path, rerun qualification. If the same error recurs, update the
-[Next.js instrumentation issue](https://github.com/vercel/next.js/issues/78705) and open a Vercel support ticket.
+under real Preview traffic. Record deployment IDs, timestamps, and route checks with the qualification results.
+Rerun qualification after a relevant Next.js upgrade changes the runtime path. If the error recurs, report it upstream
+and open a Vercel support ticket with the affected routes and deployment evidence.
 
 The original incident details and config changes are in the
 [frozen incident runbook](https://github.com/findmydoc-platform/website/blob/96a76e77d4b1c2755cc7a1af92220639bd52ea4c/docs/deployment-runbook.md#nextjs-162--turbopack-incident-march-20-2026).

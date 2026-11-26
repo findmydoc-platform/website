@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useId } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
@@ -26,12 +26,14 @@ export const Enhanced: React.FC<EnhancedProps> = ({
   href,
   dateLabel,
   category,
+  categoryLang,
   image,
   author,
   variant = 'dark',
   className,
 }) => {
   const isDark = variant === 'dark'
+  const titleId = useId()
   const resolvedImage = image ?? {
     src: '/images/blog-placeholder-1600-900.svg',
     alt: 'Blog placeholder',
@@ -47,7 +49,7 @@ export const Enhanced: React.FC<EnhancedProps> = ({
   const authorName = author?.name || 'findmydoc Editorial Team'
 
   return (
-    <Link href={href} className={cn('group block', className)}>
+    <Link href={href} aria-labelledby={titleId} className={cn('group block', className)}>
       <article className="flex h-full flex-col">
         {/* Image with Category Overlay */}
         <div className="relative mb-5 aspect-[4/3] overflow-hidden rounded-3xl">
@@ -62,8 +64,11 @@ export const Enhanced: React.FC<EnhancedProps> = ({
 
           {/* Category Badge - Top Right */}
           {category && (
-            <div className="absolute top-4 right-4">
-              <span className="inline-block rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-foreground shadow-md">
+            <div className="absolute inset-x-4 top-4 flex justify-end">
+              <span
+                lang={categoryLang}
+                className="inline-block max-w-full rounded-full bg-white px-4 py-1.5 text-xs font-semibold wrap-anywhere text-foreground shadow-md"
+              >
                 {category}
               </span>
             </div>
@@ -73,6 +78,7 @@ export const Enhanced: React.FC<EnhancedProps> = ({
         <div className="mb-4 flex min-h-[7.25rem] flex-col">
           {/* Title */}
           <Heading
+            id={titleId}
             as="h3"
             size="h5"
             align="left"

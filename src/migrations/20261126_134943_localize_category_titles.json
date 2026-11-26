@@ -10139,6 +10139,18 @@
           "primaryKey": false,
           "notNull": false
         },
+        "title_search": {
+          "name": "title_search",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "title_revision": {
+          "name": "title_revision",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
         "generate_slug": {
           "name": "generate_slug",
           "type": "boolean",
@@ -34645,6 +34657,6 @@
     "tables": {},
     "columns": {}
   },
-  "id": "ba4fcd87-d78d-469a-ba67-88394457435e",
+  "id": "179a3fe2-7795-41c8-bb78-1bf27ed08cd6",
   "prevId": "00000000-0000-0000-0000-000000000000"
 }

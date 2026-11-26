@@ -4,7 +4,7 @@ import configPromise from '@payload-config'
 import { unstable_cache } from 'next/cache'
 import { getPayload } from 'payload'
 import type { Post, PostsSelect } from '@/payload-types'
-import type { PostCategoryLabel } from '@/utilities/blog/normalizePost'
+import type { PostCategoryLabel } from '@/utilities/content/postCategoryLabel'
 import type { ContentLocale } from '@/utilities/contentLocalization'
 import {
   buildCollectionTag,
@@ -225,6 +225,7 @@ async function hydrateRelatedPostCards(
       },
     },
     select: POST_RELATED_SELECT,
+    hydrateCategories: false,
   })
 
   const relatedMap = new Map(relatedResult.docs.map((doc) => [Number(doc.id), doc]))
@@ -278,24 +279,30 @@ async function loadPostCategoryLabels<T extends Pick<Post, 'categories'>>(
     overrideAccess: false,
     depth: 0,
     pagination: false,
-    select: { title: true },
+    select: { title: true, titleSearch: true },
     where: { id: { in: ids } },
   })
 
   // Payload returns the native locale map for localized fields with locale: 'all'.
-  const titlesById = new Map(docs.map(({ id, title }) => [id, title as unknown as CategoryTitles]))
+  const categoriesById = new Map(
+    docs.map(({ id, title, titleSearch }) => [id, { titles: title as unknown as CategoryTitles, titleSearch }]),
+  )
   const alternate = locale === 'de' ? 'en' : 'de'
 
   return posts.map((post) => {
     for (const category of post.categories ?? []) {
       const id = categoryId(category)
       if (id == null) continue
-      const titles = titlesById.get(id)
+      const categoryData = categoriesById.get(id)
+      const titles = categoryData?.titles
       const preferredTitle = titles?.[locale]?.trim()
       if (preferredTitle) return { ...post, categoryLabel: { title: preferredTitle, lang: locale } }
 
       const alternateTitle = titles?.[alternate]?.trim()
       if (alternateTitle) return { ...post, categoryLabel: { title: alternateTitle, lang: alternate } }
+
+      const legacyTitle = categoryData?.titleSearch?.trim()
+      if (legacyTitle) return { ...post, categoryLabel: { title: legacyTitle, lang: '' } }
     }
     return post
   })
@@ -313,7 +320,8 @@ async function queryPosts<TDoc>(
     sort,
     where,
     select = POST_LIST_SELECT,
-  }: FindPublishedPostsArgs & { select?: PostsSelect<true> } = {},
+    hydrateCategories = true,
+  }: FindPublishedPostsArgs & { select?: PostsSelect<true>; hydrateCategories?: boolean } = {},
 ): Promise<PagedResult<TDoc>> {
   const result = await payload.find({
     collection: 'posts',
@@ -332,7 +340,7 @@ async function queryPosts<TDoc>(
 
   const paged = result as unknown as PagedResult<TDoc & Pick<Post, 'categories'>>
 
-  return select.categories
+  return select.categories && hydrateCategories
     ? { ...paged, docs: await loadPostCategoryLabels(payload, paged.docs, contentLocale?.locale ?? 'en') }
     : paged
 }
@@ -451,6 +459,7 @@ async function findPostDetail(
     pagination: false,
     where,
     select: POST_DETAIL_SELECT,
+    hydrateCategories: false,
   })
 
   const post = result.docs[0] ?? null
@@ -459,7 +468,21 @@ async function findPostDetail(
     return null
   }
 
-  return hydrateRelatedPostCards(payload, post, draft, contentLocale)
+  const hydrated = await hydrateRelatedPostCards(payload, post, draft, contentLocale)
+  const relatedPosts = hydrated.relatedPosts?.filter(
+    (related): related is PostSummaryDoc => related !== null && typeof related === 'object',
+  )
+  const [detail, ...labeledRelated] = await loadPostCategoryLabels(
+    payload,
+    [hydrated, ...(relatedPosts ?? [])],
+    contentLocale.locale ?? 'en',
+  )
+
+  return {
+    ...hydrated,
+    categoryLabel: detail?.categoryLabel,
+    relatedPosts: relatedPosts?.length ? labeledRelated : hydrated.relatedPosts,
+  }
 }
 
 async function findPublishedPostSlug(payload: Payload, where: Where, locale: ContentLocale) {

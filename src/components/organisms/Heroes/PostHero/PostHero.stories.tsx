@@ -124,7 +124,8 @@ const longTitleMobileBase: Story = {
     title: 'How to compare clinics abroad while keeping treatment plans and follow-up care understandable',
     excerpt:
       'A mobile-first stress case for long editorial headlines, category pills, breadcrumbs, author metadata, and dense hero copy.',
-    categories: ['Treatment Planning', 'Clinic Comparison', 'Aftercare'],
+    categories: ['Krankenhausbehandlungsplanungsnachsorgekoordinationsverfahren'],
+    categoryLang: 'de',
   },
 }
 

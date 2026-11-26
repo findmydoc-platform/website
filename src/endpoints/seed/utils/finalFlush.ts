@@ -83,7 +83,7 @@ const COLLECTION_FLUSH_SCOPE: Partial<Record<CacheTaggableCollection, ScopeEntry
   'medical-specialties': { surfaces: ['listing-comparison', 'home', 'partners-clinics'], sitemaps: ['pages'] },
   cities: { surfaces: ['listing-comparison', 'home'], sitemaps: ['pages'] },
   countries: { surfaces: ['listing-comparison'] },
-  categories: { surfaces: ['listing-comparison'] },
+  categories: {},
   tags: { surfaces: ['listing-comparison'] },
   clinicMedia: {},
   doctorMedia: {},

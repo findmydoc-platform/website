@@ -1,6 +1,8 @@
 import { executeRevalidationPlan, planRevalidation } from '@/utilities/cacheRevalidation'
 import { slugField } from '@/fields/slugField'
+import { isDeepStrictEqual } from 'node:util'
 import type { CollectionConfig, PayloadRequest } from 'payload'
+import { text as validateText, type TextFieldSingleValidation } from 'payload/shared'
 
 import { anyone } from '../access/anyone'
 import { isPlatformStaff } from '../access/isPlatformStaff'
@@ -20,6 +22,12 @@ const revalidateCategory = (req: PayloadRequest, id: number | string, operation:
   )
 }
 
+const validateCategoryTitle: TextFieldSingleValidation = (value, options) => {
+  // Nested Docs saves shared breadcrumbs in the active locale, even if the child is untranslated.
+  if (options.operation === 'update' && value == null && options.previousValue == null) return true
+  return validateText(value, options)
+}
+
 export const Categories: CollectionConfig = {
   slug: 'categories',
   access: {
@@ -29,13 +37,28 @@ export const Categories: CollectionConfig = {
     update: isPlatformStaff,
   },
   hooks: {
-    beforeChange: [stableIdBeforeChangeHook],
-    afterChange: [({ doc, req }) => revalidateCategory(req, doc.id, 'update')],
+    beforeChange: [
+      stableIdBeforeChangeHook,
+      ({ data, originalDoc }) => {
+        delete data.titleSearch
+        data.titleRevision = (originalDoc?.titleRevision ?? 0) + 1
+        return data
+      },
+    ],
+    afterChange: [
+      ({ doc, operation, previousDoc, req }) => {
+        if (operation === 'update' && !isDeepStrictEqual(doc.title, previousDoc?.title)) {
+          revalidateCategory(req, doc.id, 'update')
+        }
+      },
+    ],
     afterDelete: [({ doc, req }) => revalidateCategory(req, doc.id, 'delete')],
   },
   admin: {
     group: 'Content & Media',
-    useAsTitle: 'title',
+    useAsTitle: 'titleSearch',
+    defaultColumns: ['titleSearch', 'slug'],
+    listSearchableFields: ['titleSearch'],
     description: 'Categories for blog posts',
   },
   fields: [
@@ -45,9 +68,20 @@ export const Categories: CollectionConfig = {
       type: 'text',
       localized: true,
       required: true,
+      validate: validateCategoryTitle,
       admin: {
         description: 'Category name',
       },
+    },
+    {
+      name: 'titleSearch',
+      type: 'text',
+      admin: { condition: () => false },
+    },
+    {
+      name: 'titleRevision',
+      type: 'number',
+      admin: { condition: () => false },
     },
     slugField(),
   ],

@@ -1,9 +1,10 @@
+import type { PostCategoryLabel } from '@/utilities/content/postCategoryLabel'
 import type { Post } from '@/payload-types'
 import { formatDate } from './formatDate'
 import { calculateReadTime } from './calculateReadTime'
 import { resolveMediaImage, type ResolvedMediaImage } from '@/utilities/media/resolveMediaImage'
 import { buildPostPath } from '@/utilities/content/postPaths'
-import type { ContentLocale, ContentLocaleContext } from '@/utilities/contentLocalization'
+import type { ContentLocaleContext } from '@/utilities/contentLocalization'
 
 export type BlogCardImageProps = Pick<ResolvedMediaImage, 'alt' | 'height' | 'src' | 'width'> &
   Partial<Pick<ResolvedMediaImage, 'quality' | 'sizes'>>
@@ -26,8 +27,6 @@ export type BlogCardBaseProps = {
   author?: BlogCardAuthorProps
   className?: string
 }
-
-export type PostCategoryLabel = { title: string; lang: ContentLocale }
 
 export type NormalizePostOptions = {
   contentLocale?: ContentLocaleContext

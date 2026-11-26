@@ -51,5 +51,6 @@ it.each(['Simple', 'Overlay', 'Overview', 'Enhanced'] as const)(
     )
 
     expect(screen.getByText('Nachsorge').getAttribute('lang')).toBe('de')
+    expect(screen.getByRole('link', { name: 'Aftercare Abroad' })).toBeDefined()
   },
 )

@@ -112,6 +112,14 @@ Rules:
   [Search removal example](https://github.com/findmydoc-platform/website/pull/1799)
 - Prefer soft-delete or archival states before hard deletion when business data may still be needed.
 
+### Category title cutover and cleanup
+
+The category title migration for Website issue #1350 switches the write path in the database transaction that backfills the localized titles. Schedule category editing around the cutover. The old app can still display the shared title, but category inserts and updates require the new app. The localized rows are authoritative. The shared column projects the English title, or the German title when English is absent. The migration copies legacy titles into English only for exact matches in the verified baseline catalogue. Other legacy titles remain available with unknown language until an editor supplies a localized title in the CMS.
+
+An app-only rollback restores old read behavior. To resume editing with the old app, also revert the migration before a non-English title has been saved, or roll forward. The schema rollback locks both category tables and refuses to discard translated data.
+
+Track the contract migration for `categories.title` in [Website #1350](https://github.com/findmydoc-platform/website/issues/1350). After the old app is retired, remove the legacy column and its projection together in a later release. Keep the search projection and revision check while they are in use. Use this case to research an AI-assisted reminder for outstanding contract migrations.
+
 Production data checks:
 
 - CI must not query production databases.
@@ -170,6 +178,7 @@ Policy guardrails:
 - Demo reset is blocked in production.
 
 Endpoint note:
+- Use the Developer Dashboard for hosted seed runs so the job invalidates public caches. The direct seed CLI is for local and test databases.
 - `POST /api/seed` is the dashboard entrypoint and is available to platform users in `development`, `test`, `preview`, and `production`.
 - `GET /api/seed` restores the run snapshot from the server; `GET /api/seed?runId=...` is the exact-run lookup used after reload.
 

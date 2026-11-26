@@ -110,7 +110,7 @@ export const PostHero: React.FC<PostHeroProps> = ({
             {primaryCategory && (
               <span
                 lang={categoryLang}
-                className="mb-4 inline-block rounded-full bg-primary px-3 py-1 text-xs text-white sm:mb-6 sm:px-4 sm:py-1.5 sm:text-sm"
+                className="mb-4 inline-block max-w-full rounded-full bg-primary px-3 py-1 text-xs wrap-anywhere text-white sm:mb-6 sm:px-4 sm:py-1.5 sm:text-sm"
               >
                 {primaryCategory}
               </span>

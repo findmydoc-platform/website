@@ -48,12 +48,12 @@ export const Saving: Story = {
     await expect(canvas.getByRole('status')).toHaveTextContent('Adding image to the clinic gallery…')
   },
 }
+const fullGalleryFixture = 'This gallery has 12 images. Remove one to make room for the new image.'
+
 export const Error: Story = {
-  args: { error: 'An image needs alt text and the gallery must have room for it.' },
+  args: { error: fullGalleryFixture },
   play: async ({ canvasElement }) => {
-    await expect(within(canvasElement).getByRole('alert')).toHaveTextContent(
-      'An image needs alt text and the gallery must have room for it.',
-    )
+    await expect(within(canvasElement).getByRole('alert')).toHaveTextContent(fullGalleryFixture)
   },
 }
 export const Success: Story = {

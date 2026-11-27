@@ -1,5 +1,5 @@
 import { after } from 'next/server.js'
-import type { AfterErrorHook } from 'payload'
+import { APIError, type AfterErrorHook, type PayloadRequest } from 'payload'
 
 import { sendPostHogException } from '@/posthog/api'
 import { fallbackConsoleLogger } from '@/utilities/logging/consoleLogger'
@@ -8,6 +8,8 @@ import { createScopedLogger, getRequestLogContext, type ServerLogger } from '@/u
 export const DATABASE_TEMPORARILY_UNAVAILABLE_CODE = 'DATABASE_TEMPORARILY_UNAVAILABLE'
 
 const DATABASE_TEMPORARILY_UNAVAILABLE_MESSAGE = 'Database temporarily unavailable'
+
+const REST_WRITE_METHODS = new Set(['DELETE', 'PATCH', 'POST', 'PUT'])
 
 export type DatabaseAvailabilityFailure = {
   kind: 'connection-limit' | 'connection-timeout' | 'connection-unavailable'
@@ -109,6 +111,15 @@ export const classifyDatabaseAvailabilityError = (error: unknown): DatabaseAvail
   return null
 }
 
+const platformPrincipalLookupFailures = new WeakMap<PayloadRequest, DatabaseAvailabilityFailure>()
+
+export const recordPlatformPrincipalLookupFailure = (req: PayloadRequest, error: unknown): void => {
+  if (req.payloadAPI !== 'REST' || !req.method || !REST_WRITE_METHODS.has(req.method)) return
+
+  const failure = classifyDatabaseAvailabilityError(error)
+  if (failure) platformPrincipalLookupFailures.set(req, failure)
+}
+
 const createSafeDatabaseError = (failure: DatabaseAvailabilityFailure): Error => {
   const error = new Error(`Payload database connection temporarily unavailable: ${failure.kind}`)
   error.name = 'DatabaseRuntimeUnavailableError'
@@ -128,14 +139,21 @@ const createUnavailableHeaders = (): Headers => {
   return headers
 }
 
-export const databaseTemporarilyUnavailableResponse = (): Response =>
-  Response.json(
-    { error: { code: DATABASE_TEMPORARILY_UNAVAILABLE_CODE } },
+const databaseTemporarilyUnavailableRestBody = () => ({
+  error: { code: DATABASE_TEMPORARILY_UNAVAILABLE_CODE },
+  errors: [
     {
-      headers: createUnavailableHeaders(),
-      status: 503,
+      message:
+        'The database is temporarily unavailable. Keep this tab open and check the saved record in another tab before retrying. If Save is disabled, make the intended edit again.',
     },
-  )
+  ],
+})
+
+export const databaseTemporarilyUnavailableResponse = (): Response =>
+  Response.json(databaseTemporarilyUnavailableRestBody(), {
+    headers: createUnavailableHeaders(),
+    status: 503,
+  })
 
 export const databaseTemporarilyUnavailableGraphqlResponse = (): Response =>
   Response.json(
@@ -208,9 +226,13 @@ export const reportDatabaseAvailabilityFailure = ({
   }
 }
 
-export const payloadDatabaseAvailabilityAfterError: AfterErrorHook = ({ error, graphqlResult, req }) => {
-  const failure = classifyDatabaseAvailabilityError(error)
-  if (!failure) return
+const reportRequestDatabaseAvailabilityFailure = (req: PayloadRequest, error: unknown, isRest: boolean): boolean => {
+  const principalLookupFailure =
+    isRest && !req.user && error instanceof APIError && error.status === 403
+      ? platformPrincipalLookupFailures.get(req)
+      : undefined
+  const failure = principalLookupFailure ?? classifyDatabaseAvailabilityError(error)
+  if (!failure) return false
 
   reportDatabaseAvailabilityFailure({
     failure,
@@ -218,7 +240,15 @@ export const payloadDatabaseAvailabilityAfterError: AfterErrorHook = ({ error, g
     phase: 'payload-request',
     req,
   })
+  return true
+}
 
+export const databaseAvailabilityRestResponse = (req: PayloadRequest, error: unknown): Response | undefined => {
+  if (reportRequestDatabaseAvailabilityFailure(req, error, true)) return databaseTemporarilyUnavailableResponse()
+}
+
+export const payloadDatabaseAvailabilityAfterError: AfterErrorHook = ({ error, graphqlResult, req }) => {
+  if (!reportRequestDatabaseAvailabilityFailure(req, error, !graphqlResult)) return
   req.responseHeaders ??= new Headers()
   applyPrivateUnavailableHeaders(req.responseHeaders)
 
@@ -237,7 +267,7 @@ export const payloadDatabaseAvailabilityAfterError: AfterErrorHook = ({ error, g
   }
 
   return {
-    response: { error: { code: DATABASE_TEMPORARILY_UNAVAILABLE_CODE } },
+    response: databaseTemporarilyUnavailableRestBody(),
     status: 503,
   }
 }

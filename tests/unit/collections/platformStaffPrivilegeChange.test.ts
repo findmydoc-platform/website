@@ -31,7 +31,7 @@ describe('platform staff privilege changes', () => {
       guardPlatformStaffRoleChange(
         args({ actor: { id: 2, role: 'admin' }, capabilities: ['conversation-moderation'] }),
       ),
-    ).rejects.toThrow('may not change their own privileges')
+    ).rejects.toMatchObject({ isPublic: true, status: 403 })
 
     await expect(
       guardPlatformStaffRoleChange(

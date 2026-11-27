@@ -6,11 +6,18 @@ import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
-import { asPayloadPatientUser, createPatientTestUser } from '../fixtures/testUsers'
+import {
+  asPayloadPatientUser,
+  asPayloadStaffUser,
+  cleanupTrackedUsers,
+  createPatientTestUser,
+  createPlatformTestUser,
+} from '../fixtures/testUsers'
 import type { Review } from '@/payload-types'
 
 const createdPatientIds: Array<string | number> = []
 const createdReviewIds: Array<string | number> = []
+const createdStaffIds: Array<string | number> = []
 type PayloadCreateArgs = Parameters<Payload['create']>[0]
 type PayloadUpdateArgs = Parameters<Payload['update']>[0]
 
@@ -56,13 +63,7 @@ describe('Review duplicate prevention', () => {
       } catch {}
     }
 
-    while (createdPatientIds.length) {
-      const patientId = createdPatientIds.pop()
-      if (!patientId) continue
-      try {
-        await payload.delete({ collection: 'patients', id: patientId, overrideAccess: true })
-      } catch {}
-    }
+    await cleanupTrackedUsers(payload, { patientIds: createdPatientIds, staffIds: createdStaffIds })
 
     await cleanupTestEntities(payload, 'doctors', slugPrefix)
     await cleanupTestEntities(payload, 'clinics', slugPrefix)
@@ -99,14 +100,16 @@ describe('Review duplicate prevention', () => {
 
     expect(review.reviewDate).toBeTruthy()
 
+    const staff = await createPlatformTestUser(payload, { emailPrefix: `${slugPrefix}-staff`, createdStaffIds })
     await expect(
       payload.create({
         collection: 'reviews',
         data: { ...baseReviewData, comment: 'Trying to double dip' },
-        overrideAccess: true,
+        user: asPayloadStaffUser(staff),
+        overrideAccess: false,
         depth: 0,
       } as PayloadCreateArgs),
-    ).rejects.toThrow(/Duplicate review/i)
+    ).rejects.toMatchObject({ isPublic: true, status: 409 })
 
     const updated = (await payload.update({
       collection: 'reviews',
@@ -161,14 +164,16 @@ describe('Review duplicate prevention', () => {
       depth: 0,
     } as PayloadUpdateArgs)
 
+    const staff = await createPlatformTestUser(payload, { emailPrefix: `${slugPrefix}-trashed-staff`, createdStaffIds })
     await expect(
       payload.create({
         collection: 'reviews',
         data: { ...baseReviewData, comment: 'Trying to recreate trashed review' },
-        overrideAccess: true,
+        user: asPayloadStaffUser(staff),
+        overrideAccess: false,
         depth: 0,
       } as PayloadCreateArgs),
-    ).rejects.toThrow(/Duplicate review/i)
+    ).rejects.toMatchObject({ isPublic: true, status: 409 })
   }, 60000)
 
   it('blocks duplicate patient-created pending reviews that are hidden by read access', async () => {
@@ -216,6 +221,6 @@ describe('Review duplicate prevention', () => {
         overrideAccess: false,
         depth: 0,
       } as PayloadCreateArgs),
-    ).rejects.toThrow(/Duplicate review/i)
+    ).rejects.not.toHaveProperty('isPublic')
   }, 60000)
 })

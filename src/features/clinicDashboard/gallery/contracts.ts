@@ -37,6 +37,24 @@ export const clinicGallerySaveInputSchema = z
     }
   })
 
+type ClinicGallerySaveRejection =
+  | { kind: 'full' }
+  | { kind: 'missing-alt'; index: number }
+  | { kind: 'alt-too-long' | 'caption-too-long'; index: number; maximum: number | bigint }
+
+export function getClinicGallerySaveRejection(error: z.ZodError): ClinicGallerySaveRejection | undefined {
+  const [issue] = error.issues
+  if (!issue) return
+  const [path, index, field] = issue.path
+  if (path !== 'items') return
+  if (index === undefined && issue.code === 'too_big') return { kind: 'full' }
+  if (typeof index !== 'number') return
+  if (field === 'alt' && issue.code === 'too_small') return { kind: 'missing-alt', index }
+  if (issue.code === 'too_big' && (field === 'alt' || field === 'captionText')) {
+    return { kind: field === 'alt' ? 'alt-too-long' : 'caption-too-long', index, maximum: issue.maximum }
+  }
+}
+
 export const clinicGalleryDiscardInputSchema = z
   .object({
     mediaIds: z.array(mediaIdSchema).min(1).max(clinicProfileGalleryMaxItems),

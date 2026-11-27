@@ -51,6 +51,10 @@ function permissionSection(
   const describedGroup: GroupField = {
     ...group,
     label: false,
+    admin: {
+      ...group.admin,
+      components: { ...group.admin?.components, Field: `${permissionComponents}#McpPermissionGroup` },
+    },
     fields: group.fields.map((field) => {
       if (field.type !== 'checkbox') return field
       const text = copy?.[field.name]

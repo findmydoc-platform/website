@@ -1,17 +1,17 @@
 'use client'
 
 import { FieldDescription, FieldError, FieldLabel, RenderFields, useField } from '@payloadcms/ui'
-import type { CheckboxFieldClientProps, CollapsibleFieldClientProps } from 'payload'
+import type { CheckboxFieldClientProps, CollapsibleFieldClientProps, GroupFieldClientProps } from 'payload'
 import { useId, useState } from 'react'
 import './index.scss'
 
 export function McpPermissionSection({
   field: { admin, fields, label },
-  indexPath,
-  parentPath,
-  parentSchemaPath,
+  indexPath = '',
+  parentPath = '',
+  parentSchemaPath = '',
   path,
-  permissions,
+  permissions = true,
   readOnly,
 }: CollapsibleFieldClientProps) {
   const { disabled } = useField({ path })
@@ -43,6 +43,7 @@ export function McpPermissionSection({
         {!overview && hint}
         <RenderFields
           fields={fields}
+          forceRender
           margins="small"
           parentIndexPath={indexPath}
           parentPath={parentPath}
@@ -52,6 +53,28 @@ export function McpPermissionSection({
         />
       </div>
     </div>
+  )
+}
+
+export function McpPermissionGroup({
+  field: { fields },
+  path,
+  schemaPath = path,
+  permissions = true,
+  readOnly,
+}: GroupFieldClientProps) {
+  // Mount the grants when the form mounts so they are in keyboard order as soon as the panel opens.
+  return (
+    <RenderFields
+      fields={fields}
+      forceRender
+      margins="small"
+      parentIndexPath=""
+      parentPath={path}
+      parentSchemaPath={schemaPath}
+      permissions={permissions === true ? true : (permissions.fields ?? {})}
+      readOnly={readOnly}
+    />
   )
 }
 

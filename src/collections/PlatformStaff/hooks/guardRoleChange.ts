@@ -1,4 +1,4 @@
-import type { CollectionBeforeChangeHook } from 'payload'
+import { APIError, type CollectionBeforeChangeHook } from 'payload'
 
 type PlatformStaffRole = 'admin' | 'content-manager' | 'support'
 
@@ -36,15 +36,18 @@ export const guardPlatformStaffRoleChange: CollectionBeforeChangeHook = async ({
   if (isTrustedPlatformStaffOps(req.context)) return data
 
   if (operation === 'create') {
-    throw new Error('Platform staff accounts must be provisioned through the trusted operations path')
+    throw new APIError('Platform staff accounts must be provisioned through the operations workflow.', 403)
   }
 
   if (!req.user || req.user.collection !== 'platformStaff') {
-    throw new Error('Only an administrator may change platform staff privileges')
+    throw new APIError('Only a platform administrator can change staff roles or capabilities.', 403)
   }
 
   if (String(req.user.id) === String(originalDoc?.id)) {
-    throw new Error('Platform staff may not change their own privileges')
+    throw new APIError(
+      'You cannot change your own role or capabilities. Ask another platform administrator to make the change.',
+      403,
+    )
   }
 
   const actor = await req.payload.findByID({
@@ -57,7 +60,7 @@ export const guardPlatformStaffRoleChange: CollectionBeforeChangeHook = async ({
   })
 
   if (actor.role !== 'admin') {
-    throw new Error('Only an administrator may change platform staff privileges')
+    throw new APIError('Only a platform administrator can change staff roles or capabilities.', 403)
   }
 
   return data

@@ -1,7 +1,8 @@
-import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest'
-import { createLocalReq, docAccessOperation, getPayload } from 'payload'
+import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest'
+import { createLocalReq, docAccessOperation, getPayload, handleEndpoints } from 'payload'
 import type { Payload } from 'payload'
 import config from '@payload-config'
+import * as supabaseIdentity from '@/auth/utilities/jwtValidation'
 
 import { testSlug } from '../fixtures/testSlug'
 import { createTinyPngFile } from '../fixtures/mediaFile'
@@ -169,6 +170,48 @@ describe('PlatformStaff integration - access and constraints', () => {
         overrideAccess: false,
       } as PayloadUpdateArgs)
     }).rejects.toThrow()
+  })
+
+  it('returns a public denial for self-grants and lets another platform admin save capabilities through REST', async () => {
+    const admin = await createPlatformUser('capability-admin', 'admin')
+    const otherAdmin = await createPlatformUser('capability-other-admin', 'admin')
+    const support = await createPlatformUser('capability-support')
+    const capabilities = ['conversation-moderation', 'inquiry-retention'] as const
+    const extractIdentity = vi.spyOn(supabaseIdentity, 'extractSupabaseUserData')
+    const grantCapabilities = (actor: PlatformStaff) => {
+      if (!actor.supabaseUserId || !actor.email) throw new Error('Expected a provisioned platform staff identity.')
+      extractIdentity.mockResolvedValueOnce({
+        supabaseUserId: actor.supabaseUserId,
+        userEmail: actor.email,
+        userType: 'platform',
+      })
+      return handleEndpoints({
+        config,
+        request: new Request(`https://payload-http-boundary.test/api/platformStaff/${admin.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ capabilities }),
+        }),
+      })
+    }
+
+    try {
+      const selfGrant = await grantCapabilities(admin)
+      expect(selfGrant.status).toBe(403)
+      const denial = await selfGrant.json()
+      expect(denial).toMatchObject({ errors: [{ message: expect.any(String) }] })
+      expect(denial.errors[0].message).not.toBe('Something went wrong.')
+      expect((await grantCapabilities(support)).status).toBe(403)
+
+      const beforeGrant = await payload.findByID({ collection: 'platformStaff', id: admin.id, depth: 0 })
+      expect(beforeGrant.capabilities ?? []).toEqual([])
+
+      expect((await grantCapabilities(otherAdmin)).status).toBe(200)
+      const afterGrant = await payload.findByID({ collection: 'platformStaff', id: admin.id, depth: 0 })
+      expect(afterGrant.capabilities).toEqual(capabilities)
+    } finally {
+      extractIdentity.mockRestore()
+    }
   })
 
   it('prevents direct API create for platformStaff', async () => {

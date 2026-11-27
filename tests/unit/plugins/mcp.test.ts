@@ -1,7 +1,10 @@
-import type { Config } from 'payload'
+import type { Config, Field } from 'payload'
 import { describe, expect, it } from 'vitest'
 import { createMcpPlugin, isPlatformStaffMcpUser, mcpReadCollectionSlugs } from '@/plugins/mcp'
 import { createMockPayload, createMockReq } from '../helpers/testHelpers'
+
+const namedFields = (fields: Field[]): Field[] =>
+  fields.flatMap((field) => (field.type === 'collapsible' ? namedFields(field.fields) : [field]))
 
 describe('MCP principal authorization', () => {
   it.each([
@@ -106,17 +109,13 @@ describe('MCP principal authorization', () => {
       const config = await createMcpPlugin()({ collections: [] } as unknown as Config)
       const collection = config.collections?.find(({ slug }) => slug === 'payload-mcp-api-keys')
 
-      expect(collection?.fields).toEqual(
+      expect(namedFields(collection?.fields ?? [])).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
+            name: slug,
             fields: expect.arrayContaining([
-              expect.objectContaining({
-                name: slug,
-                fields: expect.arrayContaining([
-                  expect.objectContaining({ name: 'create', defaultValue: false }),
-                  expect.objectContaining({ name: 'update', defaultValue: false }),
-                ]),
-              }),
+              expect.objectContaining({ name: 'create', defaultValue: false }),
+              expect.objectContaining({ name: 'update', defaultValue: false }),
             ]),
           }),
         ]),

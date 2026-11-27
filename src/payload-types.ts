@@ -2779,6 +2779,8 @@ export interface ClinicApplication {
    * Main specialties selected during registration
    */
   medicalSpecialties: (number | MedicalSpecialty)[];
+  mcpOnboardingRequestKey?: string | null;
+  mcpOnboardingStaffMode?: ('new_account' | 'existing_account') | null;
   /**
    * Application review status
    */
@@ -2796,7 +2798,7 @@ export interface ClinicApplication {
    */
   provisioningErrorCode?: ('record_failed' | 'auth_failed' | 'binding_failed') | null;
   /**
-   * Clinic and staff records created after approval
+   * Clinic and initial staff records linked to this application
    */
   linkedRecords?: {
     clinic?: (number | null) | Clinic;
@@ -3838,6 +3840,11 @@ export interface PayloadMcpApiKey {
      * Allow clients to update posts.
      */
     update?: boolean | null;
+  };
+  clinicOnboarding?: {
+    read?: boolean | null;
+    create?: boolean | null;
+    correct?: boolean | null;
   };
   clinics?: {
     /**
@@ -5469,6 +5476,8 @@ export interface ClinicApplicationsSelect<T extends boolean = true> {
   contactRole?: T;
   clinicWebsite?: T;
   medicalSpecialties?: T;
+  mcpOnboardingRequestKey?: T;
+  mcpOnboardingStaffMode?: T;
   status?: T;
   reviewNotes?: T;
   provisioningStatus?: T;
@@ -6567,6 +6576,13 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
         find?: T;
         create?: T;
         update?: T;
+      };
+  clinicOnboarding?:
+    | T
+    | {
+        read?: T;
+        create?: T;
+        correct?: T;
       };
   clinics?:
     | T

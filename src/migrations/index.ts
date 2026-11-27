@@ -115,6 +115,7 @@ import * as migration_20261122_221913_localize_post_publication from './20261122
 import * as migration_20261123_095220_add_redirect_http_status from './20261123_095220_add_redirect_http_status'
 import * as migration_20261125_151218_repair_empty_german_post_publication from './20261125_151218_repair_empty_german_post_publication'
 import * as migration_20261126_134943_localize_category_titles from './20261126_134943_localize_category_titles'
+import * as migration_20261127_130352_stage_mcp_clinic_onboarding from './20261127_130352_stage_mcp_clinic_onboarding'
 
 export const migrations = [
   {
@@ -701,5 +702,10 @@ export const migrations = [
     up: migration_20261126_134943_localize_category_titles.up,
     down: migration_20261126_134943_localize_category_titles.down,
     name: '20261126_134943_localize_category_titles',
+  },
+  {
+    up: migration_20261127_130352_stage_mcp_clinic_onboarding.up,
+    down: migration_20261127_130352_stage_mcp_clinic_onboarding.down,
+    name: '20261127_130352_stage_mcp_clinic_onboarding',
   },
 ]

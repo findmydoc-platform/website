@@ -11,6 +11,17 @@ an already publicly approved clinic. Newly created clinics receive `pending` unl
 sets `approved`. Explicit participation rejection or disabling takes precedence over public publication. Public reads,
 listing, media visibility, and discovery retain their existing publication filters.
 
+## MCP staging
+
+The clinic onboarding tool creates a submitted application, a pending unpublished clinic and one pending staff
+principal in a single Payload transaction. The principal has local assignment to that clinic. The application and
+clinic participation remain pending, and the principal has no provider identity, activation evidence or invitation.
+The unique request key is scoped to the platform key owner. The application links both records and stores the selected
+account mode. The workflow owns these source fields and the staged application and staff bindings.
+
+An authorized correction applies to an open application. Changes to the first contact flow to the clinic's internal
+contact and to the same pending principal. Corrections leave the public contact fields and publication state intact.
+
 ## Private completion boundary
 
 `clinicStaff.accountCompletion` stores source, Supabase subject, clinic ID, evidence time, observation time, and an optional

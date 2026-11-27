@@ -30,7 +30,7 @@ export const provisionApprovedClinicApplication: CollectionAfterChangeHook<Clini
   previousDoc,
   req,
 }) => {
-  if (req.context?.skipClinicApplicationProvisioning) return doc
+  if (doc.mcpOnboardingRequestKey || req.context?.skipClinicApplicationProvisioning) return doc
   if (doc.status !== 'approved') return doc
 
   const provisioningStatus = doc.provisioningStatus ?? 'not_started'

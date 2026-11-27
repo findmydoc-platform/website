@@ -67,6 +67,29 @@ The `clinicMedia` and `doctorMedia` find permissions expose media metadata.
 `deleteClinicImage` and `deleteDoctorImage` permanently delete individual images only after references are removed.
 Uploads accept base64-encoded image bytes and the configured media size and type limits apply.
 
+## Clinic onboarding
+
+In the API key form, expand **Clinic profiles** and **Onboarding**. Reading, staging and correcting have separate
+checkboxes, all off by default. Existing clinic collection grants remain in **Profile care**. Staging and correcting
+also require the current clinic management role and the applicable Payload application and clinic permissions.
+
+| Tool | Required onboarding grant | Inputs |
+| --- | --- | --- |
+| `stageClinicOnboarding` | Stage an application | `requestKey`, `staffMode: "new_account"`, `clinicName`, `clinicWebsite`, `medicalSpecialtyIds`, `contactFirstName`, `contactLastName`, `contactEmail` and `contactRole` |
+| `readClinicOnboarding` | Read applications | `applicationId` |
+| `correctClinicOnboarding` | Correct an open application | `applicationId` and one or more changed intake fields |
+
+Use a fresh request key for a new intake and reuse it when retrying as the same key owner. The response returns the
+same application, clinic and staff IDs after a successful replay. A separate request matching an open or approved
+application for the same clinic name and contact email returns a conflict. Medical specialties must be main
+specialties. The supported contact roles are `Medical Director`, `Clinic Management` and `International Office`.
+
+The response distinguishes the application decision (`decisionStatus`), account setup (`accountSetupStatus`),
+Dashboard participation (`participationStatus`) and the clinic's publication state (`publicStatus`). Staging leaves
+the application submitted, the clinic unpublished and the first staff account pending without Dashboard access.
+The read action includes the intake fields. Correcting the first contact's email updates the application, the
+clinic's internal primary contact and the pending account together.
+
 ## Configure VS Code (Copilot Chat MCP)
 
 VS Code supports HTTP MCP servers via `.vscode/mcp.json`.

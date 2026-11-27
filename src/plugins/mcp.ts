@@ -17,6 +17,11 @@ import { MEDIA_UPLOAD_MAX_BYTES } from '@/config/mediaUploadPolicy'
 import { relationId } from '@/collections/clinics/profileGallery'
 import type { ClinicMedia, DoctorMedia } from '@/payload-types'
 import { readStoredImage } from '@/features/platformMedia/readStoredImage'
+import {
+  clinicOnboardingTools,
+  groupClinicOnboardingGrants,
+  mapClinicOnboardingGrants,
+} from '@/features/mcp/clinicOnboarding'
 
 type McpCollectionConfig = {
   description: string
@@ -315,6 +320,7 @@ export const createMcpPlugin = (): Plugin =>
     userCollection: mcpUserCollection,
     mcp: {
       tools: [
+        ...clinicOnboardingTools,
         createTrashTool('clinics', 'trashClinic', 'Clinic'),
         createTrashTool('doctors', 'trashDoctor', 'Doctor'),
         createDeleteLinkTool('clinictreatments', 'deleteClinicTreatment', 'Clinic treatment'),
@@ -335,23 +341,7 @@ export const createMcpPlugin = (): Plugin =>
     overrideApiKeyCollection: (collection) => {
       return {
         ...collection,
-        fields: collection.fields.map((field) =>
-          field.type === 'collapsible'
-            ? {
-                ...field,
-                fields: field.fields.map((nested) =>
-                  nested.type === 'group' && 'name' in nested && nested.name === 'payload-mcp-tool'
-                    ? {
-                        ...nested,
-                        fields: nested.fields.map((item) =>
-                          item.type === 'checkbox' ? { ...item, defaultValue: false } : item,
-                        ),
-                      }
-                    : nested,
-                ),
-              }
-            : field,
-        ),
+        fields: groupClinicOnboardingGrants(collection.fields),
         admin: {
           ...collection.admin,
           hidden: ({ user }) => !isPlatformAdminUser(user),
@@ -363,13 +353,13 @@ export const createMcpPlugin = (): Plugin =>
       }
     },
 
-    overrideAuth: async (_req, getDefaultMcpAccessSettings) => {
+    overrideAuth: async (req, getDefaultMcpAccessSettings) => {
       const mcpAccessSettings = await getDefaultMcpAccessSettings()
 
       if (!isPlatformStaffMcpUser(mcpAccessSettings.user as unknown)) {
         throw new UnauthorizedError()
       }
 
-      return mcpAccessSettings
+      return mapClinicOnboardingGrants(req, mcpAccessSettings)
     },
   })

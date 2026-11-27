@@ -73,7 +73,7 @@
 - **Forms**: Public form definitions with platform-only management
 - **Form Submissions**: Public create path with platform-only read and delete access; direct updates are disabled
 - **Redirects**: Public redirect rules with platform-only management
-- **MCP API Keys**: Only current platform administrators manage keys. Existing platform staff-owned keys retain MCP access; owner binding and disabled unlock remain enforced.
+- **MCP API Keys**: Only current platform administrators manage keys. Clinic onboarding grants are individually opt-in and retain the applicable Payload permissions of the key owner. Existing grants, owner binding and disabled unlock remain enforced.
 - **PlatformStaff**: Platform staff review safe identity fields, edit their own profile image using their own media, and manage roles; identity bindings and create/delete remain provisioning-only
 - **ClinicStaff**: Platform staff manage clinic assignment and lifecycle; approved and synced staff with private password evidence read their participation-approved clinic; invitation authorization is private and immutable; identity binding, auth sync, and create/delete remain provisioning-only
 - **Patients**: Patients can update own profile; no self-create/delete
@@ -102,7 +102,7 @@
 - **Tags**: Supporting data - platform write, everyone read
 - **Categories**: Supporting data - platform write, everyone read
 - **Accreditation**: Supporting data - platform write, everyone read
-- **ClinicApplications**: Public submissions use the controlled API route; platform approval authorizes private clinic participation and the named initial staff member; recoverable provisioning reuses both records without automatic reinvitation
+- **ClinicApplications**: Public submissions use the controlled API route. MCP staging uses the clinic management workflow to bind an unpublished clinic and pending first account. Legacy platform approval and recoverable provisioning retain their existing behavior.
 - **ClinicProfileDrafts**: Private active clinic profile drafts; generic access is denied for all roles. The tenant-scoped Clinic Dashboard service owns draft operations.
 - **PatientClinicInquiries**: Inquiry aggregate; patient and clinic access uses actor-bound, tenant-checked commands instead of generic collection routes
 - **InquiryConversations**: Private inquiry grouping; all access uses checked inquiry communication commands

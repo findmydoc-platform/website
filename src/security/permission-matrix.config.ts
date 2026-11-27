@@ -370,7 +370,7 @@ export const permissionMatrix: PermissionMatrix = {
         },
       },
       notes:
-        'Platform admin/support create. Platform staff manage profiles and ordinary deletion. Clinic staff read and update their current eligible assignment. Public readers see approved clinics. Average ratings are computed. Hooks block trash and hard delete while MCP onboarding is submitted. The workflow owns participation decisions and the first contact. Payload Admin owns public status for staged profiles.',
+        'Platform admin/support create. Platform staff manage profiles and ordinary deletion. Clinic staff read and update their current eligible assignment. Public readers see approved clinics. Average ratings are computed. Hooks block trash and hard delete while MCP onboarding is submitted. The workflow owns participation decisions and the first contact. Generic MCP responses omit the internal primary contact while the linked application is submitted. Native reads and generic MCP query predicates keep their existing authorization. Payload Admin owns public status for staged profiles.',
     },
     doctorspecialties: {
       slug: 'doctorspecialties',

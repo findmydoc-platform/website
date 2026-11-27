@@ -104,11 +104,14 @@ specialties. The supported contact roles are `Medical Director`, `Clinic Managem
 The response distinguishes the application decision (`decisionStatus`), account setup (`accountSetupStatus`),
 Dashboard participation (`participationStatus`) and the clinic's publication state (`publicStatus`). Staging leaves
 the application submitted and the clinic unpublished. The new-account path creates a pending staff account;
-the existing-account path records the selected ID and leaves the account unassigned. The read action includes the intake
-fields and `applicationRevision`. Review the returned intake and staff selection before sending that revision to the
-decision tool. If the application changes before the decision, read it and review the new revision. For a new account, corrections to the first contact update the application, the clinic's internal primary
-contact and the pending account together. For an existing account, changing the selected ID updates the application and
-clinic contact. The selected account itself can be updated through the existing staff workflows.
+the existing-account path records the selected ID and leaves the account unassigned. The read action includes the intake,
+`clinicGroupId` and `applicationRevision`. The group ID is `null` for an independent clinic. Review the intake, staff
+selection and clinic group before submitting a decision. If the application or clinic group changes, read and review
+the new revision.
+
+For a new account, corrections to the first contact update the application, clinic contact and pending account together.
+For an existing account, changing the selected ID updates the application and clinic contact. Use the existing staff
+workflows to update the selected account.
 
 For a new account, approval saves the Dashboard participation decision before account setup. The first staff member
 must complete the existing account activation to use the Dashboard. Rejection records the reason and leaves the pending
@@ -142,8 +145,10 @@ and `updateClinics`, respectively. **Create clinic profiles directly** is the ex
 Staff can edit a profile as soon as the clinic exists. Edits to public profiles use the normal clinic cache invalidation
 hooks. Unpublished profiles stay private.
 
-For clinics created by the MCP onboarding workflow, use onboarding actions for the first contact and participation
-decision. Use Payload Admin for public publication and for suspending or resuming approved participation.
+Use `readClinicOnboarding` to read the first contact while an application is submitted. Generic clinic reads and updates
+omit `internalPrimaryContact` from their returned records during that time, including when selected explicitly. Existing
+authorization still applies to generic filters and sorting. Use onboarding actions for participation decisions and
+Payload Admin for public publication, suspension and resumption.
 
 ## Post drafts
 
@@ -180,7 +185,8 @@ any validation or technical error. If one draft is missing, the editor can still
 Enable `uploadEditorialImage` under **Blog posts → Images**. This grant is off by default. The key owner needs the
 existing `platformContentMedia` create permission. Payload validates the image and records the uploader. The tool
 returns `{ "id": 123 }`. Pass that ID as `data.heroImage` when calling `updatePostDraft` with the Post ID and
-locale. Uploading the image leaves Post publication unchanged. Editorial media retain public read access.
+locale. Uploading a new image skips public cache invalidation. Publishing a Post that references the image refreshes
+its public consumers through the existing Post hooks. Editorial media retain public read access.
 
 Send one `tools/call` request with `name` (the filename), `mimeType`, `base64` (the encoded file bytes), and `alt`
 (required alternative text). The media policy accepts JPEG, PNG, WebP, AVIF, GIF, and SVG. The file limit for this

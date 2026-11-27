@@ -1,5 +1,6 @@
 import type { FooterNavGroup, HeaderNavItem } from '@/utilities/normalizeNavItems'
 import type { UiLinkProps } from '@/components/molecules/Link'
+import { temporaryLandingLocaleFromPath } from './i18n'
 
 export type HoldingPublicDestination =
   'blog-article' | 'blog-index' | 'blog-pagination' | 'contact' | 'holding-home' | 'imprint' | 'privacy'
@@ -43,7 +44,7 @@ export const classifyHoldingPublicDestination = (href: string, siteOrigin: strin
   }
 
   const pathname = normalizePathname(decodedPathname)
-  if (pathname === '/') return 'holding-home'
+  if (temporaryLandingLocaleFromPath(pathname)) return 'holding-home'
   if (pathname === '/posts') return 'blog-index'
   if (/^\/posts\/page\/[1-9]\d*$/.test(pathname)) return 'blog-pagination'
   if (/^\/posts\/[^/]+$/.test(pathname)) return 'blog-article'

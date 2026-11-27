@@ -5,37 +5,32 @@ import {
   buildTemporaryLandingLocaleHref,
   getTemporaryLandingPageContent,
   resolveTemporaryLandingContentLocale,
-  resolveTemporaryLandingLocale,
+  temporaryLandingLocaleFromPath,
   TEMPORARY_LANDING_LOCALES,
   type TemporaryLandingLocale,
 } from '@/features/temporaryLandingMode'
 
 describe('temporaryLandingMode i18n', () => {
-  it('resolves supported locales and falls back to english', () => {
-    expect(resolveTemporaryLandingLocale(undefined)).toBe('en')
-    expect(resolveTemporaryLandingLocale({})).toBe('en')
-    expect(resolveTemporaryLandingLocale({ lang: 'de' })).toBe('de')
-    expect(resolveTemporaryLandingLocale({ lang: 'TR' })).toBe('tr')
-    expect(resolveTemporaryLandingLocale({ lang: 'foo' })).toBe('en')
-  })
-
-  it('resolves locale from first array search param entry', () => {
-    expect(resolveTemporaryLandingLocale({ lang: ['tr', 'de'] })).toBe('tr')
+  it('resolves only the exact Holding paths to a language', () => {
+    expect(temporaryLandingLocaleFromPath('/')).toBe('de')
+    expect(temporaryLandingLocaleFromPath('/en')).toBe('en')
+    expect(temporaryLandingLocaleFromPath('/tr/')).toBe('tr')
+    expect(temporaryLandingLocaleFromPath('/tr/other')).toBeNull()
   })
 
   it('builds locale href while preserving other query params', () => {
-    expect(buildTemporaryLandingLocaleHref('tr', { foo: 'bar' })).toBe('/?foo=bar&lang=tr')
-    expect(buildTemporaryLandingLocaleHref('de', { foo: ['bar', 'baz'], lang: 'en' })).toBe('/?foo=bar&foo=baz&lang=de')
-    expect(buildTemporaryLandingLocaleHref('en', undefined)).toBe('/?lang=en')
+    expect(buildTemporaryLandingLocaleHref('tr', { foo: 'bar' })).toBe('/tr?foo=bar')
+    expect(buildTemporaryLandingLocaleHref('de', { foo: ['bar', 'baz'], lang: 'en' })).toBe('/?foo=bar&foo=baz')
+    expect(buildTemporaryLandingLocaleHref('en', undefined)).toBe('/en')
   })
 
   it('builds language options with locale specific hrefs', () => {
     const options = buildTemporaryLandingLanguageOptions({ source: 'hero', lang: 'en' })
 
     expect(options).toEqual([
-      { value: 'en', label: 'EN', href: '/?source=hero&lang=en' },
-      { value: 'de', label: 'DE', href: '/?source=hero&lang=de' },
-      { value: 'tr', label: 'TR', href: '/?source=hero&lang=tr' },
+      { value: 'en', label: 'EN', href: '/en?source=hero' },
+      { value: 'de', label: 'DE', href: '/?source=hero' },
+      { value: 'tr', label: 'TR', href: '/tr?source=hero' },
     ])
   })
 
@@ -66,11 +61,11 @@ describe('temporaryLandingMode i18n', () => {
     })
   })
 
-  it('falls back to english content for unknown locale keys', () => {
+  it('falls back to German content for unknown locale keys', () => {
     const invalidLocale = 'xx' as TemporaryLandingLocale
     const fallbackContent = getTemporaryLandingPageContent(invalidLocale)
 
-    const englishContent = getTemporaryLandingPageContent('en')
-    expect(fallbackContent).toEqual(englishContent)
+    const defaultContent = getTemporaryLandingPageContent('de')
+    expect(fallbackContent).toEqual(defaultContent)
   })
 })

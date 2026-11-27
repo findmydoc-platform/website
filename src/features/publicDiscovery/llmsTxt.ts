@@ -1,6 +1,7 @@
 import { buildPublicDiscoveryBlockedResponse, type PublicDiscoveryAccess } from './access'
 import { PUBLIC_CANONICAL_SITE_URL, toPublicCanonicalUrl } from './site'
 import type { PublicSiteMode } from '@/features/temporaryLandingMode/resolver'
+import { TEMPORARY_LANDING_PATHS } from '@/features/temporaryLandingMode/i18n'
 
 const LLMS_TXT_CONTENT_TYPE = 'text/markdown; charset=utf-8'
 const LLMS_TXT_CACHE_CONTROL = 'private, no-store'
@@ -134,7 +135,7 @@ const llmsTxtDocument = {
 
 const holdingLlmsTxtDocument = {
   intro: [
-    'This Holding-mode orientation covers the existing home page and published blog. The platform vision does not establish that marketplace features are available.',
+    'This Holding-mode orientation covers the public landing pages and published blog. The platform vision does not establish that marketplace features are available.',
     'Use this file as curated agent context. Cite the public pages themselves; this file is not a content export or a crawler policy.',
   ],
   sections: [
@@ -143,8 +144,18 @@ const holdingLlmsTxtDocument = {
       items: [
         {
           description: 'Public introduction to findmydoc and its platform vision.',
-          href: toPublicCanonicalUrl('/'),
-          label: 'Home',
+          href: toPublicCanonicalUrl(TEMPORARY_LANDING_PATHS.de),
+          label: 'German home',
+        },
+        {
+          description: 'English introduction to findmydoc for patients and clinics.',
+          href: toPublicCanonicalUrl(TEMPORARY_LANDING_PATHS.en),
+          label: 'English home',
+        },
+        {
+          description: 'Turkish introduction for clinics.',
+          href: toPublicCanonicalUrl(TEMPORARY_LANDING_PATHS.tr),
+          label: 'Turkish clinic landing page',
         },
         {
           description: 'Published public posts and links to their canonical detail pages.',
@@ -152,7 +163,7 @@ const holdingLlmsTxtDocument = {
           label: 'Posts',
         },
         {
-          description: 'Canonical home and blog index entries.',
+          description: 'Canonical landing pages and blog index.',
           href: toPublicCanonicalUrl('/pages-sitemap.xml'),
           label: 'Pages sitemap',
         },

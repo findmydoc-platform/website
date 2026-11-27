@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 
 import { HOLDING_VIEW_REQUEST_HEADER, TEMPORARY_LANDING_MODE_REQUEST_HEADER } from '@/features/temporaryLandingMode'
+import { FRONTEND_PATH_HEADER } from '@/i18n/requestLocale'
 
 import { cloneBaselineLandingPages } from '../../helpers/landingPagesBaseline'
 
@@ -145,15 +146,15 @@ describe('frontend home page route', () => {
     const result = await pageModule.default({})
 
     expect(mocks.getPayloadMock).not.toHaveBeenCalled()
-    expect(mocks.getCachedLatestPostsMock).toHaveBeenCalledWith(3, {})
+    expect(mocks.getCachedLatestPostsMock).toHaveBeenCalledWith(3, { locale: 'de', fallbackLocale: 'en' })
     expect(result.type).toBe(mocks.temporaryLandingPageComponent)
-    expect(result.props.locale).toBe('en')
+    expect(result.props.locale).toBe('de')
     expect(result.props.languageOptions).toEqual([
-      { value: 'en', label: 'EN', href: '/?lang=en' },
-      { value: 'de', label: 'DE', href: '/?lang=de' },
-      { value: 'tr', label: 'TR', href: '/?lang=tr' },
+      { value: 'en', label: 'EN', href: '/en' },
+      { value: 'de', label: 'DE', href: '/' },
+      { value: 'tr', label: 'TR', href: '/tr' },
     ])
-    expect(result.props.contentLocale).toEqual({})
+    expect(result.props.contentLocale).toEqual({ locale: 'de', fallbackLocale: 'en' })
     expect(result.props.posts).toEqual([])
   })
 
@@ -184,24 +185,46 @@ describe('frontend home page route', () => {
     }
   })
 
-  it.each([undefined, 'en', 'de', 'tr'])(
-    'keeps the Production root canonical for Holding language %s',
-    async (lang) => {
-      vi.stubEnv('NEXT_PUBLIC_SERVER_URL', 'https://findmydoc.eu')
-      mocks.headersMock.mockResolvedValue(new Headers({ [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: '1' }))
-      const pageModule = await import('@/app/(frontend)/page')
-      const metadata = await pageModule.generateMetadata({
-        searchParams: Promise.resolve({ lang, source: 'language-choice' }),
-      })
+  it.each([
+    ['/', 'de'],
+    ['/en', 'en'],
+    ['/tr', 'tr'],
+  ])('renders the Holding language from %s with its own canonical URL', async (path, lang) => {
+    vi.stubEnv('NEXT_PUBLIC_SERVER_URL', 'https://findmydoc.eu')
+    mocks.headersMock.mockResolvedValue(
+      new Headers({
+        [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: '1',
+        [HOLDING_VIEW_REQUEST_HEADER]: 'standalone',
+        [FRONTEND_PATH_HEADER]: path,
+      }),
+    )
+    const searchParams = Promise.resolve({ lang: lang === 'tr' ? 'en' : 'tr', utm_source: 'test' })
+    const args = { params: Promise.resolve({ slug: [path.slice(1)] }), searchParams }
+    const metadata =
+      path === '/'
+        ? await (await import('@/app/(frontend)/page')).generateMetadata()
+        : await (await import('@/app/(frontend)/(pages)/[...slug]/page')).generateMetadata(args)
+    const result =
+      path === '/'
+        ? await (await import('@/app/(frontend)/page')).default({ searchParams })
+        : await (await import('@/app/(frontend)/(pages)/[...slug]/page')).default(args)
+    const layout = await import('@/app/(frontend)/layout')
+    const html = renderToStaticMarkup(await layout.default({ children: null }))
 
-      expect(metadata).toMatchObject({
-        alternates: { canonical: '/' },
-        openGraph: { url: 'https://findmydoc.eu/' },
-      })
-      expect(metadata.alternates?.languages).toBeUndefined()
-      expect(metadata.robots).toBeUndefined()
-    },
-  )
+    expect(html).toContain(`<html lang="${lang}"`)
+    expect(result.props.locale).toBe(lang)
+    expect(metadata.alternates?.canonical).toBe(`https://findmydoc.eu${path}`)
+    expect(metadata.alternates?.languages).toEqual(
+      lang === 'tr'
+        ? undefined
+        : {
+            de: 'https://findmydoc.eu/',
+            en: 'https://findmydoc.eu/en',
+            'x-default': 'https://findmydoc.eu/',
+          },
+    )
+    expect(metadata.robots).toBeUndefined()
+  })
 
   it('passes resolved locale and language options to temporary landing page', async () => {
     mocks.headersMock.mockResolvedValue(new Headers({ [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: '1' }))
@@ -222,13 +245,13 @@ describe('frontend home page route', () => {
     })
     expect(result.props.contentLocale).toEqual({ locale: 'de', fallbackLocale: 'en' })
     expect(result.props.languageOptions).toEqual([
-      { value: 'en', label: 'EN', href: '/?foo=bar&lang=en' },
-      { value: 'de', label: 'DE', href: '/?foo=bar&lang=de' },
-      { value: 'tr', label: 'TR', href: '/?foo=bar&lang=tr' },
+      { value: 'en', label: 'EN', href: '/en?foo=bar' },
+      { value: 'de', label: 'DE', href: '/?foo=bar' },
+      { value: 'tr', label: 'TR', href: '/tr?foo=bar' },
     ])
   })
 
-  it.each(['en', 'de', 'tr'] as const)('maps localized holding metadata for %s', async (locale) => {
+  it('uses the selected locale for Holding titles and descriptions', async () => {
     mocks.headersMock.mockResolvedValue(new Headers({ [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: '1' }))
     const contentModule = await import('@/features/temporaryLandingMode')
     const getContent = contentModule.getTemporaryLandingPageContent
@@ -245,12 +268,12 @@ describe('frontend home page route', () => {
     })
     const pageModule = await import('@/app/(frontend)/page')
 
-    const metadata = await pageModule.generateMetadata({ searchParams: Promise.resolve({ lang: locale }) })
+    const metadata = await pageModule.generateMetadata()
 
-    expect(getContentMock).toHaveBeenCalledWith(locale)
+    expect(getContentMock).toHaveBeenCalledWith('de')
     expect(metadata).toMatchObject({
-      title: `findmydoc | holding-${locale}-title`,
-      description: `holding-${locale}-description`,
+      title: 'findmydoc | holding-de-title',
+      description: 'holding-de-description',
     })
   })
 
@@ -298,7 +321,7 @@ describe('frontend home page route', () => {
     landingPages.home.seo.description = 'Test homepage description'
     mocks.payloadFindGlobalMock.mockResolvedValueOnce(landingPages)
     const pageModule = await import('@/app/(frontend)/page')
-    const metadata = await pageModule.generateMetadata({})
+    const metadata = await pageModule.generateMetadata()
 
     expect(mocks.getPayloadMock).toHaveBeenCalledTimes(1)
     expect(mocks.payloadFindGlobalMock).toHaveBeenCalledWith({

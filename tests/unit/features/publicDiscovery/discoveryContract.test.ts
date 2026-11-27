@@ -58,12 +58,14 @@ describe('public discovery contract', () => {
     expect(urls.some((url) => url.includes('/api'))).toBe(false)
   })
 
-  it('limits Holding llms links to canonical home, blog and direct sitemaps', () => {
+  it('limits Holding llms links to canonical landing pages, blog and direct sitemaps', () => {
     const content = buildLlmsTxt('holding')
     const links = [...content.matchAll(/\]\((https?:\/\/[^)]+)\)/gu)].map((match) => match[1])
 
     expect(links).toEqual([
       'https://findmydoc.eu/',
+      'https://findmydoc.eu/en',
+      'https://findmydoc.eu/tr',
       'https://findmydoc.eu/posts',
       'https://findmydoc.eu/pages-sitemap.xml',
       'https://findmydoc.eu/posts-sitemap.xml',

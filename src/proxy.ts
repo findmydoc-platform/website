@@ -6,11 +6,12 @@ import { isPlatformUser } from '@/auth/utilities/supabaseAuthPolicy'
 import { isPreviewRuntime } from '@/features/runtimePolicy'
 import {
   HOLDING_VIEW_REQUEST_HEADER,
+  getLegacyTemporaryLandingLocation,
   isTemporaryLandingModeExemptPath,
   isTemporaryLandingIndexablePath,
   isTemporaryLandingPublicExemptPath,
   isTemporaryLandingPublicDiscoveryPath,
-  isTemporaryLandingRootPath,
+  temporaryLandingLocaleFromPath,
   TEMPORARY_LANDING_MODE_REQUEST_HEADER,
   PUBLIC_SITE_MODE_REQUEST_HEADER,
 } from '@/features/temporaryLandingMode'
@@ -166,6 +167,19 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     return response
   }
 
+  if (
+    holdingMode === 'holding' &&
+    temporaryLandingLocaleFromPath(pathname) &&
+    !isPlatformUser(await getVerifiedUser())
+  ) {
+    const legacyLocation =
+      request.method === 'GET' || request.method === 'HEAD' ? getLegacyTemporaryLandingLocation(request.nextUrl) : null
+    const response = legacyLocation
+      ? NextResponse.redirect(new URL(legacyLocation, request.url), 307)
+      : nextWithTemporaryLandingHeaders(request, holdingMode)
+    return privateResponse(previewDeployment ? withSearchRobotsHeader(response) : response)
+  }
+
   let translationSource: string | null = null
   if (
     (request.method === 'GET' || request.method === 'HEAD') &&
@@ -193,11 +207,9 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   const platformUser = isPlatformUser(await getVerifiedUser())
 
   if (holdingMode === 'holding' && !platformUser) {
-    if (isTemporaryLandingRootPath(pathname) || isTemporaryLandingPublicExemptPath(pathname)) {
+    if (isTemporaryLandingPublicExemptPath(pathname)) {
       if (isTemporaryLandingIndexablePath(pathname)) {
-        const response = isTemporaryLandingRootPath(pathname)
-          ? nextWithTemporaryLandingHeaders(request, holdingMode)
-          : nextWithTemporaryLandingPublicHeaders(request, holdingMode, translationSource)
+        const response = nextWithTemporaryLandingPublicHeaders(request, holdingMode, translationSource)
         return privateResponse(previewDeployment || translationSource ? withSearchRobotsHeader(response) : response)
       }
 

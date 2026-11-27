@@ -10,16 +10,18 @@ import type { BlogCardBaseProps } from '@/utilities/blog/normalizePost'
  * Used for: Blog listing grid (paginated posts)
  * Visual: Category badge top-right, vertical stack, author name + date (no avatar)
  */
-export const Simple: React.FC<BlogCardBaseProps> = ({
+export const Simple: React.FC<BlogCardBaseProps & { lang?: string }> = ({
   title,
   excerpt,
   href,
   dateLabel,
+  dateLang,
   category,
   categoryLang,
   image,
   author,
   className,
+  lang,
 }) => {
   const resolvedImage = image ?? {
     src: '/images/blog-placeholder-1600-900.svg',
@@ -35,6 +37,7 @@ export const Simple: React.FC<BlogCardBaseProps> = ({
     <Link
       href={href}
       aria-label={title}
+      lang={lang}
       className={cn(
         'group block rounded-3xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none',
         className,
@@ -91,8 +94,14 @@ export const Simple: React.FC<BlogCardBaseProps> = ({
 
         {/* Author Name and Date - No Avatar */}
         <div className="mt-auto flex min-h-[2.5rem] min-w-0 flex-col items-start gap-1 border-t border-border/30 pt-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-          <span className="w-full min-w-0 truncate font-medium text-foreground sm:flex-1 sm:basis-0">{authorName}</span>
           <span
+            lang={author?.name ? undefined : 'en'}
+            className="w-full min-w-0 truncate font-medium text-foreground sm:flex-1 sm:basis-0"
+          >
+            {authorName}
+          </span>
+          <span
+            lang={dateLang}
             className={cn(
               'max-w-full truncate text-xs text-muted-foreground sm:ml-3 sm:flex-shrink-0',
               !dateLabel && 'opacity-0',

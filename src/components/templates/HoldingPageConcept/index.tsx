@@ -1310,6 +1310,7 @@ function renderVariantLayout(
               ) : null}
 
               <ImmersiveVideoHero
+                contentClassName={statusLabel || heroOverlay ? 'sm:pt-24' : undefined}
                 ctaHref={heroVideo?.ctaHref ?? '#contact'}
                 ctaLabel={primaryCtaLabel}
                 crossfadeMs={heroVideo?.crossfadeMs}

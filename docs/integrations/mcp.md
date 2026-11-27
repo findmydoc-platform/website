@@ -102,11 +102,27 @@ the same clinic and staff account. The decision tools also report `invitationSta
 the existing Auth Action and is eligible for delivery under the current environment policy. Retrying the approval
 reuses the existing invitation authorization. Public publication remains a separate Payload Admin action.
 
+## Clinic profile maintenance
+
+Under **Clinic profiles → Profile care**, enable **Find** or **Update**. These options use the existing
+`clinics.find` and `clinics.update` grants and continue to authorize `findClinics` and `updateClinics`, respectively.
+
+- `readClinicProfile` takes a numeric `clinicId` and returns the profile, including its public publication status.
+- `updateClinicProfile` takes `clinicId` and a `profile` object. The accepted fields are `description` (Payload rich text),
+  `address` (`country`, `city`, `street`, `houseNumber`, `zipCode`), `contact` (`email`, `phoneNumber`, `website`), and
+  `openingHours` (Monday through Sunday). Omitted fields retain their stored values. The tool returns the updated profile.
+
+Staff can edit a profile as soon as the clinic exists. Edits to public profiles use the normal clinic cache invalidation
+hooks. Unpublished profiles stay private.
+
+For clinics created by the MCP onboarding workflow, use onboarding actions for the first contact and participation
+decision. Use Payload Admin for public publication and for suspending or resuming approved participation.
+
 ## Post drafts
 
-Open **Blog posts** in the API key form to find the Post permissions. **Create** enables both `createPosts`
-and `createPostDraft`. **Update** enables both `updatePosts` and `updatePostDraft`. Existing keys keep the grants
-they already have.
+Open **Blog posts → Posts** in the API key form. **Create** enables both `createPosts`
+and `createPostDraft`. **Update** enables `updatePosts`, `updatePostDraft`, and `publishPost`. Existing keys keep
+the grants they already have.
 
 - `createPostDraft` takes `{ locale: "de", data: { title, ... } }` and returns a new Post ID.
 - `updatePostDraft` takes `{ id, locale: "de" | "en", data }`. Use the same Post ID for both languages.
@@ -119,6 +135,31 @@ The referenced records retain their own access rules.
 
 Both draft tools return `{ id, locale, status: "draft", advisories }` as JSON. The `missing_english` advisory
 appears while the English draft has no title.
+
+### Publish a Post by language
+
+`publishPost` takes `{ id, locale: "de" | "en", dryRun?: boolean }` and uses the key owner's Post update access.
+Set `dryRun: true` to check the requested language without publishing. The result includes `id`, `locale`,
+`status`, and `advisories`. A check returns `ready` when it finds a draft. Either call can return
+`missing_draft` or `already_published`. Publishing runs Payload validation on the selected language and
+returns `published` on success. A German draft can be published with the `missing_english` advisory.
+
+For a request to publish both languages, check `de` and `en` first. Report any missing draft before publishing.
+If the requested drafts are available, call `publishPost` separately for each and report both outcomes, including
+any validation or technical error. If one draft is missing, the editor can still explicitly publish the other.
+
+## Editorial image upload
+
+Enable `uploadEditorialImage` under **Blog posts → Images**. This grant is off by default. The key owner needs the
+existing `platformContentMedia` create permission. Payload validates the image and records the uploader. The tool
+returns `{ "id": 123 }`. Pass that ID as `data.heroImage` when calling `updatePostDraft` with the Post ID and
+locale. Uploading the image leaves Post publication unchanged. Editorial media retain public read access.
+
+Send one `tools/call` request with `name` (the filename), `mimeType`, `base64` (the encoded file bytes), and `alt`
+(required alternative text). The media policy accepts JPEG, PNG, WebP, AVIF, GIF, and SVG. The file limit for this
+MCP tool is 3,100,000 bytes. That leaves room for Base64 expansion and the JSON-RPC fields within the MCP
+transport's 4 MiB request limit and Vercel's default 4.5 MB limit. Use a client that can send the file bytes as a
+Base64 string. [Vercel request body limit](https://vercel.com/docs/functions/limitations#request-body-size)
 
 ## Configure VS Code (Copilot Chat MCP)
 

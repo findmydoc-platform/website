@@ -75,7 +75,7 @@ The profiles currently use generated slugs and domain controls such as clinic ap
 
 | Model | Localized | Shared | Existing authoring |
 | --- | --- | --- | --- |
-| `platformContentMedia` | `alt` and `caption` | One file, asset ID, storage metadata, dimensions, crops and uploader | Admin editorial upload and metadata editing. No MCP tools. |
+| `platformContentMedia` | `alt` and `caption` | One file, asset ID, storage metadata, dimensions, crops and uploader | Admin editorial upload and metadata editing. MCP `uploadEditorialImage` accepts the file and alt text. |
 | `clinicMedia` | `alt` and `caption` | File and upload metadata, clinic and uploader IDs, image status, gallery order and references | Admin and Clinic Dashboard gallery operations. MCP metadata find and custom gallery upload, publish, read, save and delete tools. Check locale selection when authoring or returning image text through a gallery tool. |
 | `doctorMedia` | `alt` and `caption` | File and upload metadata, doctor, clinic and uploader IDs, profile image relationship | Admin and Clinic Dashboard doctor image operations. MCP metadata find, custom upload, read and delete, and `updateDoctorImage` for alt text. The upload and alt update tools currently take one alt string without a locale argument. |
 

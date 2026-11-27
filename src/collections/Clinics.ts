@@ -47,6 +47,7 @@ import {
 } from './clinics/postalCode'
 import { setClinicProfileRevision } from './clinics/profileRevision'
 import { beforeChangeSynchronizeClinicProfileGallery, clinicProfileGalleryMaxItems } from './clinics/profileGallery'
+import { protectStagedClinicLifecycle } from './clinics/stagedOnboarding'
 
 const GALLERY_ENTRIES_SAME_CLINIC_MESSAGE = 'Gallery entries must belong to this clinic.'
 const CLINIC_APPROVAL_ERROR_COMPONENT =
@@ -182,6 +183,7 @@ export const Clinics: CollectionConfig<'clinics'> = {
     beforeValidate: [validateGalleryEntriesBeforeValidate],
     beforeChange: [
       guardNotificationAuthorizationSession,
+      protectStagedClinicLifecycle,
       assignInitialClinicGroup,
       ({ data, operation }) => {
         if (operation === 'create' && data.participationStatus == null) data.participationStatus = 'pending'

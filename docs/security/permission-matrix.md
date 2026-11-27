@@ -22,6 +22,8 @@ An Admin entry describes expected administrative access or authority. It does no
   Platform staff can read drafts and version history.
 - A media file request and a media document read are different operations. File delivery follows the collection's
   publication and ownership rules. [Media access and storage](../integrations/storage.md)
+- Editorial image uploads through MCP require the key's image upload grant and the current staff member's
+  `platformContentMedia` create permission. [Editorial image upload](../integrations/mcp.md#editorial-image-upload)
 
 A collection with `trash: true` uses Payload's native soft delete. The collection configuration determines where
 Trash is available. [Payload collection options](https://payloadcms.com/docs/configuration/collections#options)

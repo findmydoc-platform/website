@@ -3841,6 +3841,9 @@ export interface PayloadMcpApiKey {
      */
     update?: boolean | null;
   };
+  blogMedia?: {
+    upload?: boolean | null;
+  };
   clinicOnboarding?: {
     read?: boolean | null;
     create?: boolean | null;
@@ -6576,6 +6579,11 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
         find?: T;
         create?: T;
         update?: T;
+      };
+  blogMedia?:
+    | T
+    | {
+        upload?: T;
       };
   clinicOnboarding?:
     | T

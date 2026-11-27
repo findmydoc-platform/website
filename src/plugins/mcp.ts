@@ -22,7 +22,15 @@ import {
   groupClinicOnboardingGrants,
   mapClinicOnboardingGrants,
 } from '@/features/mcp/clinicOnboarding'
+import { readClinicProfile, updateClinicProfile } from '@/features/mcp/clinicProfileTools'
+import { uploadEditorialImageTool } from '@/features/mcp/editorialImageTool'
+import {
+  editorialImageGrantField,
+  groupEditorialImageGrants,
+  mapEditorialImageGrants,
+} from '@/features/mcp/editorialImageGrants'
 import { createPostDraft, updatePostDraft } from './mcpPostDrafts'
+import { publishPost } from './mcpPostPublication'
 
 type McpCollectionConfig = {
   description: string
@@ -36,7 +44,13 @@ type McpCollectionConfig = {
 }
 
 const mcpUserCollection: CollectionSlug = 'platformStaff'
-const postDraftGrantAliases = new Set([createPostDraft.name, updatePostDraft.name])
+const collectionGrantAliases = new Set([
+  createPostDraft.name,
+  updatePostDraft.name,
+  publishPost.name,
+  readClinicProfile.name,
+  updateClinicProfile.name,
+])
 
 const mcpGallerySnapshot = (snapshot: Awaited<ReturnType<typeof readPlatformClinicGallery>>) => ({
   ...snapshot,
@@ -323,6 +337,8 @@ export const createMcpPlugin = (): Plugin =>
     mcp: {
       tools: [
         ...clinicOnboardingTools,
+        readClinicProfile,
+        updateClinicProfile,
         createTrashTool('clinics', 'trashClinic', 'Clinic'),
         createTrashTool('doctors', 'trashDoctor', 'Doctor'),
         createDeleteLinkTool('clinictreatments', 'deleteClinicTreatment', 'Clinic treatment'),
@@ -339,23 +355,37 @@ export const createMcpPlugin = (): Plugin =>
         saveClinicGalleryTool,
         createPostDraft,
         updatePostDraft,
+        publishPost,
+        uploadEditorialImageTool,
       ],
     },
 
     overrideApiKeyCollection: (collection) => {
       return {
         ...collection,
-        fields: groupClinicOnboardingGrants(collection.fields).map((field) => {
+        fields: groupEditorialImageGrants(groupClinicOnboardingGrants(collection.fields)).map((field) => {
           if (field.type !== 'collapsible') return field
           if (field.fields.some((nested) => nested.type === 'group' && 'name' in nested && nested.name === 'posts')) {
             return {
               ...field,
               label: { en: 'Blog posts', de: 'Blogbeiträge' },
-              fields: field.fields.map((nested) =>
-                nested.type === 'group' && 'name' in nested && nested.name === 'posts'
-                  ? { ...nested, label: { en: 'Posts', de: 'Beiträge' } }
-                  : nested,
-              ),
+              admin: { ...field.admin, initCollapsed: true },
+              fields: [
+                {
+                  type: 'collapsible',
+                  label: { en: 'Posts', de: 'Beiträge' },
+                  fields: field.fields.map((nested) =>
+                    nested.type === 'group' && 'name' in nested && nested.name === 'posts'
+                      ? { ...nested, label: false }
+                      : nested,
+                  ),
+                },
+                {
+                  type: 'collapsible',
+                  label: { en: 'Images', de: 'Bilder' },
+                  fields: [editorialImageGrantField],
+                },
+              ],
             }
           }
           return {
@@ -365,7 +395,7 @@ export const createMcpPlugin = (): Plugin =>
                 ? {
                     ...nested,
                     fields: nested.fields.filter(
-                      (item) => item.type !== 'checkbox' || !postDraftGrantAliases.has(item.name),
+                      (item) => item.type !== 'checkbox' || !collectionGrantAliases.has(item.name),
                     ),
                   }
                 : nested,
@@ -390,14 +420,18 @@ export const createMcpPlugin = (): Plugin =>
         throw new UnauthorizedError()
       }
 
-      const settings = mapClinicOnboardingGrants(req, mcpAccessSettings)
+      const settings = mapEditorialImageGrants(mapClinicOnboardingGrants(req, mcpAccessSettings))
       const postGrants = settings.posts as PayloadMcpApiKey['posts']
+      const clinicGrants = settings.clinics as PayloadMcpApiKey['clinics']
       return {
         ...settings,
         'payload-mcp-tool': {
           ...settings['payload-mcp-tool'],
           [createPostDraft.name]: postGrants?.create === true,
           [updatePostDraft.name]: postGrants?.update === true,
+          [publishPost.name]: postGrants?.update === true,
+          [readClinicProfile.name]: clinicGrants?.find === true,
+          [updateClinicProfile.name]: clinicGrants?.update === true,
         },
       }
     },

@@ -676,6 +676,7 @@ describe('MCP clinic onboarding', () => {
     expect(replacement.error).toBeUndefined()
     expect(stagedIds(replacement.data).clinicStaffId).not.toBe(clinicStaffId)
     expect(await payload.findByID({ collection: 'clinicStaff', id: clinicStaffId, depth: 0 })).toMatchObject({
+      assignmentScope: 'unassigned',
       clinic: null,
       email: null,
       status: 'pending',

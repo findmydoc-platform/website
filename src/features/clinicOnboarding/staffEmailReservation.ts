@@ -84,7 +84,10 @@ export async function releaseAbandonedClinicStaffEmail(req: PayloadRequest, staf
     req.payload.update({
       collection: 'clinicStaff',
       id: staffId,
-      data: { email: null },
+      data:
+        linked.clinic == null
+          ? { email: null, assignmentScope: 'unassigned', clinic: null, group: null }
+          : { email: null },
       depth: 0,
       overrideAccess: true,
       req,

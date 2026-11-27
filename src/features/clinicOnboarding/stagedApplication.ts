@@ -47,6 +47,23 @@ async function verifyMainSpecialties(req: PayloadRequest, medicalSpecialtyIds: n
   return ids
 }
 
+async function requireUnusedClinicStaffEmail(req: PayloadRequest, email: string, excludeStaffId?: number) {
+  const matches = await req.payload.find({
+    collection: 'clinicStaff',
+    depth: 0,
+    limit: 1,
+    pagination: false,
+    select: { email: true },
+    where: {
+      email: { equals: email },
+      ...(excludeStaffId === undefined ? {} : { id: { not_equals: excludeStaffId } }),
+    },
+    overrideAccess: false,
+    req,
+  })
+  if (matches.docs.length) throw new McpOnboardingError('The first contact email is already in use.', 409)
+}
+
 async function findApplicationByRequestKey(req: PayloadRequest, requestKey: string) {
   const result = await req.payload.find({
     collection: 'clinicApplications',
@@ -133,6 +150,7 @@ export async function stageClinicOnboarding(req: PayloadRequest, input: StageInp
     if (await findDuplicateClinicApplication(transactionReq, intake, false)) {
       throw new McpOnboardingError('An application for this clinic and contact already exists.', 409)
     }
+    await requireUnusedClinicStaffEmail(transactionReq, intake.contactEmail)
     const medicalSpecialties = await verifyMainSpecialties(transactionReq, medicalSpecialtyIds)
     const payload = transactionReq.payload
     const application = await payload.create({
@@ -251,6 +269,9 @@ export async function correctClinicOnboarding(req: PayloadRequest, input: Correc
       (await findDuplicateClinicApplication(transactionReq, { clinicName, contactEmail }, false))
     ) {
       throw new McpOnboardingError('An application for this clinic and contact already exists.', 409)
+    }
+    if (contactEmail !== application.contactEmail) {
+      await requireUnusedClinicStaffEmail(transactionReq, contactEmail, clinicStaffId)
     }
     const medicalSpecialties = medicalSpecialtyIds && (await verifyMainSpecialties(transactionReq, medicalSpecialtyIds))
     const payload = transactionReq.payload

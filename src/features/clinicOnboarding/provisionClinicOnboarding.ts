@@ -161,47 +161,52 @@ const findExisting = async (payload: Payload, command: ClinicOnboardingCommand, 
   return { clinic, principal }
 }
 
-export const prepareClinicOnboardingIdentity = async (
+type InitialContact = Pick<
+  ClinicOnboardingCommand,
+  'onboardingKey' | 'contactEmail' | 'contactFirstName' | 'contactLastName'
+>
+
+export async function prepareClinicOnboardingSubject(
   payload: Payload,
-  command: Pick<ClinicOnboardingCommand, 'onboardingKey' | 'contactEmail' | 'contactFirstName' | 'contactLastName'>,
+  command: InitialContact,
   staff: ClinicStaff,
-  req?: PayloadRequest,
-): Promise<ClinicStaff> => {
-  if (staff.supabaseUserId && staff.authSync?.status === 'synced') return staff
-
-  let supabaseUserId = staff.supabaseUserId?.trim()
-
+): Promise<string> {
   try {
-    if (supabaseUserId) {
-      await setClinicSupabaseAccountAccess({ enabled: true, supabaseUserId }, payload.logger)
-    } else if (staff.invitationAttemptedAt) {
-      supabaseUserId = await reconcileExistingClinicSupabaseAccount(
+    const boundSubject = staff.supabaseUserId?.trim()
+    if (boundSubject || staff.invitationAttemptedAt) {
+      const subject = await reconcileExistingClinicSupabaseAccount(
         { email: command.contactEmail, onboardingKey: command.onboardingKey },
         payload.logger,
       )
-    } else {
-      supabaseUserId = await createInitialClinicSupabaseAccount(
-        {
-          email: command.contactEmail,
-          onboardingKey: command.onboardingKey,
-          userMetadata: {
-            firstName: command.contactFirstName,
-            lastName: command.contactLastName,
-          },
-        },
-        payload.logger,
-      )
+      if (boundSubject && boundSubject !== subject) {
+        throw new Error('The provider identity does not match the bound staff account.')
+      }
+      return subject
     }
-  } catch (error) {
-    throw new ClinicOnboardingError('auth_failed', 'Clinic Supabase account could not be provisioned', {
-      cause: error,
-    })
-  }
 
+    return await createInitialClinicSupabaseAccount(
+      {
+        email: command.contactEmail,
+        onboardingKey: command.onboardingKey,
+        userMetadata: { firstName: command.contactFirstName, lastName: command.contactLastName },
+      },
+      payload.logger,
+    )
+  } catch (error) {
+    throw new ClinicOnboardingError('auth_failed', 'Clinic Supabase account could not be provisioned', { cause: error })
+  }
+}
+
+export async function bindClinicOnboardingSubject(
+  payload: Payload,
+  staffId: number,
+  supabaseUserId: string,
+  req?: PayloadRequest,
+): Promise<ClinicStaff> {
   try {
     return await payload.update({
       collection: 'clinicStaff',
-      id: staff.id,
+      id: staffId,
       context: { skipClinicStaffAuthSync: true },
       data: {
         authSync: { errorCode: null, status: 'synced' },
@@ -216,6 +221,30 @@ export const prepareClinicOnboardingIdentity = async (
       cause: error,
     })
   }
+}
+
+export const prepareClinicOnboardingIdentity = async (
+  payload: Payload,
+  command: InitialContact,
+  staff: ClinicStaff,
+  req?: PayloadRequest,
+): Promise<ClinicStaff> => {
+  if (staff.supabaseUserId && staff.authSync?.status === 'synced') return staff
+  const existingSubject = staff.supabaseUserId?.trim()
+  if (!existingSubject) {
+    return bindClinicOnboardingSubject(
+      payload,
+      staff.id,
+      await prepareClinicOnboardingSubject(payload, command, staff),
+      req,
+    )
+  }
+  try {
+    await setClinicSupabaseAccountAccess({ enabled: true, supabaseUserId: existingSubject }, payload.logger)
+  } catch (error) {
+    throw new ClinicOnboardingError('auth_failed', 'Clinic Supabase account could not be provisioned', { cause: error })
+  }
+  return bindClinicOnboardingSubject(payload, staff.id, existingSubject, req)
 }
 
 export async function provisionClinicOnboarding(

@@ -7,6 +7,7 @@ import {
 } from 'payload'
 import type { ClinicApplication, ClinicStaff } from '@/payload-types'
 import { clinicApplicationProvisioningInputFields } from '@/collections/clinicApplications/provisioningLifecycle'
+import { isStagedApplicationCommand } from './applicationWrites'
 import { getStagedOnboardingApplicationId } from './stagedIdentity'
 
 type WriteTargets = { applicationId?: number; clinicId?: number; staffId?: number }
@@ -31,7 +32,7 @@ export function isTrustedMcpOnboardingClinicWrite(req: PayloadRequest, clinicId:
 }
 
 export function isTrustedMcpOnboardingApplicationWrite(req: PayloadRequest, applicationId: number): boolean {
-  return permittedWrites.get(req)?.applicationId === applicationId
+  return permittedWrites.get(req)?.applicationId === applicationId || isStagedApplicationCommand(req, applicationId)
 }
 
 function changed<T extends { id: number }>(data: Partial<T>, original: T, fields: readonly (keyof T)[]) {

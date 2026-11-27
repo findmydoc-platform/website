@@ -4,15 +4,23 @@ import { normalizeEmail } from '@/auth/utilities/emailNormalization'
 import { platformClinicTrustAccess } from '@/access/fieldAccess'
 import { findDuplicateClinicApplication } from '@/collections/clinicApplications/findDuplicateApplication'
 import { clinicApplicationProvisioningInputFields } from '@/collections/clinicApplications/provisioningLifecycle'
-import { runClinicRegistrationTransaction } from '@/features/clinicRegistration/transactions'
+import {
+  clinicStaffAuthorizationKey,
+  lockNotificationAuthorization,
+  notificationClinicAuthorizationKey,
+} from '@/features/clinicNotifications/authorizationBarrier'
 import { requireCurrentPlatformStaff } from '@/access/requireCurrentPlatformStaff'
 import type { Clinic, ClinicApplication } from '@/payload-types'
 import { slugify } from '@/utilities/slugify'
+import { writeStagedApplication } from './applicationWrites'
 import { readEligibleExistingClinicStaff } from './existingStaff'
 import { withMcpOnboardingWrite } from './stagedWriteGuards'
 import { releaseAbandonedClinicStaffEmail } from './staffEmailReservation'
 import { getStagedOnboardingBinding, readBoundStagedClinic, readBoundStagedNewStaff } from './stagedBinding'
 import { getStagedOnboardingIdentity } from './stagedIdentity'
+
+// Serialize intake duplicate checks before any workflow writes. The control contains no intake data.
+const admissionKey = 'notification-authorization:clinic-onboarding-admission'
 
 type Intake = Pick<
   ClinicApplication,
@@ -115,6 +123,19 @@ export async function readStagedApplication(req: PayloadRequest, applicationId: 
   return application
 }
 
+export async function readStagedApplicationForWrite(req: PayloadRequest, applicationId: number) {
+  const previous = await readStagedApplication(req, applicationId)
+  const { clinicId } = getStagedOnboardingBinding(previous)
+  await lockNotificationAuthorization(req, [notificationClinicAuthorizationKey(clinicId)])
+  await requireClinicOnboardingOperator(req)
+  const application = await readStagedApplication(req, applicationId)
+  const binding = getStagedOnboardingBinding(application)
+  if (binding.clinicId !== clinicId) {
+    throw new McpOnboardingError('The linked clinic changed. Reload the application.', 409)
+  }
+  return { application, binding, clinic: await readBoundStagedClinic(req, binding) }
+}
+
 export function getOnboardingClinicGroupId(clinic: Pick<Clinic, 'group'>): number | null {
   return typeof clinic.group === 'object' ? (clinic.group?.id ?? null) : (clinic.group ?? null)
 }
@@ -204,250 +225,236 @@ export async function stageClinicOnboarding(req: PayloadRequest, input: StageInp
     .digest('hex')
   const { staffMode, medicalSpecialtyIds, clinicName, clinicWebsite, contactRole } = input
 
-  return runClinicRegistrationTransaction(req, async (transactionReq) => {
-    await requireClinicOnboardingOperator(transactionReq)
-    const existing = await findApplicationByRequestKey(transactionReq, requestKey)
-    if (existing) return readOnboardingStatus(transactionReq, await readStagedApplication(transactionReq, existing.id))
+  await requireClinicOnboardingOperator(req)
+  let selectedStaffId: number | undefined
+  let intake: Omit<Intake, 'medicalSpecialtyIds'>
+  const staged = await writeStagedApplication(req, undefined, {
+    prepare: async (transactionReq, skipWrite) => {
+      await lockNotificationAuthorization(transactionReq, [admissionKey])
+      await requireClinicOnboardingOperator(transactionReq)
+      const existing = await findApplicationByRequestKey(transactionReq, requestKey)
+      if (existing) return skipWrite(await readStagedApplication(transactionReq, existing.id))
 
-    let selectedStaffId: number | undefined
-    let contact: Pick<Intake, 'contactEmail' | 'contactFirstName' | 'contactLastName'>
-    if (input.staffMode === 'existing_account') {
-      const staff = await requireSelectedClinicStaff(transactionReq, input.clinicStaffId)
-      selectedStaffId = staff.clinicStaffId
-      contact = getSelectedStaffContact(staff, input)
-    } else {
-      contact = {
-        contactEmail: normalizeEmail(input.contactEmail),
-        contactFirstName: input.contactFirstName,
-        contactLastName: input.contactLastName,
+      let contact: Pick<Intake, 'contactEmail' | 'contactFirstName' | 'contactLastName'>
+      if (input.staffMode === 'existing_account') {
+        await lockNotificationAuthorization(transactionReq, [clinicStaffAuthorizationKey(input.clinicStaffId)])
+        const staff = await requireSelectedClinicStaff(transactionReq, input.clinicStaffId)
+        selectedStaffId = staff.clinicStaffId
+        contact = getSelectedStaffContact(staff, input)
+      } else {
+        contact = {
+          contactEmail: normalizeEmail(input.contactEmail),
+          contactFirstName: input.contactFirstName,
+          contactLastName: input.contactLastName,
+        }
       }
-    }
-    const intake = { clinicName, clinicWebsite, contactRole, ...contact }
-    if (await findDuplicateClinicApplication(transactionReq, intake, false)) {
-      throw new McpOnboardingError('An application for this clinic and contact already exists.', 409)
-    }
-    if (staffMode === 'new_account') await requireUnusedClinicStaffEmail(transactionReq, intake.contactEmail)
-    const medicalSpecialties = await verifyMainSpecialties(transactionReq, medicalSpecialtyIds)
-    const payload = transactionReq.payload
-    const application = await payload.create({
-      collection: 'clinicApplications',
-      data: { ...intake, medicalSpecialties, status: 'submitted' },
-      depth: 0,
-      overrideAccess: false,
-      req: transactionReq,
-    })
-    const identity = getStagedOnboardingIdentity(application.id)
-    const clinic = await payload.create({
-      collection: 'clinics',
-      data: {
-        contact: { website: intake.clinicWebsite },
-        internalPrimaryContact: {
-          firstName: intake.contactFirstName,
-          lastName: intake.contactLastName,
-          email: intake.contactEmail,
-          role: intake.contactRole,
-        },
-        name: intake.clinicName,
-        participationStatus: 'pending',
-        slug: `${slugify(intake.clinicName) || 'clinic'}-${randomUUID().slice(0, 8)}`,
-        status: 'pending',
-      },
-      depth: 0,
-      overrideAccess: false,
-      req: transactionReq,
-    })
-    await withMcpOnboardingWrite(transactionReq, { clinicId: clinic.id }, () =>
-      payload.update({
+      intake = { clinicName, clinicWebsite, contactRole, ...contact }
+      if (await findDuplicateClinicApplication(transactionReq, intake, false)) {
+        throw new McpOnboardingError('An application for this clinic and contact already exists.', 409)
+      }
+      if (staffMode === 'new_account') await requireUnusedClinicStaffEmail(transactionReq, intake.contactEmail)
+      const medicalSpecialties = await verifyMainSpecialties(transactionReq, medicalSpecialtyIds)
+      return {
+        data: { ...intake, medicalSpecialties, status: 'submitted' },
+        workflowData: { mcpOnboardingRequestKey: requestKey, mcpOnboardingStaffMode: staffMode },
+      }
+    },
+    finish: async (transactionReq, application) => {
+      const { payload } = transactionReq
+      const identity = getStagedOnboardingIdentity(application.id)
+      const clinic = await payload.create({
         collection: 'clinics',
-        id: clinic.id,
-        data: identity,
-        depth: 0,
-        overrideAccess: true,
-        req: transactionReq,
-      }),
-    )
-    const clinicStaffId =
-      selectedStaffId ??
-      (
-        await payload.create({
-          collection: 'clinicStaff',
-          data: {
-            assignmentScope: 'local',
-            authSync: { status: 'pending' },
-            clinic: clinic.id,
-            email: intake.contactEmail,
+        data: {
+          contact: { website: intake.clinicWebsite },
+          internalPrimaryContact: {
             firstName: intake.contactFirstName,
             lastName: intake.contactLastName,
-            ...identity,
-            status: 'pending',
+            email: intake.contactEmail,
+            role: intake.contactRole,
+          },
+          name: intake.clinicName,
+          participationStatus: 'pending',
+          slug: `${slugify(intake.clinicName) || 'clinic'}-${randomUUID().slice(0, 8)}`,
+          status: 'pending',
+        },
+        depth: 0,
+        overrideAccess: false,
+        req: transactionReq,
+      })
+      await withMcpOnboardingWrite(transactionReq, { clinicId: clinic.id }, () =>
+        payload.update({
+          collection: 'clinics',
+          id: clinic.id,
+          data: identity,
+          depth: 0,
+          overrideAccess: true,
+          req: transactionReq,
+        }),
+      )
+      const clinicStaffId =
+        selectedStaffId ??
+        (
+          await payload.create({
+            collection: 'clinicStaff',
+            data: {
+              assignmentScope: 'local',
+              authSync: { status: 'pending' },
+              clinic: clinic.id,
+              email: intake.contactEmail,
+              firstName: intake.contactFirstName,
+              lastName: intake.contactLastName,
+              ...identity,
+              status: 'pending',
+            },
+            depth: 0,
+            overrideAccess: true,
+            req: transactionReq,
+          })
+        ).id
+
+      return withMcpOnboardingWrite(transactionReq, { applicationId: application.id }, () =>
+        payload.update({
+          collection: 'clinicApplications',
+          id: application.id,
+          data: {
+            linkedRecords: { clinic: clinic.id, clinicStaff: clinicStaffId },
           },
           depth: 0,
           overrideAccess: true,
           req: transactionReq,
-        })
-      ).id
-
-    const staged = await withMcpOnboardingWrite(transactionReq, { applicationId: application.id }, () =>
-      payload.update({
-        collection: 'clinicApplications',
-        id: application.id,
-        data: {
-          linkedRecords: { clinic: clinic.id, clinicStaff: clinicStaffId },
-          mcpOnboardingRequestKey: requestKey,
-          mcpOnboardingStaffMode: staffMode,
-        },
-        depth: 0,
-        overrideAccess: true,
-        req: transactionReq,
-      }),
-    )
-    return readOnboardingStatus(transactionReq, staged)
+        }),
+      )
+    },
   }).catch(async (error: unknown) => {
     if (error instanceof McpOnboardingError) throw error
 
-    // A competing transaction can commit the request before a local unique write completes.
+    // A competing native create can commit the request while this operation rolls back.
     await requireClinicOnboardingOperator(req)
     const existing = await findApplicationByRequestKey(req, requestKey)
     if (!existing) throw error
-    return readOnboardingStatus(req, await readStagedApplication(req, existing.id))
+    return readStagedApplication(req, existing.id)
   })
+  return readOnboardingStatus(req, staged)
 }
 
 export async function readClinicOnboarding(req: PayloadRequest, input: { applicationId: number }) {
   await requireCurrentPlatformStaff(req)
-  return runClinicRegistrationTransaction(req, async (transactionReq) => {
-    const application = await readStagedApplication(transactionReq, input.applicationId)
-    return {
-      ...(await readOnboardingStatus(transactionReq, application)),
-      clinicName: application.clinicName,
-      clinicWebsite: application.clinicWebsite,
-      medicalSpecialtyIds: application.medicalSpecialties,
-      contactFirstName: application.contactFirstName,
-      contactLastName: application.contactLastName,
-      contactEmail: application.contactEmail,
-      contactRole: application.contactRole,
-    }
-  })
+  const application = await readStagedApplication(req, input.applicationId)
+  return {
+    ...(await readOnboardingStatus(req, application)),
+    clinicName: application.clinicName,
+    clinicWebsite: application.clinicWebsite,
+    medicalSpecialtyIds: application.medicalSpecialties,
+    contactFirstName: application.contactFirstName,
+    contactLastName: application.contactLastName,
+    contactEmail: application.contactEmail,
+    contactRole: application.contactRole,
+  }
 }
 
 export async function correctClinicOnboarding(req: PayloadRequest, input: Correction) {
-  return runClinicRegistrationTransaction(req, async (transactionReq) => {
-    await requireClinicOnboardingOperator(transactionReq)
-    const application = await readStagedApplication(transactionReq, input.applicationId)
-    if (application.status !== 'submitted') {
-      throw new McpOnboardingError('This clinic onboarding application cannot be corrected.', 409)
-    }
-    const binding = getStagedOnboardingBinding(application)
-    await readBoundStagedClinic(transactionReq, binding)
-    const { clinicId, clinicStaffId } = binding
-    const { applicationId, medicalSpecialtyIds, clinicStaffId: selectedStaffId, ...details } = input
-    const isExistingAccount = application.mcpOnboardingStaffMode === 'existing_account'
-    if (isExistingAccount && input.contactEmail !== undefined) {
-      throw new McpOnboardingError('Select a staff account by ID to change the existing contact email.', 400)
-    }
-    if (!isExistingAccount && selectedStaffId !== undefined) {
-      throw new McpOnboardingError('This application uses a new staff account.', 400)
-    }
-    const selection =
-      selectedStaffId !== undefined
-        ? getSelectedStaffContact(await requireSelectedClinicStaff(transactionReq, selectedStaffId), input)
-        : undefined
-    const intake = { ...details, ...selection }
-    const normalizedContactEmail = intake.contactEmail === undefined ? undefined : normalizeEmail(intake.contactEmail)
-    const clinicName = intake.clinicName ?? application.clinicName
-    const contactEmail = normalizedContactEmail ?? application.contactEmail
-    if (
-      (clinicName !== application.clinicName || contactEmail !== application.contactEmail) &&
-      (await findDuplicateClinicApplication(transactionReq, { clinicName, contactEmail }, false))
-    ) {
-      throw new McpOnboardingError('An application for this clinic and contact already exists.', 409)
-    }
-    if (!isExistingAccount && contactEmail !== application.contactEmail) {
-      await requireUnusedClinicStaffEmail(transactionReq, contactEmail, clinicStaffId)
-    }
-    const medicalSpecialties = medicalSpecialtyIds && (await verifyMainSpecialties(transactionReq, medicalSpecialtyIds))
-    const payload = transactionReq.payload
-    const contactChanged = ['contactEmail', 'contactFirstName', 'contactLastName', 'contactRole'].some((field) =>
-      Object.hasOwn(intake, field),
-    )
-    const shouldUpdateStaff = ['contactEmail', 'contactFirstName', 'contactLastName'].some((field) =>
-      Object.hasOwn(intake, field),
-    )
-    if (input.clinicName !== undefined || input.clinicWebsite !== undefined || contactChanged) {
-      await withMcpOnboardingWrite(transactionReq, { clinicId }, () =>
-        payload.update({
-          collection: 'clinics',
-          id: clinicId,
-          data: {
-            ...(input.clinicName !== undefined ? { name: input.clinicName } : {}),
-            ...(input.clinicWebsite !== undefined ? { contact: { website: input.clinicWebsite } } : {}),
-            ...(contactChanged
-              ? {
-                  internalPrimaryContact: {
-                    firstName:
-                      intake.contactFirstName === undefined ? application.contactFirstName : intake.contactFirstName,
-                    lastName: intake.contactLastName ?? application.contactLastName,
-                    email: contactEmail,
-                    role: input.contactRole ?? application.contactRole,
-                  },
-                }
-              : {}),
-          },
-          depth: 0,
-          overrideAccess: false,
-          req: transactionReq,
-        }),
+  await requireClinicOnboardingOperator(req)
+  const updated = await writeStagedApplication(req, input.applicationId, {
+    prepare: async (transactionReq) => {
+      await lockNotificationAuthorization(transactionReq, [admissionKey])
+      const { application, binding } = await readStagedApplicationForWrite(transactionReq, input.applicationId)
+      if (application.status !== 'submitted') {
+        throw new McpOnboardingError('This clinic onboarding application cannot be corrected.', 409)
+      }
+      const { clinicId, clinicStaffId } = binding
+      const { applicationId: _applicationId, medicalSpecialtyIds, clinicStaffId: selectedStaffId, ...details } = input
+      const isExistingAccount = application.mcpOnboardingStaffMode === 'existing_account'
+      if (isExistingAccount && input.contactEmail !== undefined) {
+        throw new McpOnboardingError('Select a staff account by ID to change the existing contact email.', 400)
+      }
+      if (!isExistingAccount && selectedStaffId !== undefined) {
+        throw new McpOnboardingError('This application uses a new staff account.', 400)
+      }
+      await lockNotificationAuthorization(transactionReq, [
+        clinicStaffAuthorizationKey(selectedStaffId ?? clinicStaffId),
+      ])
+      const selection =
+        selectedStaffId !== undefined
+          ? getSelectedStaffContact(await requireSelectedClinicStaff(transactionReq, selectedStaffId), input)
+          : undefined
+      const intake = { ...details, ...selection }
+      const normalizedContactEmail = intake.contactEmail === undefined ? undefined : normalizeEmail(intake.contactEmail)
+      const clinicName = intake.clinicName ?? application.clinicName
+      const contactEmail = normalizedContactEmail ?? application.contactEmail
+      if (
+        (clinicName !== application.clinicName || contactEmail !== application.contactEmail) &&
+        (await findDuplicateClinicApplication(transactionReq, { clinicName, contactEmail }, false))
+      ) {
+        throw new McpOnboardingError('An application for this clinic and contact already exists.', 409)
+      }
+      if (!isExistingAccount && contactEmail !== application.contactEmail) {
+        await requireUnusedClinicStaffEmail(transactionReq, contactEmail, clinicStaffId)
+      }
+      const medicalSpecialties =
+        medicalSpecialtyIds && (await verifyMainSpecialties(transactionReq, medicalSpecialtyIds))
+      const payload = transactionReq.payload
+      const contactChanged = ['contactEmail', 'contactFirstName', 'contactLastName', 'contactRole'].some((field) =>
+        Object.hasOwn(intake, field),
       )
-    }
-
-    if (!isExistingAccount && shouldUpdateStaff) {
-      await readBoundStagedNewStaff(transactionReq, application, binding, 'pending')
-      await withMcpOnboardingWrite(transactionReq, { staffId: clinicStaffId }, () =>
-        payload.update({
-          collection: 'clinicStaff',
-          id: clinicStaffId,
-          data: {
-            ...(input.contactFirstName !== undefined ? { firstName: input.contactFirstName } : {}),
-            ...(input.contactLastName !== undefined ? { lastName: input.contactLastName } : {}),
-            ...(normalizedContactEmail !== undefined ? { email: normalizedContactEmail } : {}),
-          },
-          depth: 0,
-          overrideAccess: true,
-          req: transactionReq,
-        }),
+      const shouldUpdateStaff = ['contactEmail', 'contactFirstName', 'contactLastName'].some((field) =>
+        Object.hasOwn(intake, field),
       )
-    }
+      if (input.clinicName !== undefined || input.clinicWebsite !== undefined || contactChanged) {
+        await withMcpOnboardingWrite(transactionReq, { clinicId }, () =>
+          payload.update({
+            collection: 'clinics',
+            id: clinicId,
+            data: {
+              ...(input.clinicName !== undefined ? { name: input.clinicName } : {}),
+              ...(input.clinicWebsite !== undefined ? { contact: { website: input.clinicWebsite } } : {}),
+              ...(contactChanged
+                ? {
+                    internalPrimaryContact: {
+                      firstName:
+                        intake.contactFirstName === undefined ? application.contactFirstName : intake.contactFirstName,
+                      lastName: intake.contactLastName ?? application.contactLastName,
+                      email: contactEmail,
+                      role: input.contactRole ?? application.contactRole,
+                    },
+                  }
+                : {}),
+            },
+            depth: 0,
+            overrideAccess: false,
+            req: transactionReq,
+          }),
+        )
+      }
 
-    const updated = await withMcpOnboardingWrite(transactionReq, { applicationId }, () =>
-      payload.update({
-        collection: 'clinicApplications',
-        id: applicationId,
+      if (!isExistingAccount && shouldUpdateStaff) {
+        await readBoundStagedNewStaff(transactionReq, application, binding, 'pending')
+        await withMcpOnboardingWrite(transactionReq, { staffId: clinicStaffId }, () =>
+          payload.update({
+            collection: 'clinicStaff',
+            id: clinicStaffId,
+            data: {
+              ...(input.contactFirstName !== undefined ? { firstName: input.contactFirstName } : {}),
+              ...(input.contactLastName !== undefined ? { lastName: input.contactLastName } : {}),
+              ...(normalizedContactEmail !== undefined ? { email: normalizedContactEmail } : {}),
+            },
+            depth: 0,
+            overrideAccess: true,
+            req: transactionReq,
+          }),
+        )
+      }
+
+      return {
         data: {
           ...intake,
           ...(normalizedContactEmail !== undefined ? { contactEmail: normalizedContactEmail } : {}),
           ...(medicalSpecialties ? { medicalSpecialties } : {}),
         },
-        depth: 0,
-        overrideAccess: false,
-        req: transactionReq,
-      }),
-    )
-    if (selectedStaffId === undefined || selectedStaffId === clinicStaffId) {
-      return readOnboardingStatus(transactionReq, {
-        ...updated,
-        mcpOnboardingStaffMode: application.mcpOnboardingStaffMode,
-      })
-    }
-    const linked = await withMcpOnboardingWrite(transactionReq, { applicationId }, () =>
-      payload.update({
-        collection: 'clinicApplications',
-        id: applicationId,
-        data: { linkedRecords: { clinic: clinicId, clinicStaff: selectedStaffId } },
-        depth: 0,
-        overrideAccess: true,
-        req: transactionReq,
-      }),
-    )
-    return readOnboardingStatus(transactionReq, linked)
+        ...(selectedStaffId !== undefined && selectedStaffId !== clinicStaffId
+          ? { workflowData: { linkedRecords: { clinic: clinicId, clinicStaff: selectedStaffId } } }
+          : {}),
+      }
+    },
   })
+  return readOnboardingStatus(req, await readStagedApplication(req, updated.id))
 }

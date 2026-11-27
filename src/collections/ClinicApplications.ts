@@ -1,6 +1,11 @@
 import { CollectionConfig, PayloadRequest } from 'payload'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { computedOnlyFieldAccess } from '@/access/fieldAccess'
+import {
+  applyStagedApplicationWorkflowData,
+  finishStagedApplicationWrite,
+  prepareStagedApplicationWrite,
+} from '@/features/clinicOnboarding/applicationWrites'
 import { clinicApplicationOnboardingDecisionEndpoint } from '@/features/clinicOnboarding/adminDecision'
 import { CLINIC_ONBOARDING_ERROR_CODES } from '@/features/clinicOnboarding/provisionClinicOnboarding'
 import { provisionApprovedClinicApplication } from '@/hooks/clinicApplicationProvisioning'
@@ -33,9 +38,10 @@ export const ClinicApplications: CollectionConfig<'clinicApplications'> = {
   },
   endpoints: [clinicApplicationOnboardingDecisionEndpoint],
   hooks: {
-    beforeChange: [guardMcpOnboardingApplication],
+    beforeOperation: [prepareStagedApplicationWrite],
+    beforeChange: [guardMcpOnboardingApplication, applyStagedApplicationWorkflowData],
     beforeDelete: [guardMcpOnboardingApplicationDelete],
-    afterChange: [provisionApprovedClinicApplication],
+    afterChange: [finishStagedApplicationWrite, provisionApprovedClinicApplication],
   },
   fields: [
     {

@@ -129,6 +129,27 @@ describe('MCP clinic onboarding', () => {
     return stagedIds((await call('readClinicOnboarding', { applicationId })).data).applicationRevision
   }
 
+  async function decideInAdmin(applicationId: number, body: Record<string, unknown>, actorId?: number) {
+    const endpoints = payload.collections.clinicApplications.config.endpoints
+    const endpoint = (endpoints || []).find(
+      (entry) => entry.path === '/:id/onboarding-decision' && entry.method === 'post',
+    )
+    if (!endpoint) throw new Error('Expected the clinic application Admin decision endpoint')
+    const actor = actorId === undefined ? null : await payload.findByID({ collection: 'platformStaff', id: actorId })
+    const req = await createLocalReq(
+      {
+        user: actor ? asPayloadStaffUser(actor) : undefined,
+        req: {
+          payloadAPI: 'REST',
+          routeParams: { id: String(applicationId) },
+          json: async () => body,
+        },
+      },
+      payload,
+    )
+    return endpoint.handler(req)
+  }
+
   it('stages one private clinic and pending account and replays the same IDs', async () => {
     vi.mocked(createInitialClinicSupabaseAccount).mockClear()
     const input = intake()
@@ -396,9 +417,9 @@ describe('MCP clinic onboarding', () => {
       release = resolve
       timer = setTimeout(() => reject(new Error('Clinic onboarding concurrency barrier timed out.')), 10_000)
     })
-    const hooks = payload.collections.clinics.config.hooks.beforeOperation
-    const synchronize: CollectionBeforeOperationHook<'clinics'> = async ({ args, operation }) => {
-      if (operation !== 'update' || !('id' in args) || args.id !== clinicId) return
+    const hooks = payload.collections.clinicApplications.config.hooks.beforeOperation
+    const synchronize: CollectionBeforeOperationHook<'clinicApplications'> = async ({ args, operation }) => {
+      if (operation !== 'update' || !('id' in args) || args.id !== applicationId) return
       arrivals++
       if (arrivals === 2) release()
       if (arrivals <= 2) await gate
@@ -538,6 +559,38 @@ describe('MCP clinic onboarding', () => {
     ])
     stagedIds(first.data)
     expect(second).toEqual(first)
+  })
+
+  it('keeps one new staff reservation when different staging requests race for an email', async () => {
+    const first = intake()
+    const second = { ...intake(), contactEmail: first.contactEmail }
+    const results = await Promise.all([call('stageClinicOnboarding', first), call('stageClinicOnboarding', second)])
+    const accepted = results.filter(({ error }) => error === undefined)
+    expect(accepted).toHaveLength(1)
+    const { applicationId, clinicId, clinicStaffId } = stagedIds(accepted[0]?.data)
+    const matchingApplications = await payload.find({
+      collection: 'clinicApplications',
+      where: { contactEmail: { equals: first.contactEmail } },
+      depth: 0,
+    })
+    expect(matchingApplications.docs).toEqual([
+      expect.objectContaining({
+        id: applicationId,
+        linkedRecords: { clinic: clinicId, clinicStaff: clinicStaffId, processedAt: null },
+      }),
+    ])
+    const matchingClinics = await payload.find({
+      collection: 'clinics',
+      where: { name: { in: [first.clinicName, second.clinicName] } },
+      depth: 0,
+    })
+    expect(matchingClinics.docs.map(({ id }) => id)).toEqual([clinicId])
+    const matchingStaff = await payload.find({
+      collection: 'clinicStaff',
+      where: { email: { equals: first.contactEmail } },
+      depth: 0,
+    })
+    expect(matchingStaff.docs.map(({ id }) => id)).toEqual([clinicStaffId])
   })
 
   it('rejects native approval or deletion of a staged application and approval of its initial account', async () => {
@@ -690,30 +743,23 @@ describe('MCP clinic onboarding', () => {
     const keyId = keyIds.at(-1)!
     await payload.update({ collection: 'payload-mcp-api-keys', id: keyId, data: { enableAPIKey: false } })
 
-    const endpoints = payload.collections.clinicApplications.config.endpoints
-    const endpoint = (endpoints || []).find(
-      (entry) => entry.path === '/:id/onboarding-decision' && entry.method === 'post',
-    )
-    expect(endpoint).toBeDefined()
-    const owner = await payload.findByID({ collection: 'platformStaff', id: ownerId })
-    async function decide(revision: string, authenticated = true) {
-      const req = await createLocalReq(
-        {
-          user: authenticated ? asPayloadStaffUser(owner) : undefined,
-          req: {
-            payloadAPI: 'REST',
-            routeParams: { id: String(applicationId) },
-            json: async () => ({ outcome: 'approved', applicationRevision: revision }),
-          },
-        },
-        payload,
-      )
-      return endpoint!.handler(req)
-    }
+    const decide = (revision: string, actorId?: number) =>
+      decideInAdmin(applicationId, { outcome: 'approved', applicationRevision: revision }, actorId)
+    const contentManager = await createPlatformTestUser(payload, {
+      emailPrefix: 'mcp-admin-recovery-content-manager',
+      createdStaffIds: staffIds,
+    })
+    await payload.update({
+      collection: 'platformStaff',
+      id: contentManager.id,
+      data: { role: 'content-manager' },
+      context: { trustedPlatformStaffOps: true },
+    })
 
-    await expect(decide(applicationRevision, false)).rejects.toMatchObject({ status: 403 })
-    await expect(decide('0'.repeat(64))).rejects.toMatchObject({ status: 409 })
-    const approved = await decide(applicationRevision)
+    await expect(decide(applicationRevision)).rejects.toMatchObject({ status: 403 })
+    await expect(decide(applicationRevision, contentManager.id)).rejects.toMatchObject({ status: 403 })
+    await expect(decide('0'.repeat(64), ownerId)).rejects.toMatchObject({ status: 409 })
+    const approved = await decide(applicationRevision, ownerId)
     expect(approved.status).toBe(200)
     expect(await approved.json()).toMatchObject({
       applicationId,
@@ -963,7 +1009,16 @@ describe('MCP clinic onboarding', () => {
           decisionKey,
         )
 
-      expect(await retryApproval()).toMatchObject({ data: expected })
+      const adminRetry = await decideInAdmin(
+        applicationId,
+        {
+          outcome: 'approved',
+          applicationRevision: await readRevision(applicationId),
+        },
+        ownerId,
+      )
+      expect(adminRetry.status).toBe(200)
+      expect(await adminRetry.json()).toMatchObject(expected)
       expect(
         await payload.findByID({ collection: 'clinicStaff', id: clinicStaffId, depth: 0, overrideAccess: true }),
       ).toMatchObject({
@@ -1028,6 +1083,58 @@ describe('MCP clinic onboarding', () => {
       expect.objectContaining({ email: input.contactEmail, onboardingKey: `clinic-application:${applicationId}` }),
       expect.anything(),
     )
+  })
+
+  it('keeps provider I/O outside the clinic barrier and discards a binding after suspension', async () => {
+    const input = intake()
+    const { applicationId, clinicId, clinicStaffId, applicationRevision } = stagedIds(
+      (await call('stageClinicOnboarding', input)).data,
+    )
+    const decisionKey = await createKey({ decide: true })
+    const owner = await payload.findByID({ collection: 'platformStaff', id: ownerId })
+    const req = await createLocalReq({ user: asPayloadStaffUser(owner), req: { payloadAPI: 'REST' } }, payload)
+    const started = Promise.withResolvers<void>()
+    const providerResponse = Promise.withResolvers<string>()
+    const provision = vi.mocked(createInitialClinicSupabaseAccount)
+    provision.mockImplementationOnce(() => {
+      started.resolve()
+      return providerResponse.promise
+    })
+
+    const approval = call('approveClinicOnboarding', { applicationId, applicationRevision }, decisionKey)
+    await Promise.race([
+      started.promise,
+      approval.then(() => {
+        throw new Error('Approval completed before preparing the provider identity.')
+      }),
+    ])
+    const suspension = payload.update({
+      collection: 'clinics',
+      id: clinicId,
+      data: { participationStatus: 'disabled' },
+      overrideAccess: false,
+      req,
+    })
+    let timeout: ReturnType<typeof setTimeout> | undefined
+    try {
+      const suspensionCompleted = await Promise.race([
+        suspension.then(() => true),
+        new Promise<boolean>((resolve) => {
+          timeout = setTimeout(() => resolve(false), 2_000)
+        }),
+      ])
+      expect(suspensionCompleted).toBe(true)
+    } finally {
+      clearTimeout(timeout)
+      providerResponse.resolve(randomUUID())
+      await Promise.all([approval, suspension])
+    }
+    expect((await approval).error).toBeDefined()
+    expect(await payload.findByID({ collection: 'clinicStaff', id: clinicStaffId, depth: 0 })).toMatchObject({
+      supabaseUserId: null,
+      invitationAuthorizedAt: null,
+    })
+    expect(await readClinicAccessState(payload, clinicStaffId)).toBeNull()
   })
 
   it('allows just one decision when approval and rejection race', async () => {

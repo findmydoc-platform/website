@@ -39,24 +39,7 @@ const postCopy: Record<string, GrantCopy> = {
   },
 }
 
-function helpComponent(text: string, overview = false) {
-  return {
-    path: '@/app/(payload)/components/McpPermissionHelp#McpPermissionHelp',
-    serverProps: { text, overview },
-  }
-}
-
-function withGrantCopy(group: GroupField, copy: Record<string, GrantCopy>): GroupField {
-  return {
-    ...group,
-    label: false,
-    fields: group.fields.map((field) => {
-      if (field.type !== 'checkbox') return field
-      const text = copy[field.name]
-      return text ? { ...field, label: text.label, admin: { ...field.admin, description: text.description } } : field
-    }),
-  }
-}
+const permissionComponents = '@/app/(payload)/components/McpPermissionFields'
 
 function permissionSection(
   label: GrantCopy['label'],
@@ -65,22 +48,31 @@ function permissionSection(
   fields: Field[] = [group],
   copy?: Record<string, GrantCopy>,
 ): CollapsibleField {
-  const describedGroup = copy ? withGrantCopy(group, copy) : group
-  const groupWithHint: GroupField = {
-    ...describedGroup,
-    admin: {
-      ...describedGroup.admin,
-      className: [describedGroup.admin?.className, 'mcp-permission-group'].filter(Boolean).join(' '),
-      components: {
-        ...describedGroup.admin?.components,
-        beforeInput: [helpComponent(hint), ...(describedGroup.admin?.components?.beforeInput ?? [])],
-      },
-    },
+  const describedGroup: GroupField = {
+    ...group,
+    label: false,
+    fields: group.fields.map((field) => {
+      if (field.type !== 'checkbox') return field
+      const text = copy?.[field.name]
+      return {
+        ...field,
+        ...(text ? { label: text.label } : {}),
+        admin: {
+          ...field.admin,
+          ...(text ? { description: text.description } : {}),
+          components: { ...field.admin?.components, Field: `${permissionComponents}#McpPermissionCheckbox` },
+        },
+      }
+    }),
   }
   return {
     type: 'collapsible',
     label,
-    fields: fields.map((field) => (field === group ? groupWithHint : field)),
+    fields: fields.map((field) => (field === group ? describedGroup : field)),
+    admin: {
+      description: hint,
+      components: { Field: `${permissionComponents}#McpPermissionSection` },
+    },
   }
 }
 
@@ -96,11 +88,9 @@ function workflowSection(
     fields: sections,
     admin: {
       ...field.admin,
+      description: hint,
       initCollapsed: true,
-      components: {
-        ...field.admin?.components,
-        beforeInput: [helpComponent(hint, true), ...(field.admin?.components?.beforeInput ?? [])],
-      },
+      components: { ...field.admin?.components, Field: `${permissionComponents}#McpPermissionSection` },
     },
   }
 }

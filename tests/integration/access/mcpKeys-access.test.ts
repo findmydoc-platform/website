@@ -810,7 +810,14 @@ describe('MCP key management and client access', () => {
       req: publicationReq,
     })
     expect(
-      (await payload.find({ collection: 'clinics', where: { id: { equals: clinicId } }, overrideAccess: false })).docs,
+      (
+        await payload.find({
+          collection: 'clinics',
+          where: { id: { equals: clinicId } },
+          depth: 0,
+          overrideAccess: false,
+        })
+      ).docs,
     ).toMatchObject([{ status: 'approved', address }])
     expect(
       await payload.findByID({ collection: 'clinics', id: clinicId, user: support, overrideAccess: false }),

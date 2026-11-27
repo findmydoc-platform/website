@@ -22,8 +22,8 @@ import { clinicOnboardingTools, mapClinicOnboardingGrants } from '@/features/mcp
 import { readClinicProfile, updateClinicProfile } from '@/features/mcp/clinicProfileTools'
 import { uploadEditorialImageTool } from '@/features/mcp/editorialImageTool'
 import { mapEditorialImageGrants } from '@/features/mcp/editorialImageGrants'
-import { createPostDraft, updatePostDraft } from './mcpPostDrafts'
-import { publishPost } from './mcpPostPublication'
+import { createPostDraft, updatePostDraft } from '@/features/mcp/mcpPostDrafts'
+import { publishPost } from '@/features/mcp/mcpPostPublication'
 
 type McpCollectionConfig = {
   description: string

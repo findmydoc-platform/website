@@ -2,7 +2,6 @@ import { CollectionConfig, PayloadRequest } from 'payload'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { computedOnlyFieldAccess } from '@/access/fieldAccess'
 import {
-  applyStagedApplicationWorkflowData,
   finishStagedApplicationWrite,
   prepareStagedApplicationWrite,
 } from '@/features/clinicOnboarding/applicationWrites'
@@ -39,7 +38,7 @@ export const ClinicApplications: CollectionConfig<'clinicApplications'> = {
   endpoints: [clinicApplicationOnboardingDecisionEndpoint],
   hooks: {
     beforeOperation: [prepareStagedApplicationWrite],
-    beforeChange: [guardMcpOnboardingApplication, applyStagedApplicationWorkflowData],
+    beforeChange: [guardMcpOnboardingApplication],
     beforeDelete: [guardMcpOnboardingApplicationDelete],
     afterChange: [finishStagedApplicationWrite, provisionApprovedClinicApplication],
   },

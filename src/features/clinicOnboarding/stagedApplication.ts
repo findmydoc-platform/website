@@ -254,10 +254,7 @@ export async function stageClinicOnboarding(req: PayloadRequest, input: StageInp
       }
       if (staffMode === 'new_account') await requireUnusedClinicStaffEmail(transactionReq, intake.contactEmail)
       const medicalSpecialties = await verifyMainSpecialties(transactionReq, medicalSpecialtyIds)
-      return {
-        data: { ...intake, medicalSpecialties, status: 'submitted' },
-        workflowData: { mcpOnboardingRequestKey: requestKey, mcpOnboardingStaffMode: staffMode },
-      }
+      return { data: { ...intake, medicalSpecialties, status: 'submitted' } }
     },
     finish: async (transactionReq, application) => {
       const { payload } = transactionReq
@@ -318,6 +315,8 @@ export async function stageClinicOnboarding(req: PayloadRequest, input: StageInp
           id: application.id,
           data: {
             linkedRecords: { clinic: clinic.id, clinicStaff: clinicStaffId },
+            mcpOnboardingRequestKey: requestKey,
+            mcpOnboardingStaffMode: staffMode,
           },
           depth: 0,
           overrideAccess: true,

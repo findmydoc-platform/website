@@ -1093,17 +1093,23 @@ describe('MCP clinic onboarding', () => {
     const decisionKey = await createKey({ decide: true })
     const owner = await payload.findByID({ collection: 'platformStaff', id: ownerId })
     const req = await createLocalReq({ user: asPayloadStaffUser(owner), req: { payloadAPI: 'REST' } }, payload)
-    const started = Promise.withResolvers<void>()
-    const providerResponse = Promise.withResolvers<string>()
+    let markProviderStarted!: () => void
+    const providerStarted = new Promise<void>((resolve) => {
+      markProviderStarted = resolve
+    })
+    let releaseProvider!: (subject: string) => void
+    const providerResponse = new Promise<string>((resolve) => {
+      releaseProvider = resolve
+    })
     const provision = vi.mocked(createInitialClinicSupabaseAccount)
     provision.mockImplementationOnce(() => {
-      started.resolve()
-      return providerResponse.promise
+      markProviderStarted()
+      return providerResponse
     })
 
     const approval = call('approveClinicOnboarding', { applicationId, applicationRevision }, decisionKey)
     await Promise.race([
-      started.promise,
+      providerStarted,
       approval.then(() => {
         throw new Error('Approval completed before preparing the provider identity.')
       }),
@@ -1126,7 +1132,7 @@ describe('MCP clinic onboarding', () => {
       expect(suspensionCompleted).toBe(true)
     } finally {
       clearTimeout(timeout)
-      providerResponse.resolve(randomUUID())
+      releaseProvider(randomUUID())
       await Promise.all([approval, suspension])
     }
     expect((await approval).error).toBeDefined()

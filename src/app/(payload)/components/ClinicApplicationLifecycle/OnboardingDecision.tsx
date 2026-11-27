@@ -22,7 +22,7 @@ export function OnboardingDecision({ review, reviewedUpdatedAt }: { review: Revi
   const submitted = review.decisionStatus === 'submitted'
   const disabled = dirty || processing || submitting
   async function decide(outcome: 'approved' | 'rejected') {
-    if (disabled || (outcome === 'rejected' && !reason.trim())) return
+    if (!apiURL || disabled || (outcome === 'rejected' && !reason.trim())) return
     setSubmitting(true)
     setProcessing(true)
     setError(undefined)
@@ -57,7 +57,7 @@ export function OnboardingDecision({ review, reviewedUpdatedAt }: { review: Revi
     <section aria-label="Onboarding decision">
       {submitted && <p>Clinic group: {review.clinicGroupId ?? 'Independent clinic'}</p>}
       {dirty && <p>Reload this application to review the saved details before deciding.</p>}
-      <Button buttonType="button" disabled={disabled} onClick={() => void decide('approved')}>
+      <Button type="button" disabled={disabled} onClick={() => void decide('approved')}>
         {submitted
           ? 'Approve participation'
           : review.accountSetupStatus === 'completed'
@@ -77,7 +77,7 @@ export function OnboardingDecision({ review, reviewedUpdatedAt }: { review: Revi
             onChange={(event) => setReason(event.target.value)}
           />
           <Button
-            buttonType="button"
+            type="button"
             buttonStyle="secondary"
             disabled={disabled || !reason.trim()}
             onClick={() => void decide('rejected')}

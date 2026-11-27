@@ -3,6 +3,8 @@ import type { PayloadRequest, SelectFieldServerProps, UIFieldServerProps } from 
 import { cache } from 'react'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { platformClinicTrustAccess } from '@/access/fieldAccess'
+import { clinicApplicationProvisioningInputFields } from '@/collections/clinicApplications/provisioningLifecycle'
+import type { ClinicApplication } from '@/payload-types'
 import { readOnboardingStatus } from '@/features/clinicOnboarding/stagedApplication'
 import { ClinicApplicationLifecyclePanel } from './index'
 import { OnboardingDecision } from './OnboardingDecision'
@@ -25,10 +27,28 @@ export async function ClinicApplicationStatusField({ clientField, id, path, read
   return <SelectField field={clientField} path={path} readOnly={readOnly || usesMcpOnboarding} />
 }
 
-export async function ClinicApplicationLifecycleField({ id, req }: UIFieldServerProps) {
+function reviewValues(application: Partial<ClinicApplication>) {
+  const relationId = (value: number | { id: number } | null | undefined) =>
+    typeof value === 'object' ? (value?.id ?? null) : (value ?? null)
+
+  return JSON.stringify([
+    application.id,
+    application.updatedAt,
+    application.status,
+    application.provisioningStatus ?? 'not_started',
+    application.provisioningErrorCode ?? null,
+    relationId(application.linkedRecords?.clinic),
+    relationId(application.linkedRecords?.clinicStaff),
+    application.medicalSpecialties?.map(relationId),
+    ...clinicApplicationProvisioningInputFields.map((field) => application[field] ?? null),
+  ])
+}
+
+export async function ClinicApplicationLifecycleField({ data, id, req }: UIFieldServerProps) {
   const application = await readStagedApplication(req, id)
   const showDecision =
     application &&
+    reviewValues(data as Partial<ClinicApplication>) === reviewValues(application) &&
     (application.status === 'submitted' ||
       (application.status === 'approved' && application.mcpOnboardingStaffMode === 'new_account')) &&
     (await platformClinicTrustAccess({ req }))

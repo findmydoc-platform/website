@@ -1,22 +1,29 @@
 import {
+  APIError,
   createLocalReq,
   type CollectionAfterChangeHook,
-  type CollectionBeforeChangeHook,
   type CollectionBeforeOperationHook,
   type RequiredDataFromCollectionSlug,
   type PayloadRequest,
 } from 'payload'
+import { platformClinicTrustAccess } from '@/access/fieldAccess'
 import { requireNotificationTransaction } from '@/collections/clinicNotifications/common'
 import type { ClinicApplication } from '@/payload-types'
 
-type ApplicationData = Partial<Omit<ClinicApplication, 'id' | 'createdAt' | 'updatedAt'>>
+type WorkflowData = Partial<Pick<ClinicApplication, 'linkedRecords' | 'provisioningStatus' | 'provisioningErrorCode'>>
+type ApplicationData = Partial<
+  Omit<
+    ClinicApplication,
+    keyof WorkflowData | 'mcpOnboardingRequestKey' | 'mcpOnboardingStaffMode' | 'id' | 'createdAt' | 'updatedAt'
+  >
+>
 type Command = {
   prepare: (
     req: PayloadRequest,
     skipWrite: (application: ClinicApplication) => never,
   ) => Promise<{
     data?: ApplicationData
-    workflowData?: ApplicationData
+    workflowData?: WorkflowData
   }>
   finish?: (req: PayloadRequest, application: ClinicApplication) => Promise<ClinicApplication>
 }
@@ -26,7 +33,7 @@ type ActiveCommand = Omit<Command, 'prepare'> & {
   operation: 'create' | 'update'
   id?: number
   transaction?: string | number
-  workflowData?: ApplicationData
+  workflowData?: WorkflowData
   finished?: boolean
 }
 
@@ -62,6 +69,7 @@ export async function writeStagedApplication(
   })
   try {
     const write = { collection: 'clinicApplications' as const, depth: 0, overrideAccess: false, req: nativeReq }
+    // The beforeOperation hook resolves and supplies the contact under the native transaction.
     return id === undefined
       ? await req.payload.create({ ...write, data: {} as RequiredDataFromCollectionSlug<'clinicApplications'> })
       : await req.payload.update({ ...write, id, data: {} })
@@ -86,26 +94,14 @@ export const prepareStagedApplicationWrite: CollectionBeforeOperationHook<'clini
   requireNotificationTransaction(req, transactionID)
   command.transaction = transactionID
   const { data, workflowData } = await command.prepare(req)
-  requireNotificationTransaction(req, transactionID)
+  await assertNativeApplicationTransaction(req, transactionID)
   command.workflowData = workflowData
   Object.assign(args.data, data)
 }
 
-export const applyStagedApplicationWorkflowData: CollectionBeforeChangeHook<ClinicApplication> = ({
-  data,
-  operation,
-  originalDoc,
-  req,
-}) => {
-  const command = commands.get(req)
-  if (
-    !command ||
-    command.transaction === undefined ||
-    command.operation !== operation ||
-    command.id !== originalDoc?.id
-  )
-    return data
-  return { ...data, ...command.workflowData }
+async function assertNativeApplicationTransaction(req: PayloadRequest, owner: string | number | undefined) {
+  requireNotificationTransaction(req, owner)
+  if ((await req.transactionID) !== owner) throw new Error('The staged application lost its native transaction.')
 }
 
 export const finishStagedApplicationWrite: CollectionAfterChangeHook<ClinicApplication> = async ({
@@ -123,8 +119,21 @@ export const finishStagedApplicationWrite: CollectionAfterChangeHook<ClinicAppli
     return doc
 
   command.finished = true
-  requireNotificationTransaction(req, command.transaction)
-  const result = command.finish ? await command.finish(req, doc) : doc
-  requireNotificationTransaction(req, command.transaction)
+  await assertNativeApplicationTransaction(req, command.transaction)
+  const saved = command.workflowData
+    ? await req.payload.update({
+        collection: 'clinicApplications',
+        id: doc.id,
+        data: command.workflowData,
+        depth: 0,
+        overrideAccess: true,
+        req,
+      })
+    : doc
+  const result = command.finish ? await command.finish(req, saved) : saved
+  if (!(await platformClinicTrustAccess({ req }))) {
+    throw new APIError('Clinic onboarding requires current clinic management access.', 403, undefined, true)
+  }
+  await assertNativeApplicationTransaction(req, command.transaction)
   return result
 }

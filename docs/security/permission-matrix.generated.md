@@ -102,7 +102,7 @@
 - **Tags**: Supporting data - platform write, everyone read
 - **Categories**: Supporting data - platform write, everyone read
 - **Accreditation**: Supporting data - platform write, everyone read
-- **ClinicApplications**: Public submissions use the controlled API route. MCP staging uses the clinic management workflow to bind an unpublished clinic and pending first account. Legacy platform approval and recoverable provisioning retain their existing behavior.
+- **ClinicApplications**: Public submissions use the controlled API route. MCP staging links an unpublished clinic to a pending new account or selects an activated, unassigned account. The approval action checks the existing assignment authority before linking an existing account to the clinic.
 - **ClinicProfileDrafts**: Private active clinic profile drafts; generic access is denied for all roles. The tenant-scoped Clinic Dashboard service owns draft operations.
 - **PatientClinicInquiries**: Inquiry aggregate; patient and clinic access uses actor-bound, tenant-checked commands instead of generic collection routes
 - **InquiryConversations**: Private inquiry grouping; all access uses checked inquiry communication commands

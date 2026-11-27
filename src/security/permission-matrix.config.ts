@@ -746,7 +746,7 @@ export const permissionMatrix: PermissionMatrix = {
         admin: { type: 'platform' },
       },
       notes:
-        'Public submissions use the controlled API route. MCP staging uses the clinic management workflow to bind an unpublished clinic and pending first account. Legacy platform approval and recoverable provisioning retain their existing behavior.',
+        'Public submissions use the controlled API route. MCP staging links an unpublished clinic to a pending new account or selects an activated, unassigned account. The approval action checks the existing assignment authority before linking an existing account to the clinic.',
     },
     clinicProfileDrafts: {
       slug: 'clinicProfileDrafts',

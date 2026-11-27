@@ -681,6 +681,49 @@ describe('MCP clinic onboarding', () => {
     expect(vi.mocked(createInitialClinicSupabaseAccount)).not.toHaveBeenCalled()
   })
 
+  it('lets authorized Admin staff decide the reviewed revision after MCP staging is disabled', async () => {
+    const staff = await createActivatedStaff()
+    const stagingKey = await createKey({ create: true, read: true, decide: true })
+    const { applicationId, applicationRevision } = stagedIds(
+      (await call('stageClinicOnboarding', existingIntake(staff.id), stagingKey)).data,
+    )
+    const keyId = keyIds.at(-1)!
+    await payload.update({ collection: 'payload-mcp-api-keys', id: keyId, data: { enableAPIKey: false } })
+
+    const endpoints = payload.collections.clinicApplications.config.endpoints
+    const endpoint = (endpoints || []).find(
+      (entry) => entry.path === '/:id/onboarding-decision' && entry.method === 'post',
+    )
+    expect(endpoint).toBeDefined()
+    const owner = await payload.findByID({ collection: 'platformStaff', id: ownerId })
+    async function decide(revision: string, authenticated = true) {
+      const req = await createLocalReq(
+        {
+          user: authenticated ? asPayloadStaffUser(owner) : undefined,
+          req: {
+            payloadAPI: 'REST',
+            routeParams: { id: String(applicationId) },
+            json: async () => ({ outcome: 'approved', applicationRevision: revision }),
+          },
+        },
+        payload,
+      )
+      return endpoint!.handler(req)
+    }
+
+    await expect(decide(applicationRevision, false)).rejects.toMatchObject({ status: 403 })
+    await expect(decide('0'.repeat(64))).rejects.toMatchObject({ status: 409 })
+    const approved = await decide(applicationRevision)
+    expect(approved.status).toBe(200)
+    expect(await approved.json()).toMatchObject({
+      applicationId,
+      clinicStaffId: staff.id,
+      decisionStatus: 'approved',
+      accountSetupStatus: 'completed',
+      invitationStatus: 'not_started',
+    })
+  })
+
   it('releases a rejected new-account email without losing the original audit link', async () => {
     const input = intake()
     const original = stagedIds((await call('stageClinicOnboarding', input)).data)

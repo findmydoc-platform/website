@@ -1,6 +1,7 @@
 import { mcpPlugin } from '@payloadcms/plugin-mcp'
 import { APIError, UnauthorizedError, type CollectionSlug, type Payload, type Plugin } from 'payload'
 import { z } from 'zod'
+import { requireCurrentPlatformStaff } from '@/access/requireCurrentPlatformStaff'
 import { isPlatformAdminUser } from '@/access/isPlatformAdmin'
 import { withAuthorizedMcpTrash } from '@/access/mcpTrashAccess'
 import { generatedCollectionAccess } from '@/security/generatedCollectionAccess'
@@ -8,7 +9,6 @@ import {
   appendPlatformClinicGalleryMedia,
   readPlatformClinicGallery,
   readPlatformClinicGalleryImage,
-  requireCurrentPlatformStaff,
   savePlatformClinicGallery,
 } from '@/features/clinicDashboard/gallery/platformGallery'
 import { clinicGallerySaveInputSchema } from '@/features/clinicDashboard/gallery/contracts'

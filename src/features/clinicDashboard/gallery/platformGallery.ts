@@ -1,33 +1,11 @@
 import { APIError, type PayloadRequest } from 'payload'
 import { relationId } from '@/collections/clinics/profileGallery'
-import { classifyDatabaseAvailabilityError } from '@/features/databaseAvailability'
+import { requireCurrentPlatformStaff, type PlatformStaffLookupOptions } from '@/access/requireCurrentPlatformStaff'
 import { clinicGallerySaveInputSchema, getClinicGallerySaveRejection } from './contracts'
 import { readClinicGallerySnapshot, saveClinicGallery } from './service'
 import { richTextToPlainText } from '@/features/clinicDashboard/profile/richText'
 import { readStoredImage } from '@/features/platformMedia/readStoredImage'
 import type { ClinicGallerySaveInput } from './contracts'
-
-type StaffLookupOptions = { propagateDatabaseFailure?: boolean }
-
-export async function requireCurrentPlatformStaff(req: PayloadRequest, options?: StaffLookupOptions): Promise<void> {
-  if (req.user?.collection !== 'platformStaff') throw new APIError('Platform staff access is required.', 403)
-  const staff = await req.payload
-    .findByID({
-      collection: 'platformStaff',
-      id: req.user.id,
-      depth: 0,
-      overrideAccess: true,
-      req,
-      select: { role: true },
-    })
-    .catch((error: unknown) => {
-      if (options?.propagateDatabaseFailure && classifyDatabaseAvailabilityError(error)) throw error
-      return null
-    })
-  if (!staff || !['admin', 'support', 'content-manager'].includes(staff.role)) {
-    throw new APIError('Platform staff access is required.', 403)
-  }
-}
 
 async function requirePlatformClinicAccess(req: PayloadRequest, clinicId: number): Promise<void> {
   await requireCurrentPlatformStaff(req)
@@ -54,7 +32,7 @@ export async function savePlatformClinicGallery(req: PayloadRequest, clinicId: n
 export async function appendPlatformClinicGalleryMedia(
   req: PayloadRequest,
   mediaId: number,
-  options?: StaffLookupOptions,
+  options?: PlatformStaffLookupOptions,
 ) {
   await requireCurrentPlatformStaff(req, options)
   const media = await req.payload.findByID({

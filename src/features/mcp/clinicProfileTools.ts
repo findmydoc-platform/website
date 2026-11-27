@@ -1,7 +1,7 @@
 import type { PayloadRequest } from 'payload'
 import { z } from 'zod'
 import { openingHoursDayNames } from '@/collections/clinics/openingHours'
-import { requireCurrentPlatformStaff } from '@/features/clinicDashboard/gallery/platformGallery'
+import { requireCurrentPlatformStaff } from '@/access/requireCurrentPlatformStaff'
 import type { ClinicsSelect } from '@/payload-types'
 
 const documentId = z.number().int().positive().safe()

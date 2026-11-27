@@ -5,36 +5,36 @@ import { editorialImageGrantField } from './editorialImageGrants'
 import { uploadEditorialImageTool } from './editorialImageTool'
 
 type GrantCopy = {
-  label: { en: string; de: string }
+  label: string
   description: string
 }
 
 const clinicProfileCopy: Record<string, GrantCopy> = {
   find: {
-    label: { en: 'Read clinic profiles', de: 'Klinikprofile lesen' },
+    label: 'Read clinic profiles',
     description: 'View profile details and public listing status.',
   },
   create: {
-    label: { en: 'Create clinic profiles directly', de: 'Klinikprofile direkt anlegen' },
+    label: 'Create clinic profiles directly',
     description: 'Create a standalone profile. Use Onboarding to include the first staff member.',
   },
   update: {
-    label: { en: 'Edit clinic profiles', de: 'Klinikprofile bearbeiten' },
+    label: 'Edit clinic profiles',
     description: 'Change address, opening hours, website and other public details.',
   },
 }
 
 const postCopy: Record<string, GrantCopy> = {
   find: {
-    label: { en: 'Read posts', de: 'Beiträge lesen' },
+    label: 'Read posts',
     description: 'Find posts and read available drafts.',
   },
   create: {
-    label: { en: 'Create posts', de: 'Beiträge anlegen' },
+    label: 'Create posts',
     description: 'Start a German draft or create a post directly.',
   },
   update: {
-    label: { en: 'Edit and publish posts', de: 'Beiträge bearbeiten und veröffentlichen' },
+    label: 'Edit and publish posts',
     description: 'Revise drafts and publish the selected language.',
   },
 }
@@ -118,16 +118,16 @@ export function buildMcpApiKeyFields(fields: Field[], collectionGrantAliases: Re
     if (group.name === 'clinics') {
       return workflowSection(
         field,
-        { en: 'Clinic profiles', de: 'Klinikprofile' },
+        'Clinic profiles',
         'Public listing approval stays in Payload Admin. The onboarding decision governs Dashboard access.',
         [
           permissionSection(
-            { en: 'Onboarding', de: 'Onboarding' },
+            'Onboarding',
             'Each application needs a first staff member. Choose a new account or an activated, unassigned account.',
             clinicOnboardingGrantField,
           ),
           permissionSection(
-            { en: 'Profile care', de: 'Profilpflege' },
+            'Profile care',
             'Edit a profile as soon as it exists, even while the application is open.',
             group,
             field.fields,
@@ -140,18 +140,18 @@ export function buildMcpApiKeyFields(fields: Field[], collectionGrantAliases: Re
     if (group.name === 'posts') {
       return workflowSection(
         field,
-        { en: 'Blog posts', de: 'Blogbeiträge' },
+        'Blog posts',
         'Publish German and English independently. Grant image uploads separately.',
         [
           permissionSection(
-            { en: 'Posts', de: 'Beiträge' },
+            'Posts',
             'Start drafts in German. Add English to the same post when available.',
             group,
             field.fields,
             postCopy,
           ),
           permissionSection(
-            { en: 'Images', de: 'Bilder' },
+            'Images',
             'Use the returned image ID to attach the asset to a draft.',
             editorialImageGrantField,
           ),

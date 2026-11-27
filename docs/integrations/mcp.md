@@ -131,6 +131,20 @@ reuses the existing invitation authorization. Public publication remains a separ
 Payload Admin rejects the public clinic profile. While onboarding is open, the linked clinic is protected
 from trash and permanent deletion.
 
+### Continue onboarding after MCP is disabled
+
+In Payload Admin, open **Medical Network → Clinic Applications**. A current platform administrator or support user
+can review a staged application and select **Approve participation** or enter a reason and select **Reject
+participation**. An approved new-account application offers **Retry account setup** or **Check invitation**. Reload
+after a conflict and review the saved details again. Admin and MCP use the same decision and assignment checks.
+
+To stop intake, remove **Stage an application** from every affected key or disable the MCP keys. Use the Admin
+controls to finish or reject the applications already staged. Keep this release or a maintenance release that
+includes those controls while applications still need a decision, account setup, or invitation preparation. Before
+rolling back to code that predates the workflow, finish that work and verify the linked records. Retain the additive
+migration and application history. Handle prepared invitations and published profiles through their existing
+lifecycle controls.
+
 ## Clinic profile maintenance
 
 Under **Clinic profiles → Profile care**, enable **Read clinic profiles** or **Edit clinic profiles**.

@@ -147,7 +147,7 @@ export const getClinicApplicationLifecyclePresentation = ({
           : []),
       ],
       guidance: usesMcpOnboarding
-        ? 'Use readClinicOnboarding to get the latest application revision, then call approveClinicOnboarding to retry account setup.'
+        ? 'Review the saved application, then retry account setup.'
         : inputChanged
           ? 'Saving starts another provisioning attempt.'
           : 'Change at least the clinic name, website, contact first name, contact last name, email, or role, then save.',
@@ -177,7 +177,7 @@ export const getClinicApplicationLifecyclePresentation = ({
     return {
       details: commonDetails,
       guidance: usesMcpOnboarding
-        ? 'Check the account setup status with readClinicOnboarding. Use the latest revision to resume setup with approveClinicOnboarding.'
+        ? 'Review the saved application to resume account setup.'
         : persistedData.status === 'approved'
           ? 'Provisioning is waiting for the existing automatic process to complete.'
           : 'Saving Approved starts automatic clinic and clinic staff creation.',
@@ -192,7 +192,7 @@ export const getClinicApplicationLifecyclePresentation = ({
   return {
     details: commonDetails,
     guidance: usesMcpOnboarding
-      ? 'Review the current revision with readClinicOnboarding. Use approveClinicOnboarding or rejectClinicOnboarding to record the decision.'
+      ? 'Review the saved application before approving or rejecting participation.'
       : 'Review the application and select Approved or Rejected.',
     stateLabel: 'Awaiting review',
     summary: 'This application is waiting for a review decision.',

@@ -1,6 +1,7 @@
 import { CollectionConfig, PayloadRequest } from 'payload'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { computedOnlyFieldAccess } from '@/access/fieldAccess'
+import { clinicApplicationOnboardingDecisionEndpoint } from '@/features/clinicOnboarding/adminDecision'
 import { CLINIC_ONBOARDING_ERROR_CODES } from '@/features/clinicOnboarding/provisionClinicOnboarding'
 import { provisionApprovedClinicApplication } from '@/hooks/clinicApplicationProvisioning'
 import {
@@ -8,6 +9,7 @@ import {
   guardMcpOnboardingApplicationDelete,
 } from '@/features/clinicOnboarding/stagedWriteGuards'
 import { clinicContactRoleOptions } from './common/selectionOptions'
+import { validateClinicApplicationWebsite } from './clinicApplications/validation'
 import { clinicApplicationProvisioningErrorLabels } from './clinicApplications/provisioningLifecycle'
 
 // Platform-controlled application intake for clinics.
@@ -29,6 +31,7 @@ export const ClinicApplications: CollectionConfig<'clinicApplications'> = {
     update: isPlatformStaff,
     delete: isPlatformStaff,
   },
+  endpoints: [clinicApplicationOnboardingDecisionEndpoint],
   hooks: {
     beforeChange: [guardMcpOnboardingApplication],
     beforeDelete: [guardMcpOnboardingApplicationDelete],
@@ -92,23 +95,7 @@ export const ClinicApplications: CollectionConfig<'clinicApplications'> = {
       admin: {
         description: 'Official clinic website URL',
       },
-      validate: (value: string | string[] | null | undefined) => {
-        if (!value || typeof value !== 'string') {
-          return 'Enter a valid clinic website URL.'
-        }
-
-        try {
-          const url = new URL(value)
-
-          if (!['http:', 'https:'].includes(url.protocol) || !url.hostname.includes('.')) {
-            return 'Enter a valid clinic website URL.'
-          }
-        } catch {
-          return 'Enter a valid clinic website URL.'
-        }
-
-        return true
-      },
+      validate: validateClinicApplicationWebsite,
     },
     {
       name: 'medicalSpecialties',

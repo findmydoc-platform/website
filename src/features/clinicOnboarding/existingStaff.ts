@@ -1,7 +1,7 @@
 import type { PayloadRequest, Where } from 'payload'
 import { normalizeEmail } from '@/auth/utilities/emailNormalization'
 import { isClinicPersonalIdentityReady, readClinicStaffAssignment } from '@/auth/utilities/clinicStaffAssignment'
-import { requireCurrentPlatformStaff } from '@/features/clinicDashboard/gallery/platformGallery'
+import { requireCurrentPlatformStaff } from '@/access/requireCurrentPlatformStaff'
 
 export async function readEligibleExistingClinicStaff(
   req: PayloadRequest,

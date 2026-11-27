@@ -13,8 +13,6 @@ export const languageOptions = [
   { label: 'Portuguese', value: 'portuguese' },
 ]
 
-export const clinicContactRoleOptions = [
-  { label: 'Medical Director', value: 'Medical Director' },
-  { label: 'Clinic Management', value: 'Clinic Management' },
-  { label: 'International Office', value: 'International Office' },
-]
+export const clinicContactRoles = ['Medical Director', 'Clinic Management', 'International Office'] as const
+
+export const clinicContactRoleOptions = clinicContactRoles.map((value) => ({ label: value, value }))

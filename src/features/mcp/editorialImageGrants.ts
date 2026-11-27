@@ -11,7 +11,7 @@ export const editorialImageGrantField: GroupField = {
     {
       type: 'checkbox',
       name: 'upload',
-      label: { en: 'Upload editorial images', de: 'Redaktionelle Bilder hochladen' },
+      label: 'Upload editorial images',
       defaultValue: false,
       admin: { description: 'Upload an image with alt text. Limit of 3.1 MB per file.' },
     },

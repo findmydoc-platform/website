@@ -2,7 +2,13 @@ import type { MCPAccessSettings } from '@payloadcms/plugin-mcp'
 import { APIError, type GroupField, type PayloadRequest } from 'payload'
 import { z } from 'zod'
 import { findEligibleClinicOnboardingStaff } from '@/features/clinicOnboarding/existingStaff'
+import { applicationRevisionSchema, onboardingRejectionReasonSchema } from '@/features/clinicOnboarding/adminDecision'
 import { approveClinicOnboarding, rejectClinicOnboarding } from '@/features/clinicOnboarding/decideApplication'
+import { clinicContactRoles } from '@/collections/common/selectionOptions'
+import {
+  clinicApplicationWebsiteError,
+  validateClinicApplicationWebsite,
+} from '@/collections/clinicApplications/validation'
 import { isValidEmail, normalizeEmail } from '@/auth/utilities/emailNormalization'
 import {
   correctClinicOnboarding,
@@ -14,22 +20,22 @@ import {
 const clinicOnboardingGrants = {
   read: {
     tools: ['readClinicOnboarding', 'findEligibleClinicOnboardingStaff'],
-    label: { en: 'Read applications', de: 'Vorgänge lesen' },
+    label: 'Read applications',
     description: 'View intake and status. Find eligible existing staff accounts.',
   },
   create: {
     tools: ['stageClinicOnboarding'],
-    label: { en: 'Stage an application', de: 'Vorgang anlegen' },
+    label: 'Stage an application',
     description: 'Stage an unpublished profile with a website, main specialty and first staff member.',
   },
   correct: {
     tools: ['correctClinicOnboarding'],
-    label: { en: 'Correct an open application', de: 'Offenen Vorgang korrigieren' },
+    label: 'Correct an open application',
     description: 'Update intake details or the staff selection before a decision.',
   },
   decide: {
     tools: ['approveClinicOnboarding', 'rejectClinicOnboarding'],
-    label: { en: 'Decide applications', de: 'Entscheiden' },
+    label: 'Decide applications',
     description: 'Approve or reject Dashboard access. Approval starts account setup or links existing staff.',
   },
 } as const
@@ -78,10 +84,7 @@ const website = z
   .trim()
   .max(2_048)
   .url()
-  .refine((value) => {
-    const parsed = URL.parse(value)
-    return parsed && ['https:', 'http:'].includes(parsed.protocol) && parsed.hostname.includes('.')
-  }, 'Enter a valid clinic website URL.')
+  .refine((value) => validateClinicApplicationWebsite(value) === true, clinicApplicationWebsiteError)
 const contactEmail = z.string().max(254).transform(normalizeEmail).refine(isValidEmail, 'Enter a valid email address.')
 const intake = z.object({
   clinicName: requiredText,
@@ -90,14 +93,11 @@ const intake = z.object({
   contactFirstName: requiredText,
   contactLastName: requiredText,
   contactEmail,
-  contactRole: z.enum(['Medical Director', 'Clinic Management', 'International Office']),
+  contactRole: z.enum(clinicContactRoles),
 })
 const applicationIdInput = z.object({ applicationId: id })
 const decisionInput = applicationIdInput.extend({
-  applicationRevision: z
-    .string()
-    .regex(/^[a-f0-9]{64}$/u)
-    .describe('Revision returned for the application under review.'),
+  applicationRevision: applicationRevisionSchema,
 })
 const correctionInput = intake.partial().merge(applicationIdInput).extend({ clinicStaffId: id.optional() })
 const stageInput = intake.partial({ contactFirstName: true, contactLastName: true, contactEmail: true }).extend({
@@ -189,7 +189,7 @@ export const clinicOnboardingTools = [
     'decide',
     'rejectClinicOnboarding',
     'Reject the reviewed revision of an open onboarding application and record the reason.',
-    decisionInput.extend({ reason: z.string().trim().min(1).max(2_000) }),
+    decisionInput.extend({ reason: onboardingRejectionReasonSchema }),
     rejectClinicOnboarding,
   ),
 ]

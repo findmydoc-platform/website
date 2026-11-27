@@ -92,8 +92,8 @@ the application submitted, the clinic unpublished and the first staff account pe
 The read action includes the intake fields. Correcting the first contact's email updates the application, the
 clinic's internal primary contact and the pending account together.
 
-Approval saves the Dashboard participation decision before any account setup. The clinic stays unpublished and
-the first staff member must complete the existing account activation to use the Dashboard. Rejection keeps the
+Approval saves the Dashboard participation decision before any account setup and preserves the clinic's publication
+status. The first staff member must complete the existing account activation to use the Dashboard. Rejection keeps the
 reason on the application and leaves the pending account without an identity or invitation.
 
 If account setup fails, the same response reports `decisionStatus: "approved"`, `accountSetupStatus: "failed"` and

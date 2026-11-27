@@ -65,6 +65,7 @@ async function readBoundClinic(req: PayloadRequest, binding: Binding) {
   })
   if (
     !clinic ||
+    clinic.deletedAt ||
     clinic.onboardingKey !== binding.onboardingKey ||
     clinic.provisioningIdentity !== binding.provisioningIdentity
   ) {
@@ -128,7 +129,7 @@ async function persistDecision(req: PayloadRequest, applicationId: number, decis
 
     const binding = getBinding(application)
     const clinic = await readBoundClinic(transactionReq, binding)
-    if (clinic.status !== 'pending' || clinic.participationStatus !== 'pending') {
+    if (clinic.status === 'rejected' || clinic.participationStatus !== 'pending') {
       throw new McpOnboardingError('The staged clinic is no longer awaiting a decision.', 409)
     }
 

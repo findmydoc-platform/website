@@ -739,7 +739,7 @@ describe('MCP key management and client access', () => {
         enableAPIKey: true,
         apiKey: token,
         clinics: { find: true, update: true },
-        clinicOnboarding: { create: true },
+        clinicOnboarding: { create: true, decide: true },
       },
     })
     keyIds.push(key.id)
@@ -753,7 +753,7 @@ describe('MCP key management and client access', () => {
       limit: 1,
     })
     const clinicName = `${prefix}-staged-${randomUUID()}`
-    const { clinicId } = JSON.parse(
+    const { applicationId, clinicId } = JSON.parse(
       await call('stageClinicOnboarding', {
         requestKey: randomUUID(),
         staffMode: 'new_account',
@@ -817,6 +817,13 @@ describe('MCP key management and client access', () => {
     ).toMatchObject({
       participationStatus: 'pending',
       internalPrimaryContact: { email: `${clinicName}@example.com` },
+    })
+    expect(JSON.parse(await call('approveClinicOnboarding', { applicationId }))).toMatchObject({
+      applicationId,
+      clinicId,
+      decisionStatus: 'approved',
+      participationStatus: 'approved',
+      publicStatus: 'approved',
     })
   })
 

@@ -81,7 +81,8 @@ also require the current clinic management role and the applicable Payload appli
 
 Use a fresh request key for a new intake and reuse it when retrying as the same key owner. The response returns the
 same application, clinic and staff IDs after a successful replay. A separate request matching an open or approved
-application for the same clinic name and contact email returns a conflict. Medical specialties must be main
+application for the same clinic name and contact email returns a conflict. A new account requires a contact email
+that is available for clinic staff. Medical specialties must be main
 specialties. The supported contact roles are `Medical Director`, `Clinic Management` and `International Office`.
 
 The response distinguishes the application decision (`decisionStatus`), account setup (`accountSetupStatus`),

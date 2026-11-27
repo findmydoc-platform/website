@@ -4,7 +4,6 @@ import { createLocalReq, getPayload, type Payload } from 'payload'
 
 import config from '@payload-config'
 import { createInitialClinicSupabaseAccount } from '@/auth/utilities/supabaseProvision'
-import { ensureBaseline } from '../../fixtures/ensureBaseline'
 import { cleanupTrackedUsers, createPlatformTestUser } from '../../fixtures/testUsers'
 
 describe('MCP clinic onboarding', () => {
@@ -12,21 +11,20 @@ describe('MCP clinic onboarding', () => {
   let specialtyId: number
   let ownerId: number
   let token: string
-  const staffIds: number[] = []
+  const staffIds: Array<number | string> = []
   const keyIds: number[] = []
   const name = `MCP onboarding ${randomUUID()}`
 
   beforeAll(async () => {
     payload = await getPayload({ config })
-    await ensureBaseline(payload)
     ownerId = (await createPlatformTestUser(payload, { emailPrefix: 'mcp-onboarding', createdStaffIds: staffIds })).id
     specialtyId = (
-      await payload.find({
+      await payload.create({
         collection: 'medical-specialties',
-        where: { parentSpecialty: { exists: false } },
-        limit: 1,
+        data: { name: `${name} specialty`, iconKey: 'fallback' },
+        overrideAccess: true,
       })
-    ).docs[0]!.id
+    ).id
     token = await createKey({ create: true, read: true, correct: true })
   })
 
@@ -209,7 +207,7 @@ describe('MCP clinic onboarding', () => {
     expect((await call('stageClinicOnboarding', input)).data).toMatchObject({ applicationId, clinicId, clinicStaffId })
   })
 
-  it('rolls back clinic and application when a staff email already belongs to another account', async () => {
+  it('leaves no staged records when the email already belongs to another staff account', async () => {
     const input = { ...intake(), contactEmail: `${randomUUID()}@example.com` }
     const staff = await payload.create({
       collection: 'clinicStaff',
@@ -233,6 +231,35 @@ describe('MCP clinic onboarding', () => {
       ).toBeNull()
     } finally {
       await payload.delete({ collection: 'clinicStaff', id: staff.id, overrideAccess: true })
+    }
+  })
+
+  it('preserves the first contact when a correction uses another staff account email', async () => {
+    const input = intake()
+    const { applicationId, clinicId, clinicStaffId } = stagedIds((await call('stageClinicOnboarding', input)).data)
+    const otherEmail = `${randomUUID()}@example.com`
+    const otherStaff = await payload.create({
+      collection: 'clinicStaff',
+      data: { email: otherEmail, status: 'pending' },
+      overrideAccess: true,
+    })
+    try {
+      const correction = await call('correctClinicOnboarding', {
+        applicationId,
+        contactEmail: otherEmail.toUpperCase(),
+      })
+      expect(correction.error).toBeDefined()
+      expect((await call('readClinicOnboarding', { applicationId })).data).toMatchObject({
+        contactEmail: input.contactEmail,
+      })
+      const [clinic, staff] = await Promise.all([
+        payload.findByID({ collection: 'clinics', id: clinicId, depth: 0, overrideAccess: true }),
+        payload.findByID({ collection: 'clinicStaff', id: clinicStaffId, depth: 0, overrideAccess: true }),
+      ])
+      expect(clinic.internalPrimaryContact?.email).toBe(input.contactEmail)
+      expect(staff.email).toBe(input.contactEmail)
+    } finally {
+      await payload.delete({ collection: 'clinicStaff', id: otherStaff.id, overrideAccess: true })
     }
   })
 

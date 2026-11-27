@@ -1,6 +1,7 @@
 import type { MCPAccessSettings } from '@payloadcms/plugin-mcp'
 import { APIError, type Field, type PayloadRequest } from 'payload'
 import { z } from 'zod'
+import { approveClinicOnboarding, rejectClinicOnboarding } from '@/features/clinicOnboarding/decideApplication'
 import { isValidEmail, normalizeEmail } from '@/auth/utilities/emailNormalization'
 import {
   correctClinicOnboarding,
@@ -10,11 +11,15 @@ import {
 } from '@/features/clinicOnboarding/stagedApplication'
 
 const clinicOnboardingGrants = {
-  read: { tool: 'readClinicOnboarding', label: { en: 'Read applications', de: 'Vorgänge lesen' } },
-  create: { tool: 'stageClinicOnboarding', label: { en: 'Stage an application', de: 'Vorgang anlegen' } },
+  read: { tools: ['readClinicOnboarding'], label: { en: 'Read applications', de: 'Vorgänge lesen' } },
+  create: { tools: ['stageClinicOnboarding'], label: { en: 'Stage an application', de: 'Vorgang anlegen' } },
   correct: {
-    tool: 'correctClinicOnboarding',
+    tools: ['correctClinicOnboarding'],
     label: { en: 'Correct an open application', de: 'Offenen Vorgang korrigieren' },
+  },
+  decide: {
+    tools: ['approveClinicOnboarding', 'rejectClinicOnboarding'],
+    label: { en: 'Decide applications', de: 'Entscheiden' },
   },
 } as const
 
@@ -25,7 +30,7 @@ const onboardingGrantEntries = Object.entries(clinicOnboardingGrants) as [
 ][]
 const permissions = new WeakMap<PayloadRequest, Set<ClinicOnboardingGrant>>()
 
-export function mapClinicOnboardingGrants(req: PayloadRequest, settings: MCPAccessSettings) {
+export function mapClinicOnboardingGrants(req: PayloadRequest, settings: MCPAccessSettings): MCPAccessSettings {
   const values = settings.clinicOnboarding as Record<string, unknown> | undefined
   const active = new Set(onboardingGrantEntries.filter(([grant]) => values?.[grant] === true).map(([grant]) => grant))
   permissions.set(req, active)
@@ -33,13 +38,15 @@ export function mapClinicOnboardingGrants(req: PayloadRequest, settings: MCPAcce
     ...settings,
     'payload-mcp-tool': {
       ...settings['payload-mcp-tool'],
-      ...Object.fromEntries(onboardingGrantEntries.map(([grant, { tool }]) => [tool, active.has(grant)])),
+      ...Object.fromEntries(
+        onboardingGrantEntries.flatMap(([grant, { tools }]) => tools.map((tool) => [tool, active.has(grant)])),
+      ),
     },
   }
 }
 
 export function groupClinicOnboardingGrants(fields: Field[]): Field[] {
-  const toolNames = new Set<string>(onboardingGrantEntries.map(([, { tool }]) => tool))
+  const toolNames = new Set<string>(onboardingGrantEntries.flatMap(([, { tools }]) => tools))
   return fields.map((field) => {
     if (field.type !== 'collapsible') return field
     const clinicCapabilities = field.fields.find(
@@ -113,14 +120,15 @@ const applicationIdInput = z.object({ applicationId: id })
 const correctionInput = intake.partial().merge(applicationIdInput)
 const stageInput = intake.extend({ requestKey: z.string().trim().min(1).max(200), staffMode: z.literal('new_account') })
 
-function defineOnboardingTool<Shape extends z.ZodRawShape>(
-  grant: ClinicOnboardingGrant,
+function defineOnboardingTool<Grant extends ClinicOnboardingGrant, Shape extends z.ZodRawShape>(
+  grant: Grant,
+  name: (typeof clinicOnboardingGrants)[Grant]['tools'][number],
   description: string,
   input: z.ZodObject<Shape>,
   run: (req: PayloadRequest, args: z.infer<z.ZodObject<Shape>>) => Promise<unknown>,
 ) {
   return {
-    name: clinicOnboardingGrants[grant].tool,
+    name,
     description,
     parameters: input.shape,
     handler: async (args: Record<string, unknown>, req: PayloadRequest) => {
@@ -142,18 +150,21 @@ function defineOnboardingTool<Shape extends z.ZodRawShape>(
 export const clinicOnboardingTools = [
   defineOnboardingTool(
     'read',
+    'readClinicOnboarding',
     'Read a staged clinic onboarding application and its current statuses.',
     applicationIdInput,
     readClinicOnboarding,
   ),
   defineOnboardingTool(
     'create',
+    'stageClinicOnboarding',
     'Stage a pending clinic application, unpublished clinic and new first staff account. Reuse the request key when retrying.',
     stageInput,
     stageClinicOnboarding,
   ),
   defineOnboardingTool(
     'correct',
+    'correctClinicOnboarding',
     'Correct supplied details of an open new-account clinic onboarding application.',
     correctionInput,
     (req, { applicationId, ...details }) => {
@@ -162,5 +173,19 @@ export const clinicOnboardingTools = [
       }
       return correctClinicOnboarding(req, { applicationId, ...details })
     },
+  ),
+  defineOnboardingTool(
+    'decide',
+    'approveClinicOnboarding',
+    'Approve Dashboard participation and prepare the staged first staff account. Replay approval to resume setup.',
+    applicationIdInput,
+    approveClinicOnboarding,
+  ),
+  defineOnboardingTool(
+    'decide',
+    'rejectClinicOnboarding',
+    'Reject an open onboarding application and record the reason.',
+    applicationIdInput.extend({ reason: z.string().trim().min(1).max(2_000) }),
+    rejectClinicOnboarding,
   ),
 ]

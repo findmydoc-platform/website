@@ -161,9 +161,9 @@ const findExisting = async (payload: Payload, command: ClinicOnboardingCommand, 
   return { clinic, principal }
 }
 
-const bindSupabaseIdentity = async (
+export const prepareClinicOnboardingIdentity = async (
   payload: Payload,
-  command: ClinicOnboardingCommand,
+  command: Pick<ClinicOnboardingCommand, 'onboardingKey' | 'contactEmail' | 'contactFirstName' | 'contactLastName'>,
   staff: ClinicStaff,
   req?: PayloadRequest,
 ): Promise<ClinicStaff> => {
@@ -240,7 +240,7 @@ export async function provisionClinicOnboarding(
   const existing = await findExisting(payload, command, req)
   const clinic = existing.clinic ?? (await createClinic(payload, command, req))
   const staff = existing.principal ?? (await createClinicStaff(payload, command, clinic, req))
-  const boundStaff = await bindSupabaseIdentity(payload, command, staff, req)
+  const boundStaff = await prepareClinicOnboardingIdentity(payload, command, staff, req)
 
   payload.logger.info(
     {

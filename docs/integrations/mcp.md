@@ -69,15 +69,17 @@ Uploads accept base64-encoded image bytes and the configured media size and type
 
 ## Clinic onboarding
 
-In the API key form, expand **Clinic profiles** and **Onboarding**. Reading, staging and correcting have separate
-checkboxes, all off by default. Existing clinic collection grants remain in **Profile care**. Staging and correcting
-also require the current clinic management role and the applicable Payload application and clinic permissions.
+In the API key form, expand **Clinic profiles** and **Onboarding**. Reading, staging, correcting and deciding have
+separate checkboxes, all off by default. Existing clinic collection grants remain in **Profile care**. Staging,
+correcting and deciding require the key owner's current clinic management role and the applicable Payload permissions.
 
 | Tool | Required onboarding grant | Inputs |
 | --- | --- | --- |
 | `stageClinicOnboarding` | Stage an application | `requestKey`, `staffMode: "new_account"`, `clinicName`, `clinicWebsite`, `medicalSpecialtyIds`, `contactFirstName`, `contactLastName`, `contactEmail` and `contactRole` |
 | `readClinicOnboarding` | Read applications | `applicationId` |
 | `correctClinicOnboarding` | Correct an open application | `applicationId` and one or more changed intake fields |
+| `approveClinicOnboarding` | Decide applications | `applicationId` |
+| `rejectClinicOnboarding` | Decide applications | `applicationId` and a non-empty `reason` |
 
 Use a fresh request key for a new intake and reuse it when retrying as the same key owner. The response returns the
 same application, clinic and staff IDs after a successful replay. A separate request matching an open or approved
@@ -89,6 +91,16 @@ Dashboard participation (`participationStatus`) and the clinic's publication sta
 the application submitted, the clinic unpublished and the first staff account pending without Dashboard access.
 The read action includes the intake fields. Correcting the first contact's email updates the application, the
 clinic's internal primary contact and the pending account together.
+
+Approval saves the Dashboard participation decision before any account setup and preserves the clinic's publication
+status. The first staff member must complete the existing account activation to use the Dashboard. Rejection keeps the
+reason on the application and leaves the pending account without an identity or invitation.
+
+If account setup fails, the same response reports `decisionStatus: "approved"`, `accountSetupStatus: "failed"` and
+an `accountSetupErrorCode`. Call `approveClinicOnboarding` again with the same application ID to resume setup for
+the same clinic and staff account. The decision tools also report `invitationStatus`. A prepared invitation uses
+the existing Auth Action and is eligible for delivery under the current environment policy. Retrying the approval
+reuses the existing invitation authorization. Public publication remains a separate Payload Admin action.
 
 ## Clinic profile maintenance
 

@@ -3,6 +3,8 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { createLocalReq, getPayload, type Payload } from 'payload'
 
 import config from '@payload-config'
+import { bindAuthActions } from '@/auth/actions/lifecycle'
+import { readClinicAccessState } from '@/auth/utilities/clinicAccessState'
 import { createInitialClinicSupabaseAccount } from '@/auth/utilities/supabaseProvision'
 import { ensureBaseline } from '../../fixtures/ensureBaseline'
 import { cleanupTrackedUsers, createPlatformTestUser } from '../../fixtures/testUsers'
@@ -36,7 +38,10 @@ describe('MCP clinic onboarding', () => {
     await cleanupTrackedUsers(payload, { staffIds })
   })
 
-  async function createKey(clinicOnboarding: { create?: boolean; read?: boolean; correct?: boolean }, user = ownerId) {
+  async function createKey(
+    clinicOnboarding: { create?: boolean; read?: boolean; correct?: boolean; decide?: boolean },
+    user = ownerId,
+  ) {
     const apiKey = randomUUID()
     const key = await payload.create({
       collection: 'payload-mcp-api-keys',
@@ -190,6 +195,117 @@ describe('MCP clinic onboarding', () => {
     ).toBeDefined()
     const legacyKey = await createKey({})
     expect((await call('readClinicOnboarding', { applicationId }, legacyKey)).error).toBeDefined()
+  })
+
+  it('requires the decision grant and rejects an open application without preparing an account', async () => {
+    vi.mocked(createInitialClinicSupabaseAccount).mockClear()
+    const { applicationId, clinicId, clinicStaffId } = stagedIds((await call('stageClinicOnboarding', intake())).data)
+    const reason = 'The clinic withdrew its request.'
+    const decisionKey = await createKey({ decide: true })
+    expect((await call('approveClinicOnboarding', { applicationId })).error).toBeDefined()
+    expect((await call('rejectClinicOnboarding', { applicationId, reason })).error).toBeDefined()
+    expect((await call('rejectClinicOnboarding', { applicationId, reason: ' ' }, decisionKey)).error).toBeDefined()
+    expect((await call('readClinicOnboarding', { applicationId })).data).toMatchObject({
+      decisionStatus: 'submitted',
+      participationStatus: 'pending',
+    })
+
+    expect(await call('rejectClinicOnboarding', { applicationId, reason }, decisionKey)).toMatchObject({
+      data: {
+        applicationId,
+        clinicId,
+        clinicStaffId,
+        decisionStatus: 'rejected',
+        participationStatus: 'rejected',
+        accountSetupStatus: 'not_started',
+        publicStatus: 'pending',
+      },
+    })
+    expect((await call('approveClinicOnboarding', { applicationId }, decisionKey)).error).toBeDefined()
+    expect(await payload.findByID({ collection: 'clinicApplications', id: applicationId, depth: 0 })).toMatchObject({
+      reviewNotes: reason,
+    })
+    const clinicStaff = await payload.findByID({ collection: 'clinicStaff', id: clinicStaffId, depth: 0 })
+    expect(clinicStaff.status).toBe('pending')
+    expect(clinicStaff.supabaseUserId).toBeFalsy()
+    expect(clinicStaff.invitationAuthorizedAt).toBeFalsy()
+    expect(vi.mocked(createInitialClinicSupabaseAccount)).not.toHaveBeenCalled()
+  })
+
+  it('keeps an approval after provider failure and retries the same account and invitation', async () => {
+    const input = intake()
+    const { applicationId, clinicId, clinicStaffId } = stagedIds((await call('stageClinicOnboarding', input)).data)
+    const decisionKey = await createKey({ decide: true })
+    const subject = randomUUID()
+    const provision = vi.mocked(createInitialClinicSupabaseAccount)
+    provision.mockClear()
+    provision.mockRejectedValueOnce(new Error('provider failure fixture')).mockImplementationOnce(async () => {
+      expect((await call('readClinicOnboarding', { applicationId })).data).toMatchObject({
+        decisionStatus: 'approved',
+        participationStatus: 'approved',
+      })
+      return subject
+    })
+
+    expect(await call('approveClinicOnboarding', { applicationId }, decisionKey)).toMatchObject({
+      data: {
+        applicationId,
+        clinicId,
+        clinicStaffId,
+        decisionStatus: 'approved',
+        participationStatus: 'approved',
+        accountSetupStatus: 'failed',
+        accountSetupErrorCode: 'auth_failed',
+        invitationStatus: 'not_started',
+        publicStatus: 'pending',
+      },
+    })
+    expect(
+      (await call('rejectClinicOnboarding', { applicationId, reason: 'Already approved.' }, decisionKey)).error,
+    ).toBeDefined()
+
+    expect(await call('approveClinicOnboarding', { applicationId }, decisionKey)).toMatchObject({
+      data: { applicationId, clinicId, clinicStaffId, decisionStatus: 'approved', accountSetupStatus: 'completed' },
+    })
+    expect(
+      await payload.findByID({ collection: 'clinicStaff', id: clinicStaffId, depth: 0, overrideAccess: true }),
+    ).toMatchObject({ clinic: clinicId, status: 'approved', supabaseUserId: subject, authSync: { status: 'synced' } })
+    expect(await readClinicAccessState(payload, clinicStaffId)).toBeNull()
+    expect(
+      (await payload.find({ collection: 'clinics', where: { id: { equals: clinicId } }, overrideAccess: false })).docs,
+    ).toEqual([])
+
+    const actions = bindAuthActions(await createLocalReq({}, payload), { environment: 'test' })
+    const invitation = await actions.reserveClinicInvitation({ clinicStaffId })
+    expect(invitation).toMatchObject({
+      actionType: 'clinic-invitation',
+      supabaseSubject: subject,
+      principal: { relationTo: 'clinicStaff', value: clinicStaffId },
+    })
+    expect(await call('approveClinicOnboarding', { applicationId }, decisionKey)).toMatchObject({
+      data: { applicationId, clinicId, clinicStaffId, decisionStatus: 'approved', accountSetupStatus: 'completed' },
+    })
+    expect((await actions.reserveClinicInvitation({ clinicStaffId }))?.id).toBe(invitation?.id)
+    expect(provision).toHaveBeenCalledTimes(2)
+    expect(provision).toHaveBeenCalledWith(
+      expect.objectContaining({ email: input.contactEmail, onboardingKey: `clinic-application:${applicationId}` }),
+      expect.anything(),
+    )
+  })
+
+  it('allows just one decision when approval and rejection race', async () => {
+    const { applicationId } = stagedIds((await call('stageClinicOnboarding', intake())).data)
+    const decisionKey = await createKey({ decide: true })
+    const [approved, rejected] = await Promise.all([
+      call('approveClinicOnboarding', { applicationId }, decisionKey),
+      call('rejectClinicOnboarding', { applicationId, reason: 'The request was withdrawn.' }, decisionKey),
+    ])
+    expect([approved, rejected].filter(({ error }) => error !== undefined)).toHaveLength(1)
+    const decided = (await call('readClinicOnboarding', { applicationId })).data
+    expect(decided).toMatchObject({
+      decisionStatus: approved.error === undefined ? 'approved' : 'rejected',
+      publicStatus: 'pending',
+    })
   })
 
   it('corrects the first contact and account together in an open application', async () => {

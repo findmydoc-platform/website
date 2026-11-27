@@ -109,7 +109,7 @@ export const guardMcpOnboardingStaff: CollectionBeforeChangeHook<ClinicStaff> = 
   })
   if (
     application?.mcpOnboardingStaffMode === 'new_account' &&
-    application.status === 'submitted' &&
+    application.status !== 'approved' &&
     application.linkedRecords?.clinicStaff === originalDoc.id
   ) {
     throw new APIError('Use the clinic onboarding workflow to change this pending staff account.', 409)

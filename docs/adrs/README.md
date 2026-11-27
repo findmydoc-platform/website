@@ -105,3 +105,4 @@ When adding a new ADR:
 - [040 — Four-count Clinic Dashboard reporting V3](./040-adr-four-count-clinic-dashboard-reporting.md)
 - [041 — Shared UI Copy source, delivery, and fallback](./041-adr-shared-ui-copy-source-and-fallback.md)
 - [042 — Review changes to agent instructions](./042-adr-review-changes-to-agent-instructions.md)
+- [043 — Fixed language routes for the Holding landing pages](./043-adr-holding-language-routes.md)

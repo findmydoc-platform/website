@@ -8,6 +8,8 @@ import { resolveSitemapIndexingAccessForRequest } from '@/features/searchIndexin
 import { getListingComparisonServerData } from '@/utilities/listingComparison/serverData'
 import { buildPagePath, buildSitemapTag } from '@/utilities/cachePolicy'
 import type { ContentLocale } from '@/utilities/contentLocalization'
+import { TEMPORARY_LANDING_PATHS } from '@/features/temporaryLandingMode/i18n'
+import { getServerSideURL } from '@/utilities/getURL'
 
 const fixedPublicPaths = ['/', '/posts', '/contact', '/about', '/listing-comparison'] as const
 const excludedPublicPaths = new Set(['/search'])
@@ -98,17 +100,12 @@ export async function GET(request: Request) {
   }
 
   if (access.temporaryLandingMode) {
-    const siteUrl =
-      process.env.NEXT_PUBLIC_SERVER_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL || 'https://example.com'
-
-    return getServerSideSitemap([
-      {
-        loc: buildSitemapLocation(siteUrl, '/'),
-      },
-      {
-        loc: buildSitemapLocation(siteUrl, '/posts'),
-      },
-    ])
+    const siteUrl = getServerSideURL()
+    return getServerSideSitemap(
+      [...Object.values(TEMPORARY_LANDING_PATHS), '/posts'].map((path) => ({
+        loc: buildSitemapLocation(siteUrl, path),
+      })),
+    )
   }
 
   const sitemap = await getPagesSitemap()

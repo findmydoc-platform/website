@@ -1,3 +1,6 @@
+import { FRONTEND_PATH_HEADER } from '@/i18n/requestLocale'
+import { temporaryLandingLocaleFromPath } from './i18n'
+
 export const TEMPORARY_LANDING_MODE_REQUEST_HEADER = 'x-temporary-landing-mode'
 export const PUBLIC_SITE_MODE_REQUEST_HEADER = 'x-public-site-mode'
 export const HOLDING_VIEW_REQUEST_HEADER = 'x-holding-view'
@@ -34,6 +37,11 @@ const normalizePathname = (pathname: string): string => {
 export const isTemporaryLandingModeRequest = (headers: Headers): boolean => {
   return headers.get(TEMPORARY_LANDING_MODE_REQUEST_HEADER) === '1'
 }
+
+export const readTemporaryLandingLocale = (headers: Headers) =>
+  isTemporaryLandingModeRequest(headers)
+    ? temporaryLandingLocaleFromPath(headers.get(FRONTEND_PATH_HEADER) ?? '/')
+    : null
 
 export const isTemporaryLandingModeExemptPath = (pathname: string): boolean => {
   const normalizedPath = normalizePathname(pathname)
@@ -76,7 +84,7 @@ export const isTemporaryLandingIndexablePath = (pathname: string): boolean => {
   }
 
   return (
-    normalizedPath === '/' ||
+    temporaryLandingLocaleFromPath(normalizedPath) !== null ||
     normalizedPath === '/posts' ||
     /^\/posts\/page\/[1-9]\d*$/.test(normalizedPath) ||
     /^(?:\/en)?\/posts\/[^/]+$/.test(normalizedPath)

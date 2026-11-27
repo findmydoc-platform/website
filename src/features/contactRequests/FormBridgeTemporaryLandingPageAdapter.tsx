@@ -1,6 +1,7 @@
 import { TemporaryLandingPage, type TemporaryLandingPageProps } from '@/components/templates/TemporaryLandingPage'
 import { getTemporaryLandingPageContent } from '@/features/temporaryLandingMode'
 import { projectHoldingFooterLinks } from '@/features/temporaryLandingMode/navigation'
+import { HoldingDocumentLanguage } from '@/features/uiCopy/DocumentLanguage.client'
 import { getServerSideURL } from '@/utilities/getURL'
 
 import { FormBridgeContactRequestFormAdapter } from './FormBridgeContactRequestFormAdapter.client'
@@ -15,17 +16,20 @@ export function FormBridgeTemporaryLandingPageAdapter(props: FormBridgeTemporary
   }
 
   return (
-    <TemporaryLandingPage
-      {...props}
-      content={holdingContent}
-      contactForm={
-        <FormBridgeContactRequestFormAdapter
-          contactFormSlug={content.contactFormSlug}
-          contactMode={content.contactMode ?? 'full'}
-          labels={content.contactFormLabels}
-          primaryCtaLabel={content.primaryCtaLabel}
-        />
-      }
-    />
+    <>
+      <HoldingDocumentLanguage locale={props.locale} />
+      <TemporaryLandingPage
+        {...props}
+        content={holdingContent}
+        contactForm={
+          <FormBridgeContactRequestFormAdapter
+            contactFormSlug={content.contactFormSlug}
+            contactMode={content.contactMode ?? 'full'}
+            labels={content.contactFormLabels}
+            primaryCtaLabel={content.primaryCtaLabel}
+          />
+        }
+      />
+    </>
   )
 }

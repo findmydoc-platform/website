@@ -2,12 +2,14 @@ import { Heading } from '@/components/atoms/Heading'
 import { UiLink } from '@/components/molecules/Link'
 import { BlogCard } from '@/components/organisms/Blog/BlogCard'
 import type { BlogCardBaseProps } from '@/utilities/blog/normalizePost'
+import type { ContentLocale } from '@/utilities/contentLocalization'
 
 type TemporaryLandingBlogSectionProps = {
   ctaHref: string
   ctaLabel: string
   description: string
   posts: BlogCardBaseProps[]
+  postsLanguage?: ContentLocale
   title: string
 }
 
@@ -16,6 +18,7 @@ export function TemporaryLandingBlogSection({
   ctaLabel,
   description,
   posts,
+  postsLanguage,
   title,
 }: TemporaryLandingBlogSectionProps) {
   if (posts.length === 0) {
@@ -50,7 +53,7 @@ export function TemporaryLandingBlogSection({
 
       <div className="mt-6 grid gap-6 sm:grid-cols-2 sm:gap-8 xl:grid-cols-3">
         {posts.map((post) => (
-          <BlogCard.Simple key={post.href} {...post} />
+          <BlogCard.Simple key={post.href} {...post} lang={postsLanguage} />
         ))}
       </div>
     </section>

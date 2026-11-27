@@ -1,11 +1,21 @@
+import type { ContentLocaleContext } from '@/utilities/contentLocalization'
+import { TURKISH_CLINIC_LANDING_SLUG } from '@/utilities/routing/publicLandingPaths'
+
 export const TEMPORARY_LANDING_LOCALES = ['en', 'de', 'tr'] as const
-export const TEMPORARY_LANDING_DEFAULT_LOCALE = 'en'
+export const TEMPORARY_LANDING_DEFAULT_LOCALE = 'de'
 const TEMPORARY_LANDING_LANGUAGE_QUERY_KEY = 'lang'
 
 export type TemporaryLandingLocale = (typeof TEMPORARY_LANDING_LOCALES)[number]
 type SearchParamValue = string | string[] | undefined
 type SearchParamsRecord = Record<string, SearchParamValue>
 type SearchParamsInput = SearchParamsRecord | URLSearchParams | undefined | null
+
+export const TEMPORARY_LANDING_PATHS = { de: '/', en: '/en', tr: `/${TURKISH_CLINIC_LANDING_SLUG}` } as const
+
+export const temporaryLandingLocaleFromPath = (pathname: string): TemporaryLandingLocale | null => {
+  const path = pathname.replace(/\/$/, '') || '/'
+  return TEMPORARY_LANDING_LOCALES.find((locale) => TEMPORARY_LANDING_PATHS[locale] === path) ?? null
+}
 
 export type TemporaryLandingLanguageOption = {
   href: string
@@ -50,39 +60,23 @@ const toSearchParams = (input: SearchParamsInput): URLSearchParams => {
   return params
 }
 
-const getRawLangValue = (input: SearchParamsInput): string | null => {
-  if (!input) return null
-
-  if (input instanceof URLSearchParams) {
-    return input.get(TEMPORARY_LANDING_LANGUAGE_QUERY_KEY)
-  }
-
-  const value = input[TEMPORARY_LANDING_LANGUAGE_QUERY_KEY]
-  if (Array.isArray(value)) {
-    return value[0] ?? null
-  }
-
-  return typeof value === 'string' ? value : null
-}
-
-export const resolveTemporaryLandingLocale = (searchParams: SearchParamsInput): TemporaryLandingLocale => {
-  const rawLang = getRawLangValue(searchParams)?.trim().toLowerCase() ?? ''
-  if (isTemporaryLandingLocale(rawLang)) {
-    return rawLang
-  }
-
-  return TEMPORARY_LANDING_DEFAULT_LOCALE
-}
-
 export const buildTemporaryLandingLocaleHref = (
   locale: TemporaryLandingLocale,
   searchParams: SearchParamsInput,
 ): string => {
   const params = toSearchParams(searchParams)
-  params.set(TEMPORARY_LANDING_LANGUAGE_QUERY_KEY, locale)
-
+  params.delete(TEMPORARY_LANDING_LANGUAGE_QUERY_KEY)
   const query = params.toString()
-  return query ? `/?${query}` : '/'
+  const pathname = TEMPORARY_LANDING_PATHS[locale]
+  return query ? `${pathname}?${query}` : pathname
+}
+
+export const getLegacyTemporaryLandingLocation = (url: Pick<URL, 'pathname' | 'searchParams'>): string | null => {
+  if (url.pathname !== '/' || !url.searchParams.has(TEMPORARY_LANDING_LANGUAGE_QUERY_KEY)) return null
+
+  const rawLang = url.searchParams.get(TEMPORARY_LANDING_LANGUAGE_QUERY_KEY)?.trim().toLowerCase() ?? ''
+  const locale = isTemporaryLandingLocale(rawLang) ? rawLang : TEMPORARY_LANDING_DEFAULT_LOCALE
+  return buildTemporaryLandingLocaleHref(locale, url.searchParams)
 }
 
 export const buildTemporaryLandingLanguageOptions = (
@@ -104,4 +98,3 @@ export const resolveTemporaryLandingContentLocale = (locale: TemporaryLandingLoc
 
   return {}
 }
-import type { ContentLocaleContext } from '@/utilities/contentLocalization'

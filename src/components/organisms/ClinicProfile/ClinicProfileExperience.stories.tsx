@@ -27,6 +27,17 @@ const meta = {
     onTreatmentChange: () => {},
   },
   render: (args) => <ControlledExperience {...args} />,
+  decorators: [
+    (Story) => (
+      <div
+        onClickCapture={(event) => {
+          if ((event.target as HTMLElement).closest('a')) event.preventDefault()
+        }}
+      >
+        <Story />
+      </div>
+    ),
+  ],
   parameters: { layout: 'fullscreen' },
   tags: ['autodocs', 'domain:clinic', 'layer:organism', 'status:experimental', 'used-in:route:/clinics/[slug]'],
 } satisfies Meta<typeof ClinicProfileExperience>
@@ -96,7 +107,7 @@ const discoveryData = {
       specialty: 'General Practice',
       languages: ['Swedish'],
     },
-    ...clinicDetailFixture.doctors.slice(1),
+    ...realisticFixture.doctors.slice(1),
   ],
 }
 

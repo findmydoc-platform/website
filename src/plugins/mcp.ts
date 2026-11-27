@@ -23,6 +23,12 @@ import {
   mapClinicOnboardingGrants,
 } from '@/features/mcp/clinicOnboarding'
 import { readClinicProfile, updateClinicProfile } from '@/features/mcp/clinicProfileTools'
+import { uploadEditorialImageTool } from '@/features/mcp/editorialImageTool'
+import {
+  editorialImageGrantField,
+  groupEditorialImageGrants,
+  mapEditorialImageGrants,
+} from '@/features/mcp/editorialImageGrants'
 import { createPostDraft, updatePostDraft } from './mcpPostDrafts'
 
 type McpCollectionConfig = {
@@ -347,23 +353,36 @@ export const createMcpPlugin = (): Plugin =>
         saveClinicGalleryTool,
         createPostDraft,
         updatePostDraft,
+        uploadEditorialImageTool,
       ],
     },
 
     overrideApiKeyCollection: (collection) => {
       return {
         ...collection,
-        fields: groupClinicOnboardingGrants(collection.fields).map((field) => {
+        fields: groupEditorialImageGrants(groupClinicOnboardingGrants(collection.fields)).map((field) => {
           if (field.type !== 'collapsible') return field
           if (field.fields.some((nested) => nested.type === 'group' && 'name' in nested && nested.name === 'posts')) {
             return {
               ...field,
               label: { en: 'Blog posts', de: 'Blogbeiträge' },
-              fields: field.fields.map((nested) =>
-                nested.type === 'group' && 'name' in nested && nested.name === 'posts'
-                  ? { ...nested, label: { en: 'Posts', de: 'Beiträge' } }
-                  : nested,
-              ),
+              admin: { ...field.admin, initCollapsed: true },
+              fields: [
+                {
+                  type: 'collapsible',
+                  label: { en: 'Posts', de: 'Beiträge' },
+                  fields: field.fields.map((nested) =>
+                    nested.type === 'group' && 'name' in nested && nested.name === 'posts'
+                      ? { ...nested, label: false }
+                      : nested,
+                  ),
+                },
+                {
+                  type: 'collapsible',
+                  label: { en: 'Images', de: 'Bilder' },
+                  fields: [editorialImageGrantField],
+                },
+              ],
             }
           }
           return {
@@ -398,7 +417,7 @@ export const createMcpPlugin = (): Plugin =>
         throw new UnauthorizedError()
       }
 
-      const settings = mapClinicOnboardingGrants(req, mcpAccessSettings)
+      const settings = mapEditorialImageGrants(mapClinicOnboardingGrants(req, mcpAccessSettings))
       const postGrants = settings.posts as PayloadMcpApiKey['posts']
       const clinicGrants = settings.clinics as PayloadMcpApiKey['clinics']
       return {

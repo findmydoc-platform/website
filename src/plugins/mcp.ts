@@ -18,6 +18,7 @@ import { relationId } from '@/collections/clinics/profileGallery'
 import type { ClinicMedia, DoctorMedia, PayloadMcpApiKey } from '@/payload-types'
 import { readStoredImage } from '@/features/platformMedia/readStoredImage'
 import { createPostDraft, updatePostDraft } from './mcpPostDrafts'
+import { publishPost } from './mcpPostPublication'
 
 type McpCollectionConfig = {
   description: string
@@ -31,7 +32,7 @@ type McpCollectionConfig = {
 }
 
 const mcpUserCollection: CollectionSlug = 'platformStaff'
-const postDraftGrantAliases = new Set([createPostDraft.name, updatePostDraft.name])
+const postGrantAliases = new Set([createPostDraft.name, updatePostDraft.name, publishPost.name])
 
 const mcpGallerySnapshot = (snapshot: Awaited<ReturnType<typeof readPlatformClinicGallery>>) => ({
   ...snapshot,
@@ -333,6 +334,7 @@ export const createMcpPlugin = (): Plugin =>
         saveClinicGalleryTool,
         createPostDraft,
         updatePostDraft,
+        publishPost,
       ],
     },
 
@@ -353,7 +355,7 @@ export const createMcpPlugin = (): Plugin =>
                     ? {
                         ...nested,
                         fields: nested.fields
-                          .filter((item) => item.type !== 'checkbox' || !postDraftGrantAliases.has(item.name))
+                          .filter((item) => item.type !== 'checkbox' || !postGrantAliases.has(item.name))
                           .map((item) => (item.type === 'checkbox' ? { ...item, defaultValue: false } : item)),
                       }
                     : nested.type === 'group' && 'name' in nested && nested.name === 'posts'
@@ -388,6 +390,7 @@ export const createMcpPlugin = (): Plugin =>
           ...mcpAccessSettings['payload-mcp-tool'],
           [createPostDraft.name]: postGrants?.create === true,
           [updatePostDraft.name]: postGrants?.update === true,
+          [publishPost.name]: postGrants?.update === true,
         },
       }
     },

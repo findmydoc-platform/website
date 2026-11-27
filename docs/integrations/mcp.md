@@ -70,8 +70,8 @@ Uploads accept base64-encoded image bytes and the configured media size and type
 ## Post drafts
 
 Open **Blog posts** in the API key form to find the Post permissions. **Create** enables both `createPosts`
-and `createPostDraft`. **Update** enables both `updatePosts` and `updatePostDraft`. Existing keys keep the grants
-they already have.
+and `createPostDraft`. **Update** enables `updatePosts`, `updatePostDraft`, and `publishPost`. Existing keys keep
+the grants they already have.
 
 - `createPostDraft` takes `{ locale: "de", data: { title, ... } }` and returns a new Post ID.
 - `updatePostDraft` takes `{ id, locale: "de" | "en", data }`. Use the same Post ID for both languages.
@@ -84,6 +84,18 @@ The referenced records retain their own access rules.
 
 Both draft tools return `{ id, locale, status: "draft", advisories }` as JSON. The `missing_english` advisory
 appears while the English draft has no title.
+
+### Publish a Post by language
+
+`publishPost` takes `{ id, locale: "de" | "en", dryRun?: boolean }` and uses the key owner's Post update access.
+Set `dryRun: true` to check the requested language without publishing. The result includes `id`, `locale`,
+`status`, and `advisories`. A check returns `ready` when it finds a draft. Either call can return
+`missing_draft` or `already_published`. Publishing runs Payload validation on the selected language and
+returns `published` on success. A German draft can be published with the `missing_english` advisory.
+
+For a request to publish both languages, check `de` and `en` first. Report any missing draft before publishing.
+If the requested drafts are available, call `publishPost` separately for each and report both outcomes, including
+any validation or technical error. If one draft is missing, the editor can still explicitly publish the other.
 
 ## Configure VS Code (Copilot Chat MCP)
 

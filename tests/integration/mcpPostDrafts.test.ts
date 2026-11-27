@@ -5,7 +5,7 @@ import { createLocalReq, getPayload, type Payload } from 'payload'
 import config from '@payload-config'
 import { revalidatePath, revalidateTag } from 'next/cache'
 import type { PayloadMcpApiKey, PlatformContentMedia } from '@/payload-types'
-import { findPublicPostRoute } from '@/utilities/content/serverData'
+import { findPostSitemapDocs, findPublishedPostsPage, findPublicPostRoute } from '@/utilities/content/serverData'
 import { cleanupTrackedDocs } from '../fixtures/cleanupTrackedDocs'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { createTinyPngFile } from '../fixtures/mediaFile'
@@ -88,6 +88,13 @@ describe('MCP Post drafts', () => {
     return JSON.parse(response.result.content[0].text)
   }
 
+  async function publish(apiKey: string, id: number, locale: 'de' | 'en', dryRun?: boolean) {
+    const response = await callTool(apiKey, 'publishPost', { id, locale, dryRun })
+    expect(response.error).toBeUndefined()
+    expect(response.result?.isError, response.result?.content?.[0]?.text).not.toBe(true)
+    return JSON.parse(response.result.content[0].text)
+  }
+
   it('starts a German draft using the existing create grant and reports missing English', async () => {
     const key = await createKey({ create: true })
     const title = 'Deutscher Artikel'
@@ -110,6 +117,136 @@ describe('MCP Post drafts', () => {
       where: { id: { equals: created.id } },
     })
     expect(publicPosts.docs).toEqual([])
+  })
+
+  it('checks both drafts before publishing each language to its public detail, list and sitemap', async () => {
+    const key = await createKey({ create: true, update: true })
+    const de = {
+      title: 'Deutscher Artikel zur Veröffentlichung',
+      slug: `${prefix}-publish-de`,
+      excerpt: 'Deutsche Zusammenfassung',
+      content: buildRichText('Deutscher Entwurf'),
+    }
+    const en = {
+      title: 'English article for publication',
+      slug: `${prefix}-publish-en`,
+      excerpt: 'English summary',
+      content: buildRichText('English draft'),
+    }
+    const { id } = await save(key, 'createPostDraft', { locale: 'de', data: de })
+    posts.push(id)
+    await save(key, 'updatePostDraft', { id, locale: 'en', data: en })
+
+    const publicList = (locale: 'de' | 'en') =>
+      findPublishedPostsPage(payload, { contentLocale: { locale }, where: { id: { equals: id } } })
+    const sitemap = async (locale: 'de' | 'en') =>
+      (await findPostSitemapDocs(payload, locale)).filter((doc) => doc.id === id)
+    vi.mocked(revalidateTag).mockClear()
+    vi.mocked(revalidatePath).mockClear()
+    await expect(publish(key, id, 'de', true)).resolves.toMatchObject({ id, locale: 'de', status: 'ready' })
+    await expect(publish(key, id, 'en', true)).resolves.toMatchObject({ id, locale: 'en', status: 'ready' })
+    await expect(findPublicPostRoute(payload, de.slug, 'de')).resolves.toBeNull()
+    await expect(findPublicPostRoute(payload, en.slug, 'en')).resolves.toBeNull()
+    expect(revalidateTag).not.toHaveBeenCalled()
+    expect(revalidatePath).not.toHaveBeenCalled()
+
+    await expect(publish(key, id, 'de')).resolves.toMatchObject({ id, locale: 'de', status: 'published' })
+    await expect(findPublicPostRoute(payload, de.slug, 'de')).resolves.toMatchObject({
+      post: { id, ...de },
+      canonicalPath: `/posts/${de.slug}`,
+    })
+    await expect(publicList('de')).resolves.toMatchObject({ docs: [{ id, title: de.title, slug: de.slug }] })
+    await expect(sitemap('de')).resolves.toMatchObject([{ id, slug: de.slug }])
+    await expect(findPublicPostRoute(payload, en.slug, 'en')).resolves.toBeNull()
+    await expect(publicList('en')).resolves.toMatchObject({ docs: [] })
+    await expect(sitemap('en')).resolves.toEqual([])
+    await expect(
+      payload.findByID({ collection: 'posts', id, locale: 'en', fallbackLocale: false, draft: true, depth: 0 }),
+    ).resolves.toMatchObject({ ...en, _status: 'draft' })
+    expect(vi.mocked(revalidateTag).mock.calls.map(([tag]) => tag)).toEqual(
+      expect.arrayContaining(['surface:posts-list', 'surface:sitemap:posts']),
+    )
+    const paths = vi.mocked(revalidatePath).mock.calls.map(([path]) => path)
+    expect(paths).toContain(`/posts/${de.slug}`)
+    expect(paths).not.toContain(`/en/posts/${en.slug}`)
+
+    vi.mocked(revalidatePath).mockClear()
+    await expect(publish(key, id, 'en')).resolves.toMatchObject({ id, locale: 'en', status: 'published' })
+    await expect(findPublicPostRoute(payload, en.slug, 'en')).resolves.toMatchObject({
+      post: { id, ...en },
+      canonicalPath: `/en/posts/${en.slug}`,
+    })
+    await expect(publicList('en')).resolves.toMatchObject({ docs: [{ id, title: en.title, slug: en.slug }] })
+    await expect(sitemap('en')).resolves.toMatchObject([{ id, slug: en.slug }])
+    await expect(findPublicPostRoute(payload, de.slug, 'de')).resolves.toMatchObject({ post: { id, ...de } })
+    expect(vi.mocked(revalidatePath).mock.calls.map(([path]) => path)).toContain(`/en/posts/${en.slug}`)
+  })
+
+  it('requires an explicit locale and Post update access, and publishes German when English is missing', async () => {
+    const createKeyOnly = await createKey({ create: true })
+    const updateKey = await createKey({ update: true })
+    const slug = `${prefix}-publish-missing-english`
+    const { id } = await save(createKeyOnly, 'createPostDraft', {
+      locale: 'de',
+      data: {
+        title: 'Artikel ohne Übersetzung',
+        slug,
+        excerpt: 'Deutsche Zusammenfassung',
+        content: buildRichText('Deutscher Entwurf'),
+      },
+    })
+    posts.push(id)
+
+    for (const [key, args] of [
+      [createKeyOnly, { id, locale: 'de' }],
+      [updateKey, { id }],
+      [updateKey, { id, locale: 'all' }],
+    ] as const) {
+      const response = await callTool(key, 'publishPost', args)
+      expect(Boolean(response.error || response.result?.isError)).toBe(true)
+    }
+    await expect(publish(updateKey, id, 'en', true)).resolves.toMatchObject({
+      id,
+      locale: 'en',
+      status: 'missing_draft',
+    })
+    await expect(publish(updateKey, id, 'en')).resolves.toMatchObject({ id, locale: 'en', status: 'missing_draft' })
+    await expect(findPublicPostRoute(payload, slug, 'de')).resolves.toBeNull()
+    await expect(publish(updateKey, id, 'de')).resolves.toEqual({
+      id,
+      locale: 'de',
+      status: 'published',
+      advisories: ['missing_english'],
+    })
+    await expect(publish(updateKey, id, 'de')).resolves.toMatchObject({ id, locale: 'de', status: 'already_published' })
+    await expect(findPublicPostRoute(payload, slug, 'de')).resolves.toMatchObject({ post: { id, slug } })
+    await expect(findPublicPostRoute(payload, slug, 'en')).resolves.toBeNull()
+  })
+
+  it('leaves the first publication in place when the other draft fails native validation', async () => {
+    const key = await createKey({ create: true, update: true })
+    const deSlug = `${prefix}-publish-complete`
+    const enSlug = `${prefix}-publish-incomplete`
+    const { id } = await save(key, 'createPostDraft', {
+      locale: 'de',
+      data: {
+        title: 'Vollständiger deutscher Artikel',
+        slug: deSlug,
+        excerpt: 'Deutsche Zusammenfassung',
+        content: buildRichText('Deutscher Entwurf'),
+      },
+    })
+    posts.push(id)
+    await save(key, 'updatePostDraft', { id, locale: 'en', data: { title: 'Incomplete article', slug: enSlug } })
+    await expect(publish(key, id, 'de', true)).resolves.toMatchObject({ id, locale: 'de', status: 'ready' })
+    await expect(publish(key, id, 'en', true)).resolves.toMatchObject({ id, locale: 'en', status: 'ready' })
+
+    await expect(publish(key, id, 'de')).resolves.toMatchObject({ id, locale: 'de', status: 'published' })
+    const response = await callTool(key, 'publishPost', { id, locale: 'en' })
+    expect(Boolean(response.error || response.result?.isError)).toBe(true)
+    await expect(findPublicPostRoute(payload, deSlug, 'de')).resolves.toMatchObject({ post: { id, slug: deSlug } })
+    await expect(findPublicPostRoute(payload, enSlug, 'en')).resolves.toBeNull()
+    await expect(publish(key, id, 'en', true)).resolves.toMatchObject({ id, locale: 'en', status: 'ready' })
   })
 
   it('adds English on the same Post and keeps German draft content and the previous public German version', async () => {
@@ -233,9 +370,9 @@ describe('MCP Post drafts', () => {
   })
 
   it.each([
-    [{ find: true }, ['findPosts'], ['createPostDraft', 'updatePostDraft']],
-    [{ create: true }, ['createPosts', 'createPostDraft'], ['updatePostDraft']],
-    [{ update: true }, ['updatePosts', 'updatePostDraft'], ['createPostDraft']],
+    [{ find: true }, ['findPosts'], ['createPostDraft', 'updatePostDraft', 'publishPost']],
+    [{ create: true }, ['createPosts', 'createPostDraft'], ['updatePostDraft', 'publishPost']],
+    [{ update: true }, ['updatePosts', 'updatePostDraft', 'publishPost'], ['createPostDraft']],
   ] satisfies Array<[PayloadMcpApiKey['posts'], string[], string[]]>)(
     'keeps each draft tool tied to its existing Post grant (%j)',
     async (grants, available, denied) => {

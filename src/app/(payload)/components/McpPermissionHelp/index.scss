@@ -1,0 +1,24 @@
+.mcp-permission-help {
+  color: var(--theme-elevation-800);
+  font-size: 0.875rem;
+  line-height: 1.4;
+  margin: 0 0 calc(var(--base) * 0.5);
+
+  &--overview {
+    background: var(--theme-elevation-50);
+    border-inline-start: 2px solid var(--theme-elevation-350);
+    padding: calc(var(--base) * 0.35) calc(var(--base) * 0.5);
+  }
+}
+
+.mcp-permission-group {
+  .checkbox {
+    margin-bottom: calc(var(--base) * 0.65);
+  }
+
+  .field-description {
+    color: var(--theme-elevation-700);
+    font-size: 0.875rem;
+    line-height: 1.4;
+  }
+}

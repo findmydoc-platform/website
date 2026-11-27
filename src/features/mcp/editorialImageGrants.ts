@@ -1,5 +1,5 @@
 import type { MCPAccessSettings } from '@payloadcms/plugin-mcp'
-import type { Field, GroupField } from 'payload'
+import type { GroupField } from 'payload'
 
 import { uploadEditorialImageTool } from './editorialImageTool'
 
@@ -13,27 +13,9 @@ export const editorialImageGrantField: GroupField = {
       name: 'upload',
       label: { en: 'Upload editorial images', de: 'Redaktionelle Bilder hochladen' },
       defaultValue: false,
+      admin: { description: 'Upload an image with alt text. Limit of 3.1 MB per file.' },
     },
   ],
-}
-
-export function groupEditorialImageGrants(fields: Field[]): Field[] {
-  return fields.map((field) => {
-    if (field.type !== 'collapsible') return field
-    return {
-      ...field,
-      fields: field.fields.map((nested) =>
-        nested.type === 'group' && 'name' in nested && nested.name === 'payload-mcp-tool'
-          ? {
-              ...nested,
-              fields: nested.fields.filter(
-                (item) => item.type !== 'checkbox' || item.name !== uploadEditorialImageTool.name,
-              ),
-            }
-          : nested,
-      ),
-    }
-  })
 }
 
 export function mapEditorialImageGrants(settings: MCPAccessSettings): MCPAccessSettings {

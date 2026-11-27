@@ -1,5 +1,5 @@
 import type { MCPAccessSettings } from '@payloadcms/plugin-mcp'
-import { APIError, type Field, type PayloadRequest } from 'payload'
+import { APIError, type GroupField, type PayloadRequest } from 'payload'
 import { z } from 'zod'
 import { findEligibleClinicOnboardingStaff } from '@/features/clinicOnboarding/existingStaff'
 import { approveClinicOnboarding, rejectClinicOnboarding } from '@/features/clinicOnboarding/decideApplication'
@@ -15,15 +15,22 @@ const clinicOnboardingGrants = {
   read: {
     tools: ['readClinicOnboarding', 'findEligibleClinicOnboardingStaff'],
     label: { en: 'Read applications', de: 'Vorgänge lesen' },
+    description: 'View intake and status. Find eligible existing staff accounts.',
   },
-  create: { tools: ['stageClinicOnboarding'], label: { en: 'Stage an application', de: 'Vorgang anlegen' } },
+  create: {
+    tools: ['stageClinicOnboarding'],
+    label: { en: 'Stage an application', de: 'Vorgang anlegen' },
+    description: 'Stage an unpublished profile with a website, main specialty and first staff member.',
+  },
   correct: {
     tools: ['correctClinicOnboarding'],
     label: { en: 'Correct an open application', de: 'Offenen Vorgang korrigieren' },
+    description: 'Update intake details or the staff selection before a decision.',
   },
   decide: {
     tools: ['approveClinicOnboarding', 'rejectClinicOnboarding'],
     label: { en: 'Decide applications', de: 'Entscheiden' },
+    description: 'Approve or reject Dashboard access. Approval starts account setup or links existing staff.',
   },
 } as const
 
@@ -34,10 +41,19 @@ const onboardingGrantEntries = Object.entries(clinicOnboardingGrants) as [
 ][]
 const permissions = new WeakMap<PayloadRequest, Set<ClinicOnboardingGrant>>()
 
-const profileGrantLabels: Record<string, { en: string; de: string }> = {
-  find: { en: 'Read clinic profiles', de: 'Klinikprofile lesen' },
-  create: { en: 'Create clinic profiles directly', de: 'Klinikprofile direkt anlegen' },
-  update: { en: 'Edit clinic profiles', de: 'Klinikprofile bearbeiten' },
+export const clinicOnboardingToolNames = onboardingGrantEntries.flatMap(([, { tools }]) => tools)
+
+export const clinicOnboardingGrantField: GroupField = {
+  type: 'group',
+  name: 'clinicOnboarding',
+  label: false,
+  fields: onboardingGrantEntries.map(([name, { label, description }]) => ({
+    name,
+    label,
+    type: 'checkbox',
+    defaultValue: false,
+    admin: { description },
+  })),
 }
 
 export function mapClinicOnboardingGrants(req: PayloadRequest, settings: MCPAccessSettings): MCPAccessSettings {
@@ -53,76 +69,6 @@ export function mapClinicOnboardingGrants(req: PayloadRequest, settings: MCPAcce
       ),
     },
   }
-}
-
-export function groupClinicOnboardingGrants(fields: Field[]): Field[] {
-  const toolNames = new Set<string>(onboardingGrantEntries.flatMap(([, { tools }]) => tools))
-  return fields.map((field) => {
-    if (field.type !== 'collapsible') return field
-    const clinicCapabilities = field.fields.find(
-      (nested) => nested.type === 'group' && 'name' in nested && nested.name === 'clinics',
-    )
-    if (clinicCapabilities) {
-      return {
-        ...field,
-        label: { en: 'Clinic profiles', de: 'Klinikprofile' },
-        admin: { ...field.admin, initCollapsed: true },
-        fields: [
-          {
-            type: 'collapsible',
-            label: { en: 'Onboarding', de: 'Onboarding' },
-            fields: [
-              {
-                type: 'group',
-                name: 'clinicOnboarding',
-                label: false,
-                fields: onboardingGrantEntries.map(([name, { label }]) => ({
-                  name,
-                  label,
-                  type: 'checkbox',
-                  defaultValue: false,
-                })),
-              },
-            ],
-          },
-          {
-            type: 'collapsible',
-            label: { en: 'Profile care', de: 'Profilpflege' },
-            fields: field.fields.map((nested) =>
-              nested.type === 'group' && 'name' in nested && nested.name === 'clinics'
-                ? {
-                    ...nested,
-                    label: false,
-                    fields: nested.fields.map((grant) =>
-                      grant.type === 'checkbox' && profileGrantLabels[grant.name]
-                        ? {
-                            ...grant,
-                            label: profileGrantLabels[grant.name],
-                            admin: { ...grant.admin, description: undefined },
-                          }
-                        : grant,
-                    ),
-                  }
-                : nested,
-            ),
-          },
-        ],
-      }
-    }
-    return {
-      ...field,
-      fields: field.fields.map((nested) =>
-        nested.type === 'group' && 'name' in nested && nested.name === 'payload-mcp-tool'
-          ? {
-              ...nested,
-              fields: nested.fields
-                .filter((item) => item.type !== 'checkbox' || !toolNames.has(item.name))
-                .map((item) => (item.type === 'checkbox' ? { ...item, defaultValue: false } : item)),
-            }
-          : nested,
-      ),
-    }
-  })
 }
 
 const id = z.number().int().positive().safe()

@@ -17,18 +17,11 @@ import { MEDIA_UPLOAD_MAX_BYTES } from '@/config/mediaUploadPolicy'
 import { relationId } from '@/collections/clinics/profileGallery'
 import type { ClinicMedia, DoctorMedia, PayloadMcpApiKey } from '@/payload-types'
 import { readStoredImage } from '@/features/platformMedia/readStoredImage'
-import {
-  clinicOnboardingTools,
-  groupClinicOnboardingGrants,
-  mapClinicOnboardingGrants,
-} from '@/features/mcp/clinicOnboarding'
+import { buildMcpApiKeyFields } from '@/features/mcp/apiKeyFields'
+import { clinicOnboardingTools, mapClinicOnboardingGrants } from '@/features/mcp/clinicOnboarding'
 import { readClinicProfile, updateClinicProfile } from '@/features/mcp/clinicProfileTools'
 import { uploadEditorialImageTool } from '@/features/mcp/editorialImageTool'
-import {
-  editorialImageGrantField,
-  groupEditorialImageGrants,
-  mapEditorialImageGrants,
-} from '@/features/mcp/editorialImageGrants'
+import { mapEditorialImageGrants } from '@/features/mcp/editorialImageGrants'
 import { createPostDraft, updatePostDraft } from './mcpPostDrafts'
 import { publishPost } from './mcpPostPublication'
 
@@ -361,64 +354,9 @@ export const createMcpPlugin = (): Plugin =>
     },
 
     overrideApiKeyCollection: (collection) => {
-      const postGrantLabels: Record<string, { en: string; de: string }> = {
-        find: { en: 'Read posts', de: 'Beiträge lesen' },
-        create: { en: 'Create posts', de: 'Beiträge anlegen' },
-        update: { en: 'Edit and publish posts', de: 'Beiträge bearbeiten und veröffentlichen' },
-      }
       return {
         ...collection,
-        fields: groupEditorialImageGrants(groupClinicOnboardingGrants(collection.fields)).map((field) => {
-          if (field.type !== 'collapsible') return field
-          if (field.fields.some((nested) => nested.type === 'group' && 'name' in nested && nested.name === 'posts')) {
-            return {
-              ...field,
-              label: { en: 'Blog posts', de: 'Blogbeiträge' },
-              admin: { ...field.admin, initCollapsed: true },
-              fields: [
-                {
-                  type: 'collapsible',
-                  label: { en: 'Posts', de: 'Beiträge' },
-                  fields: field.fields.map((nested) =>
-                    nested.type === 'group' && 'name' in nested && nested.name === 'posts'
-                      ? {
-                          ...nested,
-                          label: false,
-                          fields: nested.fields.map((grant) =>
-                            grant.type === 'checkbox' && postGrantLabels[grant.name]
-                              ? {
-                                  ...grant,
-                                  label: postGrantLabels[grant.name],
-                                  admin: { ...grant.admin, description: undefined },
-                                }
-                              : grant,
-                          ),
-                        }
-                      : nested,
-                  ),
-                },
-                {
-                  type: 'collapsible',
-                  label: { en: 'Images', de: 'Bilder' },
-                  fields: [editorialImageGrantField],
-                },
-              ],
-            }
-          }
-          return {
-            ...field,
-            fields: field.fields.map((nested) =>
-              nested.type === 'group' && 'name' in nested && nested.name === 'payload-mcp-tool'
-                ? {
-                    ...nested,
-                    fields: nested.fields.filter(
-                      (item) => item.type !== 'checkbox' || !collectionGrantAliases.has(item.name),
-                    ),
-                  }
-                : nested,
-            ),
-          }
-        }),
+        fields: buildMcpApiKeyFields(collection.fields, collectionGrantAliases),
         admin: {
           ...collection.admin,
           hidden: ({ user }) => !isPlatformAdminUser(user),

@@ -3828,22 +3828,55 @@ export interface PayloadMcpApiKey {
     find?: boolean | null;
   };
   posts?: {
+    /**
+     * Find posts and read available drafts.
+     */
     find?: boolean | null;
+    /**
+     * Start a German draft or create a post directly.
+     */
     create?: boolean | null;
+    /**
+     * Revise drafts and publish the selected language.
+     */
     update?: boolean | null;
   };
   blogMedia?: {
+    /**
+     * Upload an image with alt text. Limit of 3.1 MB per file.
+     */
     upload?: boolean | null;
   };
   clinicOnboarding?: {
+    /**
+     * View intake and status. Find eligible existing staff accounts.
+     */
     read?: boolean | null;
+    /**
+     * Stage an unpublished profile with a website, main specialty and first staff member.
+     */
     create?: boolean | null;
+    /**
+     * Update intake details or the staff selection before a decision.
+     */
     correct?: boolean | null;
+    /**
+     * Approve or reject Dashboard access. Approval starts account setup or links existing staff.
+     */
     decide?: boolean | null;
   };
   clinics?: {
+    /**
+     * View profile details and public listing status.
+     */
     find?: boolean | null;
+    /**
+     * Create a standalone profile. Use Onboarding to include the first staff member.
+     */
     create?: boolean | null;
+    /**
+     * Change address, opening hours, website and other public details.
+     */
     update?: boolean | null;
   };
   clinicGroups?: {

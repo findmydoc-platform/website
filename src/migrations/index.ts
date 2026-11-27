@@ -117,6 +117,7 @@ import * as migration_20261125_151218_repair_empty_german_post_publication from 
 import * as migration_20261126_134943_localize_category_titles from './20261126_134943_localize_category_titles'
 import * as migration_20261127_130352_stage_mcp_clinic_onboarding from './20261127_130352_stage_mcp_clinic_onboarding'
 import * as migration_20261127_132120_blog_editorial_upload from './20261127_132120_blog_editorial_upload'
+import * as migration_20261127_132530_clinic_onboarding_decision_grant from './20261127_132530_clinic_onboarding_decision_grant'
 
 export const migrations = [
   {
@@ -713,5 +714,10 @@ export const migrations = [
     up: migration_20261127_132120_blog_editorial_upload.up,
     down: migration_20261127_132120_blog_editorial_upload.down,
     name: '20261127_132120_blog_editorial_upload',
+  },
+  {
+    up: migration_20261127_132530_clinic_onboarding_decision_grant.up,
+    down: migration_20261127_132530_clinic_onboarding_decision_grant.down,
+    name: '20261127_132530_clinic_onboarding_decision_grant',
   },
 ]

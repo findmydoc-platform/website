@@ -3848,6 +3848,7 @@ export interface PayloadMcpApiKey {
     read?: boolean | null;
     create?: boolean | null;
     correct?: boolean | null;
+    decide?: boolean | null;
   };
   clinics?: {
     /**
@@ -6591,6 +6592,7 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
         read?: T;
         create?: T;
         correct?: T;
+        decide?: T;
       };
   clinics?:
     | T

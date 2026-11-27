@@ -90,6 +90,22 @@ the application submitted, the clinic unpublished and the first staff account pe
 The read action includes the intake fields. Correcting the first contact's email updates the application, the
 clinic's internal primary contact and the pending account together.
 
+## Clinic profile maintenance
+
+Under **Clinic profiles → Profile care**, enable **Find** or **Update**. These options use the existing
+`clinics.find` and `clinics.update` grants and continue to authorize `findClinics` and `updateClinics`, respectively.
+
+- `readClinicProfile` takes a numeric `clinicId` and returns the profile, including its public publication status.
+- `updateClinicProfile` takes `clinicId` and a `profile` object. The accepted fields are `description` (Payload rich text),
+  `address` (`country`, `city`, `street`, `houseNumber`, `zipCode`), `contact` (`email`, `phoneNumber`, `website`), and
+  `openingHours` (Monday through Sunday). Omitted fields retain their stored values. The tool returns the updated profile.
+
+Staff can edit a profile as soon as the clinic exists. Edits to public profiles use the normal clinic cache invalidation
+hooks. Unpublished profiles stay private.
+
+For clinics created by the MCP onboarding workflow, use onboarding actions for the first contact and participation
+decision. Use Payload Admin for public publication and for suspending or resuming approved participation.
+
 ## Post drafts
 
 Open **Blog posts** in the API key form to find the Post permissions. **Create** enables both `createPosts`

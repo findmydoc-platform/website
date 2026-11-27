@@ -22,6 +22,7 @@ import {
   groupClinicOnboardingGrants,
   mapClinicOnboardingGrants,
 } from '@/features/mcp/clinicOnboarding'
+import { readClinicProfile, updateClinicProfile } from '@/features/mcp/clinicProfileTools'
 import { createPostDraft, updatePostDraft } from './mcpPostDrafts'
 
 type McpCollectionConfig = {
@@ -36,7 +37,12 @@ type McpCollectionConfig = {
 }
 
 const mcpUserCollection: CollectionSlug = 'platformStaff'
-const postDraftGrantAliases = new Set([createPostDraft.name, updatePostDraft.name])
+const collectionGrantAliases = new Set([
+  createPostDraft.name,
+  updatePostDraft.name,
+  readClinicProfile.name,
+  updateClinicProfile.name,
+])
 
 const mcpGallerySnapshot = (snapshot: Awaited<ReturnType<typeof readPlatformClinicGallery>>) => ({
   ...snapshot,
@@ -323,6 +329,8 @@ export const createMcpPlugin = (): Plugin =>
     mcp: {
       tools: [
         ...clinicOnboardingTools,
+        readClinicProfile,
+        updateClinicProfile,
         createTrashTool('clinics', 'trashClinic', 'Clinic'),
         createTrashTool('doctors', 'trashDoctor', 'Doctor'),
         createDeleteLinkTool('clinictreatments', 'deleteClinicTreatment', 'Clinic treatment'),
@@ -365,7 +373,7 @@ export const createMcpPlugin = (): Plugin =>
                 ? {
                     ...nested,
                     fields: nested.fields.filter(
-                      (item) => item.type !== 'checkbox' || !postDraftGrantAliases.has(item.name),
+                      (item) => item.type !== 'checkbox' || !collectionGrantAliases.has(item.name),
                     ),
                   }
                 : nested,
@@ -392,12 +400,15 @@ export const createMcpPlugin = (): Plugin =>
 
       const settings = mapClinicOnboardingGrants(req, mcpAccessSettings)
       const postGrants = settings.posts as PayloadMcpApiKey['posts']
+      const clinicGrants = settings.clinics as PayloadMcpApiKey['clinics']
       return {
         ...settings,
         'payload-mcp-tool': {
           ...settings['payload-mcp-tool'],
           [createPostDraft.name]: postGrants?.create === true,
           [updatePostDraft.name]: postGrants?.update === true,
+          [readClinicProfile.name]: clinicGrants?.find === true,
+          [updateClinicProfile.name]: clinicGrants?.update === true,
         },
       }
     },

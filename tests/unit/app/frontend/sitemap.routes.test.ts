@@ -196,11 +196,17 @@ describe('frontend sitemap routes', () => {
   })
 
   it('adds the English page canonical after publication and removes it independently of German', async () => {
-    const german = { id: 1, slug: 'pflege/deutschland' }
-    const english = { id: 1, slug: 'care/germany' }
+    const german = [
+      { id: 1, slug: 'pflege/deutschland' },
+      { id: 2, slug: 'home' },
+    ]
+    const english = [
+      { id: 1, slug: 'care/germany' },
+      { id: 2, slug: 'home' },
+    ]
     let englishPublished = false
     routeMocks.findPageSitemapDocs.mockImplementation(async (_payload, locale) =>
-      locale === 'en' ? (englishPublished ? [english] : []) : [german],
+      locale === 'en' ? (englishPublished ? english : []) : german,
     )
     const request = new Request('https://findmydoc.eu/pages-sitemap.xml')
     const { GET } = await import('@/app/(frontend)/(sitemaps)/pages-sitemap.xml/route')
@@ -208,14 +214,18 @@ describe('frontend sitemap routes', () => {
 
     expect(await locations()).toContain('https://findmydoc.eu/pflege/deutschland')
     expect(await locations()).not.toContain('https://findmydoc.eu/en/care/germany')
+    expect(await locations()).not.toContain('https://findmydoc.eu/en')
 
     englishPublished = true
-    expect(await locations()).toContain('https://findmydoc.eu/en/care/germany')
+    expect(await locations()).toEqual(
+      expect.arrayContaining(['https://findmydoc.eu/en/care/germany', 'https://findmydoc.eu/en']),
+    )
 
     englishPublished = false
     const withdrawnLocations = await locations()
     expect(withdrawnLocations).toContain('https://findmydoc.eu/pflege/deutschland')
     expect(withdrawnLocations).not.toContain('https://findmydoc.eu/en/care/germany')
+    expect(withdrawnLocations).not.toContain('https://findmydoc.eu/en')
   })
 
   it('includes only valid post detail routes in the posts sitemap', async () => {

@@ -43,6 +43,7 @@ const holdingBlogSection = (
         category: 'Treatments',
       },
     ]}
+    postsLanguage="en"
     title="Latest insights"
   />
 )

@@ -99,6 +99,7 @@ Relevant docs:
 
 - [ADR 018 - Native Payload CMS localization strategy](./adrs/018-adr-native-payload-localization-strategy.md)
 - [ADR 038 - Native Payload locale publication without aggregate readiness gates](./adrs/038-adr-native-payload-locale-publication.md)
+- [ADR 043 - Fixed language routes for the Holding landing pages](./adrs/043-adr-holding-language-routes.md)
 - [Trust claim process requirements](../trust-claim-process-requirements-task.md)
 - [Trust claim review evidence requirements](../trust-claim-review-evidence-requirements-task.md)
 

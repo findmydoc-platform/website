@@ -21,9 +21,9 @@ vi.mock('@/components/organisms/LivePreviewListener', () => ({ LivePreviewListen
 const germanPage = { id: 4, slug: 'pflege/deutschland', meta: { title: 'German page' } }
 const englishPage = { id: 4, slug: 'care/germany', meta: { title: 'English page' } }
 
-function findPages(publishedEnglish: boolean) {
+function findPages(publishedEnglish: boolean, paths = { de: germanPage, en: englishPage }) {
   mocks.find.mockImplementation(({ locale, where }: { locale: string; where: Where }) => {
-    const candidates = locale === 'de' ? [germanPage] : publishedEnglish ? [englishPage] : []
+    const candidates = locale === 'de' ? [paths.de] : publishedEnglish ? [paths.en] : []
     const conditions = where?.and ?? [where]
     const slug = conditions.find((condition) => condition?.slug)?.slug
     const id = conditions.find((condition) => condition?.id)?.id
@@ -59,6 +59,20 @@ describe('frontend CMS page route metadata', () => {
 
     expect(html).toMatch(/<a[^>]+href="\/"/)
     expect((await generateMetadata(args)).robots).toEqual({ index: false, follow: false })
+  })
+
+  it('renders the published Full English CMS home with its own canonical', async () => {
+    const { default: Page, generateMetadata } = await import('@/app/(frontend)/(pages)/[...slug]/page')
+    findPages(true, { de: { ...germanPage, slug: 'home' }, en: { ...englishPage, slug: 'home' } })
+    const args = routeArgs('en')
+
+    expect(renderToStaticMarkup(await Page(args))).toMatch(/<article[^>]+lang="en"/)
+    const metadata = await generateMetadata(args)
+    expect(metadata).toMatchObject({
+      title: expect.stringContaining(englishPage.meta.title),
+      alternates: { canonical: '/en', languages: { de: '/', en: '/en', 'x-default': '/' } },
+    })
+    expect(metadata.robots).not.toMatchObject({ index: false })
   })
 
   it('keeps the Turkish Holding introduction unavailable in Full', async () => {

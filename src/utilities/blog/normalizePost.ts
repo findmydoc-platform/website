@@ -20,6 +20,7 @@ export type BlogCardBaseProps = {
   excerpt?: string
   href: string
   dateLabel?: string
+  dateLang?: string
   readTime?: string
   category?: string
   categoryLang?: string
@@ -75,7 +76,8 @@ export function normalizePost(
   }
 
   // Format date
-  const dateLabel = post.publishedAt ? formatDate(post.publishedAt) : ''
+  const dateLocale = 'de-DE'
+  const dateLabel = post.publishedAt ? formatDate(post.publishedAt, dateLocale) : ''
 
   // Calculate read time
   const readTime = calculateReadTime(post.content)
@@ -85,6 +87,7 @@ export function normalizePost(
     excerpt: post.excerpt || undefined,
     href: buildPostPath(post.slug, contentLocale),
     dateLabel,
+    dateLang: dateLabel ? dateLocale : undefined,
     readTime,
     category: post.categoryLabel?.title ?? categoryName,
     categoryLang: post.categoryLabel?.lang,

@@ -1,3 +1,6 @@
+import type { ContentLocaleContext } from '@/utilities/contentLocalization'
+import { TURKISH_CLINIC_LANDING_SLUG } from '@/utilities/routing/publicLandingPaths'
+
 export const TEMPORARY_LANDING_LOCALES = ['en', 'de', 'tr'] as const
 export const TEMPORARY_LANDING_DEFAULT_LOCALE = 'de'
 const TEMPORARY_LANDING_LANGUAGE_QUERY_KEY = 'lang'
@@ -7,7 +10,7 @@ type SearchParamValue = string | string[] | undefined
 type SearchParamsRecord = Record<string, SearchParamValue>
 type SearchParamsInput = SearchParamsRecord | URLSearchParams | undefined | null
 
-export const TEMPORARY_LANDING_PATHS = { de: '/', en: '/en', tr: '/tr' } as const
+export const TEMPORARY_LANDING_PATHS = { de: '/', en: '/en', tr: `/${TURKISH_CLINIC_LANDING_SLUG}` } as const
 
 export const temporaryLandingLocaleFromPath = (pathname: string): TemporaryLandingLocale | null => {
   const path = pathname.replace(/\/$/, '') || '/'
@@ -95,4 +98,3 @@ export const resolveTemporaryLandingContentLocale = (locale: TemporaryLandingLoc
 
   return {}
 }
-import type { ContentLocaleContext } from '@/utilities/contentLocalization'

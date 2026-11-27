@@ -33,11 +33,21 @@ const renderSection = (visiblePosts = posts) =>
       ctaLabel="Alle Beiträge ansehen"
       description="Praktische Orientierung zum Vergleich."
       posts={visiblePosts}
+      postsLanguage="en"
       title="Aktuelle Einblicke"
     />,
   )
 
 describe('TemporaryLandingBlogSection', () => {
+  it('marks card links and excerpts with the language of their posts', () => {
+    renderSection()
+
+    const link = screen.getByRole('link', { name: posts[0]!.title })
+    expect(link.getAttribute('lang')).toBe('en')
+    expect(screen.getByText(posts[0]!.excerpt).closest('[lang]')).toBe(link)
+    expect(screen.getByRole('heading', { level: 2 }).closest('[lang]')).toBeNull()
+  })
+
   it('renders a labelled section with named card links and a localized CTA', () => {
     renderSection()
 

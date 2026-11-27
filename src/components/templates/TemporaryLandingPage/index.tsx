@@ -10,7 +10,7 @@ import {
 } from '@/features/temporaryLandingMode'
 import type { BlogCardBaseProps } from '@/utilities/blog/normalizePost'
 import { buildPostsIndexPath } from '@/utilities/content/postPaths'
-import type { ContentLocaleContext } from '@/utilities/contentLocalization'
+import { DEFAULT_CONTENT_LOCALE, type ContentLocaleContext } from '@/utilities/contentLocalization'
 import { TemporaryLandingBlogSection } from './TemporaryLandingBlogSection'
 
 export type TemporaryLandingPageProps = {
@@ -42,6 +42,7 @@ export function TemporaryLandingPage({
           ctaLabel={blogCopy.ctaLabel}
           description={blogCopy.description}
           posts={posts}
+          postsLanguage={contentLocale.locale ?? DEFAULT_CONTENT_LOCALE}
           title={blogCopy.title}
         />
       }

@@ -51,6 +51,24 @@ describe('frontend CMS page route metadata', () => {
     mocks.headers.mockResolvedValue(new Headers())
   })
 
+  it('keeps an unavailable Full English home out of search and links to the German home', async () => {
+    const { default: Page, generateMetadata } = await import('@/app/(frontend)/(pages)/[...slug]/page')
+    findPages(false)
+    const args = routeArgs('en')
+    const html = renderToStaticMarkup(await Page(args))
+
+    expect(html).toMatch(/<a[^>]+href="\/"/)
+    expect((await generateMetadata(args)).robots).toEqual({ index: false, follow: false })
+  })
+
+  it('keeps the Turkish Holding introduction unavailable in Full', async () => {
+    const { default: Page, generateMetadata } = await import('@/app/(frontend)/(pages)/[...slug]/page')
+    const args = routeArgs('tr')
+
+    await expect(Page(args)).rejects.toMatchObject({ digest: 'NEXT_HTTP_ERROR_FALLBACK;404' })
+    expect((await generateMetadata(args)).robots).toEqual({ index: false, follow: false })
+  })
+
   it('links directly to the same German Page from a noindex English notice', async () => {
     const { default: Page, generateMetadata } = await import('@/app/(frontend)/(pages)/[...slug]/page')
 

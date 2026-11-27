@@ -31,11 +31,10 @@ describe('temporaryLandingMode content', () => {
     })
   })
 
-  it('falls back to english content for unsupported locale keys', () => {
+  it('falls back to German content for unsupported locale keys', () => {
     const invalidLocale = 'xx' as TemporaryLandingLocale
     const fallbackContent = getTemporaryLandingPageContent(invalidLocale)
 
-    expect(fallbackContent.title).toBe(getTemporaryLandingPageContent('en').title)
-    expect(fallbackContent.searchSnapshot.metaTitle).toBe(getTemporaryLandingPageContent('en').searchSnapshot.metaTitle)
+    expect(fallbackContent).toBe(getTemporaryLandingPageContent('de'))
   })
 })

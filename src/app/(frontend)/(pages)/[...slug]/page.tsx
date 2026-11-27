@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { headers } from 'next/headers'
+import { notFound } from 'next/navigation'
 
 import {
   CmsTranslationUnavailable,
@@ -14,15 +15,17 @@ import { LivePreviewListener } from '@/components/organisms/LivePreviewListener'
 import { CmsLanguageSwitchRoute } from '@/features/languageSwitch/CmsLanguageSwitchRoute.client'
 import { CMS_TRANSLATION_SOURCE_HEADER } from '@/utilities/routing/cmsRedirectRequest'
 import { CmsDocumentLanguage } from '@/features/uiCopy/DocumentLanguage.client'
+import { readTemporaryLandingLocale, TEMPORARY_LANDING_PATHS } from '@/features/temporaryLandingMode'
+import { generateHoldingHomeMetadata, renderHoldingHome, type HoldingHomeSearchParams } from '../../_data/holdingHome'
 
 type Args = {
   params: Promise<{
     slug?: string[]
   }>
-  searchParams: Promise<{
-    locale?: string | string[]
-  }>
+  searchParams: Promise<HoldingHomeSearchParams>
 }
+
+const isTurkishHoldingHome = (slug?: string[]) => slug?.length === 1 && '/' + slug[0] === TEMPORARY_LANDING_PATHS.tr
 
 async function loadRoute({ params, searchParams }: Args) {
   const [{ slug = ['home'] }, { locale }] = await Promise.all([params, searchParams])
@@ -30,12 +33,16 @@ async function loadRoute({ params, searchParams }: Args) {
   const { route, draft, url } = result
   const germanPath =
     !route && !draft && (url === '/en' || url.startsWith('/en/'))
-      ? (await headers()).get(CMS_TRANSLATION_SOURCE_HEADER)
+      ? ((await headers()).get(CMS_TRANSLATION_SOURCE_HEADER) ?? (url === '/en' ? '/' : null))
       : null
   return { ...result, germanPath }
 }
 
 export default async function Page(args: Args) {
+  const holdingLocale = readTemporaryLandingLocale(await headers())
+  if (holdingLocale) return renderHoldingHome(holdingLocale, await args.searchParams)
+  if (isTurkishHoldingHome((await args.params).slug)) notFound()
+
   const { route, draft, url, germanPath } = await loadRoute(args)
   if (!route) {
     return germanPath ? <CmsTranslationUnavailable germanPath={germanPath} /> : <PayloadRedirects url={url} />
@@ -58,6 +65,10 @@ export default async function Page(args: Args) {
 }
 
 export async function generateMetadata(args: Args): Promise<Metadata> {
+  const holdingLocale = readTemporaryLandingLocale(await headers())
+  if (holdingLocale) return generateHoldingHomeMetadata(holdingLocale)
+  if (isTurkishHoldingHome((await args.params).slug)) return { robots: { index: false, follow: false } }
+
   const { route, draft, germanPath } = await loadRoute(args)
   if (!route) {
     return {

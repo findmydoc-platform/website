@@ -109,7 +109,7 @@ describe('frontend sitemap routes', () => {
     expect(response.headers.get('X-Robots-Tag')).toBe('noindex, nofollow, noarchive')
   })
 
-  it('returns exactly the canonical home and blog index in the Holding pages sitemap', async () => {
+  it('returns exactly the canonical language paths and blog index in the Holding pages sitemap', async () => {
     routeMocks.resolveSitemapIndexingAccessForRequest.mockResolvedValue({
       allowed: true,
       temporaryLandingMode: true,
@@ -120,7 +120,12 @@ describe('frontend sitemap routes', () => {
     const response = await GET(request)
     const body = await readSitemap(response)
 
-    expect(body.entries).toEqual([{ loc: 'https://findmydoc.eu/' }, { loc: 'https://findmydoc.eu/posts' }])
+    expect(body.entries).toEqual([
+      { loc: 'https://findmydoc.eu/' },
+      { loc: 'https://findmydoc.eu/en' },
+      { loc: 'https://findmydoc.eu/tr' },
+      { loc: 'https://findmydoc.eu/posts' },
+    ])
     expect(routeMocks.findPageSitemapDocs).not.toHaveBeenCalled()
   })
 

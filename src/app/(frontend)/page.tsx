@@ -12,45 +12,21 @@ import { normalizePost } from '@/utilities/blog/normalizePost'
 import { getLandingMedicalSpecialtyCategories } from '@/utilities/landing/medicalSpecialtyCategories'
 import { getHomeLandingContent } from '@/utilities/landing/landingPageContent'
 import { FormBridgePublicContactSectionAdapter } from '@/features/contactRequests/FormBridgePublicContactSectionAdapter.client'
-import { FormBridgeTemporaryLandingPageAdapter } from '@/features/contactRequests/FormBridgeTemporaryLandingPageAdapter'
-import {
-  buildTemporaryLandingLanguageOptions,
-  getTemporaryLandingPageContent,
-  isTemporaryLandingModeRequest,
-  resolveTemporaryLandingContentLocale,
-  resolveTemporaryLandingLocale,
-} from '@/features/temporaryLandingMode'
+import { readTemporaryLandingLocale } from '@/features/temporaryLandingMode'
+import { generateHoldingHomeMetadata, renderHoldingHome, type HoldingHomeSearchParams } from './_data/holdingHome'
 import { getPayload } from 'payload'
 import configPromise from '@payload-config'
 import { headers } from 'next/headers'
 import { getCachedLatestPosts } from '@/utilities/content/serverData'
 import { createSiteMetadata } from '@/utilities/generateMeta'
 
-type HomePageSearchParams = Record<string, string | string[] | undefined>
-
 export default async function Home({
   searchParams: searchParamsPromise,
 }: {
-  searchParams?: Promise<HomePageSearchParams>
+  searchParams?: Promise<HoldingHomeSearchParams>
 }) {
-  const requestHeaders = await headers()
-  if (isTemporaryLandingModeRequest(requestHeaders)) {
-    const searchParams = (await searchParamsPromise) ?? {}
-    const locale = resolveTemporaryLandingLocale(searchParams)
-    const languageOptions = buildTemporaryLandingLanguageOptions(searchParams)
-    const contentLocale = resolveTemporaryLandingContentLocale(locale)
-    const posts = await getCachedLatestPosts(3, contentLocale)
-    const normalizedPosts = posts.map((post) => normalizePost(post, { contentLocale }))
-
-    return (
-      <FormBridgeTemporaryLandingPageAdapter
-        contentLocale={contentLocale}
-        locale={locale}
-        languageOptions={languageOptions}
-        posts={normalizedPosts}
-      />
-    )
-  }
+  const holdingLocale = readTemporaryLandingLocale(await headers())
+  if (holdingLocale) return renderHoldingHome(holdingLocale, await searchParamsPromise)
 
   const payload = await getPayload({ config: configPromise })
   const [landingContent, posts, landingSpecialtyCategories, cityResult] = await Promise.all([
@@ -184,24 +160,9 @@ export default async function Home({
   )
 }
 
-export async function generateMetadata({
-  searchParams: searchParamsPromise,
-}: {
-  searchParams?: Promise<HomePageSearchParams>
-}): Promise<Metadata> {
-  const requestHeaders = await headers()
-
-  if (isTemporaryLandingModeRequest(requestHeaders)) {
-    const searchParams = (await searchParamsPromise) ?? {}
-    const locale = resolveTemporaryLandingLocale(searchParams)
-    const content = getTemporaryLandingPageContent(locale)
-
-    return createSiteMetadata({
-      title: content.searchSnapshot.metaTitle,
-      description: content.searchSnapshot.metaDescription,
-      path: '/',
-    })
-  }
+export async function generateMetadata(): Promise<Metadata> {
+  const holdingLocale = readTemporaryLandingLocale(await headers())
+  if (holdingLocale) return generateHoldingHomeMetadata(holdingLocale)
 
   const metadata = (await getHomeLandingContent()).metadata
 

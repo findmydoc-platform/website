@@ -3,13 +3,15 @@
 import { usePathname, useSearchParams } from 'next/navigation'
 import { createContext, Suspense, type ReactNode, useContext, useEffect, useState } from 'react'
 
-import { isAuthConfirmationPath, uiCopyLocaleFromPath, type UiCopyLocale } from '@/i18n/requestLocale'
+import { isAuthConfirmationPath, uiCopyLocaleFromPath } from '@/i18n/requestLocale'
 import type { ContentLocale } from '@/utilities/contentLocalization'
+import type { TemporaryLandingLocale } from '@/features/temporaryLandingMode/i18n'
 
-const CmsLocaleContext = createContext<((locale: ContentLocale | undefined) => void) | null>(null)
+type DocumentLocale = ContentLocale | TemporaryLandingLocale
+const DocumentLocaleContext = createContext<((locale: DocumentLocale | undefined) => void) | null>(null)
 
-export function CmsDocumentLanguage({ locale }: { locale: ContentLocale }) {
-  const setLocale = useContext(CmsLocaleContext)
+function PageDocumentLanguage({ locale }: { locale: DocumentLocale }) {
+  const setLocale = useContext(DocumentLocaleContext)
 
   useEffect(() => {
     setLocale?.(locale)
@@ -19,7 +21,15 @@ export function CmsDocumentLanguage({ locale }: { locale: ContentLocale }) {
   return null
 }
 
-function SetDocumentLanguage({ locale }: { locale: UiCopyLocale }) {
+export function CmsDocumentLanguage({ locale }: { locale: ContentLocale }) {
+  return <PageDocumentLanguage locale={locale} />
+}
+
+export function HoldingDocumentLanguage({ locale }: { locale: TemporaryLandingLocale }) {
+  return <PageDocumentLanguage locale={locale} />
+}
+
+function SetDocumentLanguage({ locale }: { locale: DocumentLocale }) {
   useEffect(() => {
     document.documentElement.lang = locale
   }, [locale])
@@ -32,9 +42,9 @@ function ConfirmationDocumentLanguage({ pathname }: { pathname: string }) {
   return <SetDocumentLanguage locale={uiCopyLocaleFromPath(pathname, searchParams) ?? 'en'} />
 }
 
-function SyncDocumentLanguage({ cmsLocale }: { cmsLocale?: ContentLocale }) {
+function SyncDocumentLanguage({ locale }: { locale?: DocumentLocale }) {
   const pathname = usePathname()
-  if (cmsLocale) return <SetDocumentLanguage locale={cmsLocale} />
+  if (locale) return <SetDocumentLanguage locale={locale} />
   if (!pathname) return null
 
   if (isAuthConfirmationPath(pathname)) {
@@ -50,17 +60,17 @@ function SyncDocumentLanguage({ cmsLocale }: { cmsLocale?: ContentLocale }) {
 
 export function DocumentLanguage({
   children,
-  initialCmsLocale,
+  initialLocale,
 }: {
   children?: ReactNode
-  initialCmsLocale?: ContentLocale
+  initialLocale?: DocumentLocale
 }) {
-  const [cmsLocale, setCmsLocale] = useState(initialCmsLocale)
+  const [locale, setLocale] = useState(initialLocale)
 
   return (
-    <CmsLocaleContext.Provider value={setCmsLocale}>
-      <SyncDocumentLanguage cmsLocale={cmsLocale} />
+    <DocumentLocaleContext.Provider value={setLocale}>
+      <SyncDocumentLanguage locale={locale} />
       {children}
-    </CmsLocaleContext.Provider>
+    </DocumentLocaleContext.Provider>
   )
 }

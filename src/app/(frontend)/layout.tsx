@@ -27,7 +27,7 @@ import { isPreviewRuntime } from '@/features/runtimePolicy'
 import {
   getTemporaryLandingBlogCopy,
   getTemporaryLandingPageContent,
-  isTemporaryLandingModeRequest,
+  readTemporaryLandingLocale,
   TEMPORARY_LANDING_DEFAULT_LOCALE,
 } from '@/features/temporaryLandingMode'
 import { LanguageSwitchRouteProvider } from '@/features/languageSwitch/LanguageSwitchRouteProvider.client'
@@ -39,14 +39,15 @@ import { VercelToolbar } from '@vercel/toolbar/next'
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const requestHeaders = await headers()
   const blockSearchIndexing = shouldBlockSearchIndexingForRequest({ env: process.env, headers: requestHeaders })
-  const holdingDescription = isTemporaryLandingModeRequest(requestHeaders)
+  const holdingLocale = readTemporaryLandingLocale(requestHeaders)
+  const holdingDescription = holdingLocale
     ? `${getTemporaryLandingPageContent(TEMPORARY_LANDING_DEFAULT_LOCALE).statusLabel}. ${getTemporaryLandingBlogCopy(TEMPORARY_LANDING_DEFAULT_LOCALE).description}`
     : undefined
   const [{ isEnabled }, requestCookies, cookieConsent, cmsLocale] = await Promise.all([
     draftMode(),
     cookies(),
     getGlobal('cookieConsent', 1),
-    resolveCmsDocumentLocale(requestHeaders),
+    holdingLocale ? undefined : resolveCmsDocumentLocale(requestHeaders),
   ])
   const cookieConsentContext = resolveCookieConsentContext(
     cookieConsent as CookieConsentType,
@@ -54,7 +55,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   )
 
   return (
-    <html lang={cmsLocale ?? uiCopyLocaleFromHeaders(requestHeaders)} suppressHydrationWarning>
+    <html lang={holdingLocale ?? cmsLocale ?? uiCopyLocaleFromHeaders(requestHeaders)} suppressHydrationWarning>
       <head>
         <link href="/favicon.ico" rel="icon" sizes="32x32" />
         <link href="/favicon.svg" rel="icon" type="image/svg+xml" />
@@ -74,7 +75,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <LanguageSwitchRouteProvider>
               <PatientAuthFormHandoffProvider>
                 <TreatmentSearchHandoffProvider>
-                  <DocumentLanguage initialCmsLocale={cmsLocale}>{children}</DocumentLanguage>
+                  <DocumentLanguage initialLocale={holdingLocale ?? cmsLocale}>{children}</DocumentLanguage>
                 </TreatmentSearchHandoffProvider>
               </PatientAuthFormHandoffProvider>
             </LanguageSwitchRouteProvider>

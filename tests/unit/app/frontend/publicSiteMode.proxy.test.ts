@@ -76,7 +76,7 @@ describe('public site mode proxy', () => {
     process.env = originalEnv
   })
 
-  it.each(['/', '/posts', '/posts/article', '/en/posts/article', '/posts/page/2'])(
+  it.each(['/', '/en', '/tr', '/posts', '/posts/article', '/en/posts/article', '/posts/page/2'])(
     'marks anonymous Preview Holding content on %s',
     async (pathname) => {
       process.env.VERCEL_ENV = 'preview'
@@ -191,10 +191,10 @@ describe('public site mode proxy', () => {
     expect(mocks.createServerClient).not.toHaveBeenCalled()
   })
 
-  it('keeps the Production Holding root standalone and indexable', async () => {
+  it.each(['/', '/en', '/tr'])('keeps Production Holding %s standalone and indexable', async (path) => {
     process.env.VERCEL_ENV = 'production'
     mockHoldingMode('holding')
-    const request = new NextRequest('https://findmydoc.eu/', {
+    const request = new NextRequest(`https://findmydoc.eu${path}`, {
       headers: {
         [HOLDING_VIEW_REQUEST_HEADER]: 'public',
         [PUBLIC_SITE_MODE_REQUEST_HEADER]: 'full',
@@ -210,6 +210,21 @@ describe('public site mode proxy', () => {
     expect(response.headers.get(`x-middleware-request-${PUBLIC_SITE_MODE_REQUEST_HEADER}`)).toBe('holding')
     expect(response.headers.get(`x-middleware-request-${SEARCH_INDEXING_REQUEST_HEADER}`)).toBeNull()
     expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBeNull()
+  })
+
+  it.each([
+    ['de', '/'],
+    ['en', '/en'],
+    ['tr', '/tr'],
+    ['unsupported', '/'],
+  ])('redirects a legacy Holding entry for %s without losing tracking parameters', async (lang, path) => {
+    process.env.VERCEL_ENV = 'production'
+    mockHoldingMode('holding')
+
+    const response = await proxy(new NextRequest(`https://findmydoc.eu/?lang=${lang}&utm_source=example`))
+
+    expect(response.status).toBe(307)
+    expect(response.headers.get('location')).toBe(`https://findmydoc.eu${path}?utm_source=example`)
   })
 
   it('returns 404 for non-root routes in temporary landing mode', async () => {

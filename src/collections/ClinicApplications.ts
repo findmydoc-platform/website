@@ -3,6 +3,10 @@ import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { computedOnlyFieldAccess } from '@/access/fieldAccess'
 import { CLINIC_ONBOARDING_ERROR_CODES } from '@/features/clinicOnboarding/provisionClinicOnboarding'
 import { provisionApprovedClinicApplication } from '@/hooks/clinicApplicationProvisioning'
+import {
+  guardMcpOnboardingApplication,
+  guardMcpOnboardingApplicationDelete,
+} from '@/features/clinicOnboarding/stagedWriteGuards'
 import { clinicContactRoleOptions } from './common/selectionOptions'
 import { clinicApplicationProvisioningErrorLabels } from './clinicApplications/provisioningLifecycle'
 
@@ -11,7 +15,7 @@ import { clinicApplicationProvisioningErrorLabels } from './clinicApplications/p
 // Only platform staff can create/read/update/delete records directly.
 // Approval workflow: platform sets status to approved; provisioning authorizes private clinic participation and the initial staff member.
 
-export const ClinicApplications: CollectionConfig = {
+export const ClinicApplications: CollectionConfig<'clinicApplications'> = {
   slug: 'clinicApplications',
   admin: {
     useAsTitle: 'clinicName',
@@ -26,6 +30,8 @@ export const ClinicApplications: CollectionConfig = {
     delete: isPlatformStaff,
   },
   hooks: {
+    beforeChange: [guardMcpOnboardingApplication],
+    beforeDelete: [guardMcpOnboardingApplicationDelete],
     afterChange: [provisionApprovedClinicApplication],
   },
   fields: [
@@ -127,6 +133,20 @@ export const ClinicApplications: CollectionConfig = {
       },
     },
     {
+      name: 'mcpOnboardingRequestKey',
+      type: 'text',
+      unique: true,
+      access: { create: computedOnlyFieldAccess, read: computedOnlyFieldAccess, update: computedOnlyFieldAccess },
+      admin: { hidden: true, disableListColumn: true },
+    },
+    {
+      name: 'mcpOnboardingStaffMode',
+      type: 'select',
+      options: ['new_account', 'existing_account'],
+      access: { create: computedOnlyFieldAccess, read: computedOnlyFieldAccess, update: computedOnlyFieldAccess },
+      admin: { hidden: true, disableListColumn: true },
+    },
+    {
       name: 'status',
       type: 'select',
       defaultValue: 'submitted',
@@ -203,9 +223,9 @@ export const ClinicApplications: CollectionConfig = {
         update: computedOnlyFieldAccess,
       },
       admin: {
-        description: 'Clinic and staff records created after approval',
+        description: 'Clinic and initial staff records linked to this application',
         readOnly: true,
-        condition: (data) => data?.status !== 'submitted',
+        condition: (data) => Boolean(data?.linkedRecords?.clinic) || data?.status !== 'submitted',
       },
       fields: [
         { name: 'clinic', type: 'relationship', relationTo: 'clinics' },

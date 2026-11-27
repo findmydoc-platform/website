@@ -1,3 +1,4 @@
+import { guardMcpOnboardingStaff } from '@/features/clinicOnboarding/stagedWriteGuards'
 import { normalizeNativeFinalWriteOperation } from '@/access/nativeFinalOperation'
 import { guardPersonalGroupInvitationSource } from '@/auth/utilities/personalGroupInvitationSource'
 import {
@@ -101,6 +102,7 @@ export const ClinicStaff: CollectionConfig = {
     ],
     beforeChange: [
       guardNotificationAuthorizationSession,
+      guardMcpOnboardingStaff,
       guardClinicAccountEvidence,
       guardPersonalGroupInvitationSource,
       validateClinicStaffAssignment,

@@ -17,6 +17,11 @@ import { MEDIA_UPLOAD_MAX_BYTES } from '@/config/mediaUploadPolicy'
 import { relationId } from '@/collections/clinics/profileGallery'
 import type { ClinicMedia, DoctorMedia, PayloadMcpApiKey } from '@/payload-types'
 import { readStoredImage } from '@/features/platformMedia/readStoredImage'
+import {
+  clinicOnboardingTools,
+  groupClinicOnboardingGrants,
+  mapClinicOnboardingGrants,
+} from '@/features/mcp/clinicOnboarding'
 import { createPostDraft, updatePostDraft } from './mcpPostDrafts'
 
 type McpCollectionConfig = {
@@ -317,6 +322,7 @@ export const createMcpPlugin = (): Plugin =>
     userCollection: mcpUserCollection,
     mcp: {
       tools: [
+        ...clinicOnboardingTools,
         createTrashTool('clinics', 'trashClinic', 'Clinic'),
         createTrashTool('doctors', 'trashDoctor', 'Doctor'),
         createDeleteLinkTool('clinictreatments', 'deleteClinicTreatment', 'Clinic treatment'),
@@ -339,30 +345,33 @@ export const createMcpPlugin = (): Plugin =>
     overrideApiKeyCollection: (collection) => {
       return {
         ...collection,
-        fields: collection.fields.map((field) =>
-          field.type === 'collapsible'
-            ? {
-                ...field,
-                ...(field.fields.some(
-                  (nested) => nested.type === 'group' && 'name' in nested && nested.name === 'posts',
-                )
-                  ? { label: 'Blog posts' }
-                  : {}),
-                fields: field.fields.map((nested) =>
-                  nested.type === 'group' && 'name' in nested && nested.name === 'payload-mcp-tool'
-                    ? {
-                        ...nested,
-                        fields: nested.fields
-                          .filter((item) => item.type !== 'checkbox' || !postDraftGrantAliases.has(item.name))
-                          .map((item) => (item.type === 'checkbox' ? { ...item, defaultValue: false } : item)),
-                      }
-                    : nested.type === 'group' && 'name' in nested && nested.name === 'posts'
-                      ? { ...nested, label: 'Posts' }
-                      : nested,
-                ),
-              }
-            : field,
-        ),
+        fields: groupClinicOnboardingGrants(collection.fields).map((field) => {
+          if (field.type !== 'collapsible') return field
+          if (field.fields.some((nested) => nested.type === 'group' && 'name' in nested && nested.name === 'posts')) {
+            return {
+              ...field,
+              label: { en: 'Blog posts', de: 'Blogbeiträge' },
+              fields: field.fields.map((nested) =>
+                nested.type === 'group' && 'name' in nested && nested.name === 'posts'
+                  ? { ...nested, label: { en: 'Posts', de: 'Beiträge' } }
+                  : nested,
+              ),
+            }
+          }
+          return {
+            ...field,
+            fields: field.fields.map((nested) =>
+              nested.type === 'group' && 'name' in nested && nested.name === 'payload-mcp-tool'
+                ? {
+                    ...nested,
+                    fields: nested.fields.filter(
+                      (item) => item.type !== 'checkbox' || !postDraftGrantAliases.has(item.name),
+                    ),
+                  }
+                : nested,
+            ),
+          }
+        }),
         admin: {
           ...collection.admin,
           hidden: ({ user }) => !isPlatformAdminUser(user),
@@ -374,18 +383,19 @@ export const createMcpPlugin = (): Plugin =>
       }
     },
 
-    overrideAuth: async (_req, getDefaultMcpAccessSettings) => {
+    overrideAuth: async (req, getDefaultMcpAccessSettings) => {
       const mcpAccessSettings = await getDefaultMcpAccessSettings()
 
       if (!isPlatformStaffMcpUser(mcpAccessSettings.user as unknown)) {
         throw new UnauthorizedError()
       }
 
-      const postGrants = mcpAccessSettings.posts as PayloadMcpApiKey['posts']
+      const settings = mapClinicOnboardingGrants(req, mcpAccessSettings)
+      const postGrants = settings.posts as PayloadMcpApiKey['posts']
       return {
-        ...mcpAccessSettings,
+        ...settings,
         'payload-mcp-tool': {
-          ...mcpAccessSettings['payload-mcp-tool'],
+          ...settings['payload-mcp-tool'],
           [createPostDraft.name]: postGrants?.create === true,
           [updatePostDraft.name]: postGrants?.update === true,
         },

@@ -219,7 +219,7 @@ export const permissionMatrix: PermissionMatrix = {
         },
       },
       notes:
-        'Only current platform administrators manage keys. Existing platform staff-owned keys retain MCP access; owner binding and disabled unlock remain enforced.',
+        'Only current platform administrators manage keys. Clinic onboarding grants are individually opt-in and retain the applicable Payload permissions of the key owner. Existing grants, owner binding and disabled unlock remain enforced.',
     },
     platformStaff: {
       slug: 'platformStaff',
@@ -746,7 +746,7 @@ export const permissionMatrix: PermissionMatrix = {
         admin: { type: 'platform' },
       },
       notes:
-        'Public submissions use the controlled API route; platform approval authorizes private clinic participation and the named initial staff member; recoverable provisioning reuses both records without automatic reinvitation',
+        'Public submissions use the controlled API route. MCP staging uses the clinic management workflow to bind an unpublished clinic and pending first account. Legacy platform approval and recoverable provisioning retain their existing behavior.',
     },
     clinicProfileDrafts: {
       slug: 'clinicProfileDrafts',

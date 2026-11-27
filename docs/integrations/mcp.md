@@ -67,6 +67,24 @@ The `clinicMedia` and `doctorMedia` find permissions expose media metadata.
 `deleteClinicImage` and `deleteDoctorImage` permanently delete individual images only after references are removed.
 Uploads accept base64-encoded image bytes and the configured media size and type limits apply.
 
+## Post drafts
+
+Open **Blog posts** in the API key form to find the Post permissions. **Create** enables both `createPosts`
+and `createPostDraft`. **Update** enables both `updatePosts` and `updatePostDraft`. Existing keys keep the grants
+they already have.
+
+- `createPostDraft` takes `{ locale: "de", data: { title, ... } }` and returns a new Post ID.
+- `updatePostDraft` takes `{ id, locale: "de" | "en", data }`. Use the same Post ID for both languages.
+  Pass the fields to change. The other language's draft and any published version stay available as before.
+
+Use `title`, `slug`, `excerpt`, `content` (Payload Lexical JSON), and `meta.title` or `meta.description` for the
+selected language. Assign existing records by numeric ID in `heroImage`, `meta.image`, `categories`, `tags`,
+`authors`, or `relatedPosts`. These references are shared across languages and must be readable by the key owner.
+The referenced records retain their own access rules.
+
+Both draft tools return `{ id, locale, status: "draft", advisories }` as JSON. The `missing_english` advisory
+appears while the English draft has no title.
+
 ## Configure VS Code (Copilot Chat MCP)
 
 VS Code supports HTTP MCP servers via `.vscode/mcp.json`.

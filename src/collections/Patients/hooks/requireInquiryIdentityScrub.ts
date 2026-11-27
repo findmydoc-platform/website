@@ -1,4 +1,4 @@
-import type { CollectionBeforeDeleteHook } from 'payload'
+import { APIError, type CollectionBeforeDeleteHook } from 'payload'
 
 export const requireInquiryIdentityScrubBeforePatientDeleteHook: CollectionBeforeDeleteHook = async ({ req, id }) => {
   const linked = await req.payload.find({
@@ -13,6 +13,9 @@ export const requireInquiryIdentityScrubBeforePatientDeleteHook: CollectionBefor
     },
   })
   if (linked.totalDocs > 0) {
-    throw new Error('Patient inquiry identity must be anonymized before deleting the patient account.')
+    throw new APIError(
+      'Ask an operator with inquiry retention access to anonymize the linked inquiries before deleting this account.',
+      409,
+    )
   }
 }

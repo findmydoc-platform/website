@@ -128,14 +128,18 @@ const createUnavailableHeaders = (): Headers => {
   return headers
 }
 
+const databaseTemporarilyUnavailableRestBody = () => ({
+  error: { code: DATABASE_TEMPORARILY_UNAVAILABLE_CODE },
+  errors: [
+    { message: 'The database is temporarily unavailable. Wait a moment and check the current state before retrying.' },
+  ],
+})
+
 export const databaseTemporarilyUnavailableResponse = (): Response =>
-  Response.json(
-    { error: { code: DATABASE_TEMPORARILY_UNAVAILABLE_CODE } },
-    {
-      headers: createUnavailableHeaders(),
-      status: 503,
-    },
-  )
+  Response.json(databaseTemporarilyUnavailableRestBody(), {
+    headers: createUnavailableHeaders(),
+    status: 503,
+  })
 
 export const databaseTemporarilyUnavailableGraphqlResponse = (): Response =>
   Response.json(
@@ -237,7 +241,7 @@ export const payloadDatabaseAvailabilityAfterError: AfterErrorHook = ({ error, g
   }
 
   return {
-    response: { error: { code: DATABASE_TEMPORARILY_UNAVAILABLE_CODE } },
+    response: databaseTemporarilyUnavailableRestBody(),
     status: 503,
   }
 }

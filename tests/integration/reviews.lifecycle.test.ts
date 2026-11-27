@@ -329,12 +329,12 @@ describe('Reviews integration - lifecycle and access', () => {
     ['clinic', { clinic: undefined }],
     ['doctor', { doctor: undefined }],
     ['treatment', { treatment: undefined }],
-  ])('rejects missing %s relationship', async (_label, overrides) => {
+  ])('identifies a missing %s relationship in a public field error', async (field, overrides) => {
     const { clinic, doctor } = await createClinicFixture(payload, cityId, {
-      slugPrefix: `${slugPrefix}-missing-${_label}`,
+      slugPrefix: `${slugPrefix}-missing-${field}`,
     })
 
-    const patient = await createPatient(payload, `${slugPrefix}-missing-${_label}`)
+    const patient = await createPatient(payload, `${slugPrefix}-missing-${field}`)
 
     const data = {
       patient: patient.id,
@@ -352,7 +352,11 @@ describe('Reviews integration - lifecycle and access', () => {
         data: data as unknown as Review,
         overrideAccess: true,
       }),
-    ).rejects.toThrow(/clinic, doctor, and treatment/i)
+    ).rejects.toMatchObject({
+      isPublic: true,
+      status: 400,
+      data: { errors: [{ path: field, message: expect.any(String) }] },
+    })
   })
 
   it('rejects star ratings outside 1-5 range', async () => {

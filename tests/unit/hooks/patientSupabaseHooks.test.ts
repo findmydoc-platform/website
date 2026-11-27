@@ -241,7 +241,7 @@ describe('requireInquiryIdentityScrubBeforePatientDeleteHook', () => {
         id: 'patient-1',
         req,
       }),
-    ).rejects.toThrow('Patient inquiry identity must be anonymized')
+    ).rejects.toMatchObject({ isPublic: true, status: 409 })
     expect(payload.find).toHaveBeenCalledWith(
       expect.objectContaining({
         collection: 'patientClinicInquiries',

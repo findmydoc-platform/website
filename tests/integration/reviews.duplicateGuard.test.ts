@@ -106,7 +106,7 @@ describe('Review duplicate prevention', () => {
         overrideAccess: true,
         depth: 0,
       } as PayloadCreateArgs),
-    ).rejects.toThrow(/Duplicate review/i)
+    ).rejects.toMatchObject({ isPublic: true, status: 409 })
 
     const updated = (await payload.update({
       collection: 'reviews',
@@ -168,7 +168,7 @@ describe('Review duplicate prevention', () => {
         overrideAccess: true,
         depth: 0,
       } as PayloadCreateArgs),
-    ).rejects.toThrow(/Duplicate review/i)
+    ).rejects.toMatchObject({ isPublic: true, status: 409 })
   }, 60000)
 
   it('blocks duplicate patient-created pending reviews that are hidden by read access', async () => {
@@ -216,6 +216,6 @@ describe('Review duplicate prevention', () => {
         overrideAccess: false,
         depth: 0,
       } as PayloadCreateArgs),
-    ).rejects.toThrow(/Duplicate review/i)
+    ).rejects.toMatchObject({ isPublic: true, status: 409 })
   }, 60000)
 })

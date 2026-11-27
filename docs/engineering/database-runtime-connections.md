@@ -55,7 +55,8 @@ code.
 When Payload cannot acquire a database connection because the connection limit is reached, acquisition times out, or
 Postgres is temporarily unavailable:
 
-- the REST boundary returns HTTP `503` and `{ "error": { "code": "DATABASE_TEMPORARILY_UNAVAILABLE" } }`;
+- the REST boundary returns HTTP `503` with `error.code` set to `DATABASE_TEMPORARILY_UNAVAILABLE`. The response also
+  includes a safe message in Payload's `errors` array for single-document actions in Admin;
 - the GraphQL boundary returns `DATABASE_TEMPORARILY_UNAVAILABLE` and `statusCode: 503` in the formatted error
   extensions;
 - a REST or GraphQL initialization failure that occurs before Payload can run its Root hook returns the matching API

@@ -70,6 +70,25 @@ export async function appendPlatformClinicGalleryMedia(req: PayloadRequest, medi
       { mediaId: String(mediaId), alt: media.alt ?? '', captionText: richTextToPlainText(media.caption) },
     ],
   })
-  if (!input.success) throw new APIError('An image needs alt text and the gallery must have room for it.', 422)
+  if (!input.success) {
+    const [issue] = input.error.issues
+    const [path, index, field] = issue?.path ?? []
+    if (path === 'items' && index === undefined && issue?.code === 'too_big') {
+      throw new APIError('The clinic gallery is full. Remove an image before adding another.', 422)
+    }
+
+    if (path === 'items' && typeof index === 'number') {
+      const image = index < snapshot.items.length ? `gallery image ${index + 1}` : 'this image'
+      if (field === 'alt' && issue?.code === 'too_small') {
+        throw new APIError(`Add alt text to ${image} and save it before trying again.`, 422)
+      }
+      if ((field === 'alt' || field === 'captionText') && issue?.code === 'too_big') {
+        const label = field === 'alt' ? 'alt text' : 'caption'
+        throw new APIError(`Shorten the ${label} for ${image} to ${issue.maximum} characters or fewer.`, 422)
+      }
+    }
+
+    throw new APIError('Review the clinic gallery and try adding the image again.', 422)
+  }
   return (await saveClinicGallery(req, clinicId, input.data)).snapshot
 }

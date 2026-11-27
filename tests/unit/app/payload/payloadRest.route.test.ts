@@ -39,18 +39,23 @@ describe('Payload REST route database availability', () => {
     routeMocks.sendPostHogException.mockReset().mockResolvedValue(undefined)
   })
 
-  it('returns the stable 503 contract when Payload cannot acquire its initial database connection', async () => {
+  it('returns the stable 503 code and an Admin-readable message when connection initialization fails', async () => {
     routeMocks.getPayload.mockRejectedValueOnce(
-      Object.assign(new Error('pool client limit reached'), { code: 'EMAXCONN' }),
+      Object.assign(new Error('pool client limit reached for internal-test-db'), { code: 'EMAXCONN' }),
     )
     const route = await import('@/app/(payload)/api/[...slug]/route')
 
-    const response = await route.GET(new Request('https://preview.findmydoc.eu/api/posts'), context)
+    const response = await route.PATCH(new Request('https://preview.findmydoc.eu/api/posts/1', { method: 'PATCH' }), {
+      params: Promise.resolve({ slug: ['posts', '1'] }),
+    })
 
     expect(response.status).toBe(503)
-    await expect(response.json()).resolves.toEqual({
+    const body: unknown = await response.json()
+    expect(body).toEqual({
       error: { code: 'DATABASE_TEMPORARILY_UNAVAILABLE' },
+      errors: [{ message: expect.stringMatching(/\S/) }],
     })
+    expect(JSON.stringify(body)).not.toContain('internal-test-db')
     expect(response.headers.get('cache-control')).toBe('private, no-store')
     expect(routeMocks.payloadHandler).not.toHaveBeenCalled()
   })

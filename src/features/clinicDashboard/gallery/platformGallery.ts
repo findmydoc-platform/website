@@ -1,12 +1,15 @@
 import { APIError, type PayloadRequest } from 'payload'
 import { relationId } from '@/collections/clinics/profileGallery'
-import { clinicGallerySaveInputSchema } from './contracts'
+import { classifyDatabaseAvailabilityError } from '@/features/databaseAvailability'
+import { clinicGallerySaveInputSchema, getClinicGallerySaveRejection } from './contracts'
 import { readClinicGallerySnapshot, saveClinicGallery } from './service'
 import { richTextToPlainText } from '@/features/clinicDashboard/profile/richText'
 import { readStoredImage } from '@/features/platformMedia/readStoredImage'
 import type { ClinicGallerySaveInput } from './contracts'
 
-export async function requireCurrentPlatformStaff(req: PayloadRequest): Promise<void> {
+type StaffLookupOptions = { propagateDatabaseFailure?: boolean }
+
+export async function requireCurrentPlatformStaff(req: PayloadRequest, options?: StaffLookupOptions): Promise<void> {
   if (req.user?.collection !== 'platformStaff') throw new APIError('Platform staff access is required.', 403)
   const staff = await req.payload
     .findByID({
@@ -17,7 +20,10 @@ export async function requireCurrentPlatformStaff(req: PayloadRequest): Promise<
       req,
       select: { role: true },
     })
-    .catch(() => null)
+    .catch((error: unknown) => {
+      if (options?.propagateDatabaseFailure && classifyDatabaseAvailabilityError(error)) throw error
+      return null
+    })
   if (!staff || !['admin', 'support', 'content-manager'].includes(staff.role)) {
     throw new APIError('Platform staff access is required.', 403)
   }
@@ -45,8 +51,12 @@ export async function savePlatformClinicGallery(req: PayloadRequest, clinicId: n
 }
 
 /** Add one existing clinic image through the same revision-protected gallery command as the dashboard. */
-export async function appendPlatformClinicGalleryMedia(req: PayloadRequest, mediaId: number) {
-  await requireCurrentPlatformStaff(req)
+export async function appendPlatformClinicGalleryMedia(
+  req: PayloadRequest,
+  mediaId: number,
+  options?: StaffLookupOptions,
+) {
+  await requireCurrentPlatformStaff(req, options)
   const media = await req.payload.findByID({
     collection: 'clinicMedia',
     id: mediaId,
@@ -71,24 +81,21 @@ export async function appendPlatformClinicGalleryMedia(req: PayloadRequest, medi
     ],
   })
   if (!input.success) {
-    const [issue] = input.error.issues
-    const [path, index, field] = issue?.path ?? []
-    if (path === 'items' && index === undefined && issue?.code === 'too_big') {
-      throw new APIError('The clinic gallery is full. Remove an image before adding another.', 422)
+    const rejection = getClinicGallerySaveRejection(input.error)
+    if (!rejection) throw new APIError('Review the clinic gallery and try adding the image again.', 422)
+    if (rejection.kind === 'full') {
+      throw new APIError(
+        'The clinic gallery is full. Open the clinic in Clinics. In General → Profile Gallery, remove an image from the gallery and save the clinic.',
+        422,
+      )
     }
 
-    if (path === 'items' && typeof index === 'number') {
-      const image = index < snapshot.items.length ? `gallery image ${index + 1}` : 'this image'
-      if (field === 'alt' && issue?.code === 'too_small') {
-        throw new APIError(`Add alt text to ${image} and save it before trying again.`, 422)
-      }
-      if ((field === 'alt' || field === 'captionText') && issue?.code === 'too_big') {
-        const label = field === 'alt' ? 'alt text' : 'caption'
-        throw new APIError(`Shorten the ${label} for ${image} to ${issue.maximum} characters or fewer.`, 422)
-      }
+    const image = rejection.index < snapshot.items.length ? `gallery image ${rejection.index + 1}` : 'this image'
+    if (rejection.kind === 'missing-alt') {
+      throw new APIError(`Add alt text to ${image} and save it before trying again.`, 422)
     }
-
-    throw new APIError('Review the clinic gallery and try adding the image again.', 422)
+    const label = rejection.kind === 'alt-too-long' ? 'alt text' : 'caption'
+    throw new APIError(`Shorten the ${label} for ${image} to ${rejection.maximum} characters or fewer.`, 422)
   }
   return (await saveClinicGallery(req, clinicId, input.data)).snapshot
 }

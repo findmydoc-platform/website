@@ -15,6 +15,7 @@ import { isFindmydocPlatformEmail } from '@/auth/utilities/platformStaffEmailPol
 import { findUserBySupabaseId } from '@/auth/utilities/userLookup'
 import { extractSupabaseUserData } from '@/auth/utilities/jwtValidation'
 import { validateUserAccess } from '@/auth/utilities/accessValidation'
+import { recordPlatformPrincipalLookupFailure } from '@/features/databaseAvailability'
 import { identifyPostHogActor, resolvePostHogActor } from '@/posthog/api'
 import { ensurePatientOnAuth } from '@/hooks/ensurePatientOnAuth'
 import { createScopedLogger, getRequestLogContext, hashLogValue, type ServerLogger } from '@/utilities/logging/shared'
@@ -58,7 +59,12 @@ async function createOrFindUser(
   }
 
   // Staff principals are provisioned only through trusted operations. Never auto-create them at login.
-  const existingUser = await findUserBySupabaseId(payload, authData, req, logger)
+  const existingUser = await findUserBySupabaseId(payload, authData, req, logger).catch((error: unknown) => {
+    if (authData.userType === 'platform' && req) {
+      recordPlatformPrincipalLookupFailure(req, isAuthFlowError(error) ? error.causeError : error)
+    }
+    throw error
+  })
 
   if (existingUser) {
     return { user: existingUser, collection }

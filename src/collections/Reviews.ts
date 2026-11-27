@@ -637,6 +637,10 @@ export const Reviews: CollectionConfig = {
         const treatmentId = readRelationshipId(draft, originalDoc, 'treatment')
 
         if (!clinicId || !doctorId || !treatmentId) {
+          if (!isPlatformStaff({ req })) {
+            throw new Error('A review must be linked to a clinic, doctor, and treatment.')
+          }
+
           const errors: ValidationFieldError[] = []
           if (!clinicId) errors.push({ path: 'clinic', message: 'Choose a clinic.' })
           if (!doctorId) errors.push({ path: 'doctor', message: 'Choose a doctor.' })
@@ -673,11 +677,11 @@ export const Reviews: CollectionConfig = {
           existing.docs.length > 0 &&
           !(operation === 'update' && originalDoc && existing.docs[0] && existing.docs[0].id === originalDoc.id)
         ) {
-          const message = 'A review already exists for this patient, clinic, doctor, and treatment.'
-          throw new APIError(
-            isPlatformStaffRequest(req) ? `${message} Look for the existing review in Reviews or Trash.` : message,
-            409,
-          )
+          const message =
+            'Duplicate review: this patient has already reviewed this treatment with this doctor at this clinic.'
+          if (!isPlatformStaff({ req })) throw new Error(message)
+
+          throw new APIError(`${message} Look for the existing review in Reviews or Trash.`, 409)
         }
 
         return data

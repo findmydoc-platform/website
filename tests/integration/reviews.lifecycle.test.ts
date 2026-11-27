@@ -329,12 +329,13 @@ describe('Reviews integration - lifecycle and access', () => {
     ['clinic', { clinic: undefined }],
     ['doctor', { doctor: undefined }],
     ['treatment', { treatment: undefined }],
-  ])('identifies a missing %s relationship in a public field error', async (field, overrides) => {
+  ])('exposes the missing %s relationship as a field error to platform staff', async (field, overrides) => {
     const { clinic, doctor } = await createClinicFixture(payload, cityId, {
       slugPrefix: `${slugPrefix}-missing-${field}`,
     })
 
     const patient = await createPatient(payload, `${slugPrefix}-missing-${field}`)
+    const staff = await createPlatformModerator(payload, `${slugPrefix}-missing-${field}-staff`)
 
     const data = {
       patient: patient.id,
@@ -350,13 +351,23 @@ describe('Reviews integration - lifecycle and access', () => {
       payload.create({
         collection: 'reviews',
         data: data as unknown as Review,
-        overrideAccess: true,
+        user: asPayloadStaffUser(staff),
+        overrideAccess: false,
       }),
     ).rejects.toMatchObject({
       isPublic: true,
       status: 400,
       data: { errors: [{ path: field, message: expect.any(String) }] },
     })
+
+    await expect(
+      payload.create({
+        collection: 'reviews',
+        data: data as unknown as Review,
+        user: asPayloadPatientUser(patient),
+        overrideAccess: false,
+      }),
+    ).rejects.not.toHaveProperty('isPublic')
   })
 
   it('rejects star ratings outside 1-5 range', async () => {

@@ -364,7 +364,10 @@ const preventManagedLegalPageDeletion: CollectionBeforeDeleteHook = async ({ id,
     return
   }
 
-  throw new APIError(`${spec.title} is a required legal page and must stay published.`, 409)
+  throw new APIError(
+    `${spec.title} must stay published. Edit the existing page or save a draft to preview changes.`,
+    409,
+  )
 }
 
 export const managedLegalPageHooks = {

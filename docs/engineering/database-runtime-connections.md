@@ -57,6 +57,9 @@ Postgres is temporarily unavailable:
 
 - the REST boundary returns HTTP `503` with `error.code` set to `DATABASE_TEMPORARILY_UNAVAILABLE`. The response also
   includes a safe message in Payload's `errors` array for single-document actions in Admin;
+- when a verified platform identity's principal lookup fails with a classified database connection error during a
+  REST write, authentication still denies access. The root hook maps the resulting native permission error to the
+  same `503` response;
 - the GraphQL boundary returns `DATABASE_TEMPORARILY_UNAVAILABLE` and `statusCode: 503` in the formatted error
   extensions;
 - a REST or GraphQL initialization failure that occurs before Payload can run its Root hook returns the matching API

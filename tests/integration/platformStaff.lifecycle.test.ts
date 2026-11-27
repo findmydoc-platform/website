@@ -214,6 +214,44 @@ describe('PlatformStaff integration - access and constraints', () => {
     }
   })
 
+  it('reports a platform principal lookup outage during a native REST write without applying the update', async () => {
+    const admin = await createPlatformUser('lookup-admin', 'admin')
+    const target = await createPlatformUser('lookup-target')
+    if (!admin.supabaseUserId || !admin.email) throw new Error('Expected a provisioned platform staff identity.')
+
+    const identity = vi.spyOn(supabaseIdentity, 'extractSupabaseUserData').mockResolvedValueOnce({
+      supabaseUserId: admin.supabaseUserId,
+      userEmail: admin.email,
+      userType: 'platform',
+    })
+    const lookup = vi
+      .spyOn(payload, 'find')
+      .mockRejectedValueOnce(Object.assign(new Error('internal-test-db connection failed'), { code: 'ECONNREFUSED' }))
+
+    try {
+      const response = await handleEndpoints({
+        config,
+        request: new Request(`https://payload-http-boundary.test/api/platformStaff/${target.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ role: 'content-manager' }),
+        }),
+      })
+
+      expect(response.status).toBe(503)
+      const body: unknown = await response.json()
+      expect(body).toMatchObject({
+        error: { code: 'DATABASE_TEMPORARILY_UNAVAILABLE' },
+        errors: [{ message: expect.stringMatching(/\S/) }],
+      })
+      expect(JSON.stringify(body)).not.toContain('internal-test-db')
+      expect((await payload.findByID({ collection: 'platformStaff', id: target.id, depth: 0 })).role).toBe('support')
+    } finally {
+      lookup.mockRestore()
+      identity.mockRestore()
+    }
+  })
+
   it('prevents direct API create for platformStaff', async () => {
     const platformUser = await createPlatformUser('direct-create')
 

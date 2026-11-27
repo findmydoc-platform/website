@@ -29,6 +29,10 @@ export function isTrustedMcpOnboardingClinicWrite(req: PayloadRequest, clinicId:
   return permittedWrites.get(req)?.clinicId === clinicId
 }
 
+export function isTrustedMcpOnboardingApplicationWrite(req: PayloadRequest, applicationId: number): boolean {
+  return permittedWrites.get(req)?.applicationId === applicationId
+}
+
 function changed<T extends { id: number }>(data: Partial<T>, original: T, fields: readonly (keyof T)[]) {
   return fields.some((field) => Object.hasOwn(data, field) && !isDeepStrictEqual(data[field], original[field]))
 }
@@ -56,7 +60,7 @@ export const guardMcpOnboardingApplication: CollectionBeforeChangeHook<ClinicApp
     return data
   }
 
-  const trusted = permittedWrites.get(req)?.applicationId === originalDoc.id
+  const trusted = isTrustedMcpOnboardingApplicationWrite(req, originalDoc.id)
   if (originalDoc.mcpOnboardingRequestKey && changed(data, originalDoc, onboardingSourceFields)) {
     throw new APIError('The onboarding source cannot be changed.', 409)
   }

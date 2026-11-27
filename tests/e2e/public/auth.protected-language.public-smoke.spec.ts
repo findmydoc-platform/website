@@ -108,8 +108,12 @@ test('an active recovery switches language and completes through the localized l
   await expect(page).toHaveURL('/auth/en/password/reset/complete')
   await page.setViewportSize({ width: 768, height: 500 })
   const language = page.getByRole('banner').getByRole('button', { name: 'Language, EN' })
-  await language.click()
   const options = page.getByRole('dialog', { name: 'Language' })
+  // The full recovery navigation can render the trigger before it is interactive.
+  await expect(async () => {
+    if (!(await options.isVisible())) await language.click()
+    await expect(options).toBeVisible({ timeout: 1_000 })
+  }).toPass({ timeout: 10_000 })
   await expect(options.getByRole('link')).toHaveCount(0)
   const [optionsBox, headingBox] = await Promise.all([
     options.boundingBox(),

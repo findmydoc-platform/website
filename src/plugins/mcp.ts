@@ -30,6 +30,7 @@ import {
   mapEditorialImageGrants,
 } from '@/features/mcp/editorialImageGrants'
 import { createPostDraft, updatePostDraft } from './mcpPostDrafts'
+import { publishPost } from './mcpPostPublication'
 
 type McpCollectionConfig = {
   description: string
@@ -46,6 +47,7 @@ const mcpUserCollection: CollectionSlug = 'platformStaff'
 const collectionGrantAliases = new Set([
   createPostDraft.name,
   updatePostDraft.name,
+  publishPost.name,
   readClinicProfile.name,
   updateClinicProfile.name,
 ])
@@ -353,6 +355,7 @@ export const createMcpPlugin = (): Plugin =>
         saveClinicGalleryTool,
         createPostDraft,
         updatePostDraft,
+        publishPost,
         uploadEditorialImageTool,
       ],
     },
@@ -426,6 +429,7 @@ export const createMcpPlugin = (): Plugin =>
           ...settings['payload-mcp-tool'],
           [createPostDraft.name]: postGrants?.create === true,
           [updatePostDraft.name]: postGrants?.update === true,
+          [publishPost.name]: postGrants?.update === true,
           [readClinicProfile.name]: clinicGrants?.find === true,
           [updateClinicProfile.name]: clinicGrants?.update === true,
         },

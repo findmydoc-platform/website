@@ -12,6 +12,7 @@ import {
   setClinicSupabaseAccountAccess,
 } from '@/auth/utilities/supabaseProvision'
 import { replaceClinicStaffAssignment } from '@/features/clinicGroups/staffAssignments'
+import { withMcpOnboardingWrite } from '@/features/clinicOnboarding/stagedWriteGuards'
 import {
   asClinicScopedPayloadUser,
   asPayloadStaffUser,
@@ -619,6 +620,71 @@ describe('MCP clinic onboarding', () => {
       status: 'pending',
       supabaseUserId: null,
       invitationAuthorizedAt: null,
+    })
+  })
+
+  it('releases an email from an older rejected application after native deletion of its clinic', async () => {
+    const input = intake()
+    const { applicationId, clinicId, clinicStaffId } = stagedIds((await call('stageClinicOnboarding', input)).data)
+    const owner = await payload.findByID({ collection: 'platformStaff', id: ownerId, overrideAccess: true })
+    const req = await createLocalReq({ user: asPayloadStaffUser(owner) }, payload)
+    const reason = 'Rejected before rejected applications released staff emails.'
+    // Recreate the persisted state from before rejection cleared the pending staff email.
+    await withMcpOnboardingWrite(req, { clinicId }, () =>
+      payload.update({ collection: 'clinics', id: clinicId, data: { participationStatus: 'rejected' }, req }),
+    )
+    await withMcpOnboardingWrite(req, { applicationId }, () =>
+      payload.update({
+        collection: 'clinicApplications',
+        id: applicationId,
+        data: { status: 'rejected', reviewNotes: reason },
+        req,
+      }),
+    )
+    await payload.delete({ collection: 'clinics', id: clinicId, overrideAccess: false, req })
+    expect(await payload.findByID({ collection: 'clinics', id: clinicId, disableErrors: true, trash: true })).toBeNull()
+    expect(await payload.findByID({ collection: 'clinicStaff', id: clinicStaffId, depth: 0 })).toMatchObject({
+      clinic: null,
+      email: input.contactEmail,
+    })
+    expect(await payload.findByID({ collection: 'clinicApplications', id: applicationId, depth: 0 })).toMatchObject({
+      linkedRecords: { clinic: null, clinicStaff: clinicStaffId },
+    })
+
+    const unrelated = await payload.create({
+      collection: 'clinics',
+      data: { name: 'Unrelated clinic', slug: `unrelated-${randomUUID()}`, status: 'draft' },
+      req,
+    })
+    const setApplicationClinic = (clinic: number | null) =>
+      withMcpOnboardingWrite(req, { applicationId }, () =>
+        payload.update({
+          collection: 'clinicApplications',
+          id: applicationId,
+          data: { linkedRecords: { clinic, clinicStaff: clinicStaffId } },
+          req,
+        }),
+      )
+    await setApplicationClinic(unrelated.id)
+    expect((await call('stageClinicOnboarding', { ...input, requestKey: randomUUID() })).error).toBeDefined()
+    expect(await payload.findByID({ collection: 'clinicStaff', id: clinicStaffId, depth: 0 })).toMatchObject({
+      email: input.contactEmail,
+    })
+    await setApplicationClinic(null)
+
+    const replacement = await call('stageClinicOnboarding', { ...input, requestKey: randomUUID() })
+    expect(replacement.error).toBeUndefined()
+    expect(stagedIds(replacement.data).clinicStaffId).not.toBe(clinicStaffId)
+    expect(await payload.findByID({ collection: 'clinicStaff', id: clinicStaffId, depth: 0 })).toMatchObject({
+      clinic: null,
+      email: null,
+      status: 'pending',
+    })
+    expect(await payload.findByID({ collection: 'clinicApplications', id: applicationId, depth: 0 })).toMatchObject({
+      contactEmail: input.contactEmail,
+      linkedRecords: { clinic: null, clinicStaff: clinicStaffId },
+      reviewNotes: reason,
+      status: 'rejected',
     })
   })
 

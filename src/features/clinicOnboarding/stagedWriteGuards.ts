@@ -7,6 +7,7 @@ import {
 } from 'payload'
 import type { ClinicApplication, ClinicStaff } from '@/payload-types'
 import { clinicApplicationProvisioningInputFields } from '@/collections/clinicApplications/provisioningLifecycle'
+import { getStagedOnboardingApplicationId } from './stagedIdentity'
 
 type WriteTargets = { applicationId?: number; clinicId?: number; staffId?: number }
 const permittedWrites = new WeakMap<PayloadRequest, WriteTargets>()
@@ -99,8 +100,8 @@ const openStaffFields = [
 
 export const guardMcpOnboardingStaff: CollectionBeforeChangeHook<ClinicStaff> = async ({ data, originalDoc, req }) => {
   if (originalDoc?.status !== 'pending' || permittedWrites.get(req)?.staffId === originalDoc.id) return data
-  const applicationId = /^clinic-application:(\d+)$/u.exec(originalDoc.onboardingKey ?? '')?.[1]
-  if (!applicationId || !changed(data, originalDoc, openStaffFields)) return data
+  const applicationId = getStagedOnboardingApplicationId(originalDoc.onboardingKey)
+  if (applicationId === undefined || !changed(data, originalDoc, openStaffFields)) return data
 
   const application = await req.payload.findByID({
     collection: 'clinicApplications',

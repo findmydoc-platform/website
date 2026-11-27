@@ -4,7 +4,7 @@ import {
   getStagedOnboardingApplicationId,
   getStagedOnboardingIdentity,
   matchesStagedOnboardingIdentity,
-} from './stagedBinding'
+} from './stagedIdentity'
 import { withMcpOnboardingWrite } from './stagedWriteGuards'
 
 export async function releaseAbandonedClinicStaffEmail(req: PayloadRequest, staffId: number): Promise<boolean> {
@@ -56,8 +56,8 @@ export async function releaseAbandonedClinicStaffEmail(req: PayloadRequest, staf
     application.provisioningErrorCode ||
     linked?.processedAt ||
     linked?.clinicStaff !== staff.id ||
-    typeof linked.clinic !== 'number' ||
-    staff.clinic !== linked.clinic ||
+    (linked.clinic != null && typeof linked.clinic !== 'number') ||
+    (staff.clinic ?? null) !== (linked.clinic ?? null) ||
     staff.assignmentScope !== 'local' ||
     staff.group != null ||
     normalizeEmail(staff.email) !== normalizeEmail(application.contactEmail)
@@ -80,7 +80,7 @@ export async function releaseAbandonedClinicStaffEmail(req: PayloadRequest, staf
   if (actions.docs.length) return false
 
   // The rejected application keeps the original email and the staff link for audit.
-  await withMcpOnboardingWrite(req, { staffId }, () =>
+  const released = await withMcpOnboardingWrite(req, { staffId }, () =>
     req.payload.update({
       collection: 'clinicStaff',
       id: staffId,
@@ -90,5 +90,5 @@ export async function releaseAbandonedClinicStaffEmail(req: PayloadRequest, staf
       req,
     }),
   )
-  return true
+  return released.email === null
 }

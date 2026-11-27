@@ -5,7 +5,7 @@ import {
   type PayloadRequest,
 } from 'payload'
 import { platformClinicTrustAccess } from '@/access/fieldAccess'
-import { getStagedOnboardingApplicationId } from '@/features/clinicOnboarding/stagedBinding'
+import { getStagedOnboardingApplicationId } from '@/features/clinicOnboarding/stagedIdentity'
 import { isTrustedMcpOnboardingClinicWrite } from '@/features/clinicOnboarding/stagedWriteGuards'
 import type { Clinic } from '@/payload-types'
 import { relationId } from './profileGallery'

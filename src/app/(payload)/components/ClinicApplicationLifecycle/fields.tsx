@@ -4,8 +4,8 @@ import { cache } from 'react'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { ClinicApplicationLifecyclePanel } from './index'
 
-const readStaffMode = cache(async (req: PayloadRequest, id?: number | string) => {
-  if (id === undefined || !(await isPlatformStaff({ req }))) return undefined
+const readUsesMcpOnboarding = cache(async (req: PayloadRequest, id?: number | string) => {
+  if (id === undefined || !(await isPlatformStaff({ req }))) return false
   const application = await req.payload.findByID({
     collection: 'clinicApplications',
     id,
@@ -15,14 +15,14 @@ const readStaffMode = cache(async (req: PayloadRequest, id?: number | string) =>
     overrideAccess: true,
     req,
   })
-  return application?.mcpOnboardingStaffMode
+  return Boolean(application?.mcpOnboardingStaffMode)
 })
 
 export async function ClinicApplicationStatusField({ clientField, id, path, readOnly, req }: SelectFieldServerProps) {
-  const staffMode = await readStaffMode(req, id)
-  return <SelectField field={clientField} path={path} readOnly={readOnly || Boolean(staffMode)} />
+  const usesMcpOnboarding = await readUsesMcpOnboarding(req, id)
+  return <SelectField field={clientField} path={path} readOnly={readOnly || usesMcpOnboarding} />
 }
 
 export async function ClinicApplicationLifecycleField({ id, req }: UIFieldServerProps) {
-  return <ClinicApplicationLifecyclePanel staffMode={await readStaffMode(req, id)} />
+  return <ClinicApplicationLifecyclePanel usesMcpOnboarding={await readUsesMcpOnboarding(req, id)} />
 }

@@ -36,6 +36,7 @@ type RelationshipValue =
 type ClinicApplicationLifecyclePresentationInput = Readonly<{
   currentData: Partial<ClinicApplication>
   persistedData: Partial<ClinicApplication>
+  usesMcpOnboarding?: boolean
 }>
 
 export type ClinicApplicationLifecyclePresentation = Readonly<{
@@ -68,12 +69,12 @@ const formatProcessedAt = (value: string | null | undefined): string => {
 export const getClinicApplicationLifecyclePresentation = ({
   currentData,
   persistedData,
+  usesMcpOnboarding = false,
 }: ClinicApplicationLifecyclePresentationInput): ClinicApplicationLifecyclePresentation => {
-  const staffMode = persistedData.mcpOnboardingStaffMode
-  const status = (staffMode ? persistedData.status : currentData.status) ?? persistedData.status ?? 'submitted'
+  const status = (usesMcpOnboarding ? persistedData.status : currentData.status) ?? persistedData.status ?? 'submitted'
   const provisioningStatus = persistedData.provisioningStatus ?? 'not_started'
   const provisioningErrorCode = persistedData.provisioningErrorCode
-  const inputChanged = !staffMode && hasClinicApplicationProvisioningInputChanged(currentData, persistedData)
+  const inputChanged = !usesMcpOnboarding && hasClinicApplicationProvisioningInputChanged(currentData, persistedData)
   const commonDetails = [
     {
       label: 'Review status',
@@ -101,7 +102,7 @@ export const getClinicApplicationLifecyclePresentation = ({
         ...(persistedData.linkedRecords?.clinic
           ? [
               {
-                label: staffMode ? 'Linked clinic' : 'Created clinic',
+                label: usesMcpOnboarding ? 'Linked clinic' : 'Created clinic',
                 value: formatRelationship(persistedData.linkedRecords.clinic as RelationshipValue),
               },
             ]
@@ -109,7 +110,7 @@ export const getClinicApplicationLifecyclePresentation = ({
         ...(persistedData.linkedRecords?.clinicStaff
           ? [
               {
-                label: staffMode ? 'Linked clinic staff' : 'Created clinic staff',
+                label: usesMcpOnboarding ? 'Linked clinic staff' : 'Created clinic staff',
                 value: formatRelationship(persistedData.linkedRecords.clinicStaff as RelationshipValue),
               },
             ]
@@ -123,10 +124,9 @@ export const getClinicApplicationLifecyclePresentation = ({
             ]
           : []),
       ],
-      guidance:
-        staffMode === 'existing_account'
-          ? 'The existing staff account is linked. Manage public publication on the clinic profile.'
-          : 'Participation is approved. Dashboard access still requires verified account completion; public publication is separate.',
+      guidance: usesMcpOnboarding
+        ? 'Manage public publication on the clinic profile. Dashboard access follows the staff account’s activation status.'
+        : 'Participation is approved. Dashboard access still requires verified account completion; public publication is separate.',
       stateLabel: 'Completed',
       summary: 'Clinic and initial staff participation are approved.',
       tone: 'success',
@@ -146,15 +146,17 @@ export const getClinicApplicationLifecyclePresentation = ({
             ]
           : []),
       ],
-      guidance: staffMode
+      guidance: usesMcpOnboarding
         ? 'Use readClinicOnboarding to get the latest application revision, then call approveClinicOnboarding to retry account setup.'
         : inputChanged
           ? 'Saving starts another provisioning attempt.'
           : 'Change at least the clinic name, website, contact first name, contact last name, email, or role, then save.',
       stateLabel: 'Failed',
-      summary: inputChanged
-        ? 'A provisioning input changed and the application is ready to retry.'
-        : 'The last automatic provisioning attempt failed.',
+      summary: usesMcpOnboarding
+        ? 'The last account setup attempt failed.'
+        : inputChanged
+          ? 'A provisioning input changed and the application is ready to retry.'
+          : 'The last automatic provisioning attempt failed.',
       tone: 'error',
     }
   }
@@ -162,7 +164,7 @@ export const getClinicApplicationLifecyclePresentation = ({
   if (status === 'rejected') {
     return {
       details: commonDetails,
-      guidance: staffMode
+      guidance: usesMcpOnboarding
         ? 'The application decision and reason are recorded. Manage public publication on the clinic profile.'
         : 'Saving keeps the application rejected and does not start provisioning.',
       stateLabel: 'Rejected',
@@ -174,20 +176,22 @@ export const getClinicApplicationLifecyclePresentation = ({
   if (status === 'approved') {
     return {
       details: commonDetails,
-      guidance: staffMode
+      guidance: usesMcpOnboarding
         ? 'Check the account setup status with readClinicOnboarding. Use the latest revision to resume setup with approveClinicOnboarding.'
         : persistedData.status === 'approved'
           ? 'Provisioning is waiting for the existing automatic process to complete.'
           : 'Saving Approved starts automatic clinic and clinic staff creation.',
       stateLabel: 'Provisioning pending',
-      summary: 'This application is approved and awaiting automatic provisioning.',
+      summary: usesMcpOnboarding
+        ? 'This application is approved and awaiting account setup.'
+        : 'This application is approved and awaiting automatic provisioning.',
       tone: 'warning',
     }
   }
 
   return {
     details: commonDetails,
-    guidance: staffMode
+    guidance: usesMcpOnboarding
       ? 'Review the current revision with readClinicOnboarding. Use approveClinicOnboarding or rejectClinicOnboarding to record the decision.'
       : 'Review the application and select Approved or Rejected.',
     stateLabel: 'Awaiting review',

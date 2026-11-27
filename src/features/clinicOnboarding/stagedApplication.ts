@@ -11,12 +11,8 @@ import { slugify } from '@/utilities/slugify'
 import { readEligibleExistingClinicStaff } from './existingStaff'
 import { withMcpOnboardingWrite } from './stagedWriteGuards'
 import { releaseAbandonedClinicStaffEmail } from './staffEmailReservation'
-import {
-  getStagedOnboardingBinding,
-  getStagedOnboardingIdentity,
-  readBoundStagedClinic,
-  readBoundStagedNewStaff,
-} from './stagedBinding'
+import { getStagedOnboardingBinding, readBoundStagedClinic, readBoundStagedNewStaff } from './stagedBinding'
+import { getStagedOnboardingIdentity } from './stagedIdentity'
 
 type Intake = Pick<
   ClinicApplication,
@@ -64,23 +60,20 @@ async function verifyMainSpecialties(req: PayloadRequest, medicalSpecialtyIds: n
 }
 
 async function requireUnusedClinicStaffEmail(req: PayloadRequest, email: string, excludeStaffId?: number) {
-  for (;;) {
-    const match = (
-      await req.payload.find({
-        collection: 'clinicStaff',
-        depth: 0,
-        limit: 1,
-        pagination: false,
-        select: { email: true },
-        where: {
-          email: { equals: email },
-          ...(excludeStaffId === undefined ? {} : { id: { not_equals: excludeStaffId } }),
-        },
-        overrideAccess: false,
-        req,
-      })
-    ).docs[0]
-    if (!match) return
+  const { docs } = await req.payload.find({
+    collection: 'clinicStaff',
+    depth: 0,
+    limit: 0,
+    pagination: false,
+    select: { email: true },
+    where: {
+      email: { equals: email },
+      ...(excludeStaffId === undefined ? {} : { id: { not_equals: excludeStaffId } }),
+    },
+    overrideAccess: false,
+    req,
+  })
+  for (const match of docs) {
     if (!(await releaseAbandonedClinicStaffEmail(req, match.id))) {
       throw new McpOnboardingError('The first contact email is already in use.', 409)
     }

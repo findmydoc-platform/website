@@ -135,7 +135,6 @@ describe('Clinic lifecycle rules', () => {
 
   it('uses the persisted review status for staged applications', () => {
     const persistedData = {
-      mcpOnboardingStaffMode: 'existing_account',
       provisioningStatus: 'not_started',
       status: 'submitted',
     } as const
@@ -144,6 +143,7 @@ describe('Clinic lifecycle rules', () => {
       getClinicApplicationLifecyclePresentation({
         currentData: { ...persistedData, status: 'approved' },
         persistedData,
+        usesMcpOnboarding: true,
       }).tone,
     ).toBe('info')
   })
@@ -151,16 +151,20 @@ describe('Clinic lifecycle rules', () => {
   it('keeps MCP retry guidance the same when form inputs change', () => {
     const persistedData = {
       clinicName: 'MCP clinic',
-      mcpOnboardingStaffMode: 'new_account',
       provisioningErrorCode: 'auth_failed',
       provisioningStatus: 'failed',
       status: 'approved',
     } as const
 
-    const unchanged = getClinicApplicationLifecyclePresentation({ currentData: persistedData, persistedData })
+    const unchanged = getClinicApplicationLifecyclePresentation({
+      currentData: persistedData,
+      persistedData,
+      usesMcpOnboarding: true,
+    })
     const edited = getClinicApplicationLifecyclePresentation({
       currentData: { ...persistedData, clinicName: 'Edited MCP clinic' },
       persistedData,
+      usesMcpOnboarding: true,
     })
     expect(edited).toEqual(unchanged)
   })

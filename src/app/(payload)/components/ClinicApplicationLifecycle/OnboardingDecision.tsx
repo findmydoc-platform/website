@@ -27,7 +27,9 @@ export function OnboardingDecision({ review, reviewedUpdatedAt }: { review: Revi
     setProcessing(true)
     setError(undefined)
     try {
-      const response = await fetch(`${apiURL}/onboarding-decision`, {
+      const decisionURL = new URL(apiURL, window.location.origin)
+      decisionURL.pathname += '/onboarding-decision'
+      const response = await fetch(decisionURL, {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
@@ -59,7 +61,7 @@ export function OnboardingDecision({ review, reviewedUpdatedAt }: { review: Revi
         {submitted
           ? 'Approve participation'
           : review.accountSetupStatus === 'completed'
-            ? 'Check invitation'
+            ? 'Prepare invitation'
             : 'Retry account setup'}
       </Button>
       {submitted && (

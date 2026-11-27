@@ -135,7 +135,7 @@ from trash and permanent deletion.
 
 In Payload Admin, open **Medical Network → Clinic Applications**. A current platform administrator or support user
 can review a staged application and select **Approve participation** or enter a reason and select **Reject
-participation**. An approved new-account application offers **Retry account setup** or **Check invitation**. Reload
+participation**. An approved new-account application offers **Retry account setup** or **Prepare invitation**. Reload
 after a conflict and review the saved details again. Admin and MCP use the same decision and assignment checks.
 
 To stop intake, remove **Stage an application** from every affected key or disable the MCP keys. Use the Admin

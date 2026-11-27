@@ -67,6 +67,19 @@ The `clinicMedia` and `doctorMedia` find permissions expose media metadata.
 `deleteClinicImage` and `deleteDoctorImage` permanently delete individual images only after references are removed.
 Uploads accept base64-encoded image bytes and the configured media size and type limits apply.
 
+### Clinic profile maintenance
+
+Under **Clinic profiles → Profile maintenance**, enable **Read** or **Update**. These options use the existing
+`clinics.find` and `clinics.update` grants and continue to authorize `findClinics` and `updateClinics`, respectively.
+
+- `readClinicProfile` takes a numeric `clinicId` and returns the profile, including its public publication status.
+- `updateClinicProfile` takes `clinicId` and a `profile` object. The accepted fields are `description` (Payload rich text),
+  `address` (`country`, `city`, `street`, `houseNumber`, `zipCode`), `contact` (`email`, `phoneNumber`, `website`), and
+  `openingHours` (Monday through Sunday). Omitted fields retain their stored values. The tool returns the updated profile.
+
+Staff can edit a profile as soon as the clinic exists. Edits to public profiles use the normal clinic cache invalidation
+hooks. Unpublished profiles stay private.
+
 ## Configure VS Code (Copilot Chat MCP)
 
 VS Code supports HTTP MCP servers via `.vscode/mcp.json`.

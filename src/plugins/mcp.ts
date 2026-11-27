@@ -17,6 +17,7 @@ import { MEDIA_UPLOAD_MAX_BYTES } from '@/config/mediaUploadPolicy'
 import { relationId } from '@/collections/clinics/profileGallery'
 import type { ClinicMedia, DoctorMedia } from '@/payload-types'
 import { readStoredImage } from '@/features/platformMedia/readStoredImage'
+import { readClinicProfile, updateClinicProfile } from '@/features/mcp/clinicProfileTools'
 
 type McpCollectionConfig = {
   description: string
@@ -30,6 +31,7 @@ type McpCollectionConfig = {
 }
 
 const mcpUserCollection: CollectionSlug = 'platformStaff'
+const clinicProfileToolNames = new Set([readClinicProfile.name, updateClinicProfile.name])
 
 const mcpGallerySnapshot = (snapshot: Awaited<ReturnType<typeof readPlatformClinicGallery>>) => ({
   ...snapshot,
@@ -315,6 +317,8 @@ export const createMcpPlugin = (): Plugin =>
     userCollection: mcpUserCollection,
     mcp: {
       tools: [
+        readClinicProfile,
+        updateClinicProfile,
         createTrashTool('clinics', 'trashClinic', 'Clinic'),
         createTrashTool('doctors', 'trashDoctor', 'Doctor'),
         createDeleteLinkTool('clinictreatments', 'deleteClinicTreatment', 'Clinic treatment'),
@@ -343,9 +347,9 @@ export const createMcpPlugin = (): Plugin =>
                   nested.type === 'group' && 'name' in nested && nested.name === 'payload-mcp-tool'
                     ? {
                         ...nested,
-                        fields: nested.fields.map((item) =>
-                          item.type === 'checkbox' ? { ...item, defaultValue: false } : item,
-                        ),
+                        fields: nested.fields
+                          .filter((item) => item.type !== 'checkbox' || !clinicProfileToolNames.has(item.name))
+                          .map((item) => (item.type === 'checkbox' ? { ...item, defaultValue: false } : item)),
                       }
                     : nested,
                 ),
@@ -370,6 +374,14 @@ export const createMcpPlugin = (): Plugin =>
         throw new UnauthorizedError()
       }
 
-      return mcpAccessSettings
+      const clinics = mcpAccessSettings.clinics as { find?: boolean; update?: boolean } | undefined
+      return {
+        ...mcpAccessSettings,
+        'payload-mcp-tool': {
+          ...mcpAccessSettings['payload-mcp-tool'],
+          [readClinicProfile.name]: clinics?.find === true,
+          [updateClinicProfile.name]: clinics?.update === true,
+        },
+      }
     },
   })

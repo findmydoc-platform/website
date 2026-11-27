@@ -503,12 +503,61 @@ describe('PatientInquiriesController', () => {
     expect((retry as HTMLButtonElement).disabled).toBe(false)
     expect(sendMessage).toHaveBeenCalledTimes(1)
 
-    fireEvent.click(retry)
+    retry.focus()
+    fireEvent.click(retry, { detail: 0 })
     await waitFor(() => expect(sendMessage).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('textbox', { name: 'Message' })))
 
     const firstKey = sendMessage.mock.calls[0]?.[0].idempotencyKey
     expect(sendMessage.mock.calls[1]?.[0].idempotencyKey).toBe(firstKey)
     expect(firstKey).toMatch(/\S{8,}/u)
+  })
+
+  it('returns keyboard focus to the message when the failed draft is discarded', async () => {
+    const api = createApi({ sendMessage: vi.fn().mockRejectedValue(new Error('Synthetic send failure')) })
+    render(<PatientInquiriesController api={api} initialInquiryId="inquiry-1" loginHref="/login" mode="detail" />)
+
+    const message = await screen.findByRole('textbox', { name: 'Message' })
+    fireEvent.change(message, { target: { value: 'Tuesday works.' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    const discard = await screen.findByRole('button', { name: 'Discard draft' })
+    discard.focus()
+    fireEvent.click(discard, { detail: 0 })
+    expect(document.activeElement).toBe(message)
+    expect((message as HTMLTextAreaElement).value).toBe('')
+    expect(screen.queryByRole('button', { name: 'Discard draft' })).toBeNull()
+  })
+
+  it('announces empty results and errors and keeps a keyboard retry inside the list', async () => {
+    const readQueue = vi
+      .fn()
+      .mockResolvedValueOnce(queue)
+      .mockResolvedValueOnce({ ...queue, changeCursor: 'empty', items: [] })
+      .mockRejectedValueOnce(new Error('Synthetic queue failure'))
+      .mockResolvedValueOnce(queue)
+    const { container } = render(
+      <PatientInquiriesController api={createApi({ readQueue })} loginHref="/login" mode="index" />,
+    )
+    const announcement = container.querySelector('[aria-label="Patient inquiry list"] [aria-live="polite"]')
+    expect(announcement?.textContent).toBe('')
+
+    fireEvent.click(await screen.findByRole('button', { name: /^Closed/ }))
+    const emptyHeading = await screen.findByRole('heading', { level: 2 })
+    const emptyMessage = emptyHeading.nextElementSibling?.textContent
+    expect(emptyMessage).toBeTruthy()
+    expect(announcement?.textContent).toBe(emptyMessage)
+
+    fireEvent.click(screen.getByRole('button', { name: /^All/ }))
+    const retry = await screen.findByRole('button', { name: 'Try again' })
+    const errorMessage = retry.previousElementSibling?.textContent
+    expect(errorMessage).toBeTruthy()
+    expect(announcement?.textContent).toContain(errorMessage)
+
+    retry.focus()
+    fireEvent.click(retry, { detail: 0 })
+    await waitFor(() => expect(announcement?.textContent).toBe(''))
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: /^All/ }))
   })
 
   it('uses a real inquiry link and waits for the detail route before marking it read', async () => {

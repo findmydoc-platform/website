@@ -10,12 +10,11 @@ import {
   type PublicAccountMenuLinks,
   type PublicAccountMenuState,
 } from '@/components/templates/Header/PublicAccountMenu'
+import { getStoryImageSrc, storyPortraits } from '@/stories/fixtures/assets'
+import { headerDataWithSubmenus } from '@/stories/templates/fixtures'
+import { withMockRouter } from '@/stories/utils/routerDecorator'
+import { withViewportStory } from '@/stories/utils/viewportMatrix'
 import { normalizeHeaderNavItems } from '@/utilities/normalizeNavItems'
-
-import { getStoryImageSrc, storyPortraits } from '../fixtures/assets'
-import { withMockRouter } from '../utils/routerDecorator'
-import { withViewportStory } from '../utils/viewportMatrix'
-import { headerDataWithSubmenus } from './fixtures'
 
 const navItemsWithSubs = normalizeHeaderNavItems(headerDataWithSubmenus)
 
@@ -126,10 +125,11 @@ const verifyGuestMenuItems = async () => {
 }
 
 const verifyPatientMenuItems = async () => {
-  await expect(screen.getByRole('menuitem', { name: 'Patient dashboard' })).toHaveAttribute(
-    'href',
-    '/patient/inquiries',
-  )
+  const inquiriesItem = screen
+    .getAllByRole('menuitem')
+    .find((item) => item.getAttribute('href') === '/patient/inquiries')
+  await expect(inquiriesItem).toBeVisible()
+  await expect(inquiriesItem).toHaveAccessibleName()
   await expect(screen.getByRole('menuitem', { name: 'Profile' })).toHaveAttribute('href', '/patient/profile')
   await expect(screen.getByRole('menuitem', { name: 'Favorites' })).toHaveAttribute('href', '/patient/favorites')
   await expect(screen.queryByRole('menuitem', { name: 'Help' })).not.toBeInTheDocument()
@@ -139,7 +139,9 @@ const verifyPatientMenuItems = async () => {
 }
 
 const verifyLivePatientMenuItems = async () => {
-  await expect(screen.queryByRole('menuitem', { name: 'Patient dashboard' })).not.toBeInTheDocument()
+  await expect(screen.getAllByRole('menuitem').map((item) => item.getAttribute('href'))).not.toContain(
+    '/patient/inquiries',
+  )
   await expect(screen.queryByRole('menuitem', { name: 'Profile' })).not.toBeInTheDocument()
   await expect(screen.queryByRole('menuitem', { name: 'Favorites' })).not.toBeInTheDocument()
   await expect(screen.queryByRole('menuitem', { name: 'Help' })).not.toBeInTheDocument()

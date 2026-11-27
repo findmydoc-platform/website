@@ -209,7 +209,7 @@ export function PatientInquiriesController({
     }
     if (!inquiryId) return
     window.requestAnimationFrame(() => {
-      findInquiryRow(inquiryId)?.focus()
+      if (document.activeElement === document.body) findInquiryRow(inquiryId)?.focus()
     })
   }, [mode, state.queue.data, state.queue.status])
 
@@ -362,7 +362,7 @@ export function PatientInquiriesController({
           return
         }
         dispatch({
-          message: messageForError(error, 'Your message was not sent. Try again.'),
+          message: messageForError(error, 'Not sent'),
           resetIdentity: !messageAttempted,
           retryReady: messageAttempted,
           type: 'send-failed',

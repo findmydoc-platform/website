@@ -13,21 +13,26 @@ listing, media visibility, and discovery retain their existing publication filte
 
 ## MCP staging
 
-The clinic onboarding tool creates a submitted application, a pending unpublished clinic and one pending staff
-principal in a single Payload transaction. The principal has local assignment to that clinic. The application and
-clinic participation remain pending, and the principal has no provider identity, activation evidence or invitation.
-The unique request key is scoped to the platform key owner. The application links both records and stores the selected
-account mode. The workflow owns these source fields and the staged application and staff bindings.
+The clinic onboarding tool creates a submitted application and a pending unpublished clinic in a single Payload
+transaction. The application links the clinic and initial staff record and stores the selected account mode. The unique
+request key is scoped to the platform key owner. The workflow owns those links and source fields.
 
-An authorized correction applies to an open application. Changes to the first contact flow to the clinic's internal
-contact and to the same pending principal. Corrections leave the public contact fields and publication state intact.
+In new-account mode, staging creates one pending staff principal with a local assignment. The principal has no provider
+identity, activation evidence or invitation. Intake corrections to the first contact flow to the clinic's internal
+contact and to the pending principal. Approval commits the application decision and clinic participation together
+with the first staff approval. Identity preparation then binds the identity to the same principal in a separate
+transaction. The invitation command reads the committed preparation status and uses the principal's durable invitation
+authorization to prevent duplicate invitations.
 
-The decision action verifies current clinic management authority and the staged clinic and staff binding inside a
-serializable Payload transaction. Approval commits the application and clinic participation together with the first
-staff approval. Identity preparation then binds the account to the same staff principal in a separate transaction.
-The existing invitation command reads the committed preparation status and uses the principal's durable invitation
-authorization to prevent duplicate invitations. Rejection records the review reason, rejects participation and
-preserves the pending staff binding. Both decisions leave publication to the existing Admin workflow.
+In existing-account mode, staging and correction record an explicitly selected staff ID through normal staff read
+access. The principal must be approved, synchronized and activated for the bound identity. Its assignment must be
+explicitly unassigned with neither a clinic nor a group. Approval uses the existing staff assignment authority and
+rechecks eligibility under the personal authorization barrier. The native local assignment shares a transaction with
+the application decision and clinic participation. It preserves the principal's existing identity and activation and
+prepares no invitation. A conflict leaves the application open and participation pending.
+
+Rejection records the reason and preserves the staff record in either mode. Both decisions leave publication to the
+existing Admin workflow.
 
 ## Private completion boundary
 

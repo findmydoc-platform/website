@@ -5,12 +5,25 @@ import { createLocalReq, getPayload, type Payload } from 'payload'
 import config from '@payload-config'
 import { bindAuthActions } from '@/auth/actions/lifecycle'
 import { readClinicAccessState } from '@/auth/utilities/clinicAccessState'
-import { createInitialClinicSupabaseAccount } from '@/auth/utilities/supabaseProvision'
-import { cleanupTrackedUsers, createPlatformTestUser } from '../../fixtures/testUsers'
+import {
+  createInitialClinicSupabaseAccount,
+  reconcileExistingClinicSupabaseAccount,
+  setClinicSupabaseAccountAccess,
+} from '@/auth/utilities/supabaseProvision'
+import { replaceClinicStaffAssignment } from '@/features/clinicGroups/staffAssignments'
+import {
+  asClinicScopedPayloadUser,
+  asPayloadStaffUser,
+  cleanupTrackedUsers,
+  createClinicTestUser,
+  createPlatformTestUser,
+  replaceClinicTestUserAssignment,
+} from '../../fixtures/testUsers'
 
 describe('MCP clinic onboarding', () => {
   let payload: Payload
   let specialtyId: number
+  let previousClinicId: number
   let ownerId: number
   let token: string
   const staffIds: Array<number | string> = []
@@ -129,6 +142,218 @@ describe('MCP clinic onboarding', () => {
     expect(foundPublic.docs).toEqual([])
     expect(vi.mocked(createInitialClinicSupabaseAccount)).not.toHaveBeenCalled()
   })
+  async function createActivatedStaff() {
+    if (!previousClinicId) {
+      const country = await payload.create({
+        collection: 'countries',
+        data: { name: 'Fixture country', isoCode: 'DE', language: 'German', currency: 'EUR' },
+        overrideAccess: true,
+      })
+      const city = await payload.create({
+        collection: 'cities',
+        data: { name: 'Fixture city', country: country.id, coordinates: [13.4, 52.5] },
+        overrideAccess: true,
+      })
+      const clinic = await payload.create({
+        collection: 'clinics',
+        data: {
+          name: 'Previous clinic',
+          slug: `previous-clinic-${randomUUID()}`,
+          status: 'approved',
+          address: { country: country.id, city: city.id, street: 'Fixture street', houseNumber: '1', zipCode: '10115' },
+          supportedLanguages: ['german'],
+          internalPrimaryContact: {
+            firstName: 'Fixture',
+            lastName: 'Contact',
+            email: 'fixture@example.com',
+            role: 'Clinic Management',
+          },
+        },
+        overrideAccess: true,
+      })
+      previousClinicId = clinic.id
+    }
+    const staff = await createClinicTestUser(payload, { emailPrefix: randomUUID(), createdStaffIds: staffIds })
+    await asClinicScopedPayloadUser(payload, staff, previousClinicId)
+    await replaceClinicTestUserAssignment(payload, staff.id, null)
+    const activated = await payload.findByID({
+      collection: 'clinicStaff',
+      id: staff.id,
+      depth: 0,
+      overrideAccess: true,
+    })
+    if (!activated.email) throw new Error('Expected the activated fixture to have an email.')
+    return { ...activated, email: activated.email }
+  }
+
+  function existingIntake(clinicStaffId: number) {
+    const { contactFirstName: _first, contactLastName: _last, contactEmail: _email, ...input } = intake()
+    return { ...input, staffMode: 'existing_account', clinicStaffId }
+  }
+
+  it('finds a readable activated unassigned account and stages only its selection', async () => {
+    const staff = await createActivatedStaff()
+    const lookup = { email: ` ${staff.email.toUpperCase()} ` }
+    const createOnly = await createKey({ create: true })
+    expect((await call('findEligibleClinicOnboardingStaff', lookup, createOnly)).error).toBeDefined()
+    expect(await call('findEligibleClinicOnboardingStaff', lookup)).toEqual({
+      data: {
+        candidate: {
+          clinicStaffId: staff.id,
+          email: staff.email,
+          firstName: staff.firstName,
+          lastName: staff.lastName,
+        },
+      },
+      error: undefined,
+    })
+    expect(
+      (
+        await call('stageClinicOnboarding', {
+          ...existingIntake(staff.id),
+          clinicStaffId: undefined,
+          contactEmail: staff.email,
+        })
+      ).error,
+    ).toBeDefined()
+    const input = existingIntake(staff.id)
+    const staged = await call('stageClinicOnboarding', input)
+    expect(staged.data).toMatchObject({
+      staffMode: 'existing_account',
+      clinicStaffId: staff.id,
+      decisionStatus: 'submitted',
+      participationStatus: 'pending',
+      accountSetupStatus: 'not_started',
+      publicStatus: 'pending',
+    })
+    const { applicationId } = stagedIds(staged.data)
+    expect(await call('stageClinicOnboarding', input)).toEqual(staged)
+    expect((await call('readClinicOnboarding', { applicationId })).data).toMatchObject({
+      contactEmail: staff.email,
+      contactFirstName: staff.firstName,
+      contactLastName: staff.lastName,
+    })
+    expect(await payload.findByID({ collection: 'clinicStaff', id: staff.id, depth: 0, overrideAccess: true })).toEqual(
+      staff,
+    )
+  })
+
+  it('corrects the selected account and approves the original activated identity without an invitation', async () => {
+    const original = await createActivatedStaff()
+    const selected = await createActivatedStaff()
+    const decisionKey = await createKey({ decide: true })
+    const providerCalls = [
+      vi.mocked(createInitialClinicSupabaseAccount),
+      vi.mocked(reconcileExistingClinicSupabaseAccount),
+      vi.mocked(setClinicSupabaseAccountAccess),
+    ]
+    providerCalls.forEach((mock) => mock.mockClear())
+    const { applicationId, clinicId } = stagedIds(
+      (await call('stageClinicOnboarding', existingIntake(original.id))).data,
+    )
+    expect((await call('correctClinicOnboarding', { applicationId, contactEmail: selected.email })).error).toBeDefined()
+    expect(
+      await call('correctClinicOnboarding', { applicationId, clinicStaffId: selected.id, contactFirstName: 'Contact' }),
+    ).toMatchObject({ data: { applicationId, clinicId, clinicStaffId: selected.id, decisionStatus: 'submitted' } })
+    expect((await call('readClinicOnboarding', { applicationId })).data).toMatchObject({
+      contactEmail: selected.email,
+      contactFirstName: 'Contact',
+    })
+    expect(
+      await payload.findByID({ collection: 'clinicStaff', id: selected.id, depth: 0, overrideAccess: true }),
+    ).toEqual(selected)
+    const approval = await call('approveClinicOnboarding', { applicationId }, decisionKey)
+    expect(approval).toMatchObject({
+      data: {
+        clinicId,
+        clinicStaffId: selected.id,
+        decisionStatus: 'approved',
+        accountSetupStatus: 'completed',
+        participationStatus: 'approved',
+        publicStatus: 'pending',
+        invitationStatus: 'not_started',
+      },
+    })
+    expect(await call('approveClinicOnboarding', { applicationId }, decisionKey)).toEqual(approval)
+    expect(await readClinicAccessState(payload, selected.id)).toMatchObject({ clinic: { id: clinicId } })
+    expect(
+      await payload.findByID({ collection: 'clinicStaff', id: selected.id, depth: 0, overrideAccess: true }),
+    ).toMatchObject({
+      id: selected.id,
+      firstName: selected.firstName,
+      lastName: selected.lastName,
+      email: selected.email,
+      clinic: clinicId,
+      group: null,
+      assignmentScope: 'local',
+      supabaseUserId: selected.supabaseUserId,
+      activationReadiness: selected.activationReadiness,
+      accountCompletion: selected.accountCompletion,
+      authSync: selected.authSync,
+      status: selected.status,
+      onboardingKey: selected.onboardingKey,
+      invitationAuthorizedAt: selected.invitationAuthorizedAt,
+    })
+    expect(
+      await payload.findByID({ collection: 'clinicStaff', id: original.id, depth: 0, overrideAccess: true }),
+    ).toEqual(original)
+    providerCalls.forEach((mock) => expect(mock).not.toHaveBeenCalled())
+  })
+
+  it('preserves an intervening group assignment and leaves the application open until rejection', async () => {
+    const staff = await createActivatedStaff()
+    const input = existingIntake(staff.id)
+    const { applicationId } = stagedIds((await call('stageClinicOnboarding', input)).data)
+    const owner = await payload.findByID({ collection: 'platformStaff', id: ownerId, overrideAccess: true })
+    const req = await createLocalReq({ user: asPayloadStaffUser(owner) }, payload)
+    const group = await payload.create({
+      collection: 'clinicGroups',
+      data: { name: `MCP group ${randomUUID()}` },
+      overrideAccess: false,
+      req,
+    })
+    await replaceClinicStaffAssignment(req, staff.id, { scope: 'group', groupId: group.id })
+    const grouped = await payload.findByID({ collection: 'clinicStaff', id: staff.id, depth: 0, overrideAccess: true })
+    expect(await call('findEligibleClinicOnboardingStaff', { email: staff.email })).toMatchObject({
+      data: { candidate: null },
+    })
+    expect((await call('stageClinicOnboarding', { ...input, requestKey: randomUUID() })).error).toBeDefined()
+    expect((await call('correctClinicOnboarding', { applicationId, clinicStaffId: staff.id })).error).toBeDefined()
+    const decisionKey = await createKey({ decide: true })
+    expect((await call('approveClinicOnboarding', { applicationId }, decisionKey)).error).toBeDefined()
+    expect((await call('readClinicOnboarding', { applicationId })).data).toMatchObject({
+      decisionStatus: 'submitted',
+      accountSetupStatus: 'not_started',
+      participationStatus: 'pending',
+    })
+    expect(
+      await call('rejectClinicOnboarding', { applicationId, reason: 'No longer available.' }, decisionKey),
+    ).toMatchObject({
+      data: { decisionStatus: 'rejected', participationStatus: 'rejected', invitationStatus: 'not_started' },
+    })
+    expect(await payload.findByID({ collection: 'clinicStaff', id: staff.id, depth: 0, overrideAccess: true })).toEqual(
+      grouped,
+    )
+  })
+
+  it('assigns an activated account to just one application when approval requests race', async () => {
+    const staff = await createActivatedStaff()
+    const first = stagedIds((await call('stageClinicOnboarding', existingIntake(staff.id))).data)
+    const second = stagedIds((await call('stageClinicOnboarding', existingIntake(staff.id))).data)
+    const decisionKey = await createKey({ decide: true })
+    const [firstDecision, secondDecision] = await Promise.all([
+      call('approveClinicOnboarding', { applicationId: first.applicationId }, decisionKey),
+      call('approveClinicOnboarding', { applicationId: second.applicationId }, decisionKey),
+    ])
+    expect([firstDecision, secondDecision].filter(({ error }) => error !== undefined)).toHaveLength(1)
+    const [winner, open] = firstDecision.error === undefined ? [first, second] : [second, first]
+    expect(await readClinicAccessState(payload, staff.id)).toMatchObject({ clinic: { id: winner.clinicId } })
+    expect((await call('readClinicOnboarding', { applicationId: open.applicationId })).data).toMatchObject({
+      decisionStatus: 'submitted',
+      participationStatus: 'pending',
+    })
+  })
+
   it('returns one set of records for simultaneous calls with the same request key', async () => {
     const input = intake()
     const [first, second] = await Promise.all([

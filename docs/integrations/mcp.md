@@ -75,9 +75,10 @@ correcting and deciding require the key owner's current clinic management role a
 
 | Tool | Required onboarding grant | Inputs |
 | --- | --- | --- |
-| `stageClinicOnboarding` | Stage an application | `requestKey`, `staffMode: "new_account"`, `clinicName`, `clinicWebsite`, `medicalSpecialtyIds`, `contactFirstName`, `contactLastName`, `contactEmail` and `contactRole` |
+| `stageClinicOnboarding` | Stage an application | `requestKey`, `clinicName`, `clinicWebsite`, `medicalSpecialtyIds`, `contactRole` and the account selection described below |
 | `readClinicOnboarding` | Read applications | `applicationId` |
-| `correctClinicOnboarding` | Correct an open application | `applicationId` and one or more changed intake fields |
+| `findEligibleClinicOnboardingStaff` | Read applications | Exact `email` of the account to look up |
+| `correctClinicOnboarding` | Correct an open application | `applicationId` and one or more changed intake fields, including `clinicStaffId` to replace an existing-account selection |
 | `approveClinicOnboarding` | Decide applications | `applicationId` |
 | `rejectClinicOnboarding` | Decide applications | `applicationId` and a non-empty `reason` |
 
@@ -87,15 +88,33 @@ application for the same clinic name and contact email returns a conflict. A new
 that is available for clinic staff. Medical specialties must be main
 specialties. The supported contact roles are `Medical Director`, `Clinic Management` and `International Office`.
 
+- For `staffMode: "new_account"`, supply `contactFirstName`, `contactLastName` and `contactEmail`. A staff account
+  that already uses the email results in a conflict.
+- For `staffMode: "existing_account"`, supply the selected `clinicStaffId`. The application uses the account's email
+  and defaults the contact names to the account's names. Supply `contactLastName` if the account has none. Supplied
+  contact names apply to the application and clinic contact.
+- The optional lookup normalizes the email and uses the caller's existing staff read access. It returns
+  `candidate` with the account ID, email and names if the exact match is eligible, or `candidate: null`. Eligibility
+  requires approved status, synchronized identity, activation evidence for that account and identity, and explicit
+  unassigned scope with neither a clinic nor a group. Pass the ID explicitly when staging or changing the selection.
+
 The response distinguishes the application decision (`decisionStatus`), account setup (`accountSetupStatus`),
 Dashboard participation (`participationStatus`) and the clinic's publication state (`publicStatus`). Staging leaves
-the application submitted, the clinic unpublished and the first staff account pending without Dashboard access.
-The read action includes the intake fields. Correcting the first contact's email updates the application, the
-clinic's internal primary contact and the pending account together.
+the application submitted and the clinic unpublished. The new-account path creates a pending staff account;
+the existing-account path records the selected ID and leaves the account unassigned. The read action includes the intake
+fields. For a new account, corrections to the first contact update the application, the clinic's internal primary
+contact and the pending account together. For an existing account, changing the selected ID updates the application and
+clinic contact. The selected account itself can be updated through the existing staff workflows.
 
-Approval saves the Dashboard participation decision before any account setup and preserves the clinic's publication
-status. The first staff member must complete the existing account activation to use the Dashboard. Rejection keeps the
-reason on the application and leaves the pending account without an identity or invitation.
+For a new account, approval saves the Dashboard participation decision before account setup. The first staff member
+must complete the existing account activation to use the Dashboard. Rejection records the reason and leaves the pending
+account without an identity or invitation.
+
+For an existing account, approval requires current staff assignment authority and checks the selected account's
+eligibility again. Approval commits the application decision, participation and local staff assignment together.
+The original account retains its login and activation. The response reports `accountSetupStatus: "completed"` and
+`invitationStatus: "not_started"`. If the selected account becomes ineligible, approval returns a conflict and the
+application stays open. Rejection records the reason and preserves the existing account and its current assignment.
 
 If account setup fails, the same response reports `decisionStatus: "approved"`, `accountSetupStatus: "failed"` and
 an `accountSetupErrorCode`. Call `approveClinicOnboarding` again with the same application ID to resume setup for

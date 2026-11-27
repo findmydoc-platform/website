@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { createLocalReq, getPayload, type Payload } from 'payload'
 import sharp from 'sharp'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { revalidatePath, revalidateTag } from 'next/cache'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import config from '@payload-config'
 import { cleanupTrackedDocs } from '../fixtures/cleanupTrackedDocs'
@@ -164,10 +165,14 @@ describe('MCP editorial image upload', () => {
     const body = requestBody({ ...upload, alt, base64: image.toString('base64') })
     expect(Buffer.byteLength(body)).toBeLessThan(mcpBodyLimitBytes)
 
+    vi.mocked(revalidateTag).mockClear()
+    vi.mocked(revalidatePath).mockClear()
     const result = await call(body)
     expect(result).toMatchObject({ isError: false, text: expect.any(String) })
     const reference = JSON.parse(result.text!) as { id: number }
     mediaIds.push(reference.id)
+    expect(revalidateTag).not.toHaveBeenCalled()
+    expect(revalidatePath).not.toHaveBeenCalled()
     expect(
       await payload.findByID({ collection: 'platformContentMedia', id: reference.id, overrideAccess: false, depth: 0 }),
     ).toMatchObject({
@@ -178,11 +183,13 @@ describe('MCP editorial image upload', () => {
     })
 
     expect(
-      await call(requestBody({ id: post.id, heroImage: reference.id, draft: true, locale: 'de' }, 'updatePosts')),
+      await call(requestBody({ id: post.id, data: { heroImage: reference.id }, locale: 'de' }, 'updatePostDraft')),
     ).toMatchObject({
       isError: false,
-      text: expect.stringContaining('Document updated successfully'),
+      text: expect.stringContaining('"status":"draft"'),
     })
+    expect(revalidateTag).not.toHaveBeenCalled()
+    expect(revalidatePath).not.toHaveBeenCalled()
     expect(
       await payload.findByID({ collection: 'posts', id: post.id, draft: true, locale: 'de', depth: 0 }),
     ).toMatchObject({

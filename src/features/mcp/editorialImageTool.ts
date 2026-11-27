@@ -40,13 +40,14 @@ export const uploadEditorialImageTool = {
     if (fileData.length > mcpImageLimit) throw new APIError(imageTooLarge, 413)
     const media = await req.payload.create({
       collection: 'platformContentMedia',
+      // A fresh asset has no public consumers. The referencing content owns revalidation.
+      context: { disableRevalidate: true },
       // The media collection sets the uploader and storage path during creation.
       data: { alt: input.alt } as Pick<PlatformContentMedia, 'alt' | 'createdBy' | 'storagePath'>,
       file: { name: input.name, mimetype: input.mimeType, size: fileData.length, data: fileData },
       depth: 0,
       overrideAccess: false,
-      req,
-      user: req.user,
+      req: { ...req },
     })
     return { content: [{ type: 'text' as const, text: JSON.stringify({ id: media.id }) }] }
   },

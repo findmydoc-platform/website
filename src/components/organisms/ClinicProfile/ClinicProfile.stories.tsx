@@ -1,6 +1,6 @@
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, userEvent, within } from 'storybook/test'
+import { expect, fn, userEvent, within } from 'storybook/test'
 import { clinicDetailFixture } from '@/stories/fixtures/clinicDetail'
 import { withViewportStory } from '@/stories/utils/viewportMatrix'
 import { ClinicProfile, type ClinicProfileProps } from './ClinicProfile'
@@ -19,6 +19,18 @@ const meta = {
     share: { url: 'https://example.test/clinic', onCopy: async () => {} },
     map: { allowed: false },
   },
+  render: (args) => <ControlledProfile {...args} />,
+  decorators: [
+    (Story) => (
+      <div
+        onClickCapture={(event) => {
+          if ((event.target as HTMLElement).closest('a')) event.preventDefault()
+        }}
+      >
+        <Story />
+      </div>
+    ),
+  ],
   parameters: { layout: 'fullscreen' },
   tags: ['autodocs', 'domain:clinic', 'layer:organism', 'status:experimental', 'used-in:route:/clinics/[slug]'],
 } satisfies Meta<typeof ClinicProfile>
@@ -31,7 +43,6 @@ function ControlledProfile(args: ClinicProfileProps) {
 }
 
 export const Gallery: Story = {
-  render: (args) => <ControlledProfile {...args} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     const trigger = canvas.getByRole('button', { name: /view all photos/i })
@@ -46,7 +57,6 @@ export const Gallery: Story = {
   },
 }
 export const SaveAndShare: Story = {
-  render: (args) => <ControlledProfile {...args} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     const save = canvas.getByRole('button', { name: 'Save' })
@@ -58,6 +68,31 @@ export const SaveAndShare: Story = {
     const popup = within(document.body)
     await userEvent.click(popup.getByRole('button', { name: 'Copy link' }))
     await expect(popup.getAllByRole('status').some((status) => status.textContent?.length)).toBe(true)
+  },
+}
+
+export const GuestSave: Story = {
+  args: { favorite: { isPatient: false, saved: false, onToggle: fn(), onSignIn: fn() } },
+  play: async ({ args, canvasElement }) => {
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Save' }))
+    await expect(args.favorite.onSignIn).toHaveBeenCalled()
+    await expect(args.favorite.onToggle).not.toHaveBeenCalled()
+  },
+}
+export const ShareFailure: Story = {
+  args: {
+    share: {
+      url: 'https://example.test/clinic',
+      onCopy: async () => {
+        throw new Error('Unavailable')
+      },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Share' }))
+    const popup = within(document.body)
+    await userEvent.click(popup.getByRole('button', { name: 'Copy link' }))
+    await expect(popup.getByRole('textbox')).toHaveValue('https://example.test/clinic')
   },
 }
 export const NoPhotos: Story = {

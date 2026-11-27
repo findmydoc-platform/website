@@ -80,6 +80,9 @@ Under **Clinic profiles → Profile maintenance**, enable **Read** or **Update**
 Staff can edit a profile as soon as the clinic exists. Edits to public profiles use the normal clinic cache invalidation
 hooks. Unpublished profiles stay private.
 
+For clinics created by the MCP onboarding workflow, use onboarding actions for the first contact and participation
+decision. Use Payload Admin for public publication and for suspending or resuming approved participation.
+
 ## Configure VS Code (Copilot Chat MCP)
 
 VS Code supports HTTP MCP servers via `.vscode/mcp.json`.

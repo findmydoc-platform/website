@@ -15,9 +15,17 @@ import { buildRichText } from '../../fixtures/richText'
 import { ensureBaseline } from '../../fixtures/ensureBaseline'
 import type { Treatment } from '@/payload-types'
 
-async function callMcpTool(payload: Payload, token: string, name: string, args: Record<string, unknown>) {
+async function sendMcpRequest(payload: Payload, request: Request) {
   const endpoint = payload.config.endpoints.find((entry) => entry.path === '/mcp' && entry.method === 'post')
   if (!endpoint) throw new Error('Expected the MCP POST endpoint')
+  const req = await createLocalReq(
+    { req: { method: request.method, url: request.url, headers: request.headers, body: request.body } },
+    payload,
+  )
+  return endpoint.handler(req)
+}
+
+async function callMcpTool(payload: Payload, token: string, name: string, args: Record<string, unknown>) {
   const request = new Request('http://localhost:3000/api/mcp', {
     method: 'POST',
     headers: {
@@ -27,11 +35,7 @@ async function callMcpTool(payload: Payload, token: string, name: string, args: 
     },
     body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name, arguments: args } }),
   })
-  const req = await createLocalReq(
-    { req: { method: request.method, url: request.url, headers: request.headers, body: request.body } },
-    payload,
-  )
-  const response = await endpoint.handler(req)
+  const response = await sendMcpRequest(payload, request)
   expect(response.status).toBe(200)
   const text = await response.text()
   const eventData = text
@@ -547,13 +551,9 @@ describe('MCP key management and client access', () => {
           },
         ]),
       })
-      const req = await createLocalReq(
-        { req: { method: request.method, url: request.url, headers: request.headers, body: request.body } },
-        payload,
-      )
       const timeout = setTimeout(releaseDoctor, 3000)
       try {
-        const response = await endpoint.handler(req)
+        const response = await sendMcpRequest(payload, request)
         const result = await response.text()
         expect(result).toContain('moved to trash')
         expect(result).toContain('Use the explicitly authorized trash tool')
@@ -726,6 +726,98 @@ describe('MCP key management and client access', () => {
       trash: true,
     })
     expect(stored.deletedAt).toBeTruthy()
+  })
+
+  it('keeps a staged clinic editable while protecting participation, first contact, and publication', async () => {
+    const token = randomUUID()
+    const key = await payload.create({
+      collection: 'payload-mcp-api-keys',
+      overrideAccess: true,
+      data: {
+        user: support.id,
+        label: `${prefix}-staged-clinic`,
+        enableAPIKey: true,
+        apiKey: token,
+        clinics: { find: true, update: true },
+        clinicOnboarding: { create: true },
+      },
+    })
+    keyIds.push(key.id)
+    const call = (name: string, args: Record<string, unknown>) => callMcpTool(payload, token, name, args)
+    const {
+      docs: [specialty],
+    } = await payload.find({
+      collection: 'medical-specialties',
+      where: { parentSpecialty: { exists: false } },
+      depth: 0,
+      limit: 1,
+    })
+    const clinicName = `${prefix}-staged-${randomUUID()}`
+    const { clinicId } = JSON.parse(
+      await call('stageClinicOnboarding', {
+        requestKey: randomUUID(),
+        staffMode: 'new_account',
+        clinicName,
+        clinicWebsite: 'https://example.org',
+        medicalSpecialtyIds: [specialty!.id],
+        contactFirstName: 'Initial',
+        contactLastName: 'Contact',
+        contactEmail: `${clinicName}@example.com`,
+        contactRole: 'Clinic Management',
+      }),
+    )
+
+    const city = (await payload.find({ collection: 'cities', depth: 0, limit: 1 })).docs[0]!
+    const country = typeof city.country === 'object' ? city.country.id : city.country
+    const address = { city: city.id, country, street: 'Staged clinic street', houseNumber: '7', zipCode: '34000' }
+    expect(JSON.parse(await call('updateClinicProfile', { clinicId, profile: { address } }))).toMatchObject({
+      id: clinicId,
+      address,
+      status: 'pending',
+    })
+    expect(await call('updateClinics', { id: clinicId, supportedLanguages: ['english'] })).toContain(
+      'Document updated successfully',
+    )
+    for (const forbidden of [
+      { status: 'approved' },
+      { participationStatus: 'approved' },
+      { internalPrimaryContact: { email: 'unrelated@example.com' } },
+    ] as const) {
+      expect(await call('updateClinics', { id: clinicId, ...forbidden })).toContain('Error updating resource')
+      await expect(
+        payload.update({ collection: 'clinics', id: clinicId, data: forbidden, overrideAccess: true }),
+      ).rejects.toMatchObject({ status: 403 })
+    }
+    const adminReq = await createLocalReq({ user: support, req: { payloadAPI: 'REST' } }, payload)
+    for (const forbidden of [
+      { participationStatus: 'approved' },
+      { internalPrimaryContact: { email: 'unrelated@example.com' } },
+    ] as const) {
+      await expect(
+        payload.update({ collection: 'clinics', id: clinicId, data: forbidden, overrideAccess: false, req: adminReq }),
+      ).rejects.toMatchObject({ status: 403 })
+    }
+    expect(
+      (await payload.find({ collection: 'clinics', where: { id: { equals: clinicId } }, overrideAccess: false })).docs,
+    ).toHaveLength(0)
+
+    const publicationReq = await createLocalReq({ user: support, req: { payloadAPI: 'REST' } }, payload)
+    await payload.update({
+      collection: 'clinics',
+      id: clinicId,
+      data: { status: 'approved' },
+      overrideAccess: false,
+      req: publicationReq,
+    })
+    expect(
+      (await payload.find({ collection: 'clinics', where: { id: { equals: clinicId } }, overrideAccess: false })).docs,
+    ).toMatchObject([{ status: 'approved', address }])
+    expect(
+      await payload.findByID({ collection: 'clinics', id: clinicId, user: support, overrideAccess: false }),
+    ).toMatchObject({
+      participationStatus: 'pending',
+      internalPrimaryContact: { email: `${clinicName}@example.com` },
+    })
   })
 
   it('lets an administrator manage their bound key and denies a stale administrator after role removal', async () => {

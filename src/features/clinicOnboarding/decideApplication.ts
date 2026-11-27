@@ -17,6 +17,7 @@ import {
   prepareClinicOnboardingIdentity,
 } from './provisionClinicOnboarding'
 import {
+  getApplicationRevision,
   McpOnboardingError,
   readOnboardingStatus,
   readStagedApplication,
@@ -25,6 +26,7 @@ import {
 import { readEligibleExistingClinicStaff } from './existingStaff'
 import { withMcpOnboardingWrite } from './stagedWriteGuards'
 
+type DecisionPrecondition = { applicationId: number; applicationRevision: string }
 type Decision = { outcome: 'approved' } | { outcome: 'rejected'; reason: string }
 type Binding = { clinicId: number; clinicStaffId: number; onboardingKey: string; provisioningIdentity: string }
 type OnboardingStatus = Awaited<ReturnType<typeof readOnboardingStatus>>
@@ -158,10 +160,17 @@ async function approveExistingAccountParticipation(
   )
 }
 
-async function persistDecision(req: PayloadRequest, applicationId: number, decision: Decision) {
+async function persistDecision(
+  req: PayloadRequest,
+  { applicationId, applicationRevision }: DecisionPrecondition,
+  decision: Decision,
+) {
   return runClinicRegistrationTransaction(req, async (transactionReq) => {
     await requireClinicOnboardingOperator(transactionReq)
     const application = await readStagedApplication(transactionReq, applicationId)
+    if (getApplicationRevision(application) !== applicationRevision) {
+      throw new McpOnboardingError('The application has changed. Read the latest version before deciding.', 409)
+    }
     if (application.status === 'approved' && decision.outcome === 'approved') return application
     if (application.status !== 'submitted') {
       throw new McpOnboardingError('This clinic onboarding application is already decided.', 409)
@@ -318,15 +327,15 @@ function resolveDecisionMode(application: ClinicApplication): DecisionMode {
   return mode
 }
 
-export async function approveClinicOnboarding(req: PayloadRequest, { applicationId }: { applicationId: number }) {
-  const approved = await persistDecision(req, applicationId, { outcome: 'approved' })
+export async function approveClinicOnboarding(req: PayloadRequest, input: DecisionPrecondition) {
+  const approved = await persistDecision(req, input, { outcome: 'approved' })
   return resolveDecisionMode(approved).afterApproval(req, approved)
 }
 
 export async function rejectClinicOnboarding(
   req: PayloadRequest,
-  { applicationId, reason }: { applicationId: number; reason: string },
+  { reason, ...input }: DecisionPrecondition & { reason: string },
 ) {
-  const application = await persistDecision(req, applicationId, { outcome: 'rejected', reason })
+  const application = await persistDecision(req, input, { outcome: 'rejected', reason })
   return { ...(await readOnboardingStatus(req, application)), invitationStatus: 'not_started' }
 }

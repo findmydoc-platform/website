@@ -79,8 +79,8 @@ correcting and deciding require the key owner's current clinic management role a
 | `readClinicOnboarding` | Read applications | `applicationId` |
 | `findEligibleClinicOnboardingStaff` | Read applications | Exact `email` of the account to look up |
 | `correctClinicOnboarding` | Correct an open application | `applicationId` and one or more changed intake fields, including `clinicStaffId` to replace an existing-account selection |
-| `approveClinicOnboarding` | Decide applications | `applicationId` |
-| `rejectClinicOnboarding` | Decide applications | `applicationId` and a non-empty `reason` |
+| `approveClinicOnboarding` | Decide applications | `applicationId` and `applicationRevision` |
+| `rejectClinicOnboarding` | Decide applications | `applicationId`, `applicationRevision` and a non-empty `reason` |
 
 Use a fresh request key for a new intake and reuse it when retrying as the same key owner. The response returns the
 same application, clinic and staff IDs after a successful replay. A separate request matching an open or approved
@@ -102,7 +102,8 @@ The response distinguishes the application decision (`decisionStatus`), account 
 Dashboard participation (`participationStatus`) and the clinic's publication state (`publicStatus`). Staging leaves
 the application submitted and the clinic unpublished. The new-account path creates a pending staff account;
 the existing-account path records the selected ID and leaves the account unassigned. The read action includes the intake
-fields. For a new account, corrections to the first contact update the application, the clinic's internal primary
+fields and `applicationRevision`. Review the returned intake and staff selection before sending that revision to the
+decision tool. If the application changes before the decision, read it and review the new revision. For a new account, corrections to the first contact update the application, the clinic's internal primary
 contact and the pending account together. For an existing account, changing the selected ID updates the application and
 clinic contact. The selected account itself can be updated through the existing staff workflows.
 
@@ -117,8 +118,8 @@ The original account retains its login and activation. The response reports `acc
 application stays open. Rejection records the reason and preserves the existing account and its current assignment.
 
 If account setup fails, the same response reports `decisionStatus: "approved"`, `accountSetupStatus: "failed"` and
-an `accountSetupErrorCode`. Call `approveClinicOnboarding` again with the same application ID to resume setup for
-the same clinic and staff account. The decision tools also report `invitationStatus`. A prepared invitation uses
+an `accountSetupErrorCode`. Call `approveClinicOnboarding` again with the same application ID and the latest revision
+to resume setup for the same clinic and staff account. The decision tools also report `invitationStatus`. A prepared invitation uses
 the existing Auth Action and is eligible for delivery under the current environment policy. Retrying the approval
 reuses the existing invitation authorization. Public publication remains a separate Payload Admin action.
 

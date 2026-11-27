@@ -93,6 +93,12 @@ const intake = z.object({
   contactRole: z.enum(['Medical Director', 'Clinic Management', 'International Office']),
 })
 const applicationIdInput = z.object({ applicationId: id })
+const decisionInput = applicationIdInput.extend({
+  applicationRevision: z
+    .string()
+    .regex(/^[a-f0-9]{64}$/u)
+    .describe('Revision returned for the application under review.'),
+})
 const correctionInput = intake.partial().merge(applicationIdInput).extend({ clinicStaffId: id.optional() })
 const stageInput = intake.partial({ contactFirstName: true, contactLastName: true, contactEmail: true }).extend({
   requestKey: z.string().trim().min(1).max(200),
@@ -175,15 +181,15 @@ export const clinicOnboardingTools = [
   defineOnboardingTool(
     'decide',
     'approveClinicOnboarding',
-    'Approve Dashboard participation and prepare or assign the selected first staff account. Replay approval to resume new account setup.',
-    applicationIdInput,
+    'Approve Dashboard participation for the reviewed application revision. Use its latest revision to retry new account setup.',
+    decisionInput,
     approveClinicOnboarding,
   ),
   defineOnboardingTool(
     'decide',
     'rejectClinicOnboarding',
-    'Reject an open onboarding application and record the reason.',
-    applicationIdInput.extend({ reason: z.string().trim().min(1).max(2_000) }),
+    'Reject the reviewed revision of an open onboarding application and record the reason.',
+    decisionInput.extend({ reason: z.string().trim().min(1).max(2_000) }),
     rejectClinicOnboarding,
   ),
 ]

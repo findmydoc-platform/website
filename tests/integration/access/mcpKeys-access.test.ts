@@ -753,7 +753,7 @@ describe('MCP key management and client access', () => {
       limit: 1,
     })
     const clinicName = `${prefix}-staged-${randomUUID()}`
-    const { applicationId, clinicId } = JSON.parse(
+    const { applicationId, applicationRevision, clinicId } = JSON.parse(
       await call('stageClinicOnboarding', {
         requestKey: randomUUID(),
         staffMode: 'new_account',
@@ -825,7 +825,7 @@ describe('MCP key management and client access', () => {
       participationStatus: 'pending',
       internalPrimaryContact: { email: `${clinicName}@example.com` },
     })
-    expect(JSON.parse(await call('approveClinicOnboarding', { applicationId }))).toMatchObject({
+    expect(JSON.parse(await call('approveClinicOnboarding', { applicationId, applicationRevision }))).toMatchObject({
       applicationId,
       clinicId,
       decisionStatus: 'approved',

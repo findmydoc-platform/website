@@ -112,9 +112,14 @@ describe('MCP clinic onboarding', () => {
       applicationId: expect.any(Number),
       clinicId: expect.any(Number),
       clinicStaffId: expect.any(Number),
+      applicationRevision: expect.stringMatching(/^[a-f0-9]{64}$/u),
     })
-    const ids = data as { applicationId: number; clinicId: number; clinicStaffId: number }
+    const ids = data as { applicationId: number; clinicId: number; clinicStaffId: number; applicationRevision: string }
     return ids
+  }
+
+  async function readRevision(applicationId: number) {
+    return stagedIds((await call('readClinicOnboarding', { applicationId })).data).applicationRevision
   }
 
   it('stages one private clinic and pending account and replays the same IDs', async () => {
@@ -248,7 +253,7 @@ describe('MCP clinic onboarding', () => {
       vi.mocked(setClinicSupabaseAccountAccess),
     ]
     providerCalls.forEach((mock) => mock.mockClear())
-    const { applicationId, clinicId } = stagedIds(
+    const { applicationId, clinicId, applicationRevision } = stagedIds(
       (await call('stageClinicOnboarding', existingIntake(original.id))).data,
     )
     expect((await call('correctClinicOnboarding', { applicationId, contactEmail: selected.email })).error).toBeDefined()
@@ -262,7 +267,33 @@ describe('MCP clinic onboarding', () => {
     expect(
       await payload.findByID({ collection: 'clinicStaff', id: selected.id, depth: 0, overrideAccess: true }),
     ).toEqual(selected)
-    const approval = await call('approveClinicOnboarding', { applicationId }, decisionKey)
+    const currentRevision = await readRevision(applicationId)
+    expect(currentRevision).not.toBe(applicationRevision)
+    expect((await call('approveClinicOnboarding', { applicationId }, decisionKey)).error).toBeDefined()
+    expect(
+      (await call('approveClinicOnboarding', { applicationId, applicationRevision }, decisionKey)).error,
+    ).toBeDefined()
+    expect(
+      (
+        await call(
+          'rejectClinicOnboarding',
+          { applicationId, applicationRevision, reason: 'Stale review.' },
+          decisionKey,
+        )
+      ).error,
+    ).toBeDefined()
+    expect(await readClinicAccessState(payload, original.id)).toBeNull()
+    expect(await readClinicAccessState(payload, selected.id)).toBeNull()
+    expect((await call('readClinicOnboarding', { applicationId })).data).toMatchObject({
+      decisionStatus: 'submitted',
+      participationStatus: 'pending',
+      clinicStaffId: selected.id,
+    })
+    const approval = await call(
+      'approveClinicOnboarding',
+      { applicationId, applicationRevision: currentRevision },
+      decisionKey,
+    )
     expect(approval).toMatchObject({
       data: {
         clinicId,
@@ -274,7 +305,13 @@ describe('MCP clinic onboarding', () => {
         invitationStatus: 'not_started',
       },
     })
-    expect(await call('approveClinicOnboarding', { applicationId }, decisionKey)).toEqual(approval)
+    expect(
+      await call(
+        'approveClinicOnboarding',
+        { applicationId, applicationRevision: await readRevision(applicationId) },
+        decisionKey,
+      ),
+    ).toEqual(approval)
     expect(await readClinicAccessState(payload, selected.id)).toMatchObject({ clinic: { id: clinicId } })
     expect(
       await payload.findByID({ collection: 'clinicStaff', id: selected.id, depth: 0, overrideAccess: true }),
@@ -300,10 +337,33 @@ describe('MCP clinic onboarding', () => {
     providerCalls.forEach((mock) => expect(mock).not.toHaveBeenCalled())
   })
 
+  it('keeps the reviewed assignment consistent when correction and approval race', async () => {
+    const original = await createActivatedStaff()
+    const replacement = await createActivatedStaff()
+    const { applicationId, clinicId, applicationRevision } = stagedIds(
+      (await call('stageClinicOnboarding', existingIntake(original.id))).data,
+    )
+    const decisionKey = await createKey({ decide: true })
+    const [approval, correction] = await Promise.all([
+      call('approveClinicOnboarding', { applicationId, applicationRevision }, decisionKey),
+      call('correctClinicOnboarding', { applicationId, clinicStaffId: replacement.id }),
+    ])
+    expect([approval, correction].filter(({ error }) => error !== undefined)).toHaveLength(1)
+    const result = (await call('readClinicOnboarding', { applicationId })).data
+    expect(await readClinicAccessState(payload, replacement.id)).toBeNull()
+    if (approval.error === undefined) {
+      expect(result).toMatchObject({ clinicStaffId: original.id, decisionStatus: 'approved' })
+      expect(await readClinicAccessState(payload, original.id)).toMatchObject({ clinic: { id: clinicId } })
+    } else {
+      expect(result).toMatchObject({ clinicStaffId: replacement.id, decisionStatus: 'submitted' })
+      expect(await readClinicAccessState(payload, original.id)).toBeNull()
+    }
+  })
+
   it('preserves an intervening group assignment and leaves the application open until rejection', async () => {
     const staff = await createActivatedStaff()
     const input = existingIntake(staff.id)
-    const { applicationId } = stagedIds((await call('stageClinicOnboarding', input)).data)
+    const { applicationId, applicationRevision } = stagedIds((await call('stageClinicOnboarding', input)).data)
     const owner = await payload.findByID({ collection: 'platformStaff', id: ownerId, overrideAccess: true })
     const req = await createLocalReq({ user: asPayloadStaffUser(owner) }, payload)
     const group = await payload.create({
@@ -320,14 +380,20 @@ describe('MCP clinic onboarding', () => {
     expect((await call('stageClinicOnboarding', { ...input, requestKey: randomUUID() })).error).toBeDefined()
     expect((await call('correctClinicOnboarding', { applicationId, clinicStaffId: staff.id })).error).toBeDefined()
     const decisionKey = await createKey({ decide: true })
-    expect((await call('approveClinicOnboarding', { applicationId }, decisionKey)).error).toBeDefined()
+    expect(
+      (await call('approveClinicOnboarding', { applicationId, applicationRevision }, decisionKey)).error,
+    ).toBeDefined()
     expect((await call('readClinicOnboarding', { applicationId })).data).toMatchObject({
       decisionStatus: 'submitted',
       accountSetupStatus: 'not_started',
       participationStatus: 'pending',
     })
     expect(
-      await call('rejectClinicOnboarding', { applicationId, reason: 'No longer available.' }, decisionKey),
+      await call(
+        'rejectClinicOnboarding',
+        { applicationId, applicationRevision, reason: 'No longer available.' },
+        decisionKey,
+      ),
     ).toMatchObject({
       data: { decisionStatus: 'rejected', participationStatus: 'rejected', invitationStatus: 'not_started' },
     })
@@ -342,8 +408,16 @@ describe('MCP clinic onboarding', () => {
     const second = stagedIds((await call('stageClinicOnboarding', existingIntake(staff.id))).data)
     const decisionKey = await createKey({ decide: true })
     const [firstDecision, secondDecision] = await Promise.all([
-      call('approveClinicOnboarding', { applicationId: first.applicationId }, decisionKey),
-      call('approveClinicOnboarding', { applicationId: second.applicationId }, decisionKey),
+      call(
+        'approveClinicOnboarding',
+        { applicationId: first.applicationId, applicationRevision: first.applicationRevision },
+        decisionKey,
+      ),
+      call(
+        'approveClinicOnboarding',
+        { applicationId: second.applicationId, applicationRevision: second.applicationRevision },
+        decisionKey,
+      ),
     ])
     expect([firstDecision, secondDecision].filter(({ error }) => error !== undefined)).toHaveLength(1)
     const [winner, open] = firstDecision.error === undefined ? [first, second] : [second, first]
@@ -422,18 +496,24 @@ describe('MCP clinic onboarding', () => {
 
   it('requires the decision grant and rejects an open application without preparing an account', async () => {
     vi.mocked(createInitialClinicSupabaseAccount).mockClear()
-    const { applicationId, clinicId, clinicStaffId } = stagedIds((await call('stageClinicOnboarding', intake())).data)
+    const { applicationId, clinicId, clinicStaffId, applicationRevision } = stagedIds(
+      (await call('stageClinicOnboarding', intake())).data,
+    )
     const reason = 'The clinic withdrew its request.'
     const decisionKey = await createKey({ decide: true })
-    expect((await call('approveClinicOnboarding', { applicationId })).error).toBeDefined()
-    expect((await call('rejectClinicOnboarding', { applicationId, reason })).error).toBeDefined()
-    expect((await call('rejectClinicOnboarding', { applicationId, reason: ' ' }, decisionKey)).error).toBeDefined()
+    expect((await call('approveClinicOnboarding', { applicationId, applicationRevision })).error).toBeDefined()
+    expect((await call('rejectClinicOnboarding', { applicationId, applicationRevision, reason })).error).toBeDefined()
+    expect(
+      (await call('rejectClinicOnboarding', { applicationId, applicationRevision, reason: ' ' }, decisionKey)).error,
+    ).toBeDefined()
     expect((await call('readClinicOnboarding', { applicationId })).data).toMatchObject({
       decisionStatus: 'submitted',
       participationStatus: 'pending',
     })
 
-    expect(await call('rejectClinicOnboarding', { applicationId, reason }, decisionKey)).toMatchObject({
+    expect(
+      await call('rejectClinicOnboarding', { applicationId, applicationRevision, reason }, decisionKey),
+    ).toMatchObject({
       data: {
         applicationId,
         clinicId,
@@ -444,7 +524,9 @@ describe('MCP clinic onboarding', () => {
         publicStatus: 'pending',
       },
     })
-    expect((await call('approveClinicOnboarding', { applicationId }, decisionKey)).error).toBeDefined()
+    expect(
+      (await call('approveClinicOnboarding', { applicationId, applicationRevision }, decisionKey)).error,
+    ).toBeDefined()
     expect(await payload.findByID({ collection: 'clinicApplications', id: applicationId, depth: 0 })).toMatchObject({
       reviewNotes: reason,
     })
@@ -457,7 +539,9 @@ describe('MCP clinic onboarding', () => {
 
   it('keeps an approval after provider failure and retries the same account and invitation', async () => {
     const input = intake()
-    const { applicationId, clinicId, clinicStaffId } = stagedIds((await call('stageClinicOnboarding', input)).data)
+    const { applicationId, clinicId, clinicStaffId, applicationRevision } = stagedIds(
+      (await call('stageClinicOnboarding', input)).data,
+    )
     const decisionKey = await createKey({ decide: true })
     const subject = randomUUID()
     const provision = vi.mocked(createInitialClinicSupabaseAccount)
@@ -470,7 +554,7 @@ describe('MCP clinic onboarding', () => {
       return subject
     })
 
-    expect(await call('approveClinicOnboarding', { applicationId }, decisionKey)).toMatchObject({
+    expect(await call('approveClinicOnboarding', { applicationId, applicationRevision }, decisionKey)).toMatchObject({
       data: {
         applicationId,
         clinicId,
@@ -484,10 +568,25 @@ describe('MCP clinic onboarding', () => {
       },
     })
     expect(
-      (await call('rejectClinicOnboarding', { applicationId, reason: 'Already approved.' }, decisionKey)).error,
+      (
+        await call(
+          'rejectClinicOnboarding',
+          { applicationId, applicationRevision: await readRevision(applicationId), reason: 'Already approved.' },
+          decisionKey,
+        )
+      ).error,
     ).toBeDefined()
 
-    expect(await call('approveClinicOnboarding', { applicationId }, decisionKey)).toMatchObject({
+    expect(
+      (await call('approveClinicOnboarding', { applicationId, applicationRevision }, decisionKey)).error,
+    ).toBeDefined()
+    expect(
+      await call(
+        'approveClinicOnboarding',
+        { applicationId, applicationRevision: await readRevision(applicationId) },
+        decisionKey,
+      ),
+    ).toMatchObject({
       data: { applicationId, clinicId, clinicStaffId, decisionStatus: 'approved', accountSetupStatus: 'completed' },
     })
     expect(
@@ -505,7 +604,13 @@ describe('MCP clinic onboarding', () => {
       supabaseSubject: subject,
       principal: { relationTo: 'clinicStaff', value: clinicStaffId },
     })
-    expect(await call('approveClinicOnboarding', { applicationId }, decisionKey)).toMatchObject({
+    expect(
+      await call(
+        'approveClinicOnboarding',
+        { applicationId, applicationRevision: await readRevision(applicationId) },
+        decisionKey,
+      ),
+    ).toMatchObject({
       data: { applicationId, clinicId, clinicStaffId, decisionStatus: 'approved', accountSetupStatus: 'completed' },
     })
     expect((await actions.reserveClinicInvitation({ clinicStaffId }))?.id).toBe(invitation?.id)
@@ -517,11 +622,15 @@ describe('MCP clinic onboarding', () => {
   })
 
   it('allows just one decision when approval and rejection race', async () => {
-    const { applicationId } = stagedIds((await call('stageClinicOnboarding', intake())).data)
+    const { applicationId, applicationRevision } = stagedIds((await call('stageClinicOnboarding', intake())).data)
     const decisionKey = await createKey({ decide: true })
     const [approved, rejected] = await Promise.all([
-      call('approveClinicOnboarding', { applicationId }, decisionKey),
-      call('rejectClinicOnboarding', { applicationId, reason: 'The request was withdrawn.' }, decisionKey),
+      call('approveClinicOnboarding', { applicationId, applicationRevision }, decisionKey),
+      call(
+        'rejectClinicOnboarding',
+        { applicationId, applicationRevision, reason: 'The request was withdrawn.' },
+        decisionKey,
+      ),
     ])
     expect([approved, rejected].filter(({ error }) => error !== undefined)).toHaveLength(1)
     const decided = (await call('readClinicOnboarding', { applicationId })).data

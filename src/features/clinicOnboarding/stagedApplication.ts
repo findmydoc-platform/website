@@ -3,6 +3,7 @@ import { APIError, type PayloadRequest } from 'payload'
 import { normalizeEmail } from '@/auth/utilities/emailNormalization'
 import { platformClinicTrustAccess } from '@/access/fieldAccess'
 import { findDuplicateClinicApplication } from '@/collections/clinicApplications/findDuplicateApplication'
+import { clinicApplicationProvisioningInputFields } from '@/collections/clinicApplications/provisioningLifecycle'
 import { runClinicRegistrationTransaction } from '@/features/clinicRegistration/transactions'
 import { requireCurrentPlatformStaff } from '@/features/clinicDashboard/gallery/platformGallery'
 import type { ClinicApplication } from '@/payload-types'
@@ -107,6 +108,26 @@ export async function readStagedApplication(req: PayloadRequest, applicationId: 
   return application
 }
 
+export function getApplicationRevision(application: ClinicApplication): string {
+  // Bind the reviewed intake and staff selection even when two writes share a timestamp.
+  return createHash('sha256')
+    .update(
+      JSON.stringify([
+        application.id,
+        application.updatedAt,
+        application.linkedRecords?.clinic,
+        application.linkedRecords?.clinicStaff,
+        application.mcpOnboardingStaffMode,
+        application.status,
+        application.provisioningStatus,
+        application.provisioningErrorCode,
+        application.medicalSpecialties,
+        ...clinicApplicationProvisioningInputFields.map((field) => application[field]),
+      ]),
+    )
+    .digest('hex')
+}
+
 export async function readOnboardingStatus(req: PayloadRequest, application: ClinicApplication) {
   const { clinic: clinicId, clinicStaff: clinicStaffId } = application.linkedRecords ?? {}
   if (typeof clinicId !== 'number' || typeof clinicStaffId !== 'number') {
@@ -132,6 +153,7 @@ export async function readOnboardingStatus(req: PayloadRequest, application: Cli
   })
   return {
     applicationId: application.id,
+    applicationRevision: getApplicationRevision(application),
     clinicId,
     clinicStaffId,
     staffMode: application.mcpOnboardingStaffMode,

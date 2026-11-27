@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { NextResponse } from 'next/server'
+import { NextResponse } from 'next/server.js'
 import { resolveRecoveryKeys } from '../../../src/auth/actions/recoveryConfiguration'
 import { resolveVerificationKeys } from '../../../src/auth/actions/verificationConfiguration'
 import {

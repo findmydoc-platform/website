@@ -23,6 +23,7 @@ export type ClinicProfileProps = {
   share: { url: string; onCopy: () => Promise<void> }
   map: { allowed: boolean; embedHref?: string }
   navigation?: React.ReactNode
+  showDescription?: boolean
   children?: React.ReactNode
   inquiryAside?: React.ReactNode
   afterLocation?: React.ReactNode
@@ -34,6 +35,7 @@ export function ClinicProfile({
   share,
   map,
   navigation,
+  showDescription = true,
   children,
   inquiryAside,
   afterLocation,
@@ -182,7 +184,7 @@ export function ClinicProfile({
       {navigation}
       <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-12">
         <div className="min-w-0 space-y-10">
-          {data.description ? (
+          {showDescription && data.description ? (
             <section>
               <Heading as="h2" size="h4" align="left" className="text-secondary">
                 About {data.clinicName}

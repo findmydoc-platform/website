@@ -69,10 +69,11 @@ export const getClinicApplicationLifecyclePresentation = ({
   currentData,
   persistedData,
 }: ClinicApplicationLifecyclePresentationInput): ClinicApplicationLifecyclePresentation => {
-  const status = currentData.status ?? persistedData.status ?? 'submitted'
+  const staffMode = persistedData.mcpOnboardingStaffMode
+  const status = (staffMode ? persistedData.status : currentData.status) ?? persistedData.status ?? 'submitted'
   const provisioningStatus = persistedData.provisioningStatus ?? 'not_started'
   const provisioningErrorCode = persistedData.provisioningErrorCode
-  const inputChanged = hasClinicApplicationProvisioningInputChanged(currentData, persistedData)
+  const inputChanged = !staffMode && hasClinicApplicationProvisioningInputChanged(currentData, persistedData)
   const commonDetails = [
     {
       label: 'Review status',
@@ -100,7 +101,7 @@ export const getClinicApplicationLifecyclePresentation = ({
         ...(persistedData.linkedRecords?.clinic
           ? [
               {
-                label: 'Created clinic',
+                label: staffMode ? 'Linked clinic' : 'Created clinic',
                 value: formatRelationship(persistedData.linkedRecords.clinic as RelationshipValue),
               },
             ]
@@ -108,7 +109,7 @@ export const getClinicApplicationLifecyclePresentation = ({
         ...(persistedData.linkedRecords?.clinicStaff
           ? [
               {
-                label: 'Created clinic staff',
+                label: staffMode ? 'Linked clinic staff' : 'Created clinic staff',
                 value: formatRelationship(persistedData.linkedRecords.clinicStaff as RelationshipValue),
               },
             ]
@@ -123,7 +124,9 @@ export const getClinicApplicationLifecyclePresentation = ({
           : []),
       ],
       guidance:
-        'Participation is approved. Dashboard access still requires verified account completion; public publication is separate.',
+        staffMode === 'existing_account'
+          ? 'The existing staff account is linked. Manage public publication on the clinic profile.'
+          : 'Participation is approved. Dashboard access still requires verified account completion; public publication is separate.',
       stateLabel: 'Completed',
       summary: 'Clinic and initial staff participation are approved.',
       tone: 'success',
@@ -143,9 +146,11 @@ export const getClinicApplicationLifecyclePresentation = ({
             ]
           : []),
       ],
-      guidance: inputChanged
-        ? 'Saving starts another provisioning attempt.'
-        : 'Change at least the clinic name, website, contact first name, contact last name, email, or role, then save.',
+      guidance: staffMode
+        ? 'Use readClinicOnboarding to get the latest application revision, then call approveClinicOnboarding to retry account setup.'
+        : inputChanged
+          ? 'Saving starts another provisioning attempt.'
+          : 'Change at least the clinic name, website, contact first name, contact last name, email, or role, then save.',
       stateLabel: 'Failed',
       summary: inputChanged
         ? 'A provisioning input changed and the application is ready to retry.'
@@ -157,7 +162,9 @@ export const getClinicApplicationLifecyclePresentation = ({
   if (status === 'rejected') {
     return {
       details: commonDetails,
-      guidance: 'Saving keeps the application rejected and does not start provisioning.',
+      guidance: staffMode
+        ? 'The application decision and reason are recorded. Manage public publication on the clinic profile.'
+        : 'Saving keeps the application rejected and does not start provisioning.',
       stateLabel: 'Rejected',
       summary: 'This application is rejected.',
       tone: 'warning',
@@ -167,8 +174,9 @@ export const getClinicApplicationLifecyclePresentation = ({
   if (status === 'approved') {
     return {
       details: commonDetails,
-      guidance:
-        persistedData.status === 'approved'
+      guidance: staffMode
+        ? 'Check the account setup status with readClinicOnboarding. Use the latest revision to resume setup with approveClinicOnboarding.'
+        : persistedData.status === 'approved'
           ? 'Provisioning is waiting for the existing automatic process to complete.'
           : 'Saving Approved starts automatic clinic and clinic staff creation.',
       stateLabel: 'Provisioning pending',
@@ -179,7 +187,9 @@ export const getClinicApplicationLifecyclePresentation = ({
 
   return {
     details: commonDetails,
-    guidance: 'Review the application and select Approved or Rejected.',
+    guidance: staffMode
+      ? 'Review the current revision with readClinicOnboarding. Use approveClinicOnboarding or rejectClinicOnboarding to record the decision.'
+      : 'Review the application and select Approved or Rejected.',
     stateLabel: 'Awaiting review',
     summary: 'This application is waiting for a review decision.',
     tone: 'info',

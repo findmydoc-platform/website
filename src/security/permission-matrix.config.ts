@@ -263,7 +263,7 @@ export const permissionMatrix: PermissionMatrix = {
         },
       },
       notes:
-        'Platform staff manage clinic assignment and lifecycle; approved and synced staff with private password evidence read their participation-approved clinic; invitation authorization is private and immutable; identity binding, auth sync, and create/delete remain provisioning-only',
+        'Platform staff manage assignment and lifecycle. Approved, synced staff with private password evidence can read their participation-approved clinic. The MCP onboarding workflow owns the pending first account and its identity fields. Invitation authorization is private and immutable. Identity binding, auth sync and create/delete remain provisioning-only.',
     },
     patients: {
       slug: 'patients',
@@ -370,7 +370,7 @@ export const permissionMatrix: PermissionMatrix = {
         },
       },
       notes:
-        'Platform admin/support create, platform read/update/delete, clinic RW current eligible assignment, patients/anonymous R approved; averageRating is computed-only',
+        'Platform admin/support create. Platform staff manage profiles and ordinary deletion. Clinic staff read and update their current eligible assignment. Public readers see approved clinics. Average ratings are computed. Hooks block trash and hard delete while MCP onboarding is submitted. The workflow owns participation decisions and the first contact. Payload Admin owns public status for staged profiles.',
     },
     doctorspecialties: {
       slug: 'doctorspecialties',
@@ -746,7 +746,7 @@ export const permissionMatrix: PermissionMatrix = {
         admin: { type: 'platform' },
       },
       notes:
-        'Public submissions use the controlled API route. MCP staging links an unpublished clinic to a pending new account or selects an activated, unassigned account. The approval action checks the existing assignment authority before linking an existing account to the clinic.',
+        'Public submissions use the controlled API route and native review. Hooks protect MCP source, intake, decision and linked records from generic writes or deletion. MCP decisions require the current application revision. Approval of an existing account also requires staff assignment authority.',
     },
     clinicProfileDrafts: {
       slug: 'clinicProfileDrafts',

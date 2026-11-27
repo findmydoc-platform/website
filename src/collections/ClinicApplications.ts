@@ -156,14 +156,19 @@ export const ClinicApplications: CollectionConfig<'clinicApplications'> = {
         { label: 'Approved', value: 'approved' },
         { label: 'Rejected', value: 'rejected' },
       ],
-      admin: { description: 'Application review status' },
+      admin: {
+        description: 'Application review status',
+        components: {
+          Field: '@/app/(payload)/components/ClinicApplicationLifecycle/fields#ClinicApplicationStatusField',
+        },
+      },
     },
     {
       name: 'lifecycleGuidance',
       type: 'ui',
       admin: {
         components: {
-          Field: '@/app/(payload)/components/ClinicApplicationLifecycle#ClinicApplicationLifecyclePanel',
+          Field: '@/app/(payload)/components/ClinicApplicationLifecycle/fields#ClinicApplicationLifecycleField',
         },
       },
     },
@@ -192,7 +197,7 @@ export const ClinicApplications: CollectionConfig<'clinicApplications'> = {
         update: computedOnlyFieldAccess,
       },
       admin: {
-        description: 'Provisioning result; saving a failed approved application retries the process',
+        description: 'Result of preparing the first staff account',
         position: 'sidebar',
         readOnly: true,
       },

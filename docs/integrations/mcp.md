@@ -89,10 +89,13 @@ that is available for clinic staff. Medical specialties must be main
 specialties. The supported contact roles are `Medical Director`, `Clinic Management` and `International Office`.
 
 - For `staffMode: "new_account"`, supply `contactFirstName`, `contactLastName` and `contactEmail`. A staff account
-  that already uses the email results in a conflict.
+  that already uses the email results in a conflict. A rejected application releases its pending account's
+  email when the account has no identity, activation, invitation or provisioning evidence. The rejected
+  application keeps the original contact and the staff record link.
 - For `staffMode: "existing_account"`, supply the selected `clinicStaffId`. The application uses the account's email
   and defaults the contact names to the account's names. Supply `contactLastName` if the account has none. Supplied
-  contact names apply to the application and clinic contact.
+  contact names apply to the application and clinic contact. If the first name is missing, add it to the
+  open application or select another account before approval.
 - The optional lookup normalizes the email and uses the caller's existing staff read access. It returns
   `candidate` with the account ID, email and names if the exact match is eligible, or `candidate: null`. Eligibility
   requires approved status, synchronized identity, activation evidence for that account and identity, and explicit
@@ -121,7 +124,9 @@ If account setup fails, the same response reports `decisionStatus: "approved"`, 
 an `accountSetupErrorCode`. Call `approveClinicOnboarding` again with the same application ID and the latest revision
 to resume setup for the same clinic and staff account. The decision tools also report `invitationStatus`. A prepared invitation uses
 the existing Auth Action and is eligible for delivery under the current environment policy. Retrying the approval
-reuses the existing invitation authorization. Public publication remains a separate Payload Admin action.
+reuses the existing invitation authorization. Public publication remains a separate Payload Admin action. Onboarding can still record a rejection after
+Payload Admin rejects the public clinic profile. While onboarding is open, the linked clinic is protected
+from trash and permanent deletion.
 
 ## Clinic profile maintenance
 

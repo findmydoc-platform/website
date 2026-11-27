@@ -18,6 +18,11 @@ An Admin entry describes expected administrative access or authority. It does no
   for Dashboard writes, review history, and private AuthAction commands.
   [Clinic Dashboard API](../integrations/clinic-dashboard-api.md) · [Review access and audit](../review-modification-process.md) ·
   [Auth actions](./auth-actions.md)
+- MCP onboarding applications keep their intake, decision, and links under the onboarding workflow. Hooks reject
+  direct changes to those fields and prevent deletion of the application. Hooks also protect the pending first staff
+  account and the clinic's first contact. While an application is submitted, the linked clinic cannot be trashed or
+  permanently deleted through Admin, native APIs, or older MCP grants. Authorized staff can still edit the clinic
+  profile and manage publication in Payload Admin. [Clinic onboarding](../integrations/mcp.md#clinic-onboarding)
 - Public Page and Post reads require publication in the requested locale and return only that locale.
   Platform staff can read drafts and version history.
 - A media file request and a media document read are different operations. File delivery follows the collection's

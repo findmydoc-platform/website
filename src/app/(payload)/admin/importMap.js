@@ -32,7 +32,8 @@ import { ClinicStaffLifecyclePanel as ClinicStaffLifecyclePanel_d0a2f65900e52a34
 import { PersonalGroupInvitation as PersonalGroupInvitation_1314713b254a1f0dd159b10a219d6e89 } from '@/app/(payload)/components/PersonalGroupInvitation'
 import { OpeningHoursTimeField as OpeningHoursTimeField_75ea827af6a03f373c3e1bcdcb127d93 } from '@/app/(payload)/components/OpeningHoursTimeField'
 import { PlatformStaffAdminGuidance as PlatformStaffAdminGuidance_44a83a5fcf2c50f5e0c31ed343de2547 } from '@/app/(payload)/components/AdminNotice/PlatformStaffAdminGuidance'
-import { ClinicApplicationLifecyclePanel as ClinicApplicationLifecyclePanel_2ecefdcb5754cece59d0633a49b851df } from '@/app/(payload)/components/ClinicApplicationLifecycle'
+import { ClinicApplicationStatusField as ClinicApplicationStatusField_724f6c2ec8d20d744159f5721270954f } from '@/app/(payload)/components/ClinicApplicationLifecycle/fields'
+import { ClinicApplicationLifecycleField as ClinicApplicationLifecycleField_724f6c2ec8d20d744159f5721270954f } from '@/app/(payload)/components/ClinicApplicationLifecycle/fields'
 import { ClinicGroupMovement as ClinicGroupMovement_2c7ef09ebb58e30008cdc6cd75021c43 } from '@/app/(payload)/components/ClinicGroupMovement'
 import { ClinicApprovalRequirementError as ClinicApprovalRequirementError_6b9b57c3f957a81847439b14fa4ed9d4 } from '@/app/(payload)/components/ClinicApprovalRequirements'
 import { ClinicApprovalRequirements as ClinicApprovalRequirements_6b9b57c3f957a81847439b14fa4ed9d4 } from '@/app/(payload)/components/ClinicApprovalRequirements'
@@ -100,7 +101,8 @@ export const importMap = {
   "@/app/(payload)/components/PersonalGroupInvitation#PersonalGroupInvitation": PersonalGroupInvitation_1314713b254a1f0dd159b10a219d6e89,
   "@/app/(payload)/components/OpeningHoursTimeField#OpeningHoursTimeField": OpeningHoursTimeField_75ea827af6a03f373c3e1bcdcb127d93,
   "@/app/(payload)/components/AdminNotice/PlatformStaffAdminGuidance#PlatformStaffAdminGuidance": PlatformStaffAdminGuidance_44a83a5fcf2c50f5e0c31ed343de2547,
-  "@/app/(payload)/components/ClinicApplicationLifecycle#ClinicApplicationLifecyclePanel": ClinicApplicationLifecyclePanel_2ecefdcb5754cece59d0633a49b851df,
+  "@/app/(payload)/components/ClinicApplicationLifecycle/fields#ClinicApplicationStatusField": ClinicApplicationStatusField_724f6c2ec8d20d744159f5721270954f,
+  "@/app/(payload)/components/ClinicApplicationLifecycle/fields#ClinicApplicationLifecycleField": ClinicApplicationLifecycleField_724f6c2ec8d20d744159f5721270954f,
   "@/app/(payload)/components/ClinicGroupMovement#ClinicGroupMovement": ClinicGroupMovement_2c7ef09ebb58e30008cdc6cd75021c43,
   "@/app/(payload)/components/ClinicApprovalRequirements#ClinicApprovalRequirementError": ClinicApprovalRequirementError_6b9b57c3f957a81847439b14fa4ed9d4,
   "@/app/(payload)/components/ClinicApprovalRequirements#ClinicApprovalRequirements": ClinicApprovalRequirements_6b9b57c3f957a81847439b14fa4ed9d4,

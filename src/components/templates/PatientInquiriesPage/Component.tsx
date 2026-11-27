@@ -89,6 +89,11 @@ export function PatientInquiriesPage({
     )
   }
 
+  const hasDetail = Boolean(state.selectedInquiryId) || mode === 'detail'
+  const hasSelectableInquiry =
+    state.queue.status === 'ready' && Boolean(state.queue.data?.items.length || state.queue.data?.nextCursor)
+  const splitView = hasDetail || hasSelectableInquiry
+
   return (
     <div className={cn(accessibleFeatureColors, 'bg-site-section px-4 py-8 sm:px-6 lg:py-10')}>
       <div className="mx-auto max-w-[90rem]">
@@ -99,12 +104,14 @@ export function PatientInquiriesPage({
         ) : null}
         <div className={cn('mb-6', mode === 'detail' && 'hidden lg:block')}>
           <p className="text-sm font-semibold text-primary sm:text-base">Patient account</p>
-          <Heading as="h1" align="left" className="mt-2 text-3xl text-secondary sm:text-4xl" size="h1">
+          <Heading as="h1" align="left" className="mt-2 text-3xl text-secondary" size="h3">
             My inquiries
           </Heading>
         </div>
 
-        <div className="lg:grid lg:grid-cols-[28rem_minmax(0,1fr)] lg:items-start lg:gap-7">
+        <div
+          className={cn(splitView ? 'lg:grid lg:grid-cols-[28rem_minmax(0,1fr)] lg:items-start lg:gap-7' : 'max-w-2xl')}
+        >
           <div className={cn(mode === 'detail' && 'hidden lg:block')}>
             <PatientInquiryQueue
               data={state.queue.data}
@@ -124,30 +131,32 @@ export function PatientInquiriesPage({
             />
           </div>
 
-          <div className={cn(mode === 'index' && 'hidden lg:block')}>
-            {state.selectedInquiryId || mode === 'detail' ? (
-              <PatientInquiryConversation
-                composer={state.composer}
-                detail={detailView}
-                error={state.detail.error}
-                onBack={actions.goBack}
-                onClearFailed={actions.clearFailedMessage}
-                onFileChange={actions.selectFile}
-                onRetry={actions.retryDetail}
-                onRetrySend={actions.retrySend}
-                onSend={actions.sendMessage}
-                onSubmitAppeal={actions.submitAppeal}
-                onSubmitReport={actions.submitReport}
-                onTextChange={actions.updateMessage}
-                now={now}
-                status={state.detail.status}
-              />
-            ) : (
-              <section className="flex min-h-[34rem] items-center justify-center rounded-xl border border-border bg-card px-8 text-center text-muted-foreground shadow-xs">
-                Select an inquiry to read the conversation.
-              </section>
-            )}
-          </div>
+          {splitView ? (
+            <div className={cn(mode === 'index' && 'hidden lg:block')}>
+              {hasDetail ? (
+                <PatientInquiryConversation
+                  composer={state.composer}
+                  detail={detailView}
+                  error={state.detail.error}
+                  onBack={actions.goBack}
+                  onClearFailed={actions.clearFailedMessage}
+                  onFileChange={actions.selectFile}
+                  onRetry={actions.retryDetail}
+                  onRetrySend={actions.retrySend}
+                  onSend={actions.sendMessage}
+                  onSubmitAppeal={actions.submitAppeal}
+                  onSubmitReport={actions.submitReport}
+                  onTextChange={actions.updateMessage}
+                  now={now}
+                  status={state.detail.status}
+                />
+              ) : (
+                <section className="flex min-h-[34rem] items-center justify-center rounded-xl border border-border bg-card px-8 text-center text-muted-foreground shadow-xs">
+                  Select an inquiry to read the conversation.
+                </section>
+              )}
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

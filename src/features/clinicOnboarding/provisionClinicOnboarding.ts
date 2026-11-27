@@ -223,7 +223,7 @@ export async function bindClinicOnboardingSubject(
   }
 }
 
-export const prepareClinicOnboardingIdentity = async (
+const prepareClinicOnboardingIdentity = async (
   payload: Payload,
   command: InitialContact,
   staff: ClinicStaff,

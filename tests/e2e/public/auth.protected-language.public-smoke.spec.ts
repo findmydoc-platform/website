@@ -15,6 +15,7 @@ import {
 } from '../../../src/auth/actions/websiteRecoveryContext'
 import { expect, test } from '@playwright/test'
 
+import { resolveE2EAuthEnvironment } from '../../../scripts/test-env.mjs'
 import { setCookieConsent } from '../helpers/cookieConsent'
 import { expectRobotsIndexingBlocked } from '../helpers/robots'
 
@@ -54,10 +55,12 @@ test('the English confirmation alias only serves a single supported flow @smoke'
   await expect(page.getByRole('main').locator('a[hreflang]')).toHaveCount(0)
 })
 
-function hasLocalTestKeys(value: string | undefined, baseURL: string | undefined) {
+const authEnvironment = resolveE2EAuthEnvironment()
+
+function hasLocalAuthKeys(value: string | undefined, baseURL: string | undefined) {
   if (!baseURL || !['localhost', '127.0.0.1'].includes(new URL(baseURL).hostname)) return false
   try {
-    return JSON.parse(value ?? '').environment === 'test'
+    return JSON.parse(value ?? '').environment === authEnvironment
   } catch {
     return false
   }
@@ -69,12 +72,12 @@ test('an active recovery switches language and completes through the localized l
   page,
 }) => {
   test.skip(
-    !hasLocalTestKeys(process.env.AUTH_RECOVERY_CORRELATION_KEYS_JSON, baseURL),
+    !hasLocalAuthKeys(process.env.AUTH_RECOVERY_CORRELATION_KEYS_JSON, baseURL),
     'Requires the local test recovery key ring.',
   )
   await setCookieConsent(context)
-  const keys = resolveRecoveryKeys('test')
-  const pending = pendingWebsiteRecovery(1, randomUUID(), 'patient-recovery', 'test', 'a'.repeat(56))
+  const keys = resolveRecoveryKeys(authEnvironment)
+  const pending = pendingWebsiteRecovery(1, randomUUID(), 'patient-recovery', authEnvironment, 'a'.repeat(56))
   const cookie = new NextResponse()
   setWebsiteRecoveryContext(cookie, pending, keys)
   await context.addCookies([
@@ -141,13 +144,13 @@ test('an active patient verification stays usable after switching languages @smo
   page,
 }) => {
   test.skip(
-    !hasLocalTestKeys(process.env.AUTH_VERIFICATION_CORRELATION_KEYS_JSON, baseURL),
+    !hasLocalAuthKeys(process.env.AUTH_VERIFICATION_CORRELATION_KEYS_JSON, baseURL),
     'Requires the local test verification key ring.',
   )
   await setCookieConsent(context)
-  const keys = resolveVerificationKeys('test')
+  const keys = resolveVerificationKeys(authEnvironment)
   const response = new NextResponse()
-  setPatientVerificationContext(response, pendingPatientContext(1, randomUUID(), 'test', 'a'.repeat(56)), keys)
+  setPatientVerificationContext(response, pendingPatientContext(1, randomUUID(), authEnvironment, 'a'.repeat(56)), keys)
   await context.addCookies([
     {
       name: PATIENT_VERIFICATION_COOKIE,

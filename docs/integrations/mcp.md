@@ -67,6 +67,19 @@ The `clinicMedia` and `doctorMedia` find permissions expose media metadata.
 `deleteClinicImage` and `deleteDoctorImage` permanently delete individual images only after references are removed.
 Uploads accept base64-encoded image bytes and the configured media size and type limits apply.
 
+## Editorial image upload
+
+Enable `uploadEditorialImage` under **Blog Posts → Images**. This grant is off by default. The key owner needs the
+existing `platformContentMedia` create permission. Payload validates the image and records the uploader. The tool
+returns `{ "id": 123 }`. Pass that ID as `data.heroImage` when calling `updatePostDraft` with the Post ID and
+locale. Uploading the image leaves Post publication unchanged. Editorial media retain public read access.
+
+Send one `tools/call` request with `name` (the filename), `mimeType`, `base64` (the encoded file bytes), and `alt`
+(required alternative text). The media policy accepts JPEG, PNG, WebP, AVIF, GIF, and SVG. The file limit for this
+MCP tool is 3,100,000 bytes. That leaves room for Base64 expansion and the JSON-RPC fields within the MCP
+transport's 4 MiB request limit and Vercel's default 4.5 MB limit. Use a client that can send the file bytes as a
+Base64 string. [Vercel request body limit](https://vercel.com/docs/functions/limitations#request-body-size)
+
 ## Configure VS Code (Copilot Chat MCP)
 
 VS Code supports HTTP MCP servers via `.vscode/mcp.json`.

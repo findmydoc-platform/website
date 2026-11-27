@@ -17,6 +17,12 @@ import { MEDIA_UPLOAD_MAX_BYTES } from '@/config/mediaUploadPolicy'
 import { relationId } from '@/collections/clinics/profileGallery'
 import type { ClinicMedia, DoctorMedia } from '@/payload-types'
 import { readStoredImage } from '@/features/platformMedia/readStoredImage'
+import { uploadEditorialImageTool } from '@/features/mcp/editorialImageTool'
+import {
+  editorialImageGrantField,
+  groupEditorialImageGrants,
+  mapEditorialImageGrants,
+} from '@/features/mcp/editorialImageGrants'
 
 type McpCollectionConfig = {
   description: string
@@ -329,29 +335,40 @@ export const createMcpPlugin = (): Plugin =>
         createDeleteMediaTool('doctorMedia', 'deleteDoctorImage'),
         readClinicGallery,
         saveClinicGalleryTool,
+        uploadEditorialImageTool,
       ],
     },
 
     overrideApiKeyCollection: (collection) => {
       return {
         ...collection,
-        fields: collection.fields.map((field) =>
-          field.type === 'collapsible'
-            ? {
-                ...field,
-                fields: field.fields.map((nested) =>
-                  nested.type === 'group' && 'name' in nested && nested.name === 'payload-mcp-tool'
-                    ? {
-                        ...nested,
-                        fields: nested.fields.map((item) =>
-                          item.type === 'checkbox' ? { ...item, defaultValue: false } : item,
-                        ),
-                      }
-                    : nested,
-                ),
-              }
-            : field,
-        ),
+        fields: [
+          ...groupEditorialImageGrants(
+            collection.fields.map((field) =>
+              field.type === 'collapsible'
+                ? {
+                    ...field,
+                    fields: field.fields.map((nested) =>
+                      nested.type === 'group' && 'name' in nested && nested.name === 'payload-mcp-tool'
+                        ? {
+                            ...nested,
+                            fields: nested.fields.map((item) =>
+                              item.type === 'checkbox' ? { ...item, defaultValue: false } : item,
+                            ),
+                          }
+                        : nested,
+                    ),
+                  }
+                : field,
+            ),
+          ),
+          {
+            type: 'collapsible',
+            label: { en: 'Images', de: 'Bilder' },
+            admin: { position: 'sidebar', initCollapsed: true },
+            fields: [editorialImageGrantField],
+          },
+        ],
         admin: {
           ...collection.admin,
           hidden: ({ user }) => !isPlatformAdminUser(user),
@@ -370,6 +387,6 @@ export const createMcpPlugin = (): Plugin =>
         throw new UnauthorizedError()
       }
 
-      return mcpAccessSettings
+      return mapEditorialImageGrants(mcpAccessSettings)
     },
   })

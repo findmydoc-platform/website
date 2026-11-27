@@ -1,4 +1,4 @@
-import type { Config } from 'payload'
+import { flattenTopLevelFields, type Config } from 'payload'
 import { describe, expect, it } from 'vitest'
 import { createMcpPlugin, isPlatformStaffMcpUser, mcpReadCollectionSlugs } from '@/plugins/mcp'
 import { createMockPayload, createMockReq } from '../helpers/testHelpers'
@@ -98,6 +98,16 @@ describe('MCP principal authorization', () => {
         }),
       ]),
     )
+  })
+
+  it('persists one editorial image upload grant, disabled by default', async () => {
+    const config = await createMcpPlugin()({ collections: [] } as unknown as Config)
+    const collection = config.collections?.find(({ slug }) => slug === 'payload-mcp-api-keys')
+    const fields = flattenTopLevelFields(collection?.fields, { moveSubFieldsToTop: true })
+    expect(fields.filter(({ accessor }) => accessor === 'blogMedia.upload')).toEqual([
+      expect.objectContaining({ type: 'checkbox', defaultValue: false }),
+    ])
+    expect(fields.some(({ accessor }) => accessor === 'payload-mcp-tool.uploadEditorialImage')).toBe(false)
   })
 
   it.each(['clinics', 'doctors', 'clinictreatments', 'doctortreatments', 'doctorspecialties'])(

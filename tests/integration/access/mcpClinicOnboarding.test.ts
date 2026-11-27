@@ -881,15 +881,14 @@ describe('MCP clinic onboarding', () => {
     expect(
       (await call('approveClinicOnboarding', { applicationId, applicationRevision }, decisionKey)).error,
     ).toBeDefined()
-    const admin = await authProvider.createAdminClient()
     const hostedEnvironment = vi
       .spyOn(emailEnvironment, 'resolveTransactionalEmailEnvironment')
       .mockReturnValue('preview')
     const emailAcceptance = vi
       .spyOn(emailEnvironment, 'selectTransactionalEmailAcceptanceRuntime')
       .mockReturnValue({ environment: 'preview', digestRecipient: recipientDigest })
-    const provider = vi.spyOn(authProvider, 'createAdminClient').mockResolvedValue(admin)
-    const findUser = vi.spyOn(admin.auth.admin, 'getUserById').mockResolvedValue({
+    type AdminClient = Awaited<ReturnType<typeof authProvider.createAdminClient>>
+    const getUserById = vi.fn<AdminClient['auth']['admin']['getUserById']>().mockResolvedValue({
       data: {
         user: {
           id: subject,
@@ -902,6 +901,8 @@ describe('MCP clinic onboarding', () => {
       },
       error: null,
     })
+    const admin = { auth: { admin: { getUserById } } } as unknown as AdminClient
+    const provider = vi.spyOn(authProvider, 'createAdminClient').mockResolvedValue(admin)
 
     try {
       const expected = {
@@ -974,7 +975,6 @@ describe('MCP clinic onboarding', () => {
       expect((await readInvitations()).map(({ id }) => id)).toEqual(invitations.map(({ id }) => id))
       expect((await readDispatches()).map(({ id }) => id)).toEqual(dispatches.map(({ id }) => id))
     } finally {
-      findUser.mockRestore()
       provider.mockRestore()
       emailAcceptance.mockRestore()
       hostedEnvironment.mockRestore()

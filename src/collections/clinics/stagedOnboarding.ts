@@ -1,15 +1,56 @@
-import { APIError, type CollectionBeforeChangeHook } from 'payload'
+import {
+  APIError,
+  type CollectionBeforeChangeHook,
+  type CollectionBeforeDeleteHook,
+  type PayloadRequest,
+} from 'payload'
 import { platformClinicTrustAccess } from '@/access/fieldAccess'
+import { getStagedOnboardingApplicationId } from '@/features/clinicOnboarding/stagedBinding'
 import { isTrustedMcpOnboardingClinicWrite } from '@/features/clinicOnboarding/stagedWriteGuards'
 import type { Clinic } from '@/payload-types'
 import { relationId } from './profileGallery'
 
 const contactFields = ['firstName', 'lastName', 'email', 'role'] as const
 
+async function readLinkedStagedApplication(req: PayloadRequest, clinic: Pick<Clinic, 'id' | 'onboardingKey'>) {
+  const applicationId = getStagedOnboardingApplicationId(clinic.onboardingKey)
+  if (applicationId === undefined) return null
+  const application = await req.payload.findByID({
+    collection: 'clinicApplications',
+    id: applicationId,
+    depth: 0,
+    disableErrors: true,
+    overrideAccess: true,
+    select: { mcpOnboardingRequestKey: true, linkedRecords: true, status: true },
+    req,
+  })
+  return application?.mcpOnboardingRequestKey && relationId(application.linkedRecords?.clinic) === clinic.id
+    ? application
+    : null
+}
+
+function blockOpenApplicationDeletion() {
+  throw new APIError('A clinic with an open clinic onboarding application cannot be deleted.', 409)
+}
+
+export const protectStagedClinicDeletion: CollectionBeforeDeleteHook = async ({ id, req }) => {
+  const clinic = await req.payload.findByID({
+    collection: 'clinics',
+    id,
+    depth: 0,
+    disableErrors: true,
+    overrideAccess: true,
+    select: { onboardingKey: true },
+    trash: true,
+    req,
+  })
+  if (clinic && (await readLinkedStagedApplication(req, clinic))?.status === 'submitted') blockOpenApplicationDeletion()
+}
+
 export const protectStagedClinicLifecycle: CollectionBeforeChangeHook<Clinic> = async ({ data, originalDoc, req }) => {
-  const applicationId = Number(/^clinic-application:([1-9]\d*)$/u.exec(originalDoc?.onboardingKey ?? '')?.[1])
-  if (!originalDoc || !Number.isSafeInteger(applicationId)) return data
-  if (isTrustedMcpOnboardingClinicWrite(req, originalDoc.id)) return data
+  if (!originalDoc?.onboardingKey) return data
+  const trashing = data.deletedAt != null && data.deletedAt !== originalDoc.deletedAt
+  if (!trashing && isTrustedMcpOnboardingClinicWrite(req, originalDoc.id)) return data
 
   const publicationChanged = data.status !== undefined && data.status !== originalDoc.status
   const nextParticipation = data.participationStatus
@@ -20,19 +61,11 @@ export const protectStagedClinicLifecycle: CollectionBeforeChangeHook<Clinic> = 
       (field) =>
         (data.internalPrimaryContact?.[field] ?? null) !== (originalDoc.internalPrimaryContact?.[field] ?? null),
     )
-  if (!publicationChanged && !participationChanged && !contactChanged) return data
+  if (!trashing && !publicationChanged && !participationChanged && !contactChanged) return data
 
-  const application = await req.payload.findByID({
-    collection: 'clinicApplications',
-    id: applicationId,
-    depth: 0,
-    disableErrors: true,
-    overrideAccess: true,
-    select: { mcpOnboardingRequestKey: true, linkedRecords: true, status: true },
-    req,
-  })
-  if (!application?.mcpOnboardingRequestKey || relationId(application.linkedRecords?.clinic) !== originalDoc.id)
-    return data
+  const application = await readLinkedStagedApplication(req, originalDoc)
+  if (!application) return data
+  if (trashing && application.status === 'submitted') blockOpenApplicationDeletion()
 
   if (contactChanged) throw new APIError('Use the clinic onboarding workflow to change the first contact.', 403)
   const adminRestWrite = req.payloadAPI === 'REST' && (await platformClinicTrustAccess({ req })) === true

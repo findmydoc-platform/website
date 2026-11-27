@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto'
 import type { PayloadRequest } from 'payload'
 import { requestInitialClinicInvitation } from '@/auth/actions/clinicInvitationRequests'
 import { normalizeEmail } from '@/auth/utilities/emailNormalization'
@@ -11,11 +10,7 @@ import {
 import { runClinicRegistrationTransaction } from '@/features/clinicRegistration/transactions'
 import type { ClinicApplication } from '@/payload-types'
 import { getCurrentIsoTimestampString } from '@/utilities/timestamps'
-import {
-  ClinicOnboardingError,
-  isClinicOnboardingError,
-  prepareClinicOnboardingIdentity,
-} from './provisionClinicOnboarding'
+import { isClinicOnboardingError, prepareClinicOnboardingIdentity } from './provisionClinicOnboarding'
 import {
   getApplicationRevision,
   McpOnboardingError,
@@ -25,90 +20,40 @@ import {
 } from './stagedApplication'
 import { readEligibleExistingClinicStaff } from './existingStaff'
 import { withMcpOnboardingWrite } from './stagedWriteGuards'
+import { releaseAbandonedClinicStaffEmail } from './staffEmailReservation'
+import {
+  getStagedOnboardingBinding,
+  readBoundStagedClinic,
+  readBoundStagedNewStaff,
+  type StagedOnboardingBinding,
+} from './stagedBinding'
 
 type DecisionPrecondition = { applicationId: number; applicationRevision: string }
 type Decision = { outcome: 'approved' } | { outcome: 'rejected'; reason: string }
-type Binding = { clinicId: number; clinicStaffId: number; onboardingKey: string; provisioningIdentity: string }
 type OnboardingStatus = Awaited<ReturnType<typeof readOnboardingStatus>>
 type DecisionMode = {
   validatePendingBinding: (
     req: PayloadRequest,
     application: ClinicApplication,
-    binding: Binding,
+    binding: StagedOnboardingBinding,
     decision: Decision,
   ) => Promise<unknown>
-  approveParticipation: (req: PayloadRequest, application: ClinicApplication, binding: Binding) => Promise<void>
+  approveParticipation: (
+    req: PayloadRequest,
+    application: ClinicApplication,
+    binding: StagedOnboardingBinding,
+  ) => Promise<void>
   afterApproval: (
     req: PayloadRequest,
     application: ClinicApplication,
   ) => Promise<OnboardingStatus & { invitationStatus: string }>
 }
 
-function getBinding(application: ClinicApplication): Binding {
-  const { clinic, clinicStaff } = application.linkedRecords ?? {}
-  if (typeof clinic !== 'number' || typeof clinicStaff !== 'number') {
-    throw new McpOnboardingError('The clinic onboarding records are incomplete.', 409)
-  }
-  const onboardingKey = `clinic-application:${application.id}`
-  return {
-    clinicId: clinic,
-    clinicStaffId: clinicStaff,
-    onboardingKey,
-    provisioningIdentity: createHash('sha256').update(onboardingKey).digest('hex'),
-  }
-}
-
-async function readBoundClinic(req: PayloadRequest, binding: Binding) {
-  const clinic = await req.payload.findByID({
-    collection: 'clinics',
-    id: binding.clinicId,
-    depth: 0,
-    disableErrors: true,
-    overrideAccess: true,
-    req,
-  })
-  if (
-    !clinic ||
-    clinic.deletedAt ||
-    clinic.onboardingKey !== binding.onboardingKey ||
-    clinic.provisioningIdentity !== binding.provisioningIdentity
-  ) {
-    throw new ClinicOnboardingError('record_failed', 'The staged clinic binding has changed.')
-  }
-  return clinic
-}
-
-async function readBoundNewStaff(
+async function approveNewAccountParticipation(
   req: PayloadRequest,
-  application: ClinicApplication,
-  binding: Binding,
-  status: 'pending' | 'approved',
+  _application: ClinicApplication,
+  binding: StagedOnboardingBinding,
 ) {
-  const staff = await req.payload.findByID({
-    collection: 'clinicStaff',
-    id: binding.clinicStaffId,
-    depth: 0,
-    disableErrors: true,
-    overrideAccess: true,
-    req,
-  })
-  if (
-    !staff ||
-    staff.onboardingKey !== binding.onboardingKey ||
-    staff.provisioningIdentity !== binding.provisioningIdentity ||
-    staff.assignmentScope !== 'local' ||
-    staff.clinic !== binding.clinicId ||
-    staff.group != null ||
-    staff.status !== status ||
-    normalizeEmail(staff.email) !== normalizeEmail(application.contactEmail) ||
-    (status === 'pending' && (staff.authSync?.status !== 'pending' || staff.supabaseUserId))
-  ) {
-    throw new ClinicOnboardingError('record_failed', 'The staged first staff binding has changed.')
-  }
-  return staff
-}
-
-async function approveNewAccountParticipation(req: PayloadRequest, _application: ClinicApplication, binding: Binding) {
   await withMcpOnboardingWrite(req, { staffId: binding.clinicStaffId }, () =>
     req.payload.update({
       collection: 'clinicStaff',
@@ -125,7 +70,7 @@ async function approveNewAccountParticipation(req: PayloadRequest, _application:
 async function validateExistingAccountDecision(
   req: PayloadRequest,
   _application: ClinicApplication,
-  { clinicId, clinicStaffId }: Binding,
+  { clinicId, clinicStaffId }: StagedOnboardingBinding,
   decision: Decision,
 ) {
   if (decision.outcome === 'rejected') return
@@ -142,7 +87,7 @@ async function validateExistingAccountDecision(
 async function approveExistingAccountParticipation(
   req: PayloadRequest,
   application: ClinicApplication,
-  { clinicId, clinicStaffId }: Binding,
+  { clinicId, clinicStaffId }: StagedOnboardingBinding,
 ) {
   await replaceClinicStaffAssignment(req, clinicStaffId, { scope: 'local', clinicId })
   await withMcpOnboardingWrite(req, { applicationId: application.id }, () =>
@@ -176,12 +121,19 @@ async function persistDecision(
       throw new McpOnboardingError('This clinic onboarding application is already decided.', 409)
     }
 
-    const binding = getBinding(application)
-    const clinic = await readBoundClinic(transactionReq, binding)
-    if (clinic.status === 'rejected' || clinic.participationStatus !== 'pending') {
+    const binding = getStagedOnboardingBinding(application)
+    const clinic = await readBoundStagedClinic(transactionReq, binding)
+    if (clinic.participationStatus !== 'pending' || (decision.outcome === 'approved' && clinic.status === 'rejected')) {
       throw new McpOnboardingError('The staged clinic is no longer awaiting a decision.', 409)
     }
 
+    if (
+      decision.outcome === 'approved' &&
+      application.mcpOnboardingStaffMode === 'existing_account' &&
+      !clinic.internalPrimaryContact?.firstName?.trim()
+    ) {
+      throw new McpOnboardingError('Correct the first contact’s given name before approval.', 409)
+    }
     const mode = resolveDecisionMode(application)
     await mode.validatePendingBinding(transactionReq, application, binding, decision)
 
@@ -211,6 +163,9 @@ async function persistDecision(
         req: transactionReq,
       }),
     )
+    if (decision.outcome === 'rejected' && application.mcpOnboardingStaffMode === 'new_account') {
+      await releaseAbandonedClinicStaffEmail(transactionReq, binding.clinicStaffId)
+    }
     return readStagedApplication(transactionReq, applicationId)
   })
 }
@@ -221,16 +176,16 @@ async function completeNewAccountSetup(req: PayloadRequest, applicationId: numbe
     const application = await readStagedApplication(transactionReq, applicationId)
     if (application.provisioningStatus === 'completed') return application
 
-    const binding = getBinding(application)
+    const binding = getStagedOnboardingBinding(application)
     await lockNotificationAuthorization(transactionReq, [
       notificationClinicAuthorizationKey(binding.clinicId),
       clinicStaffAuthorizationKey(binding.clinicStaffId),
     ])
-    const clinic = await readBoundClinic(transactionReq, binding)
+    const clinic = await readBoundStagedClinic(transactionReq, binding)
     if (clinic.participationStatus !== 'approved' || clinic.status === 'rejected') {
       throw new McpOnboardingError('The clinic no longer has approved participation.', 409)
     }
-    const staff = await readBoundNewStaff(transactionReq, application, binding, 'approved')
+    const staff = await readBoundStagedNewStaff(transactionReq, application, binding, 'approved')
     await prepareClinicOnboardingIdentity(
       transactionReq.payload,
       {
@@ -299,7 +254,8 @@ async function prepareNewAccountInvitation(req: PayloadRequest, clinicStaffId: n
 
 const decisionModes: Record<NonNullable<ClinicApplication['mcpOnboardingStaffMode']>, DecisionMode> = {
   new_account: {
-    validatePendingBinding: (req, application, binding) => readBoundNewStaff(req, application, binding, 'pending'),
+    validatePendingBinding: (req, application, binding) =>
+      readBoundStagedNewStaff(req, application, binding, 'pending'),
     approveParticipation: approveNewAccountParticipation,
     afterApproval: async (req, approved) => {
       const application = await completeNewAccountSetup(req, approved.id)

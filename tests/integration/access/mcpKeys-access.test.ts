@@ -740,6 +740,7 @@ describe('MCP key management and client access', () => {
         apiKey: token,
         clinics: { find: true, update: true },
         clinicOnboarding: { create: true, decide: true },
+        'payload-mcp-tool': { trashClinic: true },
       },
     })
     keyIds.push(key.id)
@@ -825,6 +826,20 @@ describe('MCP key management and client access', () => {
       participationStatus: 'pending',
       internalPrimaryContact: { email: `${clinicName}@example.com` },
     })
+    expect(await call('trashClinic', { id: clinicId })).toContain('open clinic onboarding application')
+    const deleteReq = await createLocalReq({ user: support, req: { payloadAPI: 'REST' } }, payload)
+    await expect(
+      payload.update({
+        collection: 'clinics',
+        id: clinicId,
+        data: { deletedAt: new Date().toISOString() },
+        overrideAccess: false,
+        req: deleteReq,
+      }),
+    ).rejects.toMatchObject({ status: 409 })
+    await expect(
+      payload.delete({ collection: 'clinics', id: clinicId, overrideAccess: false, req: deleteReq }),
+    ).rejects.toMatchObject({ status: 409 })
     expect(JSON.parse(await call('approveClinicOnboarding', { applicationId, applicationRevision }))).toMatchObject({
       applicationId,
       clinicId,

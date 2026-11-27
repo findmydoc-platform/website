@@ -47,7 +47,7 @@ import {
 } from './clinics/postalCode'
 import { setClinicProfileRevision } from './clinics/profileRevision'
 import { beforeChangeSynchronizeClinicProfileGallery, clinicProfileGalleryMaxItems } from './clinics/profileGallery'
-import { protectStagedClinicLifecycle } from './clinics/stagedOnboarding'
+import { protectStagedClinicDeletion, protectStagedClinicLifecycle } from './clinics/stagedOnboarding'
 
 const GALLERY_ENTRIES_SAME_CLINIC_MESSAGE = 'Gallery entries must belong to this clinic.'
 const CLINIC_APPROVAL_ERROR_COMPONENT =
@@ -172,7 +172,7 @@ export const Clinics: CollectionConfig<'clinics'> = {
       guardInitialClinicMembershipInput,
       guardNotificationAuthorizationChange,
     ],
-    beforeDelete: [guardNotificationAuthorizationSession],
+    beforeDelete: [guardNotificationAuthorizationSession, protectStagedClinicDeletion],
     afterOperation: [
       async ({ result, req, operation }) => {
         if (normalizeNativeFinalWriteOperation(operation)) await guardNotificationAuthorizationSession({ req })

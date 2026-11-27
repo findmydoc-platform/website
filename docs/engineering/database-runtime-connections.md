@@ -70,10 +70,12 @@ Postgres is temporarily unavailable:
 - a read may be retried by the user;
 - a write retains its input and requires explicit resubmission.
 
-Payload's Root `afterError` hook owns request-time REST and GraphQL response mapping. The Payload REST and GraphQL route
+`src/features/databaseAvailability` owns the response format and sanitized logging. The Payload root `afterError` hook
+maps native REST and GraphQL failures. The platform gallery append endpoint uses the same REST response for failures
+it handles directly. The Payload REST and GraphQL route
 files are template entrypoints that Payload does not regenerate automatically. They remain minimal re-exports of
 feature-owned handler adapters, which add only the initialization-failure protection needed before Root hooks are
-available. findmydoc-specific database and error policy stays in `src/features/databaseAvailability`.
+available.
 
 Payload Admin uses the same runtime pool policy but keeps Payload's native initialization-error behavior. Do not wrap
 the Admin route or edit `src/app/(payload)/admin/importMap.js` manually.

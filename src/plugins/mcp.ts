@@ -15,8 +15,9 @@ import { clinicGallerySaveInputSchema } from '@/features/clinicDashboard/gallery
 import { clinicProfileMediaImageMimeTypes, standardMediaImageMimeTypes } from '@/collections/common/mediaCollection'
 import { MEDIA_UPLOAD_MAX_BYTES } from '@/config/mediaUploadPolicy'
 import { relationId } from '@/collections/clinics/profileGallery'
-import type { ClinicMedia, DoctorMedia } from '@/payload-types'
+import type { ClinicMedia, DoctorMedia, PayloadMcpApiKey } from '@/payload-types'
 import { readStoredImage } from '@/features/platformMedia/readStoredImage'
+import { createPostDraft, updatePostDraft } from './mcpPostDrafts'
 
 type McpCollectionConfig = {
   description: string
@@ -30,6 +31,7 @@ type McpCollectionConfig = {
 }
 
 const mcpUserCollection: CollectionSlug = 'platformStaff'
+const postDraftGrantAliases = new Set([createPostDraft.name, updatePostDraft.name])
 
 const mcpGallerySnapshot = (snapshot: Awaited<ReturnType<typeof readPlatformClinicGallery>>) => ({
   ...snapshot,
@@ -329,6 +331,8 @@ export const createMcpPlugin = (): Plugin =>
         createDeleteMediaTool('doctorMedia', 'deleteDoctorImage'),
         readClinicGallery,
         saveClinicGalleryTool,
+        createPostDraft,
+        updatePostDraft,
       ],
     },
 
@@ -339,15 +343,22 @@ export const createMcpPlugin = (): Plugin =>
           field.type === 'collapsible'
             ? {
                 ...field,
+                ...(field.fields.some(
+                  (nested) => nested.type === 'group' && 'name' in nested && nested.name === 'posts',
+                )
+                  ? { label: 'Blog posts' }
+                  : {}),
                 fields: field.fields.map((nested) =>
                   nested.type === 'group' && 'name' in nested && nested.name === 'payload-mcp-tool'
                     ? {
                         ...nested,
-                        fields: nested.fields.map((item) =>
-                          item.type === 'checkbox' ? { ...item, defaultValue: false } : item,
-                        ),
+                        fields: nested.fields
+                          .filter((item) => item.type !== 'checkbox' || !postDraftGrantAliases.has(item.name))
+                          .map((item) => (item.type === 'checkbox' ? { ...item, defaultValue: false } : item)),
                       }
-                    : nested,
+                    : nested.type === 'group' && 'name' in nested && nested.name === 'posts'
+                      ? { ...nested, label: 'Posts' }
+                      : nested,
                 ),
               }
             : field,
@@ -370,6 +381,14 @@ export const createMcpPlugin = (): Plugin =>
         throw new UnauthorizedError()
       }
 
-      return mcpAccessSettings
+      const postGrants = mcpAccessSettings.posts as PayloadMcpApiKey['posts']
+      return {
+        ...mcpAccessSettings,
+        'payload-mcp-tool': {
+          ...mcpAccessSettings['payload-mcp-tool'],
+          [createPostDraft.name]: postGrants?.create === true,
+          [updatePostDraft.name]: postGrants?.update === true,
+        },
+      }
     },
   })

@@ -265,7 +265,7 @@ export const patientInquiriesReducer = (
         composer: {
           ...state.composer,
           attachmentDraftId: action.draftId,
-          error: 'We could not confirm whether your message was sent.',
+          error: 'Delivery not confirmed.',
           idempotencyKey: action.idempotencyKey,
           retryReady: false,
           sendStatus: 'ambiguous',

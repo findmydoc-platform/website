@@ -163,42 +163,48 @@ const Attachment = ({
   if (item.kind !== 'external-message' || !item.attachment) return null
   const Icon = item.attachment.mimeType === 'application/pdf' ? File : FileImage
   return (
-    <div className="mt-3 flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-3">
-      <Icon className="size-7 shrink-0 text-primary" aria-hidden="true" />
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-medium text-foreground">{item.attachment.fileName}</span>
-        <span className="block text-xs text-muted-foreground">{formatBytes(item.attachment.sizeBytes)}</span>
-      </span>
-      {item.attachmentDownloadHref ? (
-        <a
-          className="inline-flex size-11 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-hidden"
-          href={item.attachmentDownloadHref}
-          aria-label={`Download ${item.attachment.fileName}`}
-        >
-          <Download className="size-5" aria-hidden="true" />
-        </a>
-      ) : null}
-      {reportTarget ? (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              ref={reportTriggerRef}
-              type="button"
-              size="icon"
-              variant="ghost"
-              className="size-11"
-              aria-label={`Attachment actions for ${item.attachment.fileName}`}
-            >
-              <Ellipsis className="size-4" aria-hidden="true" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onSelect={() => onReport(reportTarget, reportTriggerRef.current)}>
-              <Flag aria-hidden="true" /> Report attachment
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      ) : null}
+    <div className="mt-3 rounded-lg border border-border bg-card p-2 sm:px-3">
+      <p className="text-sm leading-5 font-medium wrap-anywhere text-foreground">{item.attachment.fileName}</p>
+      <div className="mt-1 flex flex-wrap items-center justify-between gap-x-1">
+        <span className="inline-flex items-center gap-1 text-xs whitespace-nowrap text-muted-foreground">
+          <Icon className="size-4 shrink-0 text-primary" aria-hidden="true" />
+          {formatBytes(item.attachment.sizeBytes)}
+        </span>
+        {item.attachmentDownloadHref || reportTarget ? (
+          <div className="ml-auto flex flex-wrap items-center justify-end">
+            {item.attachmentDownloadHref ? (
+              <a
+                className="inline-flex size-11 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-hidden"
+                href={item.attachmentDownloadHref}
+                aria-label={`Download ${item.attachment.fileName}`}
+              >
+                <Download className="size-5" aria-hidden="true" />
+              </a>
+            ) : null}
+            {reportTarget ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    ref={reportTriggerRef}
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className="size-11"
+                    aria-label={`Attachment actions for ${item.attachment.fileName}`}
+                  >
+                    <Ellipsis className="size-4" aria-hidden="true" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onSelect={() => onReport(reportTarget, reportTriggerRef.current)}>
+                    <Flag aria-hidden="true" /> Report attachment
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
     </div>
   )
 }
@@ -417,6 +423,10 @@ export function PatientInquiryConversation({
   status,
 }: PatientInquiryConversationProps) {
   const fileInputRef = React.useRef<HTMLInputElement>(null)
+  const messageInputRef = React.useRef<HTMLTextAreaElement>(null)
+  const restoreMessageFocusRef = React.useRef(false)
+  const fileErrorId = React.useId()
+  const sendErrorId = React.useId()
   const reportReturnFocusRef = React.useRef<HTMLElement>(null)
   const [reportTarget, setReportTarget] = React.useState<InquiryReportTarget>()
   const [appealCaseId, setAppealCaseId] = React.useState<string>()
@@ -460,6 +470,10 @@ export function PatientInquiryConversation({
   React.useEffect(() => {
     const previous = previousSendStatusRef.current
     previousSendStatusRef.current = composer.sendStatus
+    if (restoreMessageFocusRef.current && composer.sendStatus !== 'sending' && composer.sendStatus !== 'uploading') {
+      restoreMessageFocusRef.current = false
+      if (document.activeElement === document.body) messageInputRef.current?.focus()
+    }
     if ((previous === 'sending' || previous === 'uploading') && composer.sendStatus === 'idle' && !composer.error) {
       setAnnouncement('Message sent.')
     } else if (composer.sendStatus === 'uploading') {
@@ -533,7 +547,43 @@ export function PatientInquiryConversation({
   const closed = detail.lifecycle === 'closed'
   const replyAllowed = !closed && detail.actions.canReply
   const busy = composer.sendStatus === 'sending' || composer.sendStatus === 'uploading'
+  const hasSendError = composer.sendStatus === 'ambiguous' || composer.sendStatus === 'error'
   const canSend = !busy && !composer.fileError && Boolean(composer.text.trim() || composer.file)
+  const attachmentButton = (
+    <Button
+      type="button"
+      size="icon"
+      variant="outline"
+      className={cn(
+        'size-12 rounded-lg',
+        hasSendError
+          ? 'col-start-2 row-start-2 max-sm:col-start-1 max-sm:row-start-3'
+          : 'max-[374px]:col-start-1 max-[374px]:row-start-2',
+      )}
+      aria-label="Attach a file"
+      aria-describedby={composer.fileError ? fileErrorId : undefined}
+      disabled={busy}
+      onClick={() => fileInputRef.current?.click()}
+    >
+      <Paperclip className="size-5" aria-hidden="true" />
+    </Button>
+  )
+  const sendButton = (
+    <Button
+      type="button"
+      className={cn(
+        'h-12 min-w-20',
+        hasSendError
+          ? 'col-start-3 row-start-2 max-sm:col-start-2 max-sm:row-start-3 max-sm:justify-self-end'
+          : 'max-[374px]:col-start-2 max-[374px]:row-start-2 max-[374px]:justify-self-end',
+      )}
+      disabled={!canSend}
+      variant={hasSendError ? 'outline' : 'default'}
+      onClick={onSend}
+    >
+      {busy ? 'Sending…' : 'Send'}
+    </Button>
+  )
   const restriction =
     detail.moderation?.identity.state === 'messaging-suspended'
       ? detail.moderation.identity
@@ -543,16 +593,16 @@ export function PatientInquiryConversation({
 
   return (
     <section
-      className="flex h-[calc(100dvh-7.5rem)] min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-xs lg:h-auto lg:min-h-[34rem]"
+      className="flex min-w-0 flex-col rounded-xl border border-border bg-card shadow-xs lg:min-h-[34rem]"
       aria-label={`Conversation with ${detail.clinic.displayName}`}
     >
       <p className="sr-only" role="status" aria-live="polite">
         {announcement}
       </p>
-      <header className="flex shrink-0 items-center gap-4 border-b border-border px-4 py-4 sm:px-6">
+      <header className="grid shrink-0 grid-cols-[2rem_minmax(0,1fr)_2.75rem] items-start gap-x-2 border-b border-border px-4 py-2 sm:grid-cols-[2.75rem_2rem_minmax(0,1fr)_2.75rem] sm:gap-x-3 sm:px-6 sm:py-3 lg:grid-cols-[2rem_minmax(0,1fr)_2.75rem]">
         <Link
           href="/patient/inquiries"
-          className="inline-flex size-11 items-center justify-center rounded-lg text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-hidden lg:hidden"
+          className="col-start-1 row-start-1 inline-flex size-11 items-center justify-center rounded-lg text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-hidden lg:hidden"
           onClick={onBack}
           aria-label="Back to my inquiries"
         >
@@ -560,16 +610,16 @@ export function PatientInquiryConversation({
         </Link>
         <span
           aria-hidden="true"
-          className="flex size-14 shrink-0 items-center justify-center rounded-full border border-border bg-card text-sm font-bold text-secondary"
+          className="col-start-1 row-start-2 flex size-8 items-center justify-center rounded-full border border-border bg-card text-xs font-bold text-secondary sm:col-start-2 sm:row-start-1 lg:col-start-1"
         >
           {getInitials(detail.clinic.displayName)}
         </span>
-        <div className="min-w-0 flex-1">
+        <div className="col-span-2 col-start-2 row-start-2 min-w-0 sm:col-span-1 sm:col-start-3 sm:row-start-1 lg:col-start-2">
           <Heading
             ref={conversationHeadingRef}
             as="h2"
             align="left"
-            className="truncate text-lg text-foreground"
+            className="text-lg leading-6 wrap-anywhere text-foreground"
             data-patient-inquiry-detail-focus
             size="h5"
             tabIndex={-1}
@@ -577,9 +627,9 @@ export function PatientInquiryConversation({
             {detail.clinic.displayName}
           </Heading>
           {detail.originalRequest.contentState !== 'hard-deleted' ? (
-            <p className="truncate text-sm text-muted-foreground">{detail.interest.label}</p>
+            <p className="mt-0.5 text-sm leading-5 wrap-anywhere text-muted-foreground">{detail.interest.label}</p>
           ) : null}
-          <span className="mt-2 flex flex-wrap items-center gap-2">
+          <span className="mt-1 flex flex-wrap items-center gap-2">
             <span
               className={cn(
                 'inline-flex rounded-md px-2 py-1 text-xs font-semibold',
@@ -599,7 +649,7 @@ export function PatientInquiryConversation({
           type="button"
           size="icon"
           variant="ghost"
-          className="size-11"
+          className="col-start-3 row-start-1 size-11 sm:col-start-4 lg:col-start-3"
           aria-label="Report conversation"
           onClick={(event) =>
             openReport(
@@ -675,17 +725,17 @@ export function PatientInquiryConversation({
         </div>
       ) : null}
 
-      <details className="group shrink-0 border-b border-border bg-muted/20 px-5 py-4 sm:px-7">
-        <summary className="cursor-pointer text-sm font-semibold text-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-hidden">
+      <details className="group shrink-0 border-b border-border bg-muted/20 px-5 sm:px-7">
+        <summary className="min-h-11 cursor-pointer py-3 text-sm font-semibold text-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-hidden">
           Original request
         </summary>
-        <div className="pt-3">
+        <div className="pb-4">
           {detail.originalRequest.contentState === 'hard-deleted' ? (
             <p className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground">
               <ShieldAlert className="size-4" aria-hidden="true" /> Inquiry deleted
             </p>
           ) : detail.originalRequest.message ? (
-            <p className="text-sm leading-6 whitespace-pre-wrap text-foreground">
+            <p className="text-sm leading-6 wrap-anywhere whitespace-pre-wrap text-foreground">
               {plainTextWithLinks(detail.originalRequest.message)}
             </p>
           ) : null}
@@ -711,7 +761,10 @@ export function PatientInquiryConversation({
 
       <div
         ref={timelineRef}
-        className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain"
+        aria-label="Conversation history"
+        role="region"
+        tabIndex={0}
+        className="relative min-h-0 flex-1 overflow-y-auto focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary max-lg:max-h-[max(16rem,65dvh)]"
         onScroll={(event) => {
           const target = event.currentTarget
           if (target.scrollHeight - target.scrollTop - target.clientHeight < 72) setHasNewMessages(false)
@@ -757,29 +810,7 @@ export function PatientInquiryConversation({
             : 'This conversation is read-only because the clinic is no longer available.'}
         </div>
       ) : (
-        <div className="shrink-0 border-t border-border bg-card px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6">
-          {composer.sendStatus === 'ambiguous' || composer.sendStatus === 'error' ? (
-            <div
-              role="alert"
-              className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
-            >
-              <AlertCircle className="size-5" aria-hidden="true" />
-              <span className="flex-1">{composer.error ?? 'Not sent'}</span>
-              <Button
-                className="min-h-11"
-                size="sm"
-                variant="outline"
-                onClick={onRetrySend}
-                disabled={composer.sendStatus === 'ambiguous' && !composer.retryReady}
-              >
-                Try again
-              </Button>
-              <Button className="min-h-11" size="sm" variant="ghost" onClick={onClearFailed}>
-                Delete
-              </Button>
-            </div>
-          ) : null}
-
+        <div className="shrink-0 rounded-b-xl border-t border-border bg-card px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6">
           {composer.file || composer.fileError ? (
             <div
               className={cn(
@@ -789,11 +820,13 @@ export function PatientInquiryConversation({
             >
               {composer.fileError ? (
                 <AlertCircle className="size-6 text-destructive" aria-hidden="true" />
+              ) : composer.file?.type === 'application/pdf' ? (
+                <File className="size-7 text-primary" aria-hidden="true" />
               ) : (
                 <FileImage className="size-7 text-primary" aria-hidden="true" />
               )}
               <div className="min-w-0 flex-1">
-                <p className="truncate font-medium">{composer.file?.name ?? 'Invalid attachment'}</p>
+                <p className="font-medium wrap-anywhere">{composer.file?.name ?? 'Invalid attachment'}</p>
                 {composer.file ? (
                   <p className="text-sm text-muted-foreground">{formatBytes(composer.file.size)}</p>
                 ) : null}
@@ -814,7 +847,7 @@ export function PatientInquiryConversation({
                   </div>
                 ) : null}
                 {composer.fileError ? (
-                  <p id="patient-inquiry-file-error" role="alert" className="mt-1 text-sm text-destructive">
+                  <p id={fileErrorId} role="alert" className="mt-1 text-sm text-destructive">
                     {composer.fileError}
                   </p>
                 ) : null}
@@ -832,43 +865,81 @@ export function PatientInquiryConversation({
             </div>
           ) : null}
 
-          <div className="grid grid-cols-[3rem_minmax(0,1fr)_auto] items-end gap-3 max-[374px]:grid-cols-[3rem_minmax(0,1fr)]">
+          <div
+            className={cn(
+              'grid gap-3',
+              hasSendError
+                ? 'grid-cols-[3rem_minmax(0,1fr)] items-center gap-y-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]'
+                : 'grid-cols-[3rem_minmax(0,1fr)_auto] items-end max-[374px]:grid-cols-[3rem_minmax(0,1fr)]',
+            )}
+          >
             <input
               ref={fileInputRef}
               type="file"
+              hidden
               aria-label="Attachment"
-              className="sr-only"
               accept="image/png,image/jpeg,image/webp,application/pdf"
-              aria-describedby={composer.fileError ? 'patient-inquiry-file-error' : undefined}
-              aria-invalid={composer.fileError ? true : undefined}
               onChange={(event) => onFileChange(event.target.files?.[0])}
             />
-            <Button
-              size="icon"
-              variant="outline"
-              className="size-12 rounded-lg max-[374px]:col-start-1 max-[374px]:row-start-2"
-              aria-label="Attach a file"
-              disabled={busy}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Paperclip className="size-5" aria-hidden="true" />
-            </Button>
+            {hasSendError ? null : attachmentButton}
             <Textarea
+              ref={messageInputRef}
               aria-label="Message"
-              className="min-h-12 resize-none rounded-lg py-3 max-[374px]:col-span-2 max-[374px]:row-start-1"
+              aria-describedby={hasSendError ? sendErrorId : undefined}
+              className={cn(
+                'min-h-12 resize-none rounded-lg py-3',
+                hasSendError
+                  ? 'col-span-full row-start-1 max-sm:min-h-16'
+                  : 'max-[374px]:col-span-2 max-[374px]:row-start-1',
+              )}
               maxLength={3000}
               placeholder="Write a message"
               value={composer.text}
               disabled={busy}
               onChange={(event) => onTextChange(event.target.value)}
             />
-            <Button
-              className="h-12 min-w-20 max-[374px]:col-start-2 max-[374px]:row-start-2 max-[374px]:justify-self-end"
-              disabled={!canSend}
-              onClick={onSend}
-            >
-              {busy ? 'Sending…' : 'Send'}
-            </Button>
+            {hasSendError ? (
+              <div className="col-span-full row-start-2 flex min-w-0 flex-wrap items-center justify-between gap-x-4 text-sm sm:col-span-1 sm:col-start-1">
+                <div className="flex min-w-0 flex-wrap items-center gap-x-2">
+                  <p
+                    id={sendErrorId}
+                    role="alert"
+                    className="flex min-w-0 items-start gap-1.5 leading-5 text-destructive"
+                  >
+                    <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                    <span className="min-w-0 wrap-anywhere">
+                      {composer.error ?? (composer.sendStatus === 'ambiguous' ? 'Delivery not confirmed.' : 'Not sent')}
+                    </span>
+                  </p>
+                  <Button
+                    className="min-h-11 items-center px-0 font-semibold underline"
+                    size="clear"
+                    variant="link"
+                    onClick={(event) => {
+                      restoreMessageFocusRef.current =
+                        event.detail === 0 && document.activeElement === event.currentTarget
+                      onRetrySend()
+                    }}
+                    disabled={composer.sendStatus === 'ambiguous' && !composer.retryReady}
+                  >
+                    Try again
+                  </Button>
+                </div>
+                <Button
+                  className="ml-auto min-h-11 items-center px-0 text-muted-foreground hover:text-foreground"
+                  size="clear"
+                  variant="link"
+                  onClick={(event) => {
+                    if (event.detail === 0) messageInputRef.current?.focus()
+                    onClearFailed()
+                  }}
+                >
+                  Discard draft
+                </Button>
+              </div>
+            ) : null}
+            {hasSendError ? attachmentButton : null}
+            {sendButton}
           </div>
         </div>
       )}

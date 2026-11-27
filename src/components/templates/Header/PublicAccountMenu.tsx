@@ -5,7 +5,7 @@ import {
   CircleUserRound,
   Heart,
   Hospital,
-  LayoutDashboard,
+  Inbox,
   LogIn,
   LogOut,
   UserPlus,
@@ -199,7 +199,7 @@ const PatientMenuContent = ({
   state: Extract<PublicAccountMenuState, { kind: 'patient' }>
 }) => {
   const primaryGroup = renderMenuGroup([
-    { href: links.dashboard, icon: LayoutDashboard, label: 'Patient dashboard' },
+    { href: links.dashboard, icon: Inbox, label: 'My inquiries' },
     { href: links.profile, icon: UserRound, label: 'Profile' },
     { href: links.favorites, icon: Heart, label: 'Favorites' },
   ])

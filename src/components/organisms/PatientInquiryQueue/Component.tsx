@@ -1,4 +1,4 @@
-import { AlertCircle, ChevronRight, Inbox, LockKeyhole } from 'lucide-react'
+import { AlertCircle, ChevronRight, Inbox, LoaderCircle, LockKeyhole } from 'lucide-react'
 import Link from 'next/link'
 import * as React from 'react'
 
@@ -81,7 +81,7 @@ const InquiryRow = ({
       aria-current={selected ? 'page' : undefined}
       data-inquiry-id={item.id}
       className={cn(
-        'grid min-h-48 w-full grid-cols-[3.75rem_minmax(0,1fr)_auto] gap-3 border-b border-border/70 px-4 py-5 text-left transition-colors last:border-b-0 hover:bg-muted/35 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-hidden sm:grid-cols-[4.25rem_minmax(0,1fr)_auto] lg:min-h-40',
+        'grid w-full grid-cols-[2.5rem_minmax(0,1fr)] items-start gap-x-3 gap-y-1.5 px-4 py-4 text-left transition-colors hover:bg-muted/35 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-hidden',
         selected && 'bg-primary/5 shadow-[inset_3px_0_0_hsl(var(--primary))]',
       )}
       onClick={(event) => {
@@ -98,26 +98,24 @@ const InquiryRow = ({
       }}
     >
       <span
-        className="flex size-15 items-center justify-center rounded-full border border-border bg-card text-sm font-bold text-secondary sm:size-17"
+        className="row-span-2 flex size-10 items-center justify-center rounded-full border border-border bg-card text-xs font-bold text-secondary"
         aria-hidden="true"
       >
         {getInitials(item.clinic.displayName)}
       </span>
-      <span className="min-w-0 space-y-2">
-        <span className="block truncate font-semibold text-foreground">{item.clinic.displayName}</span>
-        <span className="block truncate text-sm text-muted-foreground">{item.interest.label}</span>
+      <span className="col-start-2 min-w-0 space-y-1.5">
+        <span className="block leading-5 font-semibold wrap-anywhere text-foreground">{item.clinic.displayName}</span>
+        <span className="block text-sm leading-5 wrap-anywhere text-muted-foreground">{item.interest.label}</span>
         <span className="line-clamp-2 text-sm leading-6 text-foreground lg:hidden">{item.preview}</span>
-        <span className="flex flex-wrap items-center gap-2">
-          <StatusBadge lifecycle={item.lifecycle} />
-          {item.moderationBadge?.conversationRestricted ? (
-            <span className="inline-flex items-center gap-1.5 rounded-md bg-warning/15 px-2.5 py-1 text-xs font-semibold text-foreground">
-              <LockKeyhole className="size-3.5" aria-hidden="true" /> Restricted
-            </span>
-          ) : null}
-        </span>
       </span>
-      <span className="flex min-h-full flex-col items-end justify-between gap-2 text-sm text-muted-foreground">
-        <span>{formatActivityTime(item.lastActivityAt, now)}</span>
+      <span className="col-start-2 flex min-w-0 flex-wrap items-center gap-1.5 text-xs text-muted-foreground sm:gap-2">
+        <StatusBadge lifecycle={item.lifecycle} />
+        {item.moderationBadge?.conversationRestricted ? (
+          <span className="inline-flex items-center gap-1.5 rounded-md bg-warning/15 px-2.5 py-1 text-xs font-semibold text-foreground">
+            <LockKeyhole className="size-3.5" aria-hidden="true" /> Restricted
+          </span>
+        ) : null}
+        <time dateTime={item.lastActivityAt}>{formatActivityTime(item.lastActivityAt, now)}</time>
         {item.unread.count > 0 ? (
           <span
             aria-label={`${item.unread.count} unread ${item.unread.count === 1 ? 'message' : 'messages'}`}
@@ -126,24 +124,23 @@ const InquiryRow = ({
             {item.unread.count}
           </span>
         ) : null}
-        <ChevronRight className="size-5" aria-hidden="true" />
+        <ChevronRight className="ml-auto size-5" aria-hidden="true" />
       </span>
     </Link>
   </li>
 )
 
-const QueueSkeleton = () => (
-  <div aria-label="Loading inquiries" className="space-y-4 px-4 py-5" role="status">
-    {[0, 1, 2].map((index) => (
-      <div key={index} className="flex animate-pulse gap-4">
-        <span className="size-15 shrink-0 rounded-full bg-muted" />
-        <span className="flex-1 space-y-3 py-1">
-          <span className="block h-4 w-3/5 rounded-[4px] bg-muted" />
-          <span className="block h-3 w-2/5 rounded-[4px] bg-muted" />
-          <span className="block h-5 w-16 rounded-[4px] bg-muted" />
-        </span>
-      </div>
-    ))}
+const queueStatusCard =
+  'mt-4 flex min-h-64 flex-col items-center justify-center rounded-xl border border-border bg-card px-6 py-5 text-center shadow-xs'
+const queueErrorTitle = 'We couldn’t load your inquiries'
+const emptyQueueTitle = 'No inquiries here'
+
+const QueueLoading = () => (
+  <div aria-label="Loading inquiries" className={queueStatusCard} role="status">
+    <p className="inline-flex items-center gap-3 text-sm text-secondary">
+      <LoaderCircle className="size-5 animate-spin text-primary motion-reduce:animate-none" aria-hidden="true" />
+      Loading inquiries…
+    </p>
   </div>
 )
 
@@ -163,6 +160,7 @@ export function PatientInquiryQueue({
   status,
   preparations,
 }: PatientInquiryQueueProps) {
+  const selectedFilterRef = React.useRef<HTMLButtonElement>(null)
   const preparedItems = preparations?.items ?? []
   const preparedInquiryIds = new Set(preparedItems.flatMap((item) => (item.inquiryId ? [item.inquiryId] : [])))
   const unsubmittedCount = preparedItems.filter((item) => item.status !== 'submitted').length
@@ -174,6 +172,9 @@ export function PatientInquiryQueue({
   ]
 
   const items = (data?.items ?? []).filter((item) => filter !== 'all' || !preparedInquiryIds.has(item.id))
+  const showEmptyState = status === 'ready' && items.length === 0 && !(filter === 'all' && preparedItems.length)
+  const emptyMessage = filter === 'all' ? 'Your clinic inquiries will appear here.' : `You have no ${filter} inquiries.`
+  const errorMessage = error ?? 'Check your connection and try again.'
   const openItems = items.filter((item) => item.lifecycle === 'open')
   const closedItems = items.filter((item) => item.lifecycle === 'closed')
   const groups =
@@ -186,10 +187,14 @@ export function PatientInquiryQueue({
 
   return (
     <section aria-label="Patient inquiry list" className="min-w-0">
+      <p className="sr-only" aria-live="polite" aria-atomic="true">
+        {status === 'error' ? `${queueErrorTitle}. ${errorMessage}` : showEmptyState ? emptyMessage : ''}
+      </p>
       <div className="grid grid-cols-3 border-b border-border" aria-label="Filter inquiries">
         {tabs.map((tab) => (
           <button
             key={tab.value}
+            ref={filter === tab.value ? selectedFilterRef : undefined}
             type="button"
             aria-pressed={filter === tab.value}
             className={cn(
@@ -200,14 +205,16 @@ export function PatientInquiryQueue({
             onClick={() => onFilterChange(tab.value)}
           >
             {tab.label}
-            <span
-              className={cn(
-                'rounded-full bg-muted px-2 py-0.5 text-xs',
-                tab.value !== 'closed' && tab.count > 0 && 'bg-success/10 text-success',
-              )}
-            >
-              {tab.count}
-            </span>
+            {data && status === 'ready' ? (
+              <span
+                className={cn(
+                  'rounded-full bg-muted px-2 py-0.5 text-xs',
+                  tab.value !== 'closed' && tab.count > 0 && 'bg-success/10 text-success',
+                )}
+              >
+                {tab.count}
+              </span>
+            ) : null}
           </button>
         ))}
       </div>
@@ -242,32 +249,36 @@ export function PatientInquiryQueue({
         </div>
       ) : null}
 
-      {(status === 'loading' || status === 'idle') && !preparedItems.length ? <QueueSkeleton /> : null}
+      {(status === 'loading' || status === 'idle') && !preparedItems.length ? <QueueLoading /> : null}
 
       {status === 'error' ? (
-        <div className="flex min-h-80 flex-col items-center justify-center px-6 py-12 text-center">
-          <AlertCircle className="mb-5 size-12 text-destructive" aria-hidden="true" />
+        <div className={queueStatusCard}>
+          <AlertCircle className="mb-3 size-8 text-destructive" aria-hidden="true" />
           <Heading as="h2" align="center" size="h5" className="text-xl text-secondary" tabIndex={-1}>
-            We couldn’t load your inquiries
+            {queueErrorTitle}
           </Heading>
-          <p className="mt-2 text-muted-foreground">{error ?? 'Check your connection and try again.'}</p>
-          <Button className="mt-6 min-w-52" onClick={onRetry}>
+          <p className="mt-2 text-muted-foreground">{errorMessage}</p>
+          <Button
+            className="mt-3 min-h-11 w-full max-w-52"
+            onClick={(event) => {
+              if (event.detail === 0) selectedFilterRef.current?.focus()
+              onRetry()
+            }}
+          >
             Try again
           </Button>
         </div>
       ) : null}
 
-      {status === 'ready' && items.length === 0 && !(filter === 'all' && preparedItems.length) ? (
-        <div className="flex min-h-80 flex-col items-center justify-center px-6 py-12 text-center">
-          <span className="mb-5 flex size-20 items-center justify-center rounded-full bg-primary/10 text-primary">
-            <Inbox className="size-9" aria-hidden="true" />
+      {showEmptyState ? (
+        <div className={queueStatusCard}>
+          <span className="mb-4 flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <Inbox className="size-6" aria-hidden="true" />
           </span>
           <Heading as="h2" align="center" size="h5" className="text-xl text-secondary">
-            No inquiries here
+            {emptyQueueTitle}
           </Heading>
-          <p className="mt-2 max-w-sm text-muted-foreground">
-            {filter === 'all' ? 'Your clinic inquiries will appear here.' : `You have no ${filter} inquiries.`}
-          </p>
+          <p className="mt-2 max-w-sm text-muted-foreground">{emptyMessage}</p>
         </div>
       ) : null}
 

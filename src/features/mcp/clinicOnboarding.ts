@@ -1,6 +1,7 @@
 import type { MCPAccessSettings } from '@payloadcms/plugin-mcp'
 import { APIError, type Field, type PayloadRequest } from 'payload'
 import { z } from 'zod'
+import { findEligibleClinicOnboardingStaff } from '@/features/clinicOnboarding/existingStaff'
 import { approveClinicOnboarding, rejectClinicOnboarding } from '@/features/clinicOnboarding/decideApplication'
 import { isValidEmail, normalizeEmail } from '@/auth/utilities/emailNormalization'
 import {
@@ -11,7 +12,10 @@ import {
 } from '@/features/clinicOnboarding/stagedApplication'
 
 const clinicOnboardingGrants = {
-  read: { tools: ['readClinicOnboarding'], label: { en: 'Read applications', de: 'Vorgänge lesen' } },
+  read: {
+    tools: ['readClinicOnboarding', 'findEligibleClinicOnboardingStaff'],
+    label: { en: 'Read applications', de: 'Vorgänge lesen' },
+  },
   create: { tools: ['stageClinicOnboarding'], label: { en: 'Stage an application', de: 'Vorgang anlegen' } },
   correct: {
     tools: ['correctClinicOnboarding'],
@@ -117,8 +121,12 @@ const intake = z.object({
   contactRole: z.enum(['Medical Director', 'Clinic Management', 'International Office']),
 })
 const applicationIdInput = z.object({ applicationId: id })
-const correctionInput = intake.partial().merge(applicationIdInput)
-const stageInput = intake.extend({ requestKey: z.string().trim().min(1).max(200), staffMode: z.literal('new_account') })
+const correctionInput = intake.partial().merge(applicationIdInput).extend({ clinicStaffId: id.optional() })
+const stageInput = intake.partial({ contactFirstName: true, contactLastName: true, contactEmail: true }).extend({
+  requestKey: z.string().trim().min(1).max(200),
+  staffMode: z.enum(['new_account', 'existing_account']),
+  clinicStaffId: id.optional(),
+})
 
 function defineOnboardingTool<Grant extends ClinicOnboardingGrant, Shape extends z.ZodRawShape>(
   grant: Grant,
@@ -156,16 +164,34 @@ export const clinicOnboardingTools = [
     readClinicOnboarding,
   ),
   defineOnboardingTool(
+    'read',
+    'findEligibleClinicOnboardingStaff',
+    'Look up an activated, unassigned staff account by exact email and return its ID for explicit selection.',
+    z.object({ email: contactEmail }),
+    findEligibleClinicOnboardingStaff,
+  ),
+  defineOnboardingTool(
     'create',
     'stageClinicOnboarding',
-    'Stage a pending clinic application, unpublished clinic and new first staff account. Reuse the request key when retrying.',
+    'Stage a pending clinic application and unpublished clinic. Select a new first staff account or an existing account by ID. Reuse the request key when retrying.',
     stageInput,
-    stageClinicOnboarding,
+    (req, { staffMode, clinicStaffId, contactEmail, contactFirstName, contactLastName, ...details }) => {
+      if (staffMode === 'existing_account') {
+        if (!clinicStaffId || contactEmail !== undefined) {
+          throw new McpOnboardingError('Select an existing staff account by ID.', 400)
+        }
+        return stageClinicOnboarding(req, { ...details, staffMode, clinicStaffId, contactFirstName, contactLastName })
+      }
+      if (clinicStaffId !== undefined || !contactEmail || !contactFirstName || !contactLastName) {
+        throw new McpOnboardingError('Provide the new staff member’s first name, last name and email.', 400)
+      }
+      return stageClinicOnboarding(req, { ...details, staffMode, contactEmail, contactFirstName, contactLastName })
+    },
   ),
   defineOnboardingTool(
     'correct',
     'correctClinicOnboarding',
-    'Correct supplied details of an open new-account clinic onboarding application.',
+    'Correct an open clinic onboarding application. Use clinicStaffId to change an existing-account selection.',
     correctionInput,
     (req, { applicationId, ...details }) => {
       if (!Object.values(details).some((value) => value !== undefined)) {
@@ -177,7 +203,7 @@ export const clinicOnboardingTools = [
   defineOnboardingTool(
     'decide',
     'approveClinicOnboarding',
-    'Approve Dashboard participation and prepare the staged first staff account. Replay approval to resume setup.',
+    'Approve Dashboard participation and prepare or assign the selected first staff account. Replay approval to resume new account setup.',
     applicationIdInput,
     approveClinicOnboarding,
   ),

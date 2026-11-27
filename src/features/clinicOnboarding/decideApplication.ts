@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import type { PayloadRequest } from 'payload'
 import { requestInitialClinicInvitation } from '@/auth/actions/clinicInvitationRequests'
 import { normalizeEmail } from '@/auth/utilities/emailNormalization'
+import { replaceClinicStaffAssignment } from '@/features/clinicGroups/staffAssignments'
 import {
   clinicStaffAuthorizationKey,
   lockNotificationAuthorization,
@@ -21,6 +22,7 @@ import {
   readStagedApplication,
   requireClinicOnboardingOperator,
 } from './stagedApplication'
+import { readEligibleExistingClinicStaff } from './existingStaff'
 import { withMcpOnboardingWrite } from './stagedWriteGuards'
 
 type Decision = { outcome: 'approved' } | { outcome: 'rejected'; reason: string }
@@ -113,6 +115,44 @@ async function approveNewAccountParticipation(req: PayloadRequest, _application:
       context: { skipClinicStaffAuthSync: true },
       depth: 0,
       overrideAccess: false,
+      req,
+    }),
+  )
+}
+
+async function validateExistingAccountDecision(
+  req: PayloadRequest,
+  _application: ClinicApplication,
+  { clinicId, clinicStaffId }: Binding,
+  decision: Decision,
+) {
+  if (decision.outcome === 'rejected') return
+  // Use the same lock order as other personal authorization commands before reading the selected account.
+  await lockNotificationAuthorization(req, [
+    notificationClinicAuthorizationKey(clinicId),
+    clinicStaffAuthorizationKey(clinicStaffId),
+  ])
+  if (!(await readEligibleExistingClinicStaff(req, { clinicStaffId }))) {
+    throw new McpOnboardingError('The selected staff account is unavailable or ineligible.', 409)
+  }
+}
+
+async function approveExistingAccountParticipation(
+  req: PayloadRequest,
+  application: ClinicApplication,
+  { clinicId, clinicStaffId }: Binding,
+) {
+  await replaceClinicStaffAssignment(req, clinicStaffId, { scope: 'local', clinicId })
+  await withMcpOnboardingWrite(req, { applicationId: application.id }, () =>
+    req.payload.update({
+      collection: 'clinicApplications',
+      id: application.id,
+      data: {
+        linkedRecords: { clinic: clinicId, clinicStaff: clinicStaffId, processedAt: getCurrentIsoTimestampString() },
+        provisioningStatus: 'completed',
+      },
+      depth: 0,
+      overrideAccess: true,
       req,
     }),
   )
@@ -248,7 +288,7 @@ async function prepareNewAccountInvitation(req: PayloadRequest, clinicStaffId: n
   }
 }
 
-const decisionModes: Partial<Record<NonNullable<ClinicApplication['mcpOnboardingStaffMode']>, DecisionMode>> = {
+const decisionModes: Record<NonNullable<ClinicApplication['mcpOnboardingStaffMode']>, DecisionMode> = {
   new_account: {
     validatePendingBinding: (req, application, binding) => readBoundNewStaff(req, application, binding, 'pending'),
     approveParticipation: approveNewAccountParticipation,
@@ -261,6 +301,14 @@ const decisionModes: Partial<Record<NonNullable<ClinicApplication['mcpOnboarding
           : 'not_started'
       return { ...status, invitationStatus }
     },
+  },
+  existing_account: {
+    validatePendingBinding: validateExistingAccountDecision,
+    approveParticipation: approveExistingAccountParticipation,
+    afterApproval: async (req, approved) => ({
+      ...(await readOnboardingStatus(req, approved)),
+      invitationStatus: 'not_started',
+    }),
   },
 }
 

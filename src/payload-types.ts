@@ -2790,7 +2790,7 @@ export interface ClinicApplication {
    */
   reviewNotes?: string | null;
   /**
-   * Provisioning result; saving a failed approved application retries the process
+   * Result of preparing the first staff account
    */
   provisioningStatus?: ('not_started' | 'failed' | 'completed') | null;
   /**

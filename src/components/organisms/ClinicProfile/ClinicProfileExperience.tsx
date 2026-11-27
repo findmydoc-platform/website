@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { ArrowRight, Check, Search } from 'lucide-react'
+import { ArrowRight, Check, ChevronRight, Globe2, Search, ShieldCheck, Stethoscope } from 'lucide-react'
 import { Button } from '@/components/atoms/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/atoms/dialog'
 import { Heading } from '@/components/atoms/Heading'
@@ -9,7 +9,11 @@ import { Media } from '@/components/molecules/Media'
 import type { ClinicDetailDoctor, ClinicDetailTreatment } from '@/features/clinicDetail/contracts'
 import { ClinicProfile, type ClinicProfileProps } from './ClinicProfile'
 
-export type ClinicProfileBrowseActions = { showTreatments: () => void; showDoctors: () => void }
+export type ClinicProfileBrowseActions = {
+  showTreatments: () => void
+  showDoctors: () => void
+  showReviews: () => void
+}
 type InquirySlot = React.ReactNode | ((actions: ClinicProfileBrowseActions) => React.ReactNode)
 
 export type ClinicProfileExperienceProps = Omit<
@@ -18,7 +22,7 @@ export type ClinicProfileExperienceProps = Omit<
 > & {
   inquiryAside?: InquirySlot
   afterLocation?: InquirySlot
-  overviewReviews?: React.ReactNode
+  overviewReviews?: InquirySlot
   selectedDoctorId: string | null
   selectedTreatmentId: string | null
   onDoctorChange: (id: string | null) => void
@@ -27,7 +31,7 @@ export type ClinicProfileExperienceProps = Omit<
 }
 
 type Tab = 'overview' | 'treatments' | 'reviews' | 'doctors'
-type Detail = { type: 'doctor' | 'treatment'; id: string } | { type: 'about' } | null
+type Detail = { type: 'doctor' | 'treatment'; id: string } | { type: 'about' | 'information' } | null
 const tabs: { id: Tab; label: string }[] = [
   { id: 'overview', label: 'Overview' },
   { id: 'treatments', label: 'Treatments' },
@@ -56,10 +60,15 @@ export function ClinicProfileExperience({
   const [detail, setDetail] = React.useState<Detail>(null)
   const trigger = React.useRef<HTMLElement | null>(null)
   const tabRefs = React.useRef<Partial<Record<Tab, HTMLButtonElement | null>>>({})
+  const tabListRef = React.useRef<HTMLDivElement>(null)
   const id = React.useId()
   const openDetail = (type: 'doctor' | 'treatment', itemId: string, element: HTMLElement) => {
     trigger.current = element
     setDetail({ type, id: itemId })
+  }
+  const openInformation = (event: React.MouseEvent<HTMLButtonElement>) => {
+    trigger.current = event.currentTarget
+    setDetail({ type: 'information' })
   }
   const showTab = (tab: Tab) => {
     setActive(tab)
@@ -71,55 +80,73 @@ export function ClinicProfileExperience({
   const browseActions: ClinicProfileBrowseActions = {
     showTreatments: () => showTab('treatments'),
     showDoctors: () => showTab('doctors'),
+    showReviews: () => showTab('reviews'),
   }
   const navigation = (
-    <div role="tablist" aria-label="Clinic information" className="mt-7 flex flex-wrap border-b border-border">
-      {tabs.map((tab, index) => {
-        const count =
-          tab.id === 'treatments'
-            ? data.treatments.length
-            : tab.id === 'doctors'
-              ? data.doctors.length
-              : tab.id === 'reviews'
-                ? data.reviews.totalCount
-                : 0
-        return (
-          <button
-            key={tab.id}
-            ref={(node) => {
-              tabRefs.current[tab.id] = node
-            }}
-            id={`${id}-tab-${tab.id}`}
-            type="button"
-            role="tab"
-            aria-selected={active === tab.id}
-            aria-controls={`${id}-panel-${tab.id}`}
-            tabIndex={active === tab.id ? 0 : -1}
-            className={`min-h-12 border-b-2 px-3 text-sm focus-visible:outline-2 focus-visible:outline-primary sm:px-5 ${active === tab.id ? 'border-secondary font-semibold text-secondary' : 'border-transparent text-muted-foreground'}`}
-            onClick={() => setActive(tab.id)}
-            onKeyDown={(event) => {
-              const next =
-                event.key === 'ArrowRight'
-                  ? (index + 1) % tabs.length
-                  : event.key === 'ArrowLeft'
-                    ? (index + tabs.length - 1) % tabs.length
-                    : event.key === 'Home'
-                      ? 0
-                      : event.key === 'End'
-                        ? tabs.length - 1
-                        : -1
-              if (next >= 0) {
-                event.preventDefault()
-                showTab(tabs[next]!.id)
-              }
-            }}
-          >
-            {tab.label}
-            {count > 0 ? <span className="sr-only"> </span> : null}
-            {count > 0 ? <span className="ml-2 rounded bg-muted px-1 text-xs">{count}</span> : null}
-          </button>
-        )
-      })}
+    <div className="relative mt-7 border-b border-border">
+      <div
+        ref={tabListRef}
+        role="tablist"
+        aria-label="Clinic information"
+        className="flex [scrollbar-width:none] overflow-x-auto pr-8 sm:pr-0 [&::-webkit-scrollbar]:hidden"
+      >
+        {tabs.map((tab, index) => {
+          const count =
+            tab.id === 'treatments'
+              ? data.treatments.length
+              : tab.id === 'doctors'
+                ? data.doctors.length
+                : tab.id === 'reviews'
+                  ? data.reviews.totalCount
+                  : 0
+          return (
+            <button
+              key={tab.id}
+              ref={(node) => {
+                tabRefs.current[tab.id] = node
+              }}
+              id={`${id}-tab-${tab.id}`}
+              type="button"
+              role="tab"
+              aria-selected={active === tab.id}
+              aria-controls={`${id}-panel-${tab.id}`}
+              tabIndex={active === tab.id ? 0 : -1}
+              className={`min-h-12 shrink-0 border-b-2 px-3 text-sm focus-visible:outline-2 focus-visible:outline-primary sm:px-5 ${active === tab.id ? 'border-secondary font-semibold text-secondary' : 'border-transparent text-muted-foreground'}`}
+              onClick={() => setActive(tab.id)}
+              onKeyDown={(event) => {
+                const next =
+                  event.key === 'ArrowRight'
+                    ? (index + 1) % tabs.length
+                    : event.key === 'ArrowLeft'
+                      ? (index + tabs.length - 1) % tabs.length
+                      : event.key === 'Home'
+                        ? 0
+                        : event.key === 'End'
+                          ? tabs.length - 1
+                          : -1
+                if (next >= 0) {
+                  event.preventDefault()
+                  showTab(tabs[next]!.id)
+                }
+              }}
+            >
+              {tab.label}
+              {count > 0 ? ' ' : null}
+              {count > 0 ? (
+                <span className="ml-1 rounded bg-muted px-1 text-[10px] sm:ml-2 sm:text-xs">{count}</span>
+              ) : null}
+            </button>
+          )
+        })}
+      </div>
+      <button
+        type="button"
+        aria-label="Show later tabs"
+        className="absolute inset-y-0 right-0 flex w-8 items-center justify-center bg-background text-secondary sm:hidden"
+        onClick={() => tabListRef.current?.scrollBy({ left: 180, behavior: 'smooth' })}
+      >
+        <ChevronRight aria-hidden="true" className="size-4" />
+      </button>
     </div>
   )
   return (
@@ -128,6 +155,7 @@ export function ClinicProfileExperience({
         {...profile}
         data={data}
         showDescription={false}
+        onReviewsClick={() => showTab('reviews')}
         navigation={navigation}
         inquiryAside={typeof inquiryAside === 'function' ? inquiryAside(browseActions) : inquiryAside}
         afterLocation={typeof afterLocation === 'function' ? afterLocation(browseActions) : afterLocation}
@@ -163,12 +191,12 @@ export function ClinicProfileExperience({
                   </section>
                 ) : null}
                 {previewTreatments.length ? (
-                  <section>
+                  <section className="border-t border-border pt-10">
                     <p className="text-xs font-semibold tracking-widest text-primary uppercase">Find your next step</p>
                     <Heading as="h2" size="h4" align="left" className="mt-3 text-secondary">
                       Treatments
                     </Heading>
-                    <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                    <div className="mt-5 grid grid-cols-2 gap-3">
                       {previewTreatments.map((item) => (
                         <TreatmentPreview
                           key={item.id}
@@ -188,16 +216,16 @@ export function ClinicProfileExperience({
                     </Button>
                   </section>
                 ) : null}
-                {overviewReviews}
+                {typeof overviewReviews === 'function' ? overviewReviews(browseActions) : overviewReviews}
                 {data.doctors.length ? (
-                  <section>
+                  <section className="border-t border-border pt-10">
                     <p className="text-xs font-semibold tracking-widest text-primary uppercase">
                       The people behind your care
                     </p>
                     <Heading as="h2" size="h4" align="left" className="mt-3 text-secondary">
                       Our doctors
                     </Heading>
-                    <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                    <div className="mt-5 grid gap-4">
                       {data.doctors.slice(0, 3).map((item) => (
                         <DoctorCard
                           key={item.id}
@@ -215,6 +243,54 @@ export function ClinicProfileExperience({
                       onClick={() => showTab('doctors')}
                     >
                       Meet all doctors <ArrowRight aria-hidden="true" />
+                    </Button>
+                  </section>
+                ) : null}
+                {data.trust.languages.length ||
+                data.trust.verification !== 'unverified' ||
+                data.trust.accreditations.length ? (
+                  <section className="border-t border-border pt-10">
+                    <p className="text-xs font-semibold tracking-widest text-primary uppercase">
+                      The practical details
+                    </p>
+                    <Heading as="h2" size="h4" align="left" className="mt-3 text-secondary">
+                      More about the clinic
+                    </Heading>
+                    <p className="mt-4 text-sm leading-6 text-muted-foreground">
+                      The information that helps you prepare, whenever you need it.
+                    </p>
+                    <div className="mt-6 grid gap-x-7 sm:grid-cols-2">
+                      {data.trust.languages.length ? (
+                        <button
+                          type="button"
+                          className="flex min-h-20 w-full items-center gap-3 border-b border-border text-left"
+                          onClick={openInformation}
+                        >
+                          <Globe2 className="size-5 shrink-0 text-primary" aria-hidden="true" />
+                          <span className="min-w-0 flex-1">
+                            <strong className="block text-sm">Languages</strong>
+                            <span className="text-xs text-muted-foreground">{data.trust.languages.join(', ')}</span>
+                          </span>
+                          <ChevronRight className="size-4 shrink-0" aria-hidden="true" />
+                        </button>
+                      ) : null}
+                      {data.trust.verification !== 'unverified' ? (
+                        <button
+                          type="button"
+                          className="flex min-h-20 w-full items-center gap-3 border-b border-border text-left"
+                          onClick={openInformation}
+                        >
+                          <ShieldCheck className="size-5 shrink-0 text-primary" aria-hidden="true" />
+                          <span className="min-w-0 flex-1">
+                            <strong className="block text-sm">Verification</strong>
+                            <span className="text-xs text-muted-foreground capitalize">{data.trust.verification}</span>
+                          </span>
+                          <ChevronRight className="size-4 shrink-0" aria-hidden="true" />
+                        </button>
+                      ) : null}
+                    </div>
+                    <Button type="button" variant="link" className="mt-5 min-h-11 p-0" onClick={openInformation}>
+                      All clinic information <ArrowRight aria-hidden="true" />
                     </Button>
                   </section>
                 ) : null}
@@ -261,6 +337,19 @@ export function ClinicProfileExperience({
           </DialogTitle>
           <DialogDescription>Information supplied on this clinic profile.</DialogDescription>
           {detail?.type === 'about' ? <p className="leading-7">{data.description}</p> : null}
+          {detail?.type === 'information' ? (
+            <div className="space-y-3 text-sm">
+              <p>Verification is a findmydoc profile status. Accreditations are listed separately.</p>
+              <p>
+                Verification:{' '}
+                <span className="capitalize">
+                  {data.trust.verification === 'unverified' ? 'Not verified' : data.trust.verification}
+                </span>
+              </p>
+              {data.trust.accreditations.length ? <p>Accreditations: {data.trust.accreditations.join(', ')}</p> : null}
+              {data.trust.languages.length ? <p>Languages: {data.trust.languages.join(', ')}</p> : null}
+            </div>
+          ) : null}
           {treatment ? (
             <div className="space-y-4">
               {treatment.category ? <p>{treatment.category}</p> : null}
@@ -310,15 +399,20 @@ function TreatmentPreview({
       <Button
         type="button"
         variant="outline"
-        className="flex h-full min-h-36 w-full flex-col items-start justify-between gap-3 rounded-2xl p-5 text-left whitespace-normal"
+        className="flex h-full min-h-48 w-full flex-col items-start justify-between gap-3 rounded-2xl border-transparent bg-card p-4 text-left whitespace-normal shadow-sm sm:p-6"
         onClick={(event) => onOpen(event.currentTarget)}
       >
+        <span className="flex size-11 items-center justify-center rounded-full border border-primary/30 text-primary">
+          <Stethoscope className="size-5" aria-hidden="true" />
+        </span>
         {item.category ? <span className="text-xs text-muted-foreground">{item.category}</span> : null}
-        <span className="text-lg font-semibold">{item.name}</span>
+        <span className="max-w-full text-lg font-semibold [overflow-wrap:anywhere]">{item.name}</span>
         {selected ? <span className="text-xs text-primary">Selected for your inquiry</span> : null}
         <span className="flex w-full items-center justify-between">
           {item.priceFrom != null ? <span>From {money(item.priceFrom)}</span> : <span />}
-          <ArrowRight aria-hidden="true" className="size-4" />
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+            <ArrowRight aria-hidden="true" className="size-4" />
+          </span>
         </span>
       </Button>
     </article>
@@ -337,10 +431,12 @@ function DoctorCard({
   onSelect: () => void
 }) {
   return (
-    <article className={`rounded-2xl border p-5 ${selected ? 'border-primary bg-primary/5' : 'border-border bg-card'}`}>
+    <article
+      className={`rounded-2xl border p-5 ${selected ? 'border-primary bg-primary/5' : 'border-transparent bg-card shadow-sm'}`}
+    >
       <div className="flex gap-4">
-        <div className="relative size-16 shrink-0 overflow-hidden rounded-xl">
-          <Media htmlElement={null} src={item.image.src} alt="" fill imgClassName="object-cover" size="64px" />
+        <div className="relative h-28 w-24 shrink-0 overflow-hidden rounded-xl sm:h-36 sm:w-32">
+          <Media htmlElement={null} src={item.image.src} alt="" fill imgClassName="object-cover" size="128px" />
         </div>
         <div className="min-w-0">
           <Heading as="h3" size="h5" align="left" className="break-words">

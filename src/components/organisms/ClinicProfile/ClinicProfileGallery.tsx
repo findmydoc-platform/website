@@ -50,7 +50,12 @@ export function ClinicProfileGallery({
     trigger.current = event.currentTarget
     setIndex(next)
   }
-  if (!images.length) return <section aria-label="Clinic information">{evidence}</section>
+  if (!images.length)
+    return (
+      <section aria-label="Clinic information" className="overflow-hidden rounded-3xl">
+        {evidence}
+      </section>
+    )
   return (
     <>
       <section aria-label="Clinic photo gallery" className="relative overflow-hidden rounded-3xl">

@@ -2,10 +2,12 @@
 
 import * as React from 'react'
 import { ArrowRight } from 'lucide-react'
+import { Heading } from '@/components/atoms/Heading'
+import { RatingStars } from '@/components/molecules/RatingSummary'
 import { Button } from '@/components/atoms/button'
 import type { ContactFormFields } from '@/components/organisms/ClinicDetail'
 import { ClinicProfileInquiry } from './ClinicProfileInquiry'
-import { ClinicProfileReviews } from '@/components/organisms/ClinicProfileReviews/ClinicProfileReviews'
+import { ClinicProfileReviews, ReviewEntry } from '@/components/organisms/ClinicProfileReviews/ClinicProfileReviews'
 import { useClinicDetailInteractionState } from '@/components/templates/ClinicDetailConcepts/hooks/useClinicDetailInteractionState'
 import type { ClinicContactRequestSubmitter, ClinicDetailData } from '@/features/clinicDetail/contracts'
 import type { PatientInquiryCreationContext } from '@/features/patientInquiries/creationContext'
@@ -99,11 +101,35 @@ export function ClinicProfileComplete({
         onDoctorChange={(id) => state.handleDoctorSelectionChange(id || '')}
         onTreatmentChange={(id) => state.handleTreatmentSelectionChange(id || '')}
         reviews={reviewPanel}
-        overviewReviews={
+        overviewReviews={({ showReviews }) =>
           data.reviews.items.length ? (
-            <section>
-              <h2 className="text-2xl font-semibold">Patient reviews</h2>
-              <p className="mt-3 text-muted-foreground">{data.reviews.totalCount} published reviews</p>
+            <section className="border-t border-border pt-10">
+              <p className="text-xs font-semibold tracking-widest text-primary uppercase">In their own words</p>
+              <Heading as="h2" size="h4" align="left" className="mt-3 text-secondary">
+                Patient experiences
+              </Heading>
+              <div className="mt-5 flex items-center gap-5">
+                {data.trust.ratingValue != null ? (
+                  <strong className="shrink-0 text-4xl whitespace-nowrap">
+                    {data.trust.ratingValue.toFixed(1)}{' '}
+                    <span className="text-sm font-normal text-muted-foreground">/ 5</span>
+                  </strong>
+                ) : null}
+                <div className="space-y-1">
+                  {data.trust.ratingValue != null ? <RatingStars value={data.trust.ratingValue} /> : null}
+                  <button type="button" onClick={showReviews} className="text-sm text-primary underline">
+                    {data.reviews.totalCount} patient reviews
+                  </button>
+                </div>
+              </div>
+              <div className="mt-4 grid gap-x-6 sm:grid-cols-2">
+                {data.reviews.items.slice(0, 2).map((review) => (
+                  <ReviewEntry key={review.id} review={review} />
+                ))}
+              </div>
+              <Button type="button" variant="outline" className="mt-2 min-h-11 rounded-full" onClick={showReviews}>
+                Read reviews <ArrowRight aria-hidden="true" />
+              </Button>
             </section>
           ) : null
         }

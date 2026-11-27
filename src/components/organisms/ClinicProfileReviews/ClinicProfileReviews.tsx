@@ -16,7 +16,7 @@ const dateFormatter = new Intl.DateTimeFormat('en', {
   timeZone: 'UTC',
 })
 
-function ReviewEntry({ review }: { review: ClinicDetailReview }) {
+export function ReviewEntry({ review }: { review: ClinicDetailReview }) {
   const name = review.authorName?.trim() || 'Patient'
   return (
     <article className="space-y-4 border-t border-border py-6">

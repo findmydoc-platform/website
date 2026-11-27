@@ -22,6 +22,7 @@ export type ClinicProfileProps = {
   }
   share: { url: string; onCopy: () => Promise<void> }
   map: { allowed: boolean; embedHref?: string }
+  onReviewsClick?: () => void
   navigation?: React.ReactNode
   showDescription?: boolean
   children?: React.ReactNode
@@ -35,6 +36,7 @@ export function ClinicProfile({
   share,
   map,
   navigation,
+  onReviewsClick,
   showDescription = true,
   children,
   inquiryAside,
@@ -46,6 +48,7 @@ export function ClinicProfile({
   const locationRef = React.useRef<HTMLElement>(null)
   const detailsTrigger = React.useRef<HTMLButtonElement | null>(null)
   const mapTrigger = React.useRef<HTMLButtonElement | null>(null)
+  const mapHeading = React.useRef<HTMLHeadingElement | null>(null)
   const openDetails = (event: React.MouseEvent<HTMLButtonElement>) => {
     detailsTrigger.current = event.currentTarget
     setDetailsOpen(true)
@@ -53,18 +56,30 @@ export function ClinicProfile({
   React.useEffect(() => {
     if (!map.allowed) setMapOpen(false)
   }, [map.allowed])
+  const ReviewEvidence = onReviewsClick ? 'button' : 'span'
+  const evidenceCount =
+    Number(data.trust.ratingValue !== null && data.trust.reviewCount > 0) +
+    Number(data.trust.verification !== 'unverified') +
+    Number(data.trust.languages.length > 0)
   const hasEvidence =
     data.trust.reviewCount > 0 || data.trust.verification !== 'unverified' || data.trust.languages.length > 0
   const evidence = hasEvidence ? (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 bg-secondary/85 px-2 py-2 text-xs text-white sm:gap-x-6 sm:px-6 sm:py-3 sm:text-sm">
+    <div
+      className="grid items-center gap-1 bg-black/65 px-2 py-2 text-[10px] text-white sm:gap-4 sm:px-6 sm:py-3 sm:text-sm"
+      style={{ gridTemplateColumns: `repeat(${evidenceCount}, minmax(0, 1fr))` }}
+    >
       {data.trust.ratingValue !== null && data.trust.reviewCount > 0 ? (
-        <span className="flex items-center gap-1 sm:gap-2">
+        <ReviewEvidence
+          type={onReviewsClick ? 'button' : undefined}
+          className="flex min-h-11 min-w-0 items-center gap-1 text-left sm:gap-2"
+          onClick={onReviewsClick}
+        >
           <Star aria-hidden="true" className="size-4 shrink-0 fill-current text-yellow-400 sm:size-5" />
           <span>
             <strong>{data.trust.ratingValue.toFixed(1)} / 5</strong>
             <small className="block">{data.trust.reviewCount} reviews</small>
           </span>
-        </span>
+        </ReviewEvidence>
       ) : null}
       {data.trust.verification !== 'unverified' ? (
         <button
@@ -223,7 +238,7 @@ export function ClinicProfile({
           </p>
         )}
         {hasLocation && data.location.coordinates ? (
-          <div className="relative mt-6 h-72 overflow-hidden rounded-3xl bg-muted sm:h-96">
+          <div className="relative mt-6 h-72 overflow-hidden rounded-3xl bg-secondary/5 sm:h-96">
             {map.allowed && map.embedHref ? (
               <iframe
                 title={`Map of ${data.clinicName}`}
@@ -278,12 +293,18 @@ export function ClinicProfile({
       <Dialog open={mapOpen} onOpenChange={setMapOpen}>
         <DialogContent
           className="flex h-[min(85dvh,800px)] max-w-5xl flex-col"
+          onOpenAutoFocus={(event) => {
+            event.preventDefault()
+            mapHeading.current?.focus()
+          }}
           onCloseAutoFocus={(event) => {
             event.preventDefault()
             mapTrigger.current?.focus()
           }}
         >
-          <DialogTitle>Location of {data.clinicName}</DialogTitle>
+          <DialogTitle ref={mapHeading} tabIndex={-1}>
+            Location of {data.clinicName}
+          </DialogTitle>
           <DialogDescription>{data.location.fullAddress || 'Clinic location'}</DialogDescription>
           {map.allowed && map.embedHref ? (
             <iframe

@@ -23,7 +23,7 @@ export class McpOnboardingError extends APIError {
   }
 }
 
-async function requireClinicOnboardingOperator(req: PayloadRequest) {
+export async function requireClinicOnboardingOperator(req: PayloadRequest) {
   if (!(await platformClinicTrustAccess({ req }))) {
     throw new McpOnboardingError('Clinic onboarding requires current clinic management access.', 403)
   }
@@ -59,7 +59,7 @@ async function findApplicationByRequestKey(req: PayloadRequest, requestKey: stri
   return result.docs[0]
 }
 
-async function readStagedApplication(req: PayloadRequest, applicationId: number) {
+export async function readStagedApplication(req: PayloadRequest, applicationId: number) {
   const authorizedApplication = await req.payload.findByID({
     collection: 'clinicApplications',
     id: applicationId,
@@ -82,7 +82,7 @@ async function readStagedApplication(req: PayloadRequest, applicationId: number)
   return application
 }
 
-async function readOnboardingStatus(req: PayloadRequest, application: ClinicApplication) {
+export async function readOnboardingStatus(req: PayloadRequest, application: ClinicApplication) {
   const { clinic: clinicId, clinicStaff: clinicStaffId } = application.linkedRecords ?? {}
   if (typeof clinicId !== 'number' || typeof clinicStaffId !== 'number') {
     throw new McpOnboardingError('The clinic onboarding records are incomplete.', 409)

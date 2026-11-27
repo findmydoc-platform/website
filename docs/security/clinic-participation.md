@@ -22,6 +22,13 @@ account mode. The workflow owns these source fields and the staged application a
 An authorized correction applies to an open application. Changes to the first contact flow to the clinic's internal
 contact and to the same pending principal. Corrections leave the public contact fields and publication state intact.
 
+The decision action verifies current clinic management authority and the staged clinic and staff binding inside a
+serializable Payload transaction. Approval commits the application and clinic participation together with the first
+staff approval. Identity preparation then binds the account to the same staff principal in a separate transaction.
+The existing invitation command reads the committed preparation status and uses the principal's durable invitation
+authorization to prevent duplicate invitations. Rejection records the review reason, rejects participation and
+preserves the pending staff binding. Both decisions leave publication to the existing Admin workflow.
+
 ## Private completion boundary
 
 `clinicStaff.accountCompletion` stores source, Supabase subject, clinic ID, evidence time, observation time, and an optional

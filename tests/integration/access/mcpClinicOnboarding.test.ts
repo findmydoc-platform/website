@@ -1,9 +1,14 @@
 import { randomUUID } from 'node:crypto'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
-import { createLocalReq, getPayload, type Payload } from 'payload'
+import { createLocalReq, getPayload, type CollectionBeforeOperationHook, type Payload } from 'payload'
 
 import config from '@payload-config'
 import { bindAuthActions } from '@/auth/actions/lifecycle'
+import * as authProvider from '@/auth/utilities/supaBaseServer'
+import { openStorageCapability } from '@/features/transactionalEmail/capability'
+import * as emailEnvironment from '@/features/transactionalEmail/environment'
+import { recipientDigest } from '@/features/transactionalEmail/recipientBinding'
+import { runOwnedTransaction } from '@/features/transactionalEmail/transactions'
 import { readClinicAccessState } from '@/auth/utilities/clinicAccessState'
 import { resolvePasswordResetTarget } from '@/auth/utilities/passwordResetTarget'
 import {
@@ -384,10 +389,30 @@ describe('MCP clinic onboarding', () => {
       (await call('stageClinicOnboarding', existingIntake(original.id))).data,
     )
     const decisionKey = await createKey({ decide: true })
+    let arrivals = 0
+    let release!: () => void
+    let timer: ReturnType<typeof setTimeout>
+    const gate = new Promise<void>((resolve, reject) => {
+      release = resolve
+      timer = setTimeout(() => reject(new Error('Clinic onboarding concurrency barrier timed out.')), 10_000)
+    })
+    const hooks = payload.collections.clinics.config.hooks.beforeOperation
+    const synchronize: CollectionBeforeOperationHook<'clinics'> = async ({ args, operation }) => {
+      if (operation !== 'update' || !('id' in args) || args.id !== clinicId) return
+      arrivals++
+      if (arrivals === 2) release()
+      if (arrivals <= 2) await gate
+    }
+    hooks.unshift(synchronize)
     const [approval, correction] = await Promise.all([
       call('approveClinicOnboarding', { applicationId, applicationRevision }, decisionKey),
       call('correctClinicOnboarding', { applicationId, clinicStaffId: replacement.id }),
-    ])
+    ]).finally(() => {
+      hooks.splice(hooks.indexOf(synchronize), 1)
+      clearTimeout(timer!)
+      release()
+    })
+    expect(arrivals).toBeGreaterThanOrEqual(2)
     expect([approval, correction].filter(({ error }) => error !== undefined)).toHaveLength(1)
     const result = (await call('readClinicOnboarding', { applicationId })).data
     expect(await readClinicAccessState(payload, replacement.id)).toBeNull()
@@ -398,6 +423,43 @@ describe('MCP clinic onboarding', () => {
       expect(result).toMatchObject({ clinicStaffId: replacement.id, decisionStatus: 'submitted' })
       expect(await readClinicAccessState(payload, original.id)).toBeNull()
     }
+  })
+
+  it('requires a fresh decision after the staged clinic joins a group', async () => {
+    const staff = await createActivatedStaff()
+    const { applicationId, clinicId, applicationRevision } = stagedIds(
+      (await call('stageClinicOnboarding', existingIntake(staff.id))).data,
+    )
+    expect((await call('readClinicOnboarding', { applicationId })).data).toMatchObject({ clinicGroupId: null })
+    const owner = await payload.findByID({ collection: 'platformStaff', id: ownerId, overrideAccess: true })
+    const req = await createLocalReq({ user: asPayloadStaffUser(owner), req: { payloadAPI: 'REST' } }, payload)
+    const group = await payload.create({
+      collection: 'clinicGroups',
+      data: { name: `MCP group ${randomUUID()}` },
+      overrideAccess: false,
+      req,
+    })
+    await payload.update({ collection: 'clinics', id: clinicId, data: { group: group.id }, overrideAccess: false, req })
+
+    const decisionKey = await createKey({ decide: true })
+    const stale = { applicationId, applicationRevision }
+    expect((await call('approveClinicOnboarding', stale, decisionKey)).error).toContain('application has changed')
+    expect(
+      (await call('rejectClinicOnboarding', { ...stale, reason: 'No longer available.' }, decisionKey)).error,
+    ).toContain('application has changed')
+    expect((await call('readClinicOnboarding', { applicationId })).data).toMatchObject({
+      clinicGroupId: group.id,
+      decisionStatus: 'submitted',
+      participationStatus: 'pending',
+    })
+    expect(await readClinicAccessState(payload, staff.id)).toBeNull()
+    expect(
+      await call(
+        'approveClinicOnboarding',
+        { applicationId, applicationRevision: await readRevision(applicationId) },
+        decisionKey,
+      ),
+    ).toMatchObject({ data: { clinicGroupId: group.id, clinicStaffId: staff.id, decisionStatus: 'approved' } })
   })
 
   it('preserves an intervening group assignment and leaves the application open until rejection', async () => {
@@ -478,8 +540,13 @@ describe('MCP clinic onboarding', () => {
     expect(second).toEqual(first)
   })
 
-  it('rejects native approval of a staged application and initial account', async () => {
+  it('rejects native approval or deletion of a staged application and approval of its initial account', async () => {
     const { applicationId, clinicStaffId } = stagedIds((await call('stageClinicOnboarding', intake())).data)
+    const owner = await payload.findByID({ collection: 'platformStaff', id: ownerId, overrideAccess: true })
+    const req = await createLocalReq({ user: asPayloadStaffUser(owner), req: { payloadAPI: 'REST' } }, payload)
+    await expect(
+      payload.delete({ collection: 'clinicApplications', id: applicationId, overrideAccess: false, req }),
+    ).rejects.toMatchObject({ status: 409 })
     await expect(
       payload.update({
         collection: 'clinicApplications',
@@ -532,6 +599,43 @@ describe('MCP clinic onboarding', () => {
     ).toBeDefined()
     const legacyKey = await createKey({})
     expect((await call('readClinicOnboarding', { applicationId }, legacyKey)).error).toBeDefined()
+  })
+
+  it('denies a still-enabled decision key after its owner loses clinic management access', async () => {
+    const { applicationId, clinicStaffId, applicationRevision } = stagedIds(
+      (await call('stageClinicOnboarding', intake())).data,
+    )
+    const reviewer = await createPlatformTestUser(payload, {
+      emailPrefix: 'mcp-onboarding-revoked-reviewer',
+      createdStaffIds: staffIds,
+    })
+    const decisionKey = await createKey({ decide: true }, reviewer.id)
+    await payload.update({
+      collection: 'platformStaff',
+      id: reviewer.id,
+      data: { role: 'content-manager' },
+      context: { trustedPlatformStaffOps: true },
+      overrideAccess: true,
+    })
+
+    const provision = vi.mocked(createInitialClinicSupabaseAccount)
+    provision.mockClear()
+    const revision = { applicationId, applicationRevision }
+    expect((await call('approveClinicOnboarding', revision, decisionKey)).error).toBeDefined()
+    expect(
+      (await call('rejectClinicOnboarding', { ...revision, reason: 'Withdrawn.' }, decisionKey)).error,
+    ).toBeDefined()
+    expect((await call('readClinicOnboarding', { applicationId })).data).toMatchObject({
+      applicationRevision,
+      decisionStatus: 'submitted',
+      participationStatus: 'pending',
+      accountSetupStatus: 'not_started',
+    })
+    expect(await payload.findByID({ collection: 'clinicStaff', id: clinicStaffId, depth: 0 })).toMatchObject({
+      status: 'pending',
+      invitationAuthorizedAt: null,
+    })
+    expect(provision).not.toHaveBeenCalled()
   })
 
   it('requires the decision grant and rejects an open application without preparing an account', async () => {
@@ -726,13 +830,29 @@ describe('MCP clinic onboarding', () => {
     const subject = randomUUID()
     const provision = vi.mocked(createInitialClinicSupabaseAccount)
     provision.mockClear()
-    provision.mockRejectedValueOnce(new Error('provider failure fixture')).mockImplementationOnce(async () => {
-      expect((await call('readClinicOnboarding', { applicationId })).data).toMatchObject({
-        decisionStatus: 'approved',
-        participationStatus: 'approved',
+    let providerCallsAfterCommit = 0
+    const expectCommittedApproval = async () => {
+      expect(await payload.findByID({ collection: 'clinicApplications', id: applicationId, depth: 0 })).toMatchObject({
+        status: 'approved',
       })
-      return subject
-    })
+      expect(await payload.findByID({ collection: 'clinics', id: clinicId, depth: 0 })).toMatchObject({
+        participationStatus: 'approved',
+        status: 'pending',
+      })
+      expect(await payload.findByID({ collection: 'clinicStaff', id: clinicStaffId, depth: 0 })).toMatchObject({
+        status: 'approved',
+      })
+      providerCallsAfterCommit++
+    }
+    provision
+      .mockImplementationOnce(async () => {
+        await expectCommittedApproval()
+        throw new Error('provider failure fixture')
+      })
+      .mockImplementationOnce(async () => {
+        await expectCommittedApproval()
+        return subject
+      })
 
     expect(await call('approveClinicOnboarding', { applicationId, applicationRevision }, decisionKey)).toMatchObject({
       data: {
@@ -747,6 +867,7 @@ describe('MCP clinic onboarding', () => {
         publicStatus: 'pending',
       },
     })
+    expect(providerCallsAfterCommit).toBe(1)
     expect(
       (
         await call(
@@ -760,41 +881,106 @@ describe('MCP clinic onboarding', () => {
     expect(
       (await call('approveClinicOnboarding', { applicationId, applicationRevision }, decisionKey)).error,
     ).toBeDefined()
-    expect(
-      await call(
-        'approveClinicOnboarding',
-        { applicationId, applicationRevision: await readRevision(applicationId) },
-        decisionKey,
-      ),
-    ).toMatchObject({
-      data: { applicationId, clinicId, clinicStaffId, decisionStatus: 'approved', accountSetupStatus: 'completed' },
+    const admin = await authProvider.createAdminClient()
+    const hostedEnvironment = vi
+      .spyOn(emailEnvironment, 'resolveTransactionalEmailEnvironment')
+      .mockReturnValue('preview')
+    const emailAcceptance = vi
+      .spyOn(emailEnvironment, 'selectTransactionalEmailAcceptanceRuntime')
+      .mockReturnValue({ environment: 'preview', digestRecipient: recipientDigest })
+    const provider = vi.spyOn(authProvider, 'createAdminClient').mockResolvedValue(admin)
+    const findUser = vi.spyOn(admin.auth.admin, 'getUserById').mockResolvedValue({
+      data: {
+        user: {
+          id: subject,
+          email: input.contactEmail,
+          app_metadata: { user_type: 'clinic', onboarding_key: `clinic-application:${applicationId}` },
+          user_metadata: {},
+          aud: 'authenticated',
+          created_at: new Date().toISOString(),
+        },
+      },
+      error: null,
     })
-    expect(
-      await payload.findByID({ collection: 'clinicStaff', id: clinicStaffId, depth: 0, overrideAccess: true }),
-    ).toMatchObject({ clinic: clinicId, status: 'approved', supabaseUserId: subject, authSync: { status: 'synced' } })
-    expect(await readClinicAccessState(payload, clinicStaffId)).toBeNull()
-    expect(
-      (await payload.find({ collection: 'clinics', where: { id: { equals: clinicId } }, overrideAccess: false })).docs,
-    ).toEqual([])
 
-    const actions = bindAuthActions(await createLocalReq({}, payload), { environment: 'test' })
-    const invitation = await actions.reserveClinicInvitation({ clinicStaffId })
-    expect(invitation).toMatchObject({
-      actionType: 'clinic-invitation',
-      supabaseSubject: subject,
-      principal: { relationTo: 'clinicStaff', value: clinicStaffId },
-    })
-    expect(
-      await call(
-        'approveClinicOnboarding',
-        { applicationId, applicationRevision: await readRevision(applicationId) },
-        decisionKey,
-      ),
-    ).toMatchObject({
-      data: { applicationId, clinicId, clinicStaffId, decisionStatus: 'approved', accountSetupStatus: 'completed' },
-    })
-    expect((await actions.reserveClinicInvitation({ clinicStaffId }))?.id).toBe(invitation?.id)
+    try {
+      const expected = {
+        applicationId,
+        clinicId,
+        clinicStaffId,
+        decisionStatus: 'approved',
+        accountSetupStatus: 'completed',
+        invitationStatus: 'prepared',
+      }
+      const retryApproval = async () =>
+        call(
+          'approveClinicOnboarding',
+          { applicationId, applicationRevision: await readRevision(applicationId) },
+          decisionKey,
+        )
+
+      expect(await retryApproval()).toMatchObject({ data: expected })
+      expect(
+        await payload.findByID({ collection: 'clinicStaff', id: clinicStaffId, depth: 0, overrideAccess: true }),
+      ).toMatchObject({
+        clinic: clinicId,
+        status: 'approved',
+        supabaseUserId: subject,
+        authSync: { status: 'synced' },
+        invitationAuthorizedAt: expect.any(String),
+      })
+      expect(await readClinicAccessState(payload, clinicStaffId)).toBeNull()
+      expect(
+        (await payload.find({ collection: 'clinics', where: { id: { equals: clinicId } }, overrideAccess: false }))
+          .docs,
+      ).toEqual([])
+
+      const req = await createLocalReq({}, payload)
+      const actions = bindAuthActions(req, { environment: 'preview' })
+      const readInvitations = async () =>
+        (await actions.liveClinicInvitations()).filter((action) => action.supabaseSubject === subject)
+
+      const invitations = await readInvitations()
+      expect(invitations).toEqual([
+        expect.objectContaining({
+          actionType: 'clinic-invitation',
+          state: 'active',
+          principal: { relationTo: 'clinicStaff', value: clinicStaffId },
+        }),
+      ])
+      const reference = `v1|auth-action|${invitations[0]!.id}`
+      const readDispatches = () =>
+        runOwnedTransaction(req, async (_, transactionID) => {
+          const capability = openStorageCapability(transactionID)
+          try {
+            const scoped = await createLocalReq({ context: capability.context, req: { transactionID } }, payload)
+            return (
+              await payload.find({
+                collection: 'transactionalEmailOutbox',
+                req: scoped,
+                overrideAccess: true,
+                depth: 0,
+                where: { operationReference: { equals: reference } },
+              })
+            ).docs
+          } finally {
+            capability.close()
+          }
+        })
+      const dispatches = await readDispatches()
+      expect(dispatches).toEqual([expect.objectContaining({ commandType: 'auth.invitation' })])
+
+      expect(await retryApproval()).toMatchObject({ data: expected })
+      expect((await readInvitations()).map(({ id }) => id)).toEqual(invitations.map(({ id }) => id))
+      expect((await readDispatches()).map(({ id }) => id)).toEqual(dispatches.map(({ id }) => id))
+    } finally {
+      findUser.mockRestore()
+      provider.mockRestore()
+      emailAcceptance.mockRestore()
+      hostedEnvironment.mockRestore()
+    }
     expect(provision).toHaveBeenCalledTimes(2)
+    expect(providerCallsAfterCommit).toBe(2)
     expect(provision).toHaveBeenCalledWith(
       expect.objectContaining({ email: input.contactEmail, onboardingKey: `clinic-application:${applicationId}` }),
       expect.anything(),

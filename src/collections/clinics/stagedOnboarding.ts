@@ -2,9 +2,10 @@ import {
   APIError,
   type CollectionBeforeChangeHook,
   type CollectionBeforeDeleteHook,
+  type FieldAccess,
   type PayloadRequest,
 } from 'payload'
-import { platformClinicTrustAccess } from '@/access/fieldAccess'
+import { platformClinicTrustAccess, platformClinicTrustFieldAccess } from '@/access/fieldAccess'
 import { getStagedOnboardingApplicationId } from '@/features/clinicOnboarding/stagedIdentity'
 import { isTrustedMcpOnboardingClinicWrite } from '@/features/clinicOnboarding/stagedWriteGuards'
 import type { Clinic } from '@/payload-types'
@@ -27,6 +28,27 @@ async function readLinkedStagedApplication(req: PayloadRequest, clinic: Pick<Cli
   return application?.mcpOnboardingRequestKey && relationId(application.linkedRecords?.clinic) === clinic.id
     ? application
     : null
+}
+
+export const readClinicPrimaryContact: FieldAccess<Clinic> = async (args) => {
+  if (!(await platformClinicTrustFieldAccess(args))) return false
+  const { doc, id, req } = args
+  if (req.payloadAPI !== 'MCP' || id === undefined) return true
+
+  // An MCP projection can omit the internal binding that identifies the staged application.
+  const clinic = doc?.onboardingKey
+    ? doc
+    : await req.payload.findByID({
+        collection: 'clinics',
+        id,
+        depth: 0,
+        disableErrors: true,
+        overrideAccess: true,
+        select: { onboardingKey: true },
+        trash: true,
+        req,
+      })
+  return Boolean(clinic && (await readLinkedStagedApplication(req, clinic))?.status !== 'submitted')
 }
 
 function blockOpenApplicationDeletion() {

@@ -6,7 +6,7 @@ import { findDuplicateClinicApplication } from '@/collections/clinicApplications
 import { clinicApplicationProvisioningInputFields } from '@/collections/clinicApplications/provisioningLifecycle'
 import { runClinicRegistrationTransaction } from '@/features/clinicRegistration/transactions'
 import { requireCurrentPlatformStaff } from '@/features/clinicDashboard/gallery/platformGallery'
-import type { ClinicApplication } from '@/payload-types'
+import type { Clinic, ClinicApplication } from '@/payload-types'
 import { slugify } from '@/utilities/slugify'
 import { readEligibleExistingClinicStaff } from './existingStaff'
 import { withMcpOnboardingWrite } from './stagedWriteGuards'
@@ -115,8 +115,12 @@ export async function readStagedApplication(req: PayloadRequest, applicationId: 
   return application
 }
 
-export function getApplicationRevision(application: ClinicApplication): string {
-  // Bind the reviewed intake and staff selection even when two writes share a timestamp.
+export function getOnboardingClinicGroupId(clinic: Pick<Clinic, 'group'>): number | null {
+  return typeof clinic.group === 'object' ? (clinic.group?.id ?? null) : (clinic.group ?? null)
+}
+
+export function getApplicationRevision(application: ClinicApplication, clinicGroupId: number | null): string {
+  // Bind the reviewed intake, staff selection, and clinic membership even when writes share a timestamp.
   return createHash('sha256')
     .update(
       JSON.stringify([
@@ -124,6 +128,7 @@ export function getApplicationRevision(application: ClinicApplication): string {
         application.updatedAt,
         application.linkedRecords?.clinic,
         application.linkedRecords?.clinicStaff,
+        clinicGroupId,
         application.mcpOnboardingStaffMode,
         application.status,
         application.provisioningStatus,
@@ -155,13 +160,15 @@ export async function readOnboardingStatus(req: PayloadRequest, application: Cli
     id: clinicId,
     depth: 0,
     overrideAccess: true,
-    select: { status: true, participationStatus: true },
+    select: { status: true, participationStatus: true, group: true },
     req,
   })
+  const clinicGroupId = getOnboardingClinicGroupId(clinic)
   return {
     applicationId: application.id,
-    applicationRevision: getApplicationRevision(application),
+    applicationRevision: getApplicationRevision(application, clinicGroupId),
     clinicId,
+    clinicGroupId,
     clinicStaffId,
     staffMode: application.mcpOnboardingStaffMode,
     decisionStatus: application.status,

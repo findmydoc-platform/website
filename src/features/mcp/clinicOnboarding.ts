@@ -137,7 +137,7 @@ export const clinicOnboardingTools = [
   defineOnboardingTool(
     'read',
     'readClinicOnboarding',
-    'Read a staged clinic onboarding application and its current statuses.',
+    'Read staged intake and current statuses. A null clinicGroupId means the clinic is independent.',
     applicationIdInput,
     readClinicOnboarding,
   ),

@@ -232,6 +232,18 @@ describe('MCP key management and client access', () => {
       participationStatus: 'approved',
       status: 'draft',
     })
+    const selectedLegacyContact = await call('findClinics', {
+      id: direct.docs[0]!.id,
+      select: { internalPrimaryContact: true },
+    })
+    expect(JSON.parse(selectedLegacyContact.slice(selectedLegacyContact.indexOf('{')))).toMatchObject({
+      internalPrimaryContact: { email: 'test@example.com' },
+    })
+    expect(
+      await call('findClinics', {
+        where: JSON.stringify({ 'internalPrimaryContact.email': { equals: 'test@example.com' } }),
+      }),
+    ).toContain('Total: 1 documents')
     expect(await call('updateClinics', { id: direct.docs[0]!.id, tags: [], accreditations: [] })).toContain(
       'Document updated successfully',
     )
@@ -776,9 +788,19 @@ describe('MCP key management and client access', () => {
       address,
       status: 'pending',
     })
-    expect(await call('updateClinics', { id: clinicId, supportedLanguages: ['english'] })).toContain(
-      'Document updated successfully',
-    )
+    for (const select of [
+      undefined,
+      { internalPrimaryContact: true, supportedLanguages: true, slug: true, status: true },
+    ]) {
+      const update = await call('updateClinics', { id: clinicId, supportedLanguages: ['english'], select })
+      expect(update).toContain('Document updated successfully')
+      expect(update).not.toContain('internalPrimaryContact')
+      const read = await call('findClinics', { id: clinicId, select })
+      expect(JSON.parse(read.slice(read.indexOf('{')))).toMatchObject({ id: clinicId, supportedLanguages: ['english'] })
+      expect(read).not.toContain('internalPrimaryContact')
+    }
+    expect(await call('readClinicOnboarding', { applicationId })).toContain('readClinicOnboarding not found')
+
     for (const forbidden of [
       { status: 'approved' },
       { participationStatus: 'approved' },
@@ -847,6 +869,21 @@ describe('MCP key management and client access', () => {
       participationStatus: 'approved',
       publicStatus: 'approved',
     })
+    for (const participationStatus of ['disabled', 'approved'] as const) {
+      expect(
+        await payload.update({
+          collection: 'clinics',
+          id: clinicId,
+          data: { participationStatus },
+          overrideAccess: false,
+          req: await createLocalReq({ user: support, req: { payloadAPI: 'REST' } }, payload),
+        }),
+      ).toMatchObject({ participationStatus, status: 'approved' })
+      expect(
+        (await payload.find({ collection: 'clinics', where: { id: { equals: clinicId } }, overrideAccess: false }))
+          .docs,
+      ).toMatchObject([{ id: clinicId, status: 'approved' }])
+    }
   })
 
   it('lets an administrator manage their bound key and denies a stale administrator after role removal', async () => {

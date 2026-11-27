@@ -13,6 +13,7 @@ import { getCurrentIsoTimestampString } from '@/utilities/timestamps'
 import { isClinicOnboardingError, prepareClinicOnboardingIdentity } from './provisionClinicOnboarding'
 import {
   getApplicationRevision,
+  getOnboardingClinicGroupId,
   McpOnboardingError,
   readOnboardingStatus,
   readStagedApplication,
@@ -113,7 +114,9 @@ async function persistDecision(
   return runClinicRegistrationTransaction(req, async (transactionReq) => {
     await requireClinicOnboardingOperator(transactionReq)
     const application = await readStagedApplication(transactionReq, applicationId)
-    if (getApplicationRevision(application) !== applicationRevision) {
+    const binding = getStagedOnboardingBinding(application)
+    const clinic = await readBoundStagedClinic(transactionReq, binding)
+    if (getApplicationRevision(application, getOnboardingClinicGroupId(clinic)) !== applicationRevision) {
       throw new McpOnboardingError('The application has changed. Read the latest version before deciding.', 409)
     }
     if (application.status === 'approved' && decision.outcome === 'approved') return application
@@ -121,8 +124,6 @@ async function persistDecision(
       throw new McpOnboardingError('This clinic onboarding application is already decided.', 409)
     }
 
-    const binding = getStagedOnboardingBinding(application)
-    const clinic = await readBoundStagedClinic(transactionReq, binding)
     if (clinic.participationStatus !== 'pending' || (decision.outcome === 'approved' && clinic.status === 'rejected')) {
       throw new McpOnboardingError('The staged clinic is no longer awaiting a decision.', 409)
     }

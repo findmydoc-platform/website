@@ -47,7 +47,11 @@ import {
 } from './clinics/postalCode'
 import { setClinicProfileRevision } from './clinics/profileRevision'
 import { beforeChangeSynchronizeClinicProfileGallery, clinicProfileGalleryMaxItems } from './clinics/profileGallery'
-import { protectStagedClinicDeletion, protectStagedClinicLifecycle } from './clinics/stagedOnboarding'
+import {
+  protectStagedClinicDeletion,
+  protectStagedClinicLifecycle,
+  readClinicPrimaryContact,
+} from './clinics/stagedOnboarding'
 
 const GALLERY_ENTRIES_SAME_CLINIC_MESSAGE = 'Gallery entries must belong to this clinic.'
 const CLINIC_APPROVAL_ERROR_COMPONENT =
@@ -547,7 +551,7 @@ export const Clinics: CollectionConfig<'clinics'> = {
               label: 'Internal Primary Contact',
               type: 'group',
               access: {
-                read: platformClinicTrustFieldAccess,
+                read: readClinicPrimaryContact,
                 create: platformClinicTrustFieldAccess,
                 update: platformClinicTrustFieldAccess,
               },

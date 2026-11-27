@@ -1,4 +1,4 @@
-import type { PayloadRequest } from 'payload'
+import type { PayloadRequest, Where } from 'payload'
 import { normalizeEmail } from '@/auth/utilities/emailNormalization'
 import { isClinicPersonalIdentityReady, readClinicStaffAssignment } from '@/auth/utilities/clinicStaffAssignment'
 import { requireCurrentPlatformStaff } from '@/features/clinicDashboard/gallery/platformGallery'
@@ -7,7 +7,7 @@ export async function readEligibleExistingClinicStaff(
   req: PayloadRequest,
   lookup: { clinicStaffId: number } | { email: string },
 ) {
-  const where =
+  const where: Where =
     'clinicStaffId' in lookup
       ? { id: { equals: lookup.clinicStaffId } }
       : { email: { equals: normalizeEmail(lookup.email) } }

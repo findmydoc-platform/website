@@ -3828,17 +3828,8 @@ export interface PayloadMcpApiKey {
     find?: boolean | null;
   };
   posts?: {
-    /**
-     * Allow clients to find posts.
-     */
     find?: boolean | null;
-    /**
-     * Allow clients to create posts.
-     */
     create?: boolean | null;
-    /**
-     * Allow clients to update posts.
-     */
     update?: boolean | null;
   };
   blogMedia?: {
@@ -3851,17 +3842,8 @@ export interface PayloadMcpApiKey {
     decide?: boolean | null;
   };
   clinics?: {
-    /**
-     * Allow clients to find clinics.
-     */
     find?: boolean | null;
-    /**
-     * Allow clients to create clinics.
-     */
     create?: boolean | null;
-    /**
-     * Allow clients to update clinics.
-     */
     update?: boolean | null;
   };
   clinicGroups?: {

@@ -361,6 +361,11 @@ export const createMcpPlugin = (): Plugin =>
     },
 
     overrideApiKeyCollection: (collection) => {
+      const postGrantLabels: Record<string, { en: string; de: string }> = {
+        find: { en: 'Read posts', de: 'Beiträge lesen' },
+        create: { en: 'Create posts', de: 'Beiträge anlegen' },
+        update: { en: 'Edit and publish posts', de: 'Beiträge bearbeiten und veröffentlichen' },
+      }
       return {
         ...collection,
         fields: groupEditorialImageGrants(groupClinicOnboardingGrants(collection.fields)).map((field) => {
@@ -376,7 +381,19 @@ export const createMcpPlugin = (): Plugin =>
                   label: { en: 'Posts', de: 'Beiträge' },
                   fields: field.fields.map((nested) =>
                     nested.type === 'group' && 'name' in nested && nested.name === 'posts'
-                      ? { ...nested, label: false }
+                      ? {
+                          ...nested,
+                          label: false,
+                          fields: nested.fields.map((grant) =>
+                            grant.type === 'checkbox' && postGrantLabels[grant.name]
+                              ? {
+                                  ...grant,
+                                  label: postGrantLabels[grant.name],
+                                  admin: { ...grant.admin, description: undefined },
+                                }
+                              : grant,
+                          ),
+                        }
                       : nested,
                   ),
                 },

@@ -105,8 +105,9 @@ reuses the existing invitation authorization. Public publication remains a separ
 
 ## Clinic profile maintenance
 
-Under **Clinic profiles → Profile care**, enable **Find** or **Update**. These options use the existing
-`clinics.find` and `clinics.update` grants and continue to authorize `findClinics` and `updateClinics`, respectively.
+Under **Clinic profiles → Profile care**, enable **Read clinic profiles** or **Edit clinic profiles**.
+These options use the existing `clinics.find` and `clinics.update` grants and continue to authorize `findClinics`
+and `updateClinics`, respectively. **Create clinic profiles directly** is the existing `clinics.create` grant.
 
 - `readClinicProfile` takes a numeric `clinicId` and returns the profile, including its public publication status.
 - `updateClinicProfile` takes `clinicId` and a `profile` object. The accepted fields are `description` (Payload rich text),

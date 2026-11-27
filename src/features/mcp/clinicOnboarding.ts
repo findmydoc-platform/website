@@ -30,6 +30,12 @@ const onboardingGrantEntries = Object.entries(clinicOnboardingGrants) as [
 ][]
 const permissions = new WeakMap<PayloadRequest, Set<ClinicOnboardingGrant>>()
 
+const profileGrantLabels: Record<string, { en: string; de: string }> = {
+  find: { en: 'Read clinic profiles', de: 'Klinikprofile lesen' },
+  create: { en: 'Create clinic profiles directly', de: 'Klinikprofile direkt anlegen' },
+  update: { en: 'Edit clinic profiles', de: 'Klinikprofile bearbeiten' },
+}
+
 export function mapClinicOnboardingGrants(req: PayloadRequest, settings: MCPAccessSettings): MCPAccessSettings {
   const values = settings.clinicOnboarding as Record<string, unknown> | undefined
   const active = new Set(onboardingGrantEntries.filter(([grant]) => values?.[grant] === true).map(([grant]) => grant))
@@ -75,7 +81,27 @@ export function groupClinicOnboardingGrants(fields: Field[]): Field[] {
               },
             ],
           },
-          { type: 'collapsible', label: { en: 'Profile care', de: 'Profilpflege' }, fields: field.fields },
+          {
+            type: 'collapsible',
+            label: { en: 'Profile care', de: 'Profilpflege' },
+            fields: field.fields.map((nested) =>
+              nested.type === 'group' && 'name' in nested && nested.name === 'clinics'
+                ? {
+                    ...nested,
+                    label: false,
+                    fields: nested.fields.map((grant) =>
+                      grant.type === 'checkbox' && profileGrantLabels[grant.name]
+                        ? {
+                            ...grant,
+                            label: profileGrantLabels[grant.name],
+                            admin: { ...grant.admin, description: undefined },
+                          }
+                        : grant,
+                    ),
+                  }
+                : nested,
+            ),
+          },
         ],
       }
     }

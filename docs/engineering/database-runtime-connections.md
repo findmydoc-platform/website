@@ -55,7 +55,11 @@ code.
 When Payload cannot acquire a database connection because the connection limit is reached, acquisition times out, or
 Postgres is temporarily unavailable:
 
-- the REST boundary returns HTTP `503` and `{ "error": { "code": "DATABASE_TEMPORARILY_UNAVAILABLE" } }`;
+- the REST boundary returns HTTP `503` with `error.code` set to `DATABASE_TEMPORARILY_UNAVAILABLE`. The response also
+  includes a safe message in Payload's `errors` array for single-document actions in Admin;
+- when a verified platform identity's principal lookup fails with a classified database connection error during a
+  REST write, authentication still denies access. The root hook maps the resulting native permission error to the
+  same `503` response;
 - the GraphQL boundary returns `DATABASE_TEMPORARILY_UNAVAILABLE` and `statusCode: 503` in the formatted error
   extensions;
 - a REST or GraphQL initialization failure that occurs before Payload can run its Root hook returns the matching API
@@ -66,10 +70,12 @@ Postgres is temporarily unavailable:
 - a read may be retried by the user;
 - a write retains its input and requires explicit resubmission.
 
-Payload's Root `afterError` hook owns request-time REST and GraphQL response mapping. The Payload REST and GraphQL route
+`src/features/databaseAvailability` owns the response format and sanitized logging. The Payload root `afterError` hook
+maps native REST and GraphQL failures. The platform gallery append endpoint uses the same REST response for failures
+it handles directly. The Payload REST and GraphQL route
 files are template entrypoints that Payload does not regenerate automatically. They remain minimal re-exports of
 feature-owned handler adapters, which add only the initialization-failure protection needed before Root hooks are
-available. findmydoc-specific database and error policy stays in `src/features/databaseAvailability`.
+available.
 
 Payload Admin uses the same runtime pool policy but keeps Payload's native initialization-error behavior. Do not wrap
 the Admin route or edit `src/app/(payload)/admin/importMap.js` manually.

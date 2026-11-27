@@ -55,6 +55,10 @@ export function resolvePlaywrightBaseURL(env = process.env) {
   return `http://localhost:${resolveE2EPort(env)}`
 }
 
+export function resolveE2EAuthEnvironment(env = process.env) {
+  return env.CI === 'true' ? 'ci' : 'test'
+}
+
 export function applyE2ERuntimeDefaults(env = process.env) {
   const baseUrl = resolvePlaywrightBaseURL(env)
   const temporaryLandingMode = env.E2E_RUNTIME_POLICY === TEMPORARY_LANDING_E2E_RUNTIME_POLICY
@@ -91,16 +95,17 @@ export function applyE2ERuntimeDefaults(env = process.env) {
     // Regular E2E flows cover the full public experience; the dedicated temporary landing lane evaluates PostHog.
     env.PUBLIC_SITE_FALLBACK_MODE ??= 'full'
     if (!env.PLAYWRIGHT_BASE_URL) {
+      const authEnvironment = resolveE2EAuthEnvironment(env)
       for (const key of ['AUTH_RECOVERY_CORRELATION_KEYS_JSON', 'AUTH_VERIFICATION_CORRELATION_KEYS_JSON']) {
-        let usesTestKeys = false
+        let hasMatchingKeys = false
         try {
-          usesTestKeys = JSON.parse(env[key] ?? '').environment === 'test'
+          hasMatchingKeys = JSON.parse(env[key] ?? '').environment === authEnvironment
         } catch {
           // Generate an ephemeral key ring for the local Playwright server.
         }
-        if (!usesTestKeys) {
+        if (!hasMatchingKeys) {
           env[key] = JSON.stringify({
-            environment: 'test',
+            environment: authEnvironment,
             keys: [{ version: 'playwright', secret: randomBytes(32).toString('hex') }],
           })
         }

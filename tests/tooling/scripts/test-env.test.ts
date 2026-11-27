@@ -44,6 +44,22 @@ describe('E2E runtime defaults', () => {
     expect(env.PUBLIC_SITE_FALLBACK_MODE).toBe('full')
   })
 
+  it.each([
+    { CI: undefined, environment: 'test' },
+    { CI: 'true', environment: 'ci' },
+  ])('uses $environment signing keys for the local E2E server', ({ CI, environment }) => {
+    const env: NodeJS.ProcessEnv = { ...process.env, CI }
+    delete env.PLAYWRIGHT_BASE_URL
+    delete env.E2E_RUNTIME_POLICY
+    delete env.AUTH_RECOVERY_CORRELATION_KEYS_JSON
+    delete env.AUTH_VERIFICATION_CORRELATION_KEYS_JSON
+
+    applyE2ERuntimeDefaults(env)
+
+    expect(JSON.parse(env.AUTH_RECOVERY_CORRELATION_KEYS_JSON ?? '{}').environment).toBe(environment)
+    expect(JSON.parse(env.AUTH_VERIFICATION_CORRELATION_KEYS_JSON ?? '{}').environment).toBe(environment)
+  })
+
   it('preserves an explicit public-site fallback for regular E2E runs', () => {
     const env: NodeJS.ProcessEnv = { ...process.env }
     env.PUBLIC_SITE_FALLBACK_MODE = 'holding'

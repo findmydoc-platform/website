@@ -510,7 +510,7 @@ describe('Pages integration - lifecycle and access', () => {
           overrideAccess: true,
           context: { disableRevalidate: true },
         }),
-      ).rejects.toThrow('Privacy Policy must remain published')
+      ).rejects.toMatchObject({ isPublic: true, status: 409 })
     } finally {
       await payload.update({
         collection: 'pages',
@@ -525,6 +525,41 @@ describe('Pages integration - lifecycle and access', () => {
         context: { disableRevalidate: true },
       })
     }
+  })
+
+  it('returns a field error when changing a managed legal page slug', async () => {
+    const page = await findPageBySlug(payload, 'privacy-policy', false, { locale: 'en', fallbackLocale: false })
+    if (!page) throw new Error('Expected the managed privacy policy page to be published')
+
+    await expect(
+      payload.update({
+        collection: 'pages',
+        locale: 'en',
+        id: page.id,
+        data: { slug: `${slugPrefix}-different-legal-slug` },
+        overrideAccess: true,
+        context: { disableRevalidate: true },
+      }),
+    ).rejects.toMatchObject({
+      isPublic: true,
+      status: 400,
+      data: { errors: [{ path: 'slug', message: expect.any(String) }] },
+    })
+  })
+
+  it('returns a public conflict when permanently deleting a managed legal page', async () => {
+    const page = await findPageBySlug(payload, 'privacy-policy', false, { locale: 'en', fallbackLocale: false })
+    if (!page) throw new Error('Expected the managed privacy policy page to be published')
+
+    await expect(
+      payload.delete({
+        collection: 'pages',
+        locale: 'en',
+        id: page.id,
+        overrideAccess: true,
+        context: { disableRevalidate: true },
+      }),
+    ).rejects.toMatchObject({ isPublic: true, status: 409 })
   })
 
   it('rejects missing title', async () => {

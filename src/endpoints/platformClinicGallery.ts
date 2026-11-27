@@ -1,6 +1,7 @@
 import { APIError, type PayloadHandler } from 'payload'
 import { appendPlatformClinicGalleryMedia } from '@/features/clinicDashboard/gallery/platformGallery'
 import { ClinicGalleryServiceError } from '@/features/clinicDashboard/gallery/service'
+import { databaseAvailabilityRestResponse } from '@/features/databaseAvailability'
 
 export const platformClinicGalleryAppendHandler: PayloadHandler = async (req) => {
   const id = req.routeParams?.id
@@ -11,9 +12,11 @@ export const platformClinicGalleryAppendHandler: PayloadHandler = async (req) =>
     return Response.json({ error: 'Invalid image ID.' }, { status: 400, headers: { 'Cache-Control': 'no-store' } })
   }
   try {
-    const snapshot = await appendPlatformClinicGalleryMedia(req, Number(id))
+    const snapshot = await appendPlatformClinicGalleryMedia(req, Number(id), { propagateDatabaseFailure: true })
     return Response.json(snapshot, { headers: { 'Cache-Control': 'no-store' } })
   } catch (error) {
+    const unavailable = databaseAvailabilityRestResponse(req, error)
+    if (unavailable) return unavailable
     if (error instanceof APIError) {
       return Response.json({ error: error.message }, { status: error.status, headers: { 'Cache-Control': 'no-store' } })
     }

@@ -94,9 +94,13 @@ describe('database availability contract', () => {
     })
 
     expect(result).toEqual({
-      response: { error: { code: DATABASE_TEMPORARILY_UNAVAILABLE_CODE } },
+      response: {
+        error: { code: DATABASE_TEMPORARILY_UNAVAILABLE_CODE },
+        errors: [{ message: expect.stringMatching(/\S/) }],
+      },
       status: 503,
     })
+    expect(JSON.stringify(result)).not.toContain('secret-host')
     expect(req.responseHeaders?.get('cache-control')).toBe('private, no-store')
     expect(req.responseHeaders?.get('vary')).toBe('Authorization')
     expect(logger.error).toHaveBeenCalledWith(

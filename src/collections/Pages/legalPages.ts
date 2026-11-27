@@ -5,6 +5,7 @@ import type {
   PayloadRequest,
   RequiredDataFromCollectionSlug,
 } from 'payload'
+import { APIError, ValidationError } from 'payload'
 
 import type { Page, Redirect } from '@/payload-types'
 import {
@@ -12,7 +13,6 @@ import {
   MANAGED_LEGAL_PAGE_SPECS,
   REMOVED_LEGAL_PATHS,
   getManagedLegalPageSpec,
-  isManagedLegalPageSlug,
 } from '@/utilities/legalPages'
 import { isPageDraftSaveIntent } from './hooks/pageDraftIntent'
 
@@ -321,11 +321,15 @@ const enforceManagedLegalPagesBeforeChange: CollectionBeforeChangeHook<Page> = a
 
   if (operation === 'update') {
     if (typeof draft.slug === 'string' && draft.slug !== spec.slug) {
-      throw new Error(`${spec.title} must keep the slug "${spec.slug}"`)
+      throw new ValidationError({
+        collection: 'pages',
+        errors: [{ path: 'slug', message: `Keep the slug "${spec.slug}" for ${spec.title}.` }],
+        req,
+      })
     }
 
     if (draft._status === 'draft' && !isPageDraftSaveIntent(req.context)) {
-      throw new Error(`${spec.title} must remain published`)
+      throw new APIError(`${spec.title} must stay published. Save a draft to preview changes.`, 409)
     }
 
     draft.slug = spec.slug
@@ -333,7 +337,7 @@ const enforceManagedLegalPagesBeforeChange: CollectionBeforeChangeHook<Page> = a
   }
 
   if (draft._status === 'draft') {
-    throw new Error(`${spec.title} must be published when created`)
+    throw new APIError(`Publish ${spec.title} when creating it.`, 400)
   }
 
   return draft
@@ -349,18 +353,21 @@ async function findPageForDeletion(req: PayloadRequest, id: number | string) {
     overrideAccess: true,
   })
 
-  return doc as Pick<Page, 'slug' | 'title'> | null
+  return doc as Pick<Page, 'slug'> | null
 }
 
 const preventManagedLegalPageDeletion: CollectionBeforeDeleteHook = async ({ id, req }) => {
   const page = await findPageForDeletion(req, id)
+  const spec = getManagedLegalPageSpec(page?.slug)
 
-  if (!isManagedLegalPageSlug(page?.slug)) {
+  if (!spec) {
     return
   }
 
-  const label = typeof page?.title === 'string' && page.title.length > 0 ? page.title : page.slug
-  throw new Error(`${label} is a required legal page and cannot be deleted`)
+  throw new APIError(
+    `${spec.title} must stay published. Edit the existing page or save a draft to preview changes.`,
+    409,
+  )
 }
 
 export const managedLegalPageHooks = {

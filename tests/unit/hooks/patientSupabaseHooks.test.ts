@@ -5,6 +5,8 @@ import { requireInquiryIdentityScrubBeforePatientDeleteHook } from '@/collection
 import { inviteSupabaseAccount, deleteSupabaseAccount } from '@/auth/utilities/supabaseProvision'
 import type { Payload, PayloadRequest, RequestContext, SanitizedCollectionConfig } from 'payload'
 import type { Patient } from '@/payload-types'
+import { mockUsers } from '../helpers/mockUsers'
+import { createMockPayload, createMockReq } from '../helpers/testHelpers'
 
 const getMocks = () => {
   const payload = {
@@ -230,7 +232,52 @@ describe('requireInquiryIdentityScrubBeforePatientDeleteHook', () => {
     vi.clearAllMocks()
   })
 
-  it('blocks account deletion while an available inquiry still carries the patient identity', async () => {
+  it('exposes the deletion conflict to a verified inquiry retention operator', async () => {
+    const actor = mockUsers.platform(7)
+    const payload = createMockPayload()
+    const req = createMockReq(actor, payload)
+    payload.find.mockResolvedValue({ docs: [{ id: 9 }], totalDocs: 1 })
+    payload.findByID.mockResolvedValue({ capabilities: ['inquiry-retention'] })
+
+    await expect(
+      requireInquiryIdentityScrubBeforePatientDeleteHook({
+        collection: mockCollection,
+        context: emptyContext,
+        id: 'patient-1',
+        req,
+      }),
+    ).rejects.toMatchObject({ isPublic: true, status: 409 })
+    expect(payload.find).toHaveBeenCalledWith(
+      expect.objectContaining({
+        collection: 'patientClinicInquiries',
+        where: {
+          and: [{ patient: { equals: 'patient-1' } }, { retentionState: { equals: 'available' } }],
+        },
+      }),
+    )
+  })
+
+  it.each([{ capabilities: [] }, null])(
+    'keeps the deletion conflict private for an unverified operator (%j)',
+    async (operator) => {
+      const actor = { ...mockUsers.platform(7), capabilities: ['inquiry-retention'] }
+      const payload = createMockPayload()
+      const req = createMockReq(actor, payload)
+      payload.find.mockResolvedValue({ docs: [{ id: 9 }], totalDocs: 1 })
+      payload.findByID.mockResolvedValue(operator)
+
+      await expect(
+        requireInquiryIdentityScrubBeforePatientDeleteHook({
+          collection: mockCollection,
+          context: emptyContext,
+          id: 'patient-1',
+          req,
+        }),
+      ).rejects.not.toHaveProperty('isPublic')
+    },
+  )
+
+  it('keeps the untyped deletion conflict for internal calls without a user', async () => {
     const { req, payload } = getMocks()
     vi.mocked(payload.find).mockResolvedValue({ docs: [{ id: 9 }], totalDocs: 1 } as never)
 
@@ -241,15 +288,7 @@ describe('requireInquiryIdentityScrubBeforePatientDeleteHook', () => {
         id: 'patient-1',
         req,
       }),
-    ).rejects.toThrow('Patient inquiry identity must be anonymized')
-    expect(payload.find).toHaveBeenCalledWith(
-      expect.objectContaining({
-        collection: 'patientClinicInquiries',
-        where: {
-          and: [{ patient: { equals: 'patient-1' } }, { retentionState: { equals: 'available' } }],
-        },
-      }),
-    )
+    ).rejects.not.toHaveProperty('isPublic')
   })
 
   it('allows account deletion after every linked inquiry identity is terminally scrubbed', async () => {

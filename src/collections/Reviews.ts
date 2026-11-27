@@ -1,5 +1,5 @@
-import type { CollectionBeforeChangeHook, CollectionConfig, PayloadRequest, Where } from 'payload'
-import { ValidationError, validations } from 'payload'
+import type { CollectionBeforeChangeHook, CollectionConfig, PayloadRequest, ValidationFieldError, Where } from 'payload'
+import { APIError, ValidationError, validations } from 'payload'
 import { isPatient } from '@/access/isPatient'
 import { computedOnlyFieldAccess, platformOnlyFieldAccess } from '@/access/fieldAccess'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
@@ -637,7 +637,16 @@ export const Reviews: CollectionConfig = {
         const treatmentId = readRelationshipId(draft, originalDoc, 'treatment')
 
         if (!clinicId || !doctorId || !treatmentId) {
-          throw new Error('A review must be linked to a clinic, doctor, and treatment.')
+          if (!isPlatformStaff({ req })) {
+            throw new Error('A review must be linked to a clinic, doctor, and treatment.')
+          }
+
+          const errors: ValidationFieldError[] = []
+          if (!clinicId) errors.push({ path: 'clinic', message: 'Choose a clinic.' })
+          if (!doctorId) errors.push({ path: 'doctor', message: 'Choose a doctor.' })
+          if (!treatmentId) errors.push({ path: 'treatment', message: 'Choose a treatment.' })
+
+          throw new ValidationError({ collection: collection.slug, errors, req })
         }
 
         if (!patientId) {
@@ -668,9 +677,11 @@ export const Reviews: CollectionConfig = {
           existing.docs.length > 0 &&
           !(operation === 'update' && originalDoc && existing.docs[0] && existing.docs[0].id === originalDoc.id)
         ) {
-          throw new Error(
-            'Duplicate review: this patient has already reviewed this treatment with this doctor at this clinic.',
-          )
+          const message =
+            'Duplicate review: this patient has already reviewed this treatment with this doctor at this clinic.'
+          if (!isPlatformStaff({ req })) throw new Error(message)
+
+          throw new APIError(`${message} Look for the existing review in Reviews or Trash.`, 409)
         }
 
         return data

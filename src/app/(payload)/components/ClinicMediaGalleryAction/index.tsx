@@ -6,6 +6,7 @@ import { ClinicMediaGalleryActionPanel } from './Panel'
 import { clinicMediaGalleryActionUrl } from './actionUrl'
 
 const successKey = 'clinic-media-gallery-action-success'
+const fallbackError = 'The image could not be added to the clinic gallery.'
 
 export function ClinicMediaGalleryAction() {
   const { id, apiURL } = useDocumentInfo()
@@ -44,8 +45,10 @@ export function ClinicMediaGalleryAction() {
         headers: { 'Content-Type': 'application/json' },
       })
       if (!response.ok) {
-        const result = (await response.json().catch(() => undefined)) as { error?: string } | undefined
-        throw new Error(result?.error ?? 'The image could not be added to the clinic gallery.')
+        const result = (await response.json().catch(() => undefined)) as
+          { error?: unknown; errors?: Array<{ message?: unknown }> } | undefined
+        const message = typeof result?.error === 'string' ? result.error : result?.errors?.[0]?.message
+        throw new Error(typeof message === 'string' && message.trim() ? message : fallbackError)
       }
       try {
         sessionStorage.setItem(successKey, String(id))
@@ -54,7 +57,7 @@ export function ClinicMediaGalleryAction() {
       }
       window.location.reload()
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'The image could not be added to the clinic gallery.')
+      setError(cause instanceof Error ? cause.message : fallbackError)
     } finally {
       setSaving(false)
       setProcessing(false)

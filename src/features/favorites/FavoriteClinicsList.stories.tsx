@@ -186,7 +186,7 @@ export const Populated: Story = {
     <PatientFavoritesFrame favoriteApi={favoriteApi} items={initialItems} locale={locale} />
   ),
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
+    const canvas = within(within(canvasElement).getByRole('main'))
 
     const list = canvas.getByRole('list')
     await expect(canvas.getByRole('heading', { level: 1 })).toBeInTheDocument()
@@ -207,12 +207,11 @@ export const Empty: Story = {
     <PatientFavoritesFrame favoriteApi={favoriteApi} items={initialItems} locale={locale} />
   ),
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
+    const canvas = within(within(canvasElement).getByRole('main'))
 
-    const main = canvas.getByRole('main')
-    await expect(main.getByRole('heading', { level: 1 })).toBeInTheDocument()
-    await expect(main.queryByRole('list')).not.toBeInTheDocument()
-    await expect(main.getByRole('link')).toHaveAttribute('href', '/en/listing-comparison')
+    await expect(canvas.getByRole('heading', { level: 1 })).toBeInTheDocument()
+    await expect(canvas.queryByRole('list')).not.toBeInTheDocument()
+    await expect(canvas.getByRole('link')).toHaveAttribute('href', '/en/listing-comparison')
   },
 }
 
@@ -225,7 +224,7 @@ export const RemovePending: Story = {
     <PatientFavoritesFrame favoriteApi={favoriteApi} items={initialItems} locale={locale} />
   ),
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
+    const canvas = within(within(canvasElement).getByRole('main'))
 
     await userEvent.click(canvas.getByRole('button', { name: 'Remove Berlin University Hospital from saved clinics' }))
     await expect(
@@ -244,12 +243,12 @@ export const RemoveError: Story = {
     <PatientFavoritesFrame favoriteApi={favoriteApi} items={initialItems} locale={locale} />
   ),
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
+    const canvas = within(within(canvasElement).getByRole('main'))
 
     await userEvent.click(canvas.getByRole('button', { name: 'Remove Berlin University Hospital from saved clinics' }))
     const clinic = canvas.getByRole('article')
     await waitFor(() => expect(clinic.querySelector('[aria-live="polite"]')).not.toBeEmptyDOMElement())
-    await expect(clinic.getByRole('button')).toBeEnabled()
+    await expect(within(clinic).getByRole('button')).toBeEnabled()
     await expect(canvas.getByRole('heading', { name: 'Berlin University Hospital' })).toBeInTheDocument()
   },
 }
@@ -263,7 +262,7 @@ export const RemoveSuccess: Story = {
     <PatientFavoritesFrame favoriteApi={favoriteApi} items={initialItems} locale={locale} />
   ),
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
+    const canvas = within(within(canvasElement).getByRole('main'))
 
     await userEvent.click(canvas.getByRole('button', { name: 'Remove Berlin University Hospital from saved clinics' }))
     await waitFor(() =>
@@ -285,7 +284,7 @@ export const RemoveLastItemSuccess: Story = {
     <PatientFavoritesFrame favoriteApi={favoriteApi} items={initialItems} locale={locale} />
   ),
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
+    const canvas = within(within(canvasElement).getByRole('main'))
 
     await userEvent.click(canvas.getByRole('button', { name: 'Remove Berlin University Hospital from saved clinics' }))
     await waitFor(() => expect(canvas.queryByRole('list')).not.toBeInTheDocument())
@@ -302,7 +301,7 @@ export const LongClinicContent: Story = {
     <PatientFavoritesFrame favoriteApi={favoriteApi} items={initialItems} locale={locale} />
   ),
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
+    const canvas = within(within(canvasElement).getByRole('main'))
 
     await expect(
       canvas.getByRole('heading', {
@@ -328,7 +327,7 @@ export const NoRating: Story = {
     <PatientFavoritesFrame favoriteApi={favoriteApi} items={initialItems} locale={locale} />
   ),
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
+    const canvas = within(within(canvasElement).getByRole('main'))
 
     await expect(canvas.getByRole('heading', { name: 'Hamburg Specialist Clinic' })).toBeInTheDocument()
     await expect(canvas.getByText('Hamburg, Germany')).toBeInTheDocument()
@@ -375,7 +374,7 @@ export const GermanLongClinicContent320: Story = {
   ...withViewportStory(LongClinicContent, 'public320', 'German long clinic content / 320'),
   args: { initialItems: longContentClinicItems, locale: 'de' },
   play: async ({ canvasElement }) => {
-    const main = within(canvasElement).getByRole('main')
+    const main = within(within(canvasElement).getByRole('main'))
     await expect(main.getAllByRole('article')).toHaveLength(2)
     await expect(main.getByRole('link', { name: 'Kliniken entdecken' })).toHaveAttribute('href', '/listing-comparison')
   },

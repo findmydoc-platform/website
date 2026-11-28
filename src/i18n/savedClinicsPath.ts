@@ -1,8 +1,10 @@
 import type { UiCopyLocale } from './requestLocale'
 
+export const SAVED_CLINICS_SLUG = 'patient/favorites'
+
 export const SAVED_CLINICS_PATHS = {
-  de: '/patient/favorites',
-  en: '/en/patient/favorites',
+  de: `/${SAVED_CLINICS_SLUG}`,
+  en: `/en/${SAVED_CLINICS_SLUG}`,
 } satisfies Record<UiCopyLocale, string>
 
 export function savedClinicsLocaleFromPath(pathname: string): UiCopyLocale | null {

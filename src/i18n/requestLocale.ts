@@ -1,8 +1,9 @@
-import { PATIENT_LOGIN_PATH } from '@/features/favorites/redirects'
 import { listingComparisonLocaleFromPath } from '@/i18n/listingComparisonPath'
 import { savedClinicsLocaleFromPath } from '@/i18n/savedClinicsPath'
 import {
   AUTH_CONFIRMATION_PATH,
+  PATIENT_LOGIN_PATH,
+  PATIENT_LOGOUT_PATH,
   RECOVERY_COMPLETION_PATH,
   isLocalizedAuthConfirmationType,
   localizedPatientAuthPath,
@@ -14,6 +15,7 @@ export const UI_COPY_LOCALE_HEADER = 'x-findmydoc-ui-copy-locale'
 export const ENGLISH_PATIENT_LOGIN_PATH = localizedPatientAuthPath(PATIENT_LOGIN_PATH, 'en')
 
 const ENGLISH_AUTH_CONFIRMATION_PATH = localizedPatientAuthPath(AUTH_CONFIRMATION_PATH, 'en')
+const ENGLISH_PATIENT_LOGOUT_PATH = localizedPatientAuthPath(PATIENT_LOGOUT_PATH, 'en')
 const ENGLISH_RECOVERY_COMPLETION_PATH = localizedPatientAuthPath(RECOVERY_COMPLETION_PATH, 'en')
 const PATIENT_REGISTRATION_PATH = '/register/patient'
 const ENGLISH_PATIENT_REGISTRATION_PATH = localizedPatientAuthPath(PATIENT_REGISTRATION_PATH, 'en')
@@ -41,9 +43,17 @@ export function patientAuthLocaleFromPath(
 
   if (path === RECOVERY_COMPLETION_PATH) return 'de'
   if (path === ENGLISH_RECOVERY_COMPLETION_PATH) return 'en'
-  if (path === PATIENT_LOGIN_PATH || path === PATIENT_REGISTRATION_PATH || path === RECOVERY_REQUEST_PATH) return 'de'
+  if (
+    path === PATIENT_LOGIN_PATH ||
+    path === PATIENT_LOGOUT_PATH ||
+    path === PATIENT_REGISTRATION_PATH ||
+    path === RECOVERY_REQUEST_PATH
+  ) {
+    return 'de'
+  }
   if (
     path === ENGLISH_PATIENT_LOGIN_PATH ||
+    path === ENGLISH_PATIENT_LOGOUT_PATH ||
     path === ENGLISH_PATIENT_REGISTRATION_PATH ||
     path === ENGLISH_RECOVERY_REQUEST_PATH
   ) {

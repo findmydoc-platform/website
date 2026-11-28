@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, within } from 'storybook/test'
 
-import { DoctorCard } from '@/components/organisms/Doctors'
+import { DoctorCard } from './DoctorCard'
 
 const meta = {
   title: 'Domain/Doctor/Organisms/DoctorCard',
@@ -43,8 +43,8 @@ export const Default: Story = {
 
     await expect(canvas.getByRole('article')).toBeInTheDocument()
     await expect(canvas.getByRole('heading', { name: 'Dr. Susan Bones, MD' })).toBeInTheDocument()
-    await expect(canvas.getByText('12+ years experience')).toBeInTheDocument()
-    await expect(canvas.getByText(/Languages:/)).toBeInTheDocument()
+    await expect(canvas.getByText('FAAP')).toBeInTheDocument()
+    await expect(canvas.getByText(/English.*German.*Spanish/)).toBeInTheDocument()
 
     await expect(canvas.getByRole('link', { name: 'Meta' })).toBeInTheDocument()
     await expect(canvas.getByRole('link', { name: 'LinkedIn' })).toBeInTheDocument()

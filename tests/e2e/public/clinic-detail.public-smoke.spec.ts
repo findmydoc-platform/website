@@ -270,6 +270,7 @@ test.describe('published clinic overview languages', () => {
       },
     }
     const selections: Array<{ doctor: string; treatment: string }> = []
+    const emptyStates = new Set<string>()
 
     for (const locale of ['de', 'en'] as const) {
       const labels = languages[locale]
@@ -305,8 +306,14 @@ test.describe('published clinic overview languages', () => {
         const doctor = await page.locator('select[name="doctor"]').inputValue()
         expect(doctor).toBeTruthy()
         await expect(page.locator('select[name="doctor"] option:checked')).toHaveText('Dr. Ada Example')
-        await page.getByRole('heading', { name: labels.additional }).scrollIntoViewIfNeeded()
-        await expect(page.getByRole('region', { name: labels.additional }).getByRole('status')).toBeVisible()
+        const additional = page.getByRole('region', { name: labels.additional })
+        await additional.scrollIntoViewIfNeeded()
+        await expect(additional.getByRole('article')).toHaveCount(0)
+        const emptyStateId = await additional.getAttribute('aria-describedby')
+        expect(emptyStateId).toBeTruthy()
+        const emptyState = additional.locator(`[id="${emptyStateId}"]`)
+        await expect(emptyState).toBeVisible()
+        emptyStates.add(await emptyState.innerText())
 
         if (width === 640 || width === 1280) {
           const suffix = `${locale}-${width}`
@@ -324,6 +331,7 @@ test.describe('published clinic overview languages', () => {
     }
 
     expect(new Set(selections.map(({ doctor, treatment }) => `${doctor}:${treatment}`)).size).toBe(1)
+    expect(emptyStates.size).toBe(2)
     await expectNoBrowserIssues(issues)
   })
 

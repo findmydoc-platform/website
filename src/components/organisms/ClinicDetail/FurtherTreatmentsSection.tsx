@@ -27,12 +27,17 @@ export function FurtherTreatmentsSection({
   onChooseTreatment,
 }: FurtherTreatmentsSectionProps) {
   const headingId = React.useId()
+  const emptyStateId = React.useId()
   const t = getClinicProfileTranslator(locale)
   const visibleRows = React.useMemo(() => treatments.slice(0, visibleCount), [treatments, visibleCount])
   const canShowMore = visibleCount < treatments.length
 
   return (
-    <section className="space-y-5" aria-labelledby={headingId}>
+    <section
+      className="space-y-5"
+      aria-labelledby={headingId}
+      aria-describedby={visibleRows.length === 0 ? emptyStateId : undefined}
+    >
       <div className="flex flex-wrap items-end justify-between gap-3">
         <Heading id={headingId} as="h2" align="left" size="content-section" variant="navy">
           {t('treatments.further')}
@@ -86,7 +91,7 @@ export function FurtherTreatmentsSection({
             <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10">
               <Stethoscope className="size-4 text-primary" aria-hidden={true} />
             </span>
-            <p role="status" className="text-sm font-semibold text-secondary">
+            <p id={emptyStateId} className="text-sm font-semibold text-secondary">
               {t('treatments.empty')}
             </p>
           </CardContent>

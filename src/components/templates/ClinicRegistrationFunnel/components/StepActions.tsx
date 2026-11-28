@@ -6,6 +6,7 @@ import type { ClinicRegistrationFunnelVariant } from '../types'
 import * as React from 'react'
 
 export function StepActions({
+  backLabel,
   disabled = false,
   onBack,
   onNext,
@@ -13,6 +14,7 @@ export function StepActions({
   primaryType = 'button',
   variant = 'default',
 }: {
+  backLabel?: string
   disabled?: boolean
   onBack?: () => void
   onNext?: () => void
@@ -66,7 +68,7 @@ export function StepActions({
         variant="ghost"
       >
         <ArrowLeft aria-hidden="true" className="size-4" />
-        Back
+        {backLabel}
       </Button>
       <Button
         className={cn(primaryClassName, 'min-w-0 whitespace-normal')}

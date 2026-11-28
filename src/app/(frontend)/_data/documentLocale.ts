@@ -1,4 +1,5 @@
 import { cache } from 'react'
+import { CLINIC_APPLICATION_PATHS } from '@/i18n/clinicApplicationPath'
 
 import { loadPageRoute } from './loadPageRoute'
 import { resolvePost } from './resolvePost'
@@ -30,7 +31,7 @@ const DEDICATED_PATHS = new Set([
   '/patient/inquiries',
   '/posts',
   '/en/posts',
-  '/register/clinic',
+  ...Object.values(CLINIC_APPLICATION_PATHS),
   '/register/patient',
   ...PUBLIC_DISCOVERY_SURFACE_PATHS,
 ])

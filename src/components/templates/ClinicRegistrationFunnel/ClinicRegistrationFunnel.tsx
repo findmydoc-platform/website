@@ -2,7 +2,6 @@
 
 import * as React from 'react'
 
-import { submitClinicRegistration } from '@/auth/utilities/clinicRegistrationSubmission'
 import { Alert, AlertDescription } from '@/components/atoms/alert'
 import { usePublicFormValidation } from '@/components/molecules/PublicFormValidation/usePublicFormValidation'
 import { StepIndicator } from '@/components/molecules/StepIndicator'
@@ -12,8 +11,6 @@ import {
   defaultReviewSummary,
   defaultSelectedTreatmentCategoryIds,
   defaultTreatmentCategories,
-  stepStatusLabels,
-  totalSteps,
 } from './constants'
 import { ContactStep } from './steps/ContactStep'
 import { ClinicDetailsStep } from './steps/ClinicDetailsStep'
@@ -27,55 +24,9 @@ import type {
   ClinicRegistrationSubmitData,
   StepTransitionDirection,
 } from './types'
-import { treatmentCategoriesRequiredMessage, validationMessages } from './validation'
 import { getStepTransitionClassName, StepContentFrame } from './components/StepContentFrame'
 import { StepContextPanel } from './components/StepContextPanel'
 import { SplitStepShell } from './components/SplitStepShell'
-
-const serverFieldErrorMap: Record<
-  string,
-  {
-    fieldName: string
-    message: string
-    step: ClinicRegistrationStep
-  }
-> = {
-  'Clinic name is required': {
-    fieldName: 'clinicName',
-    message: validationMessages.clinicName.valueMissing,
-    step: 1,
-  },
-  'Invalid clinicWebsite': {
-    fieldName: 'clinicWebsite',
-    message: validationMessages.clinicWebsite.typeMismatch,
-    step: 1,
-  },
-  'Contact first name is required': {
-    fieldName: 'contactFirstName',
-    message: validationMessages.contactFirstName.valueMissing,
-    step: 3,
-  },
-  'Contact last name is required': {
-    fieldName: 'contactLastName',
-    message: validationMessages.contactLastName.valueMissing,
-    step: 3,
-  },
-  'Invalid contactEmail': {
-    fieldName: 'contactEmail',
-    message: validationMessages.contactEmail.typeMismatch,
-    step: 3,
-  },
-  'Invalid contactRole': {
-    fieldName: 'contactRole',
-    message: validationMessages.contactRole.valueMissing,
-    step: 3,
-  },
-  'Invalid medicalSpecialties': {
-    fieldName: 'treatmentCategories',
-    message: 'Please select a valid focus area.',
-    step: 2,
-  },
-}
 
 function focusFieldByName(fieldName: string) {
   const escapedName = globalThis.CSS?.escape?.(fieldName) ?? fieldName.replaceAll('"', '\\"')
@@ -85,10 +36,12 @@ function focusFieldByName(fieldName: string) {
 
 export function ClinicRegistrationFunnel({
   className,
+  copy,
+  locale,
   initialSelectedTreatmentCategoryIds,
   initialStep = 1,
   initialValues,
-  onSubmit = submitClinicRegistration,
+  onSubmit,
   reviewSummary = defaultReviewSummary,
   treatmentCategories = defaultTreatmentCategories,
   variant = 'default',
@@ -114,9 +67,8 @@ export function ClinicRegistrationFunnel({
   const [isHydrated, setIsHydrated] = React.useState(false)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [submitError, setSubmitError] = React.useState<string | null>(null)
-  const visibleStepStatusLabels = stepStatusLabels
   const publicFormValidation = usePublicFormValidation({
-    messages: validationMessages,
+    messages: copy.validation,
   })
   const stepHeadingRef = React.useRef<HTMLHeadingElement>(null)
   const previousStepRef = React.useRef(step)
@@ -125,36 +77,36 @@ export function ClinicRegistrationFunnel({
     .filter((category) => selectedTreatmentCategories.includes(category.id))
     .map((category) => category.label)
 
-  const resolvedReviewSummary = React.useMemo<ClinicRegistrationReviewSummary>(() => {
-    const contactName = [formValues.contactFirstName, formValues.contactLastName]
-      .map((value) => value.trim())
-      .filter(Boolean)
-      .join(' ')
-
-    return {
-      ...reviewSummary,
-      clinicName: formValues.clinicName.trim() || reviewSummary.clinicName,
-      clinicWebsite: formValues.clinicWebsite.trim() || reviewSummary.clinicWebsite || reviewSummary.clinicAddress,
-      contactEmail: formValues.contactEmail.trim() || reviewSummary.contactEmail,
-      contactName: contactName || reviewSummary.contactName,
-      contactRole: formValues.contactRole || reviewSummary.contactRole,
-    }
-  }, [formValues, reviewSummary])
+  const contactName = [formValues.contactFirstName, formValues.contactLastName]
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .join(' ')
+  const { roleLabels } = copy.contact
+  const contactRole = roleLabels[formValues.contactRole as keyof typeof roleLabels] ?? formValues.contactRole
+  const resolvedReviewSummary: ClinicRegistrationReviewSummary = {
+    ...reviewSummary,
+    clinicName: formValues.clinicName.trim() || reviewSummary.clinicName,
+    clinicWebsite: formValues.clinicWebsite.trim() || reviewSummary.clinicWebsite || reviewSummary.clinicAddress,
+    contactEmail: formValues.contactEmail.trim() || reviewSummary.contactEmail,
+    contactName: contactName || reviewSummary.contactName,
+    contactRole: contactRole || reviewSummary.contactRole,
+  }
 
   const transitionClassName = getStepTransitionClassName(stepTransitionDirection)
 
-  const moveToStepWithFieldError = React.useCallback(
-    ({ fieldName, message, step: targetStep }: (typeof serverFieldErrorMap)[string]) => {
-      publicFormValidation.setCustomFieldErrors({ [fieldName]: message })
-      setSubmitError(null)
-      setStepTransitionDirection(targetStep < step ? 'backward' : targetStep > step ? 'forward' : 'none')
-      setStep(targetStep)
-      window.requestAnimationFrame(() => {
-        window.requestAnimationFrame(() => focusFieldByName(fieldName))
-      })
-    },
-    [publicFormValidation, step],
-  )
+  function moveToStepWithFieldError({
+    fieldName,
+    message,
+    step: targetStep,
+  }: (typeof copy.fieldErrors)[keyof typeof copy.fieldErrors]) {
+    publicFormValidation.setCustomFieldErrors({ [fieldName]: message })
+    setSubmitError(null)
+    setStepTransitionDirection(targetStep < step ? 'backward' : targetStep > step ? 'forward' : 'none')
+    setStep(targetStep)
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => focusFieldByName(fieldName))
+    })
+  }
 
   const goToNextStep = () => {
     publicFormValidation.clearAllFieldErrors()
@@ -190,7 +142,7 @@ export function ClinicRegistrationFunnel({
 
   const submitRegistration = async () => {
     if (selectedTreatmentCategories.length === 0) {
-      publicFormValidation.setCustomFieldError('treatmentCategories', treatmentCategoriesRequiredMessage)
+      publicFormValidation.setCustomFieldError('treatmentCategories', copy.specialties.required)
       setStepTransitionDirection('backward')
       setStep(2)
       return
@@ -205,17 +157,16 @@ export function ClinicRegistrationFunnel({
     setSubmitError(null)
 
     try {
-      await onSubmit(payload)
-      goToNextStep()
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Clinic registration failed'
-      const serverFieldError = serverFieldErrorMap[message]
-
-      if (serverFieldError) {
-        moveToStepWithFieldError(serverFieldError)
+      const failure = await onSubmit(payload)
+      if (failure === 'failed') {
+        setSubmitError(copy.failure)
+      } else if (failure) {
+        moveToStepWithFieldError(copy.fieldErrors[failure])
       } else {
-        setSubmitError(message)
+        goToNextStep()
       }
+    } catch {
+      setSubmitError(copy.failure)
     } finally {
       setIsSubmitting(false)
     }
@@ -237,17 +188,15 @@ export function ClinicRegistrationFunnel({
   if (treatmentCategories.length === 0) {
     return (
       <section
-        aria-label="Clinic registration"
+        aria-label={copy.title}
         className={cn('w-full text-card-foreground', className)}
         data-clinic-registration-funnel-ready={isHydrated ? 'true' : undefined}
         data-variant={variant}
-        lang="en"
+        lang={locale}
       >
         <div className="mx-auto w-full max-w-[720px]">
           <Alert variant="warning">
-            <AlertDescription>
-              Clinic registration is temporarily unavailable because focus areas are not configured.
-            </AlertDescription>
+            <AlertDescription>{copy.unavailable}</AlertDescription>
           </Alert>
         </div>
       </section>
@@ -256,15 +205,16 @@ export function ClinicRegistrationFunnel({
 
   return (
     <section
-      aria-label="Clinic registration"
+      aria-label={copy.title}
       className={cn('w-full text-card-foreground', className)}
       data-clinic-registration-funnel-ready={isHydrated ? 'true' : undefined}
       data-variant={variant}
-      lang="en"
+      lang={locale}
     >
       <SplitStepShell
         contextPanel={
           <StepContextPanel
+            copy={copy.context}
             key={step}
             reviewSummary={resolvedReviewSummary}
             selectedCategoryLabels={selectedCategoryLabels}
@@ -275,16 +225,16 @@ export function ClinicRegistrationFunnel({
         }
         progress={
           <StepIndicator
-            ariaLabel={`Clinic registration, Step ${step} of ${totalSteps}, ${visibleStepStatusLabels[step]}`}
-            className={
-              variant === 'landing'
-                ? '[&_[data-state=completed]]:bg-secondary [&_[data-state=current]]:bg-accent [&_[data-state=upcoming]]:bg-slate-200 [&>div:first-child]:text-secondary [&>div:first-child_span:last-child]:text-slate-600'
-                : undefined
-            }
+            ariaLabel={`${copy.title}, ${copy.stepLabels[step]}, ${copy.statusLabels[step]}`}
+            className={cn(
+              '[&>div:first-child_span]:whitespace-normal',
+              variant === 'landing' &&
+                '[&_[data-state=completed]]:bg-secondary [&_[data-state=current]]:bg-accent [&_[data-state=upcoming]]:bg-slate-200 [&>div:first-child]:text-secondary [&>div:first-child_span:last-child]:text-slate-600',
+            )}
             currentStep={step}
-            statusLabel={visibleStepStatusLabels[step]}
-            stepLabel={`Step ${step} of ${totalSteps}`}
-            totalSteps={totalSteps}
+            statusLabel={copy.statusLabels[step]}
+            stepLabel={copy.stepLabels[step]}
+            totalSteps={Object.keys(copy.stepLabels).length}
           />
         }
         variant={variant}
@@ -292,6 +242,8 @@ export function ClinicRegistrationFunnel({
         <StepContentFrame className={transitionClassName} key={step}>
           {step === 1 ? (
             <ClinicDetailsStep
+              copy={copy.details}
+              nextLabel={copy.continue}
               formValues={formValues}
               headingRef={stepHeadingRef}
               onNext={goToNextStep}
@@ -302,6 +254,9 @@ export function ClinicRegistrationFunnel({
           ) : null}
           {step === 2 ? (
             <TreatmentCategoriesStep
+              copy={copy.specialties}
+              backLabel={copy.back}
+              nextLabel={copy.continue}
               headingRef={stepHeadingRef}
               onBack={goToPreviousStep}
               onNext={goToNextStep}
@@ -314,6 +269,10 @@ export function ClinicRegistrationFunnel({
           ) : null}
           {step === 3 ? (
             <ContactStep
+              copy={copy.contact}
+              backLabel={copy.back}
+              pendingStatus={copy.pendingStatus}
+              submitLabel={isSubmitting ? copy.pending : copy.submit}
               formValues={formValues}
               headingRef={stepHeadingRef}
               isSubmitting={isSubmitting}
@@ -325,7 +284,14 @@ export function ClinicRegistrationFunnel({
               variant={variant}
             />
           ) : null}
-          {step === 4 ? <ReviewConfirmationStep headingRef={stepHeadingRef} variant={variant} /> : null}
+          {step === 4 ? (
+            <ReviewConfirmationStep
+              description={copy.confirmation}
+              headingRef={stepHeadingRef}
+              title={copy.statusLabels[4]}
+              variant={variant}
+            />
+          ) : null}
         </StepContentFrame>
       </SplitStepShell>
     </section>

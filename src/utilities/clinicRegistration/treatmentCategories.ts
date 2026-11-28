@@ -1,10 +1,13 @@
 import type { Payload } from 'payload'
 
 import type { ClinicRegistrationTreatmentCategory } from '@/components/templates/ClinicRegistrationFunnel'
+import { getTaxonomyDisplayName } from '@/features/listingComparison/taxonomy'
+import type { UiCopyLocale } from '@/i18n/requestLocale'
 import { resolveMedicalSpecialtyIconKey } from '@/utilities/medicalSpecialties/iconKeys'
 
 type MedicalSpecialtyRecord = {
   id: number
+  displayName?: unknown
   iconKey?: unknown
   name: string
   parentSpecialty?: unknown
@@ -39,14 +42,18 @@ function compareClinicRegistrationCategoryOrder(left: MedicalSpecialtyRecord, ri
 
 export async function getClinicRegistrationTreatmentCategories(
   payload: Payload,
+  locale: UiCopyLocale,
 ): Promise<ClinicRegistrationTreatmentCategory[]> {
   const specialtiesResult = await payload.find({
     collection: 'medical-specialties',
     depth: 0,
+    locale,
+    fallbackLocale: false,
     limit: 1000,
     overrideAccess: false,
     pagination: false,
     select: {
+      displayName: true,
       iconKey: true,
       id: true,
       name: true,
@@ -59,7 +66,7 @@ export async function getClinicRegistrationTreatmentCategories(
     .sort(compareClinicRegistrationCategoryOrder)
     .map((specialty) => ({
       id: String(specialty.id),
-      label: specialty.name,
+      label: getTaxonomyDisplayName(specialty, locale),
       iconKey: resolveMedicalSpecialtyIconKey(specialty.iconKey),
     }))
 }

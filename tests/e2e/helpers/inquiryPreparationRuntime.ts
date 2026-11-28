@@ -24,11 +24,13 @@ export function registerInquiryPreparationRuntime({
   artifacts,
   clinicCount = 1,
   templateKind = 'baseline',
+  setupTimeoutMs = 180_000,
 }: {
   origin: string
   artifacts: string
   clinicCount?: number
   templateKind?: 'empty' | 'baseline'
+  setupTimeoutMs?: number
 }) {
   const users = new Map<string, SyntheticUser>()
   const sessions = new Map<string, SyntheticUser>()
@@ -77,7 +79,7 @@ export function registerInquiryPreparationRuntime({
   }
 
   test.beforeAll(async () => {
-    test.setTimeout(180_000)
+    test.setTimeout(setupTimeoutMs)
     mkdirSync(artifacts, { recursive: true })
     writeFileSync(`${artifacts}/fixture-runtime.log`, '')
     loadLocalAndTestEnv()

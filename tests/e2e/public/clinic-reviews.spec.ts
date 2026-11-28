@@ -7,7 +7,13 @@ import type { createClinicReviewBrowserFixture } from '../../fixtures/createClin
 
 const origin = resolvePlaywrightBaseURL()
 const artifacts = 'output/playwright/clinic-reviews'
-const runtime = registerInquiryPreparationRuntime({ origin, artifacts, clinicCount: 0, templateKind: 'empty' })
+const runtime = registerInquiryPreparationRuntime({
+  origin,
+  artifacts,
+  clinicCount: 0,
+  templateKind: 'empty',
+  setupTimeoutMs: 360_000,
+})
 let fixture: Awaited<ReturnType<typeof createClinicReviewBrowserFixture>>
 
 test.beforeAll(async () => {

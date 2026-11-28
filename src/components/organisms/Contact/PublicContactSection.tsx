@@ -16,6 +16,7 @@ export type PublicContactSectionProps = {
   contactConsent?: string
   contactEyebrow?: string
   contactFormLabels?: ContactRequestFormLabels
+  contactHints?: Record<'compact' | 'full', string>
   contactFormSlug?: string
   contactMode?: 'compact' | 'full'
   description: string
@@ -33,6 +34,10 @@ export const PublicContactSection: React.FC<PublicContactSectionProps> = ({
   contactEyebrow = 'Contact',
   contactFormLabels,
   contactFormSlug,
+  contactHints = {
+    compact: 'Leave your email and we will follow up with the next step.',
+    full: 'Share your details and send the request directly through the form below.',
+  },
   contactMode = 'full',
   description,
   formContext,
@@ -61,18 +66,9 @@ export const PublicContactSection: React.FC<PublicContactSectionProps> = ({
           />
 
           <div className="rounded-[32px] border border-slate-200/80 bg-white/92 p-5 shadow-[0_30px_100px_-56px_rgba(15,23,42,0.28)] backdrop-blur-xl sm:p-6">
-            <div className="mb-5 flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
-              <div>
-                <p className="text-xs font-semibold tracking-[0.28em] text-slate-500 uppercase">{contactEyebrow}</p>
-                <p className="mt-2 text-sm leading-6 text-slate-600">
-                  {contactMode === 'compact'
-                    ? 'Leave your email and we will follow up with the next step.'
-                    : 'Share your details and send the request directly through the form below.'}
-                </p>
-              </div>
-              <span className="inline-flex shrink-0 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-medium text-sky-700">
-                {contactMode === 'compact' ? 'Quick contact' : 'Direct contact'}
-              </span>
+            <div className="mb-5">
+              <p className="text-xs font-semibold tracking-[0.28em] text-slate-500 uppercase">{contactEyebrow}</p>
+              <p className="mt-2 text-sm leading-6 text-slate-600">{contactHints[contactMode]}</p>
             </div>
 
             <ContactRequestForm

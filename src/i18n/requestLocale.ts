@@ -1,3 +1,4 @@
+import { contactLocaleFromPath } from '@/i18n/contactPath'
 import { listingComparisonLocaleFromPath } from '@/i18n/listingComparisonPath'
 import {
   AUTH_CONFIRMATION_PATH,
@@ -65,7 +66,11 @@ export function uiCopyLocaleFromPath(
   pathname: string,
   searchParams?: Pick<URLSearchParams, 'getAll'> | null,
 ): UiCopyLocale | null {
-  return listingComparisonLocaleFromPath(pathname) ?? patientAuthLocaleFromPath(pathname, searchParams)
+  return (
+    contactLocaleFromPath(pathname) ??
+    listingComparisonLocaleFromPath(pathname) ??
+    patientAuthLocaleFromPath(pathname, searchParams)
+  )
 }
 
 export function uiCopyLocaleFromHeaders(headers: Headers): UiCopyLocale {

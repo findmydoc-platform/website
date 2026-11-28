@@ -1,5 +1,6 @@
 export type ContactRequestFormLabels = {
   emailPlaceholder: string
+  emailInvalidMessage?: string
   emailRequiredMessage: string
   genericErrorMessage: string
   messagePlaceholder: string
@@ -30,6 +31,7 @@ export const DEFAULT_CONTACT_FORM_SLUG = 'public-contact'
 
 export const DEFAULT_CONTACT_FORM_LABELS: ContactRequestFormLabels = {
   emailPlaceholder: 'Email',
+  emailInvalidMessage: 'Enter a valid email address.',
   emailRequiredMessage: 'Email is required.',
   genericErrorMessage: 'Could not send your request right now.',
   messagePlaceholder: 'Message',

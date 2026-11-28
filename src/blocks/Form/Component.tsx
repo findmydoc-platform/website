@@ -1,98 +1,69 @@
 'use client'
 
-import type { Form as FormType } from '@payloadcms/plugin-form-builder/types'
 import { useRouter } from 'next/navigation'
-import React from 'react'
-import { useCallback, useState } from 'react'
-import type { SerializedEditorState } from '@payloadcms/richtext-lexical/lexical'
+import { useState, type ReactNode } from 'react'
+
+import { Form, type FormConfig, type FormValues } from '@/components/organisms/Form'
+import type { FormCopy } from '@/components/organisms/Form/copy'
+import { submitFormData } from '@/utilities/submitForm'
 
 import { fields } from './fields'
-import { Form, type FormConfig, type FormSubmitError, type FormValues } from '@/components/organisms/Form'
-import RichText from '@/blocks/_shared/RichText'
-import { FormSubmissionError, submitFormData } from '@/utilities/submitForm'
-import type { ContentLocaleContext } from '@/utilities/contentLocalization'
 
-export type FormBlockType = {
-  blockName?: string
-  blockType?: 'formBlock'
-  enableIntro: boolean
-  form: FormType
-  introContent?: SerializedEditorState
+type Props = {
+  id?: string
+  background?: 'primary' | 'secondary' | 'accent' | 'accent-2'
+  enableIntro?: boolean | null
+  form: FormConfig
+  introContent?: ReactNode
+  confirmationMessage?: ReactNode
+  copy: FormCopy
+  locale?: 'de' | 'en'
 }
 
-export const FormBlock: React.FC<
-  {
-    id?: string
-    background?: 'primary' | 'secondary' | 'accent' | 'accent-2'
-    contentLocale?: ContentLocaleContext
-  } & FormBlockType
-> = (props) => {
-  const { enableIntro, form, introContent, background, contentLocale, id } = props
+export function FormBlock({
+  enableIntro,
+  form,
+  introContent,
+  confirmationMessage,
+  background,
+  copy,
+  locale,
+  id,
+}: Props) {
   const router = useRouter()
-
-  const introContentNode = introContent ? (
-    <RichText contentLocale={contentLocale} data={introContent} enableGutter={false} />
-  ) : undefined
-  const confirmationMessageNode = form.confirmationMessage ? (
-    <RichText contentLocale={contentLocale} data={form.confirmationMessage} enableGutter={false} />
-  ) : undefined
-  const [isLoading, setIsLoading] = useState(false)
   const [hasSubmitted, setHasSubmitted] = useState(false)
-  const [error, setError] = useState<FormSubmitError | undefined>()
+  const [error, setError] = useState<string>()
 
-  const handleSubmit = useCallback(
-    async (values: FormValues) => {
-      const loadingTimer = setTimeout(() => {
-        setIsLoading(true)
-      }, 1000)
+  async function handleSubmit(values: FormValues) {
+    setError(undefined)
 
-      setError(undefined)
+    try {
+      await submitFormData({ formId: form.id, values })
+    } catch {
+      setError(copy.failure)
+      return
+    }
 
-      try {
-        await submitFormData({
-          formId: form.id,
-          values,
-        })
+    setHasSubmitted(true)
 
-        clearTimeout(loadingTimer)
-        setIsLoading(false)
-        setHasSubmitted(true)
-
-        if (form.confirmationType === 'redirect' && form.redirect?.url) {
-          router.push(form.redirect.url)
-        }
-      } catch (submissionError) {
-        clearTimeout(loadingTimer)
-        setIsLoading(false)
-
-        if (submissionError instanceof FormSubmissionError) {
-          setError({
-            message: submissionError.message,
-            status: String(submissionError.status),
-            lang: submissionError.lang,
-          })
-          return
-        }
-
-        console.warn(submissionError)
-        setError({ message: 'Something went wrong.', lang: 'en' })
-      }
-    },
-    [form.confirmationType, form.id, form.redirect?.url, router],
-  )
+    if (form.confirmationType === 'redirect' && form.redirect?.url) {
+      router.push(form.redirect.url)
+    }
+  }
 
   return (
     <Form
       id={id}
       background={background}
-      enableIntro={enableIntro}
-      form={form as unknown as FormConfig}
-      introContent={introContentNode}
-      confirmationMessage={confirmationMessageNode}
+      enableIntro={Boolean(enableIntro)}
+      form={form}
+      introContent={introContent}
+      confirmationMessage={confirmationMessage}
       fields={fields}
-      isLoading={isLoading}
       hasSubmitted={hasSubmitted}
       error={error}
+      copy={copy}
+      locale={locale}
       onSubmit={handleSubmit}
     />
   )

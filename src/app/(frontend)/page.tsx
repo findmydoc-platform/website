@@ -11,7 +11,7 @@ import { ScrollReveal } from '@/components/molecules/ScrollReveal'
 import { normalizePost } from '@/utilities/blog/normalizePost'
 import { getLandingMedicalSpecialtyCategories } from '@/utilities/landing/medicalSpecialtyCategories'
 import { getHomeLandingContent } from '@/utilities/landing/landingPageContent'
-import { FormBridgePublicContactSectionAdapter } from '@/features/contactRequests/FormBridgePublicContactSectionAdapter.client'
+import { LocalizedPublicContactSection } from '@/features/contactRequests/LocalizedPublicContactSection'
 import { readTemporaryLandingLocale } from '@/features/temporaryLandingMode'
 import { generateHoldingHomeMetadata, renderHoldingHome, type HoldingHomeSearchParams } from './_data/holdingHome'
 import { getPayload } from 'payload'
@@ -151,7 +151,8 @@ export default async function Home({
       ) : null}
 
       <ScrollReveal>
-        <FormBridgePublicContactSectionAdapter
+        <LocalizedPublicContactSection
+          locale="de"
           title={landingContent.contact.title}
           description={landingContent.contact.description}
         />

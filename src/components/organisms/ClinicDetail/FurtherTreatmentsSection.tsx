@@ -28,10 +28,10 @@ export function FurtherTreatmentsSection({
   return (
     <section className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <Heading as="h2" align="left" size="h4" className="text-secondary">
+        <Heading as="h2" align="left" size="content-section" variant="navy">
           Further Treatments
         </Heading>
-        <p className="text-sm text-secondary/60">{treatments.length} additional treatments</p>
+        <p className="text-sm text-supporting-foreground">{treatments.length} additional treatments</p>
       </div>
 
       {visibleRows.length > 0 ? (
@@ -43,7 +43,7 @@ export function FurtherTreatmentsSection({
             >
               <div className="min-w-0">
                 <p className="text-base font-semibold text-secondary">{treatment.name}</p>
-                <p className="mt-1 text-sm text-secondary/60">{treatment.category ?? 'General treatment'}</p>
+                <p className="mt-1 text-sm text-supporting-foreground">{treatment.category ?? 'General treatment'}</p>
                 <p className="mt-2 text-sm font-semibold text-primary">
                   {typeof treatment.priceFrom === 'number'
                     ? `From ${formatEur(treatment.priceFrom)}`
@@ -64,7 +64,8 @@ export function FurtherTreatmentsSection({
                   <UiLink
                     href={treatment.comparisonLink.href}
                     label={treatment.comparisonLink.label}
-                    className="inline-flex min-h-9 items-center justify-center text-center text-sm font-semibold text-primary underline-offset-4 hover:underline"
+                    variant="content"
+                    className="inline-flex min-h-9 items-center justify-center text-center text-sm font-semibold"
                   />
                 ) : null}
               </div>
@@ -79,7 +80,7 @@ export function FurtherTreatmentsSection({
             </span>
             <div className="space-y-1">
               <p className="text-sm font-semibold text-secondary">No additional treatments available yet.</p>
-              <p className="text-sm text-secondary/60">
+              <p className="text-sm text-supporting-foreground">
                 You can still submit a contact request and describe the treatment you are looking for.
               </p>
             </div>

@@ -40,3 +40,12 @@ export const Hero: Story = {
     headingAs: 'h1',
   },
 }
+
+export const Editorial: Story = {
+  args: {
+    title: 'Care options in Türkiye for patients travelling from abroad',
+    description: 'Compare clinic information, learn what a price includes, and contact the clinic with your questions.',
+    spacing: 'editorial',
+    tone: 'brand',
+  },
+}

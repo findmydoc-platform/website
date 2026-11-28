@@ -166,6 +166,11 @@
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
 
+  --spacing-intro-compact: 1rem;
+  --spacing-intro-editorial: 1.5rem;
+  --spacing-content-section: 2.5rem;
+  --spacing-content-section-wide: 3rem;
+
   --text-content-section: 1.6875rem;
   --text-content-section-wide: 2rem;
   --text-size-56: 3.5rem; /* 56px */

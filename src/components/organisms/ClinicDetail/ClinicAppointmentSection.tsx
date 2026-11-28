@@ -187,18 +187,9 @@ export function ClinicAppointmentSection({
       aria-labelledby={headingId}
     >
       <div className="space-y-6 lg:col-span-6 lg:space-y-8">
-        <div className="space-y-1">
-          <p className="text-2xl leading-[1.15] font-semibold text-primary sm:text-size-40">CONTACT THE</p>
-          <Heading
-            id={headingId}
-            as="h2"
-            align="left"
-            size="h2"
-            className="text-5xl leading-tight text-secondary sm:text-size-72 sm:leading-[1.1389]"
-          >
-            Clinic
-          </Heading>
-        </div>
+        <Heading id={headingId} as="h2" align="left" size="content-section" variant="navy">
+          <span className="text-primary">Contact</span> the clinic
+        </Heading>
 
         <form
           className="space-y-5"
@@ -555,7 +546,8 @@ export function ClinicAppointmentSection({
 
           <Button
             type="submit"
-            className="w-full rounded-full px-8 sm:w-auto"
+            shape="pill"
+            className="w-full px-8 sm:w-auto"
             disabled={formBlocked || isSubmitting || isSubmitted}
           >
             {isSubmitting

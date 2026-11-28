@@ -385,7 +385,7 @@ const Track: React.FC<TrackProps> = ({ className }) => {
                     )}
                     data-testid="landing-testimonials-active-accent"
                   />
-                  <p className="mb-8 text-base leading-7 font-medium text-muted-foreground transition-colors duration-300 sm:text-lg sm:leading-relaxed">
+                  <p className="mb-8 text-base leading-7 font-medium text-supporting-foreground transition-colors duration-300 sm:text-lg sm:leading-relaxed">
                     &quot;{testimonial.quote}&quot;
                   </p>
 
@@ -410,7 +410,7 @@ const Track: React.FC<TrackProps> = ({ className }) => {
                       >
                         {testimonial.author}
                       </Heading>
-                      <p className="text-sm font-medium text-muted-foreground transition-colors duration-300">
+                      <p className="text-sm font-medium text-supporting-foreground transition-colors duration-300">
                         {testimonial.role}
                       </p>
                     </div>

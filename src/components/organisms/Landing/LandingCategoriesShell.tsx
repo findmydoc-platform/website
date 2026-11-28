@@ -237,7 +237,8 @@ export function LandingCategoriesShell({
           appearance="secondary"
           hoverEffect="slideFill"
           size="lg"
-          className="rounded-full border border-black text-base font-bold text-black"
+          shape="pill"
+          className="text-base font-bold"
         />
       </div>
     </React.Fragment>

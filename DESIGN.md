@@ -181,6 +181,10 @@ spacing:
   legacy-136: 34rem
   grid-gutter-mobile: 1.5rem
   grid-gutter-desktop: 4rem
+  intro-compact: 1rem
+  intro-editorial: 1.5rem
+  content-section: 2.5rem
+  content-section-wide: 3rem
   page-inset-mobile: 1.5rem
   page-inset-sm: 2rem
   page-inset-lg: 3rem
@@ -189,6 +193,18 @@ spacing:
 components:
   supporting-text:
     textColor: '{colors.supporting-foreground}'
+  editorial-introduction:
+    textColor: '{colors.supporting-foreground}'
+  primary-pill:
+    backgroundColor: '{colors.primary}'
+    textColor: '{colors.primary-foreground}'
+    rounded: '{rounded.full}'
+  secondary-pill:
+    backgroundColor: '{colors.card}'
+    textColor: '{colors.primary}'
+    rounded: '{rounded.full}'
+  content-inline-link:
+    textColor: '{colors.primary}'
   content-section-title:
     textColor: '{colors.secondary}'
     typography: '{typography.content-section}'
@@ -463,7 +479,7 @@ Use DM Sans as the brand typeface for all public UI. It is chosen for a neutral 
 - **Landing-editorial type:** Prefer centered headings, larger display moments, short explanatory paragraphs, and generous line spacing. Landing copy should invite understanding, not enumerate every fact.
 - **Content-evidence type:** Prefer scan-friendly labels, compact headings, tabular or prominent numeric treatment for prices/ratings, and left alignment when comparing data. Long names must wrap cleanly instead of shrinking the whole layout.
 - **Content section titles:** Use left-aligned, bold navy type at 27px, increasing to 32px at the large breakpoint. Use 1.2 line height and tight tracking. Use this role for a section title such as the clinic comparison filter.
-- **Landing section introductions:** Pair a centered navy title with supporting foreground for its description on the light canvas. Use the existing editorial type sizes and section spacing.
+- **Landing section introductions:** Pair a centered navy title with supporting foreground for its description on the light canvas. Use the editorial type sizes. Set 16px between title and description on narrow screens and 24px from the small breakpoint. A short contact heading can emphasize an action word in primary within one semantic heading.
 - **H5 caps:** Uppercase, wide-tracked section labeling. Use sparingly; it is a cue, not body copy.
 - **Body text:** Use 16px/24px for default copy and 20px/32px for prominent explanatory text.
 - **Labels:** Use 12px bold labels for compact controls and validation contexts. Keep form labels readable and avoid muted foreground when the label is required.
@@ -482,6 +498,7 @@ Use a mobile-first vertical flow. Pages should start with the narrowest supporte
 - **Grid gutters:** Use 24px gutters on mobile/local grids and 64px gutters for wide 12-column editorial or detail layouts. Route-specific dense tools may reduce gutters only when scanability improves.
 - **8-point system:** The base spacing rhythm is 8px. Use 16px, 24px, 32px, 48px, 64px, 80px, and 128px for durable layout spacing. Use 4px and 2px only for micro-alignment, icon gaps, fine borders, or compact control internals.
 - **Spacing:** Use the spacing scale from YAML first. Prefer `sm`, `md`, `lg`, and `xl` for controls and cards; reserve `xxl` and above for page-level separation.
+- **Content section spacing:** Use 40px below repeated content sections, increasing to 48px at the large breakpoint. Use this spacing for peer sections in the clinic profile.
 - **Page insets:** Container padding follows the 8-point system: 24px mobile, 32px small screens, 48px large screens, 80px extra-large screens, and 128px 2xl screens.
 - **Density:** Operational screens such as comparison, filters, registration, and admin-adjacent views should be compact but readable. Avoid oversized marketing composition in repeated workflows.
 - **Responsive order:** Preserve the primary action above secondary metadata on mobile. Do not require horizontal scrolling unless the pattern is explicitly designed and touch affordances are obvious.
@@ -559,7 +576,7 @@ The default radius is `0.5rem` (8px). Component shape should feel precise and me
 
 - **Controls:** Buttons use `rounded-lg` by default. Inputs use `rounded-md`. Icon-only primary controls can use `rounded-full` when the hit area is symmetric.
 - **Cards:** Standard cards use `rounded-lg`. Avoid nested cards and avoid turning entire page sections into floating cards.
-- **Pills:** Use `rounded-full` for badges, tags, and compact status chips only.
+- **Pills:** Use `rounded-full` for prominent primary or secondary actions, badges, tags, and compact status chips. Use the shared pill shape for buttons and button-style links.
 - **Large radius:** `xxl` and above are reserved for feature panels, media masks, or special landing sections. Do not use them for dense operational UI.
 - **Landing-editorial radius:** Large media cards, pricing panels, contact panels, search shells, and testimonial cards may use 24-40px radii (`xxl` through `xxxxl`). Pair the larger radius with generous padding and low density.
 - **Content-evidence radius:** Filters, listing cards, form controls, dropdowns, and compact comparison surfaces default to 8-16px (`md` through `xl`). Clinic-detail hero media, treatment strips, and evidence snapshots may use 20-32px when the section is spacious enough.
@@ -575,7 +592,7 @@ Components should consume the YAML tokens through Tailwind theme variables and s
 - **Inputs:** Inputs use white background, foreground text, input border, 40px height, 16px mobile text, and a visible primary focus ring.
 - **Cards:** Cards use white background, foreground text, border, `rounded-lg`, `shadow-xs`, and 24px padding by default.
 - **Popovers and dropdowns:** Use white popover surfaces, foreground text, `rounded-md`, subtle border, and compact spacing.
-- **Links:** Default links use primary and shift to primary-hover on hover, active, or current-page state. Accent-colored text is contextual only and must be checked against its actual background.
+- **Links:** Readable inline links on light content surfaces use primary with an underline, primary-hover on hover, and a visible focus outline. Treatment comparison links use this rule. Use the appropriate contrast variant on dark surfaces. Mint is a brand accent.
 - **VerificationBadge:** Preserve the bronze/silver/gold token mapping exactly; generated mockups must not redefine badge shapes, colors, or icon treatment.
 - **Trust surfaces:** Verification, accreditation, reviews, prices, location, treatment availability, and contact actions must be visibly labeled and easy to compare. Prefer explicit empty or unavailable states over hiding missing information.
 - **Transparency cues:** Use supporting metadata, captions, timestamps, source labels, and explanatory helper text when a user could reasonably ask "why should I trust this?" or "what happens next?" Do not bury these cues behind hover-only interactions.

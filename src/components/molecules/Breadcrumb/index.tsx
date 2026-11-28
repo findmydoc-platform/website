@@ -44,7 +44,7 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
   }
 
   const variantClasses = {
-    default: 'text-muted-foreground',
+    default: 'text-supporting-foreground',
     light: 'text-white',
   }
 

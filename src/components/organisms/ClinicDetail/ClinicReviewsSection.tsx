@@ -429,10 +429,10 @@ export function ClinicReviewsSection({ ratingValue, reviews }: ClinicReviewsSect
       <Card className="rounded-3xl border-primary/15 bg-background shadow-brand-soft">
         <CardContent className="space-y-6 p-5 sm:p-8 lg:p-10">
           <div className="space-y-2">
-            <Heading id={headingId} as="h2" align="left" size="h4" className="text-secondary">
+            <Heading id={headingId} as="h2" align="left" size="content-section" variant="navy">
               Patient Reviews
             </Heading>
-            <p id={progressId} className="max-w-3xl text-sm text-secondary/60">
+            <p id={progressId} className="max-w-3xl text-sm text-supporting-foreground">
               {progressText ?? `Showing ${formatVerifiedReviewCount(reviews.totalCount)}.`}
             </p>
             <p className="sr-only" aria-live="polite" aria-atomic="true">

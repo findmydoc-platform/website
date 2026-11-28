@@ -116,7 +116,7 @@ export function ListingCard({
         </div>
 
         <div className={cn('flex shrink-0 flex-col gap-3 md:w-36 md:items-end', cornerAction ? 'md:pt-14' : 'md:pt-1')}>
-          <Button asChild className="h-12 w-full text-sm font-semibold">
+          <Button asChild shape="pill" className="h-12 w-full text-sm font-semibold">
             <a href={data.actions.details.href} aria-label={data.actions.details.ariaLabel}>
               {data.actions.details.label}
             </a>

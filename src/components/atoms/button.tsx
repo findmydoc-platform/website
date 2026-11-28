@@ -35,6 +35,9 @@ const buttonVariants = cva(
         outline: 'border border-border bg-background hover:bg-card hover:text-secondary',
         brandOutlineThick: 'border-2 border-primary bg-background text-primary hover:bg-primary/5',
       },
+      shape: {
+        pill: 'rounded-full',
+      },
       hoverEffect: {
         default: '',
         wave: '',
@@ -44,6 +47,11 @@ const buttonVariants = cva(
     },
     // Note: `before:content-[...]` is required for Tailwind pseudo-elements.
     compoundVariants: [
+      {
+        variant: ['default', 'primary'],
+        shape: 'pill',
+        className: 'hover:bg-primary-hover',
+      },
       {
         variant: 'primary',
         hoverEffect: 'wave',
@@ -104,11 +112,11 @@ export interface ButtonProps
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ asChild = false, className, size, variant, hoverEffect, type = 'button', ...props }, ref) => {
+  ({ asChild = false, className, size, variant, shape, hoverEffect, type = 'button', ...props }, ref) => {
     const Comp = asChild ? Slot : 'button'
     return (
       <Comp
-        className={cn(buttonVariants({ size, variant, hoverEffect, className }))}
+        className={cn(buttonVariants({ size, variant, shape, hoverEffect, className }))}
         ref={ref}
         type={type}
         {...props}

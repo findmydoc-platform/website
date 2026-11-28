@@ -170,7 +170,7 @@ export function ClinicLocationSection({
     <Dialog open={isMapOverlayOpen} onOpenChange={setIsMapOverlayOpen}>
       <section className="space-y-4" aria-label="Clinic Location">
         <div className="space-y-1">
-          <Heading as="h2" align="left" size="h4" className="text-secondary">
+          <Heading as="h2" align="left" size="content-section" variant="navy">
             Clinic Location
           </Heading>
         </div>

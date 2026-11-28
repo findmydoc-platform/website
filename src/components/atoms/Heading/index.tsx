@@ -24,6 +24,7 @@ const headingVariants = cva('font-bold normal-case tracking-tight', {
       default: 'text-foreground',
       muted: 'text-muted-foreground',
       primary: 'text-primary',
+      navy: 'text-secondary',
       white: 'text-white',
     },
   },

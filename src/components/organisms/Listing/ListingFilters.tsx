@@ -168,7 +168,7 @@ const Root = ({
       }}
     >
       <aside className={cn('min-w-0 space-y-8 rounded-2xl bg-background p-5 shadow-sm sm:p-6', className)}>
-        <Heading as="h2" align="left" size="content-section" className="text-secondary">
+        <Heading as="h2" align="left" size="content-section" variant="navy">
           Filter
         </Heading>
         {children}
@@ -209,7 +209,7 @@ const Price = ({ className, min, max, step }: { className?: string; min?: number
         thumbLabels={['Minimum price', 'Maximum price']}
         getThumbValueText={(value) => `${value.toLocaleString('en-US')} euros`}
       />
-      <div className="flex items-center justify-between text-sm font-medium text-muted-foreground">
+      <div className="flex items-center justify-between text-sm font-medium text-supporting-foreground">
         <span>{displayedRange[0].toLocaleString('en-US')}€</span>
         <span>{displayedRange[1].toLocaleString('en-US')}€</span>
       </div>

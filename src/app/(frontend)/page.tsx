@@ -81,7 +81,6 @@ export default async function Home({
 
       <ScrollReveal>
         <LandingTestimonials
-          headingTone="brand"
           testimonials={landingContent.testimonials}
           title={landingContent.testimonialsIntro.title}
           description={landingContent.testimonialsIntro.description}

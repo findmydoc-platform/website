@@ -3,8 +3,12 @@ import { cva, type VariantProps } from 'class-variance-authority'
 
 import { cn } from '@/utilities/ui'
 
-const sectionHeadingVariants = cva('flex w-full flex-col gap-6', {
+const sectionHeadingVariants = cva('flex w-full flex-col', {
   variants: {
+    spacing: {
+      default: 'gap-intro-editorial',
+      editorial: 'gap-intro-compact sm:gap-intro-editorial',
+    },
     align: {
       center: 'text-center',
       left: 'text-left',
@@ -20,6 +24,7 @@ const sectionHeadingVariants = cva('flex w-full flex-col gap-6', {
     },
   },
   defaultVariants: {
+    spacing: 'default',
     align: 'center',
     size: 'section',
     tone: 'default',
@@ -81,13 +86,14 @@ export const SectionHeading: React.FC<SectionHeadingProps> = ({
   titleClassName,
   descriptionClassName,
   align,
+  spacing,
   size,
   tone,
 }) => {
   const HeadingTag = headingAs ?? (size === 'hero' ? 'h1' : 'h2')
 
   return (
-    <header className={cn(sectionHeadingVariants({ align, size, tone }), className)}>
+    <header className={cn(sectionHeadingVariants({ align, size, spacing, tone }), className)}>
       <HeadingTag id={titleId} className={cn(titleVariants({ size, tone }), titleClassName)}>
         {title}
       </HeadingTag>

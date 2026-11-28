@@ -1,6 +1,3 @@
-import '@fontsource/dm-sans/400.css'
-import '@fontsource/dm-sans/700.css'
-import './storybook.css'
 import '../src/app/(frontend)/globals.css'
 
 import type { Preview } from '@storybook/react'

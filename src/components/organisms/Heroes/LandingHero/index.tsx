@@ -154,6 +154,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
           size="hero"
           align="center"
           headingAs="h1"
+          titleClassName="font-semibold"
         />
 
         {isHomepage ? (

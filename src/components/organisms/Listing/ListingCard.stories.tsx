@@ -4,7 +4,7 @@ import { expect, within } from 'storybook/test'
 import { ListingCard } from '@/components/organisms/Listing'
 import { FavoriteClinicButton } from '@/features/favorites/FavoriteClinicButton'
 import { clinicMedia, makeClinic } from '@/stories/fixtures/listings'
-import { withViewportStory } from '../utils/viewportMatrix'
+import { withViewportStory } from '@/stories/utils/viewportMatrix'
 
 const meta: Meta<typeof ListingCard> = {
   title: 'Domain/Listing/Organisms/ListingCard',
@@ -104,7 +104,7 @@ export const AllVariants: Story = {
 
 export const LayoutStressTest: Story = {
   render: () => (
-    <div className="space-y-4">
+    <div className="w-[32rem] max-w-[calc(100vw-2rem)]">
       <ListingCard
         data={{
           ...baseClinic,
@@ -130,7 +130,13 @@ export const LayoutStressTest: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
-    await expect(canvas.getByText(/Istanbul Universitesi Tip Fakultesi/i)).toBeInTheDocument()
+    const heading = canvas.getByRole('heading', { level: 3 })
+    await expect(heading).toBeVisible()
+    const titleFits = () => {
+      const { width } = heading.getBoundingClientRect()
+      return width > 0 && heading.scrollWidth <= heading.clientWidth + 1
+    }
+    await expect(titleFits()).toBe(true)
     await expect(canvas.getByRole('link', { name: 'Details' })).toHaveAttribute('href')
     await expect(canvas.getByRole('link', { name: 'Compare' })).toHaveAttribute('href')
   },

@@ -54,9 +54,9 @@ type ClinicAppointmentSectionProps = {
 }
 
 const inputClassName =
-  'h-14 w-full rounded-[28px] border border-primary/45 bg-background px-4 text-sm text-secondary outline-hidden transition-colors placeholder:text-secondary/45 focus:border-primary focus:ring-2 focus:ring-primary/20 read-only:cursor-not-allowed read-only:border-border read-only:bg-muted read-only:text-secondary/75 aria-invalid:border-destructive/70 aria-invalid:focus:ring-destructive/15'
+  'h-14 w-full rounded-[28px] border border-input bg-background px-4 text-base text-secondary outline-hidden transition-colors md:text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 read-only:cursor-not-allowed read-only:border-border read-only:bg-muted read-only:text-secondary/75 aria-invalid:border-destructive/70 aria-invalid:focus:ring-destructive/15'
 const textAreaClassName =
-  'min-h-32 w-full rounded-[24px] border border-primary/45 bg-background px-4 py-3 text-sm text-secondary outline-hidden transition-colors placeholder:text-secondary/45 focus:border-primary focus:ring-2 focus:ring-primary/20 aria-invalid:border-destructive/70 aria-invalid:focus:ring-destructive/15'
+  'min-h-32 w-full rounded-[24px] border border-input bg-background px-4 py-3 text-base text-secondary outline-hidden transition-colors md:text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 aria-invalid:border-destructive/70 aria-invalid:focus:ring-destructive/15'
 
 const isAutofilled = (element: Element): boolean => {
   for (const selector of [':autofill', ':-webkit-autofill']) {
@@ -187,18 +187,9 @@ export function ClinicAppointmentSection({
       aria-labelledby={headingId}
     >
       <div className="space-y-6 lg:col-span-6 lg:space-y-8">
-        <div className="space-y-1">
-          <p className="text-2xl leading-[1.15] font-semibold text-primary sm:text-size-40">CONTACT THE</p>
-          <Heading
-            id={headingId}
-            as="h2"
-            align="left"
-            size="h2"
-            className="text-5xl leading-tight text-secondary sm:text-size-72 sm:leading-[1.1389]"
-          >
-            Clinic
-          </Heading>
-        </div>
+        <Heading id={headingId} as="h2" align="left" size="content-section" variant="navy">
+          <span className="text-primary">Contact</span> the clinic
+        </Heading>
 
         <form
           className="space-y-5"
@@ -555,7 +546,8 @@ export function ClinicAppointmentSection({
 
           <Button
             type="submit"
-            className="w-full rounded-full px-8 sm:w-auto"
+            shape="pill"
+            className="min-h-11 w-full px-8 sm:w-auto"
             disabled={formBlocked || isSubmitting || isSubmitted}
           >
             {isSubmitting

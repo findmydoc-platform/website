@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 
 import React from 'react'
-import '@fontsource/dm-sans'
 
 import { resolveCmsDocumentLocale } from './_data/documentLocale'
 import { AdminBarClientAdapter } from '@/app/(frontend)/AdminBarClientAdapter.client'

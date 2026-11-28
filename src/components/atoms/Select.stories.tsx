@@ -59,6 +59,10 @@ export const WithoutDefaultValue: Story = {
       </SelectContent>
     </Select>
   ),
+}
+
+export const SelectFromPlaceholder: Story = {
+  ...WithoutDefaultValue,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     const body = within(canvasElement.ownerDocument.body)

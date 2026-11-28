@@ -29,6 +29,8 @@ export const LandingTestimonials: React.FC<LandingTestimonialsProps> = ({
           description={description}
           size="section"
           align="center"
+          spacing="editorial"
+          tone="brand"
         />
 
         <LandingTestimonialsCarouselClient testimonials={testimonials} labelledById="landing-testimonials" />

@@ -127,3 +127,12 @@ export const Loading: Story = {
     disabled: true,
   },
 }
+
+export const PrimaryPill: Story = {
+  args: {
+    variant: 'primary',
+    shape: 'pill',
+    size: 'lg',
+    children: 'View clinic details',
+  },
+}

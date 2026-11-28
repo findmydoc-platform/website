@@ -50,6 +50,8 @@ export function LandingCategories({
             description={description}
             size="section"
             align="center"
+            spacing="editorial"
+            tone="brand"
             titleClassName="font-semibold"
           />
         </header>

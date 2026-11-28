@@ -1,4 +1,7 @@
 @import 'tailwindcss';
+@import '@fontsource/dm-sans/400.css';
+@import '@fontsource/dm-sans/600.css';
+@import '@fontsource/dm-sans/700.css';
 
 @source '../../../../src/**/*.{ts,tsx,js,jsx,mdx}';
 @source '../../../../tests/**/*.{ts,tsx,js,jsx,mdx}';
@@ -27,6 +30,7 @@
 
   --muted: #f8f9fa;
   --muted-foreground: #999999;
+  --supporting-foreground: #646565;
 
   --accent: #42e2b7;
   --accent-foreground: #07004c;
@@ -38,7 +42,7 @@
   --popover-foreground: #333333;
 
   --border: #e2e8f0;
-  --input: #e2e8f0;
+  --input: #76849a;
   --ring: #006de5;
 
   /* Public site surfaces */
@@ -47,7 +51,7 @@
   --site-section: var(--muted);
   --site-divider: var(--border);
 
-  --destructive: #ef4444;
+  --destructive: #b91c1c;
   --destructive-foreground: #ffffff;
 
   --radius: 0.5rem;
@@ -91,7 +95,7 @@
   --backdrop: 0 0% 0%;
 
   /* Verification badge */
-  --verification-bronze: #cd7f32;
+  --verification-bronze: #8b5e34;
   --verification-bronze-foreground: #ffffff;
   --verification-silver: #c4c4c4;
   --verification-silver-foreground: #111827;
@@ -127,6 +131,7 @@
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+  --color-supporting-foreground: var(--supporting-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
 
@@ -164,6 +169,13 @@
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
 
+  --spacing-intro-compact: 1rem;
+  --spacing-intro-editorial: 1.5rem;
+  --spacing-content-section: 2.5rem;
+  --spacing-content-section-wide: 3rem;
+
+  --text-content-section: 1.6875rem;
+  --text-content-section-wide: 2rem;
   --text-size-56: 3.5rem; /* 56px */
   --text-size-56--line-height: 1.14; /* 64px */
   --text-size-40: 2.5rem; /* 40px */
@@ -176,6 +188,7 @@
   /* Radius scale with semantic naming (--radius = medium/base) */
   --radius-xs: calc(var(--radius) * 0.25); /* 0.125rem = 2px */
   --radius-sm: calc(var(--radius) * 0.5); /* 0.25rem  = 4px */
+  --radius-md: var(--radius);
   --radius-base: var(--radius); /* 0.5rem   = 8px (medium/default) */
   --radius-lg: calc(var(--radius) * 1.5); /* 0.75rem  = 12px */
   --radius-xl: calc(var(--radius) * 2); /* 1rem     = 16px */
@@ -308,8 +321,27 @@
     display: flex;
     flex-direction: column;
   }
+  :root,
+  [data-link-tone='default'] {
+    --link-foreground: var(--primary);
+    --link-interaction: var(--primary-hover);
+    --link-focus: var(--ring);
+  }
+
+  [data-link-tone='accent'] {
+    --link-foreground: var(--accent-foreground);
+    --link-interaction: var(--accent-foreground);
+    --link-focus: var(--accent-foreground);
+  }
+
+  [data-link-tone='inverse'] {
+    --link-foreground: var(--secondary-foreground);
+    --link-interaction: var(--accent);
+    --link-focus: var(--secondary-foreground);
+  }
+
   a {
-    color: var(--color-accent);
+    color: var(--link-foreground);
     transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     transition-duration: 150ms;
@@ -317,11 +349,21 @@
 
   a:hover,
   a:active {
-    color: var(--color-primary);
+    color: var(--link-interaction);
   }
 
   a[aria-current='page'] {
-    color: var(--color-primary);
+    color: var(--link-foreground);
+  }
+
+  a[href]:where(:not([class])) {
+    text-decoration: underline;
+    text-underline-offset: 0.25em;
+  }
+
+  a[href]:where(:not([class])):focus-visible {
+    outline: 2px solid var(--link-focus);
+    outline-offset: 2px;
   }
 }
 
@@ -330,6 +372,23 @@
   Custom utility classes and layout helpers.
 */
 @layer utilities {
+  .text-link {
+    color: var(--link-foreground);
+    text-decoration: underline;
+    text-underline-offset: 0.25em;
+
+    &:hover,
+    &:active {
+      color: var(--link-interaction);
+      text-decoration-thickness: 2px;
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--link-focus);
+      outline-offset: 2px;
+    }
+  }
+
   html {
     opacity: initial;
   }

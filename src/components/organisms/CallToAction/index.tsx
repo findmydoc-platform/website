@@ -28,7 +28,7 @@ export const CallToAction: React.FC<CallToActionProps> = ({ links, richText, cla
 
   return (
     <Container className={className}>
-      <div className={cn(cardClassName)}>
+      <div className={cn(cardClassName)} data-link-tone={variant === 'spotlight' ? 'accent' : 'default'}>
         <div className={cn(contentClassName)}>
           {variant === 'spotlight' ? <div className="max-w-2xl">{richText}</div> : richText && <div>{richText}</div>}
           <div className={cn(linksWrapperClassName)}>

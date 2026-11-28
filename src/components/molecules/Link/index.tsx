@@ -14,7 +14,8 @@ export type UiLinkProps = {
   newTab?: boolean
   prefetch?: boolean
   size?: ButtonProps['size'] | null
-  variant?: 'default' | 'footer'
+  shape?: ButtonProps['shape']
+  variant?: 'default' | 'content' | 'footer'
 }
 
 export const UiLink: React.FC<UiLinkProps> = (props) => {
@@ -28,6 +29,7 @@ export const UiLink: React.FC<UiLinkProps> = (props) => {
     newTab,
     prefetch,
     size: sizeFromProps,
+    shape,
     variant = 'default',
   } = props
 
@@ -36,11 +38,12 @@ export const UiLink: React.FC<UiLinkProps> = (props) => {
   const size = appearance === 'link' ? 'default' : sizeFromProps
   const newTabProps = newTab ? { rel: 'noopener noreferrer', target: '_blank' } : {}
 
-  const variantClasses = variant === 'footer' ? 'text-normal text-muted-foreground hover:text-foreground' : ''
+  const variantClasses = variant === 'footer' ? 'text-normal text-supporting-foreground hover:text-foreground' : ''
+  const inlineClasses = variant === 'content' ? 'text-link' : variantClasses
 
   if (appearance === 'inline') {
     return (
-      <Link className={cn(className, variantClasses)} href={href} prefetch={prefetch} {...newTabProps}>
+      <Link className={cn(className, inlineClasses)} href={href} prefetch={prefetch} {...newTabProps}>
         {label && label}
         {children && children}
       </Link>
@@ -48,7 +51,7 @@ export const UiLink: React.FC<UiLinkProps> = (props) => {
   }
 
   return (
-    <Button asChild className={className} hoverEffect={hoverEffect} size={size} variant={appearance}>
+    <Button asChild className={className} hoverEffect={hoverEffect} size={size} shape={shape} variant={appearance}>
       <Link className={cn(className, variantClasses)} href={href} prefetch={prefetch} {...newTabProps}>
         {label && label}
         {children && children}

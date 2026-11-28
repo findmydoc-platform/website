@@ -12,6 +12,7 @@ colors:
   secondary-foreground: '#FFFFFF'
   muted: '#F8F9FA'
   muted-foreground: '#999999'
+  supporting-foreground: '#646565'
   accent: '#42E2B7'
   accent-foreground: '#07004C'
   card: '#FFFFFF'
@@ -19,7 +20,7 @@ colors:
   popover: '#FFFFFF'
   popover-foreground: '#333333'
   border: '#E2E8F0'
-  input: '#E2E8F0'
+  input: '#76849A'
   ring: '#006DE5'
   site-canvas: '{colors.muted}'
   site-chrome: '{colors.muted}'
@@ -53,6 +54,24 @@ colors:
   sidebar-border: '#E5E5E5'
   sidebar-ring: '#A3A3A3'
 typography:
+  landing-hero-title:
+    fontFamily: 'DM Sans, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif'
+    fontSize: 2.25rem
+    fontWeight: 600
+    lineHeight: 45px
+    letterSpacing: -0.025em
+  content-section:
+    fontFamily: 'DM Sans, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif'
+    fontSize: 1.6875rem
+    fontWeight: 700
+    lineHeight: 32.4px
+    letterSpacing: -0.025em
+  content-section-wide:
+    fontFamily: 'DM Sans, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif'
+    fontSize: 2rem
+    fontWeight: 700
+    lineHeight: 38.4px
+    letterSpacing: -0.025em
   h1:
     fontFamily: 'DM Sans, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif'
     fontSize: 3.125rem
@@ -168,12 +187,44 @@ spacing:
   legacy-136: 34rem
   grid-gutter-mobile: 1.5rem
   grid-gutter-desktop: 4rem
+  intro-compact: 1rem
+  intro-editorial: 1.5rem
+  content-section: 2.5rem
+  content-section-wide: 3rem
   page-inset-mobile: 1.5rem
   page-inset-sm: 2rem
   page-inset-lg: 3rem
   page-inset-xl: 5rem
   page-inset-xxl: 8rem
 components:
+  supporting-text:
+    textColor: '{colors.supporting-foreground}'
+  editorial-introduction:
+    textColor: '{colors.supporting-foreground}'
+  primary-pill:
+    backgroundColor: '{colors.primary}'
+    textColor: '{colors.primary-foreground}'
+    rounded: '{rounded.full}'
+  secondary-pill:
+    backgroundColor: '{colors.card}'
+    textColor: '{colors.primary}'
+    rounded: '{rounded.full}'
+  content-inline-link:
+    textColor: '{colors.primary}'
+  breadcrumb-link:
+    textColor: '{colors.supporting-foreground}'
+  breadcrumb-current:
+    textColor: '{colors.foreground}'
+  landing-hero-heading:
+    textColor: '{colors.foreground}'
+    typography: '{typography.landing-hero-title}'
+  accent-inline-link:
+    textColor: '{colors.accent-foreground}'
+  inverse-inline-link:
+    textColor: '{colors.secondary-foreground}'
+  content-section-title:
+    textColor: '{colors.secondary}'
+    typography: '{typography.content-section}'
   page:
     backgroundColor: '{colors.background}'
     textColor: '{colors.foreground}'
@@ -423,9 +474,11 @@ The palette is built from a clear medical blue, a deep navy anchor, a mint accen
 - **Muted (#F8F9FA):** The public site canvas, chrome, and structural section background. This keeps clinical content open without pure-white page glare.
 - **Card and popover (#FFFFFF):** Use white for repeated cards, dialogs, floating panels, popovers, and form surfaces on muted backgrounds.
 - **Foreground (#333333):** Default body text. Keep long-form content on foreground or secondary, not muted foreground.
-- **Muted foreground (#999999):** Secondary metadata only. Do not use it for required form labels, prices, clinic names, or key comparison data.
-- **Border/input (#E2E8F0):** Subtle separation for cards, inputs, dividers, and low-emphasis panels.
-- **Destructive (#B91C1C):** Error and destructive action color only. This is intentionally darker than Tailwind red-500 so white text passes WCAG AA.
+- **Supporting foreground (#646565):** Use for explanatory copy on the light site canvas, secondary facts such as a result count on white, placeholders, and inactive category labels. Keep the numbers in the count in foreground. This gray corresponds to 75% foreground mixed with 25% site canvas in the clinic profile.
+- **Muted foreground (#999999):** Reserve for low-emphasis decoration on light surfaces. Use supporting foreground for readable small text.
+- **Border (#E2E8F0):** Subtle separation for cards, dividers, and low-emphasis panels.
+- **Input (#76849A):** Field boundaries on light surfaces. This color reaches 3.79:1 against white and 3.60:1 against the site canvas.
+- **Destructive (#B91C1C):** Error and destructive action color only. White text on this color has a 6.47:1 contrast ratio. The public site and Storybook use the same token for destructive controls and form validation.
 - **Accent 2 (#E0E0E0):** Neutral secondary accent surface for legacy or low-emphasis UI states. Use it only when muted is too quiet and mint would imply action or success.
 - **Status surfaces:** Success, warning, and error are soft surfaces for inline status panels, validation summaries, and contextual chips. Pair them with secondary or foreground text; do not use them as the only status cue.
 - **Backdrop (#000000):** Scrim base for dialogs, drawers, overlays, and image-lightbox states. Runtime opacity controls intensity; the token stays black for predictable contrast.
@@ -438,11 +491,14 @@ The palette is built from a clear medical blue, a deep navy anchor, a mint accen
 
 ## Typography
 
-Use DM Sans as the brand typeface for all public UI. It is chosen for a neutral medical platform voice: human enough for patient decisions, precise enough for comparison workflows, and calm enough for high-stakes healthcare context. System sans fallbacks are acceptable only as runtime fallback, not as a separate design direction. Use the Heading atom for headings in implementation.
+Use DM Sans as the brand typeface for all public UI. The public site and Storybook load the same regular (400), semibold (600), and bold (700) files through the shared frontend stylesheet. It is chosen for a neutral medical platform voice: human enough for patient decisions, precise enough for comparison workflows, and calm enough for high-stakes healthcare context. System sans fallbacks are acceptable only as runtime fallback, not as a separate design direction. Use the Heading atom for headings in implementation.
 
 - **H1-H4:** Bold, compact, centered by default in the base layer. Override alignment only when the layout needs scanning, comparison, or form completion.
+- **Landing hero weight:** Use 600 for the large, multi-line titles on the homepage and clinic partner page. The centered landing hero scales from 36px on mobile to 48px at the small breakpoint and 72px at the medium breakpoint. Use 700 for compact, emphatic titles such as the clinic comparison heading.
 - **Landing-editorial type:** Prefer centered headings, larger display moments, short explanatory paragraphs, and generous line spacing. Landing copy should invite understanding, not enumerate every fact.
 - **Content-evidence type:** Prefer scan-friendly labels, compact headings, tabular or prominent numeric treatment for prices/ratings, and left alignment when comparing data. Long names must wrap cleanly instead of shrinking the whole layout.
+- **Content section titles:** Use left-aligned, bold navy type at 27px, increasing to 32px at the large breakpoint. Use 1.2 line height and tight tracking. Use this role for a section title such as the clinic comparison filter.
+- **Landing section introductions:** Pair a centered navy title with supporting foreground for its description on the light canvas. Use the editorial type sizes. Set 16px between title and description on narrow screens and 24px from the small breakpoint. A short contact heading can emphasize an action word in primary within one semantic heading.
 - **H5 caps:** Uppercase, wide-tracked section labeling. Use sparingly; it is a cue, not body copy.
 - **Body text:** Use 16px/24px for default copy and 20px/32px for prominent explanatory text.
 - **Labels:** Use 12px bold labels for compact controls and validation contexts. Keep form labels readable and avoid muted foreground when the label is required.
@@ -461,6 +517,7 @@ Use a mobile-first vertical flow. Pages should start with the narrowest supporte
 - **Grid gutters:** Use 24px gutters on mobile/local grids and 64px gutters for wide 12-column editorial or detail layouts. Route-specific dense tools may reduce gutters only when scanability improves.
 - **8-point system:** The base spacing rhythm is 8px. Use 16px, 24px, 32px, 48px, 64px, 80px, and 128px for durable layout spacing. Use 4px and 2px only for micro-alignment, icon gaps, fine borders, or compact control internals.
 - **Spacing:** Use the spacing scale from YAML first. Prefer `sm`, `md`, `lg`, and `xl` for controls and cards; reserve `xxl` and above for page-level separation.
+- **Content section spacing:** Use 40px below repeated content sections, increasing to 48px at the large breakpoint. Use this spacing for peer sections in the clinic profile.
 - **Page insets:** Container padding follows the 8-point system: 24px mobile, 32px small screens, 48px large screens, 80px extra-large screens, and 128px 2xl screens.
 - **Density:** Operational screens such as comparison, filters, registration, and admin-adjacent views should be compact but readable. Avoid oversized marketing composition in repeated workflows.
 - **Responsive order:** Preserve the primary action above secondary metadata on mobile. Do not require horizontal scrolling unless the pattern is explicitly designed and touch affordances are obvious.
@@ -522,7 +579,7 @@ Google DESIGN.md does not export shadow or border tokens in the current `css-tai
 
 | Token                    | Value                                     | Use                                                             |
 | ------------------------ | ----------------------------------------- | --------------------------------------------------------------- |
-| `border-default`         | `1px solid #E2E8F0`                       | Cards, inputs, dividers, low-emphasis panels                    |
+| `border-default`         | `1px solid #E2E8F0`                       | Cards, dividers, low-emphasis panels                            |
 | `shadow-xs`              | `0px 1px 2px 0px rgb(0 0 0 / 0.05)`       | Default card lift with a visible border                         |
 | `shadow-brand-soft`      | `0px 4px 21px 1px rgb(48 123 196 / 0.10)` | Brand-matched cards/images and Figma-derived marketing surfaces |
 | `shadow-elevated-strong` | `0px 4px 4px 0px rgb(0 0 0 / 0.25)`       | Intentionally raised overlays or dense content separation       |
@@ -538,7 +595,7 @@ The default radius is `0.5rem` (8px). Component shape should feel precise and me
 
 - **Controls:** Buttons use `rounded-lg` by default. Inputs use `rounded-md`. Icon-only primary controls can use `rounded-full` when the hit area is symmetric.
 - **Cards:** Standard cards use `rounded-lg`. Avoid nested cards and avoid turning entire page sections into floating cards.
-- **Pills:** Use `rounded-full` for badges, tags, and compact status chips only.
+- **Pills:** Use `rounded-full` for prominent primary or secondary actions, badges, tags, and compact status chips. Use the shared pill shape for buttons and button-style links.
 - **Large radius:** `xxl` and above are reserved for feature panels, media masks, or special landing sections. Do not use them for dense operational UI.
 - **Landing-editorial radius:** Large media cards, pricing panels, contact panels, search shells, and testimonial cards may use 24-40px radii (`xxl` through `xxxxl`). Pair the larger radius with generous padding and low density.
 - **Content-evidence radius:** Filters, listing cards, form controls, dropdowns, and compact comparison surfaces default to 8-16px (`md` through `xl`). Clinic-detail hero media, treatment strips, and evidence snapshots may use 20-32px when the section is spacious enough.
@@ -554,7 +611,8 @@ Components should consume the YAML tokens through Tailwind theme variables and s
 - **Inputs:** Inputs use white background, foreground text, input border, 40px height, 16px mobile text, and a visible primary focus ring.
 - **Cards:** Cards use white background, foreground text, border, `rounded-lg`, `shadow-xs`, and 24px padding by default.
 - **Popovers and dropdowns:** Use white popover surfaces, foreground text, `rounded-md`, subtle border, and compact spacing.
-- **Links:** Default links use primary and shift to primary-hover on hover, active, or current-page state. Accent-colored text is contextual only and must be checked against its actual background.
+- **Links:** Readable inline links on light content surfaces use primary with an underline, primary-hover on hover, and a visible focus outline. Use the shared text link style for CMS text and treatment comparison links. On mint use navy for links and focus. On dark surfaces use white for links and focus, with mint on hover. Navigation and calls to action use their own component styles.
+- **Breadcrumb navigation:** On light surfaces, linked ancestors use supporting foreground with a subtle underline. The current page uses foreground without an underline. Hover turns linked ancestors primary blue. Keyboard focus adds a visible primary blue outline.
 - **VerificationBadge:** Preserve the bronze/silver/gold token mapping exactly; generated mockups must not redefine badge shapes, colors, or icon treatment.
 - **Trust surfaces:** Verification, accreditation, reviews, prices, location, treatment availability, and contact actions must be visibly labeled and easy to compare. Prefer explicit empty or unavailable states over hiding missing information.
 - **Transparency cues:** Use supporting metadata, captions, timestamps, source labels, and explanatory helper text when a user could reasonably ask "why should I trust this?" or "what happens next?" Do not bury these cues behind hover-only interactions.
@@ -569,7 +627,7 @@ Components should consume the YAML tokens through Tailwind theme variables and s
 - **Landing feature bands:** Use large section spacing, icon circles, three-column desktop rhythm, and short copy. Mint/accent bands are allowed when the section communicates benefits or proof.
 - **Landing pricing/team/contact panels:** Use 30-32px radii, soft borders, translucent white or white/95 surfaces, brand-soft shadows, and generous padding. These panels should not adopt listing-card density.
 - **FeatureHero and listing comparison:** Use `content-hero` behavior: secondary/navy hero, compact feature bullets, filter/results grid, strong primary price/action treatment, and listing cards with tight information hierarchy.
-- **Listing cards:** Use `comparison-card` behavior: image thumbnail, clinic name, location, verification, rating, tags, price, favorite action, and details CTA in one scan path. Keep radii and padding compact enough for repeated comparison.
+- **Listing cards:** Let titles wrap and place the verification badge on its own line when space is tight. Use `comparison-card` behavior: image thumbnail, clinic name, location, verification, rating, tags, price, favorite action, and details CTA in one scan path. Keep radii and padding compact enough for repeated comparison.
 - **Clinic detail overview:** Use `detail-evidence-card` for quality snapshots and doctor preview cards, with larger hero media and overlap allowed. The page is still `content-evidence`; every large card must carry inspectable facts or a clear next action.
 - **Clinic treatment strips:** May use a saturated primary block and larger radius when it separates a curated action set. Keep treatment names, price cues, and CTA labels explicit.
 

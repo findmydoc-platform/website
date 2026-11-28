@@ -12,7 +12,7 @@ const meta = {
     },
     variant: {
       control: 'select',
-      options: ['default', 'footer'],
+      options: ['default', 'content', 'footer'],
     },
   },
 } satisfies Meta<typeof UiLink>
@@ -65,6 +65,26 @@ export const FooterVariant: Story = {
           <UiLink {...args} />
         </li>
       </ul>
+    </div>
+  ),
+}
+
+export const ContentSurfaces: Story = {
+  args: {
+    href: '#example',
+    variant: 'content',
+  },
+  render: (args) => (
+    <div className="grid max-w-xl gap-4">
+      <p className="bg-site-canvas p-4 text-foreground">
+        Discover the <UiLink {...args}>clinic directory</UiLink> on the site canvas.
+      </p>
+      <p className="bg-accent p-4 text-accent-foreground" data-link-tone="accent">
+        Discover the <UiLink {...args}>clinic directory</UiLink> on mint.
+      </p>
+      <p className="bg-secondary p-4 text-secondary-foreground" data-link-tone="inverse">
+        Discover the <UiLink {...args}>clinic directory</UiLink> on navy.
+      </p>
     </div>
   ),
 }

@@ -317,7 +317,7 @@ const Root: React.FC<LandingTestimonialsCarouselRootProps> = ({
     >
       <div
         className={cn(
-          'relative rounded-3xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/25',
+          'relative rounded-3xl focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
           className,
         )}
         role="region"
@@ -385,7 +385,7 @@ const Track: React.FC<TrackProps> = ({ className }) => {
                     )}
                     data-testid="landing-testimonials-active-accent"
                   />
-                  <p className="mb-8 text-base leading-7 font-medium text-muted-foreground transition-colors duration-300 sm:text-lg sm:leading-relaxed">
+                  <p className="mb-8 text-base leading-7 font-medium text-supporting-foreground transition-colors duration-300 sm:text-lg sm:leading-relaxed">
                     &quot;{testimonial.quote}&quot;
                   </p>
 
@@ -410,7 +410,7 @@ const Track: React.FC<TrackProps> = ({ className }) => {
                       >
                         {testimonial.author}
                       </Heading>
-                      <p className="text-sm font-medium text-muted-foreground transition-colors duration-300">
+                      <p className="text-sm font-medium text-supporting-foreground transition-colors duration-300">
                         {testimonial.role}
                       </p>
                     </div>
@@ -445,7 +445,7 @@ const Dots: React.FC<DotsProps> = ({ className }) => {
             type="button"
             onClick={() => goToIndex(index)}
             className={cn(
-              'flex h-11 w-11 cursor-pointer items-center justify-center rounded-full transition-colors duration-300 focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:outline-none',
+              'flex h-11 w-11 cursor-pointer items-center justify-center rounded-full transition-colors duration-300 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none',
               isActive ? 'text-primary' : 'text-border hover:text-primary/50',
             )}
             aria-label={`Go to slide ${index + 1} of ${testimonials.length}`}

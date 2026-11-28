@@ -28,6 +28,7 @@ import { useClinicDetailInteractionState } from './hooks/useClinicDetailInteract
 const CURATED_TREATMENT_COUNT = 4
 const FURTHER_TREATMENT_PAGE_SIZE = 6
 const HERO_DOCTOR_PREVIEW_COUNT = 15
+const CONTENT_SECTION_SPACING = 'pb-content-section lg:pb-content-section-wide'
 const CONTACT_FORM_ID = 'clinic-contact-form'
 const CONTACT_SECTION_IMAGE = {
   src: '/images/clinic-detail/contact-fallback-home-image30.jpg',
@@ -260,12 +261,12 @@ export function ClinicDetail({
         />
       </Container>
 
-      <Container className="pb-10 lg:pb-14">
+      <Container className={CONTENT_SECTION_SPACING}>
         <ClinicReviewsSection ratingValue={data.trust.ratingValue} reviews={data.reviews} />
       </Container>
 
       {data.location.fullAddress || (isOpenStreetMapAllowed && openStreetMapHref) ? (
-        <Container className="pb-10">
+        <Container className={CONTENT_SECTION_SPACING}>
           <ClinicLocationSection
             clinicName={data.clinicName}
             location={data.location}
@@ -286,7 +287,7 @@ export function ClinicDetail({
         />
       ) : null}
 
-      <Container className="pb-12">
+      <Container className={CONTENT_SECTION_SPACING}>
         <FurtherTreatmentsSection
           treatments={furtherTreatments}
           visibleCount={interaction.visibleFurtherTreatmentCount}

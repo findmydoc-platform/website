@@ -138,7 +138,7 @@ export function ContactRequestForm({
             }}
             placeholder={nameLabel}
             autoComplete="name"
-            className="h-12 rounded-xl border-slate-200 bg-slate-50/90 text-slate-950 placeholder:text-slate-400"
+            className="h-12 rounded-xl bg-slate-50/90 text-slate-950"
             {...formValidation.getFieldProps('name')}
           />
           <FieldError id={formValidation.getFieldErrorId('name')}>{formValidation.getFieldError('name')}</FieldError>
@@ -163,7 +163,7 @@ export function ContactRequestForm({
           }}
           placeholder={emailLabel}
           autoComplete="email"
-          className="h-12 rounded-xl border-slate-200 bg-slate-50/90 text-slate-950 placeholder:text-slate-400"
+          className="h-12 rounded-xl bg-slate-50/90 text-slate-950"
           {...formValidation.getFieldProps('email')}
         />
         <FieldError id={formValidation.getFieldErrorId('email')}>{formValidation.getFieldError('email')}</FieldError>
@@ -186,7 +186,7 @@ export function ContactRequestForm({
               resetMessages()
             }}
             placeholder={messageLabel}
-            className="min-h-28 rounded-xl border-slate-200 bg-slate-50/90 text-slate-950 placeholder:text-slate-400 sm:min-h-32"
+            className="min-h-28 rounded-xl bg-slate-50/90 text-slate-950 sm:min-h-32"
             {...formValidation.getFieldProps('message')}
           />
           <FieldError id={formValidation.getFieldErrorId('message')}>

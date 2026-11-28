@@ -104,7 +104,7 @@ export const LandingTeam: React.FC<LandingTeamProps> = ({
                         <Heading as="h3" size="h5" align="center" className="mb-2 text-2xl text-foreground">
                           {member.name}
                         </Heading>
-                        <p className="mb-4 text-center text-muted-foreground">{member.role}</p>
+                        <p className="mb-4 text-center text-supporting-foreground">{member.role}</p>
 
                         {(() => {
                           const socialItems = [

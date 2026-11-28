@@ -10,8 +10,8 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-const SampleCard = () => (
-  <Card>
+const SampleCard = ({ className }: { className?: string }) => (
+  <Card className={className}>
     <CardHeader>
       <CardTitle>Plan Upgrade</CardTitle>
       <CardDescription>Get more visibility for your clinic on findmydoc.</CardDescription>
@@ -29,11 +29,9 @@ export const Basic: Story = {
 }
 
 export const Elevated: Story = {
-  render: () => <SampleCard />,
-  parameters: {
-    backgrounds: {
-      default: 'muted',
-      values: [{ name: 'muted', value: 'var(--color-muted)' }],
-    },
-  },
+  render: () => (
+    <div className="bg-site-canvas p-8">
+      <SampleCard className="shadow-md" />
+    </div>
+  ),
 }

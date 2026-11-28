@@ -2,7 +2,11 @@ import type { UiCopyLocale } from '@/i18n/requestLocale'
 import type { CookieConsent as CookieConsentGlobal } from '@/payload-types'
 import { REQUIRED_LEGAL_FOOTER_LINKS } from '@/utilities/legalPages'
 
-import { DEFAULT_COOKIE_CONSENT_CATEGORIES, normalizeCookieConsentCategories } from './categories'
+import {
+  COOKIE_CONSENT_CATEGORY_REGISTRY,
+  DEFAULT_COOKIE_CONSENT_CATEGORIES,
+  normalizeCookieConsentCategories,
+} from './categories'
 import type { CookieConsentCategoryKey } from './categories'
 import { COOKIE_CONSENT_DEFAULT_VERSION } from './constants'
 import type { CookieConsentConfig } from './types'
@@ -80,6 +84,11 @@ function normalizeText(value: unknown, fallback: string): string {
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : fallback
 }
 
+function resolveLocalizedText(value: unknown, stock: string, localized: string): string {
+  const configured = normalizeText(value, stock)
+  return configured === stock ? localized : configured
+}
+
 function normalizeBoolean(value: unknown, fallback: boolean): boolean {
   return typeof value === 'boolean' ? value : fallback
 }
@@ -104,7 +113,11 @@ function normalizeCategories(
       .filter((category) => category.enabled)
       .map(({ enabled: _enabled, ...category }) => ({
         ...category,
-        label: useEnglishCmsCopy ? category.label : (copy?.categories[category.key].label ?? category.label),
+        label: resolveLocalizedText(
+          useEnglishCmsCopy ? category.label : undefined,
+          COOKIE_CONSENT_CATEGORY_REGISTRY[category.key].label,
+          copy?.categories[category.key].label ?? category.label,
+        ),
       })),
     copy,
   )
@@ -157,24 +170,41 @@ export function normalizeCookieConsentGlobal(
       customizeLabel: normalizeText(prompt?.customizeLabel, promptFallback.customizeLabel),
     },
     settings: {
-      title: normalizeText(english?.settingsTitle, settings.title),
-      description: normalizeText(english?.settingsDescription, settings.description),
-      essentialLabel: normalizeText(english?.essentialLabel, settings.essentialLabel),
-      essentialDescription: normalizeText(english?.essentialDescription, settings.essentialDescription),
-      cancelLabel: normalizeText(english?.cancelLabel, settings.cancelLabel),
-      saveLabel: normalizeText(english?.saveLabel, settings.saveLabel),
+      title: resolveLocalizedText(english?.settingsTitle, defaultConfig.settings.title, settings.title),
+      description: resolveLocalizedText(
+        english?.settingsDescription,
+        defaultConfig.settings.description,
+        settings.description,
+      ),
+      essentialLabel: resolveLocalizedText(
+        english?.essentialLabel,
+        defaultConfig.settings.essentialLabel,
+        settings.essentialLabel,
+      ),
+      essentialDescription: resolveLocalizedText(
+        english?.essentialDescription,
+        defaultConfig.settings.essentialDescription,
+        settings.essentialDescription,
+      ),
+      cancelLabel: resolveLocalizedText(english?.cancelLabel, defaultConfig.settings.cancelLabel, settings.cancelLabel),
+      saveLabel: resolveLocalizedText(english?.saveLabel, defaultConfig.settings.saveLabel, settings.saveLabel),
     },
     categories: normalizeCategories(categorySource, locale === 'en', copy),
     serviceScope: copy?.serviceScope ?? defaultConfig.serviceScope,
     newTabDescription: copy?.newTabDescription ?? defaultConfig.newTabDescription,
     closeLabel: copy?.closeLabel ?? defaultConfig.closeLabel,
     privacyPolicyDescription: copy?.privacyPolicyDescription ?? defaultConfig.privacyPolicyDescription,
-    privacyPolicyLabel: normalizeText(
+    privacyPolicyLabel: resolveLocalizedText(
       english?.privacyPolicyLabel,
+      defaultConfig.privacyPolicyLabel,
       copy?.privacyPolicyLabel ?? defaultConfig.privacyPolicyLabel,
     ),
     privacyPolicyHref: normalizePrivacyPolicyHref(global.privacyPolicyPage),
-    reopenLabel: normalizeText(english?.reopenLabel, copy?.reopenLabel ?? defaultConfig.reopenLabel),
+    reopenLabel: resolveLocalizedText(
+      english?.reopenLabel,
+      defaultConfig.reopenLabel,
+      copy?.reopenLabel ?? defaultConfig.reopenLabel,
+    ),
     imprintLink: defaultConfig.imprintLink
       ? { ...defaultConfig.imprintLink, label: copy?.imprintLabel ?? defaultConfig.imprintLink.label }
       : undefined,

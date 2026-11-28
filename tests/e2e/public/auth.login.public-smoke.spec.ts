@@ -199,8 +199,8 @@ test('patient login switches languages and confirms before discarding a password
   const header = page.getByRole('banner')
   const languageButton = header.getByRole('button', { name: /Sprache/ })
   await expect(languageButton).toContainText('DE')
-  const menuButton = header.getByRole('button', { name: 'Open menu' })
-  const accountButton = header.getByRole('button', { name: /open account menu/i })
+  const menuButton = header.getByRole('button', { name: 'Menü öffnen', exact: true })
+  const accountButton = header.getByRole('button', { name: /Kontomenü öffnen/i })
   const boxes = await Promise.all([languageButton, menuButton, accountButton].map((button) => button.boundingBox()))
   for (const box of boxes) {
     expect(box?.width).toBeGreaterThanOrEqual(44)

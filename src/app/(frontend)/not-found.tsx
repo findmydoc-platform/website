@@ -4,6 +4,7 @@ import { headers } from 'next/headers'
 
 import { publicPageLocaleFromPath } from '@/i18n/publicNavigationPath'
 import { FRONTEND_PATH_HEADER } from '@/i18n/requestLocale'
+import { getPublishedNavigationPageSlugs } from './_data/holdingLegalLinks'
 import { getPublicErrorCopy } from '@/features/uiCopy/publicErrors'
 
 import { Button } from '@/components/atoms/button'
@@ -14,6 +15,7 @@ export default async function NotFound() {
   const pathname = (await headers()).get(FRONTEND_PATH_HEADER) ?? '/'
   const locale = publicPageLocaleFromPath(pathname)
   const copy = getPublicErrorCopy(locale)
+  const homeHref = locale === 'en' && (await getPublishedNavigationPageSlugs('en')).includes('home') ? '/en' : '/'
 
   return (
     <Container className="py-16 sm:py-28" lang={locale}>
@@ -24,7 +26,7 @@ export default async function NotFound() {
         <p className="mb-4">{copy.notFound}</p>
       </div>
       <Button asChild variant="default">
-        <Link href="/">{copy.home}</Link>
+        <Link href={homeHref}>{copy.home}</Link>
       </Button>
     </Container>
   )

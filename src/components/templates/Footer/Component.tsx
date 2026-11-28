@@ -106,9 +106,7 @@ export const Footer: React.FC<FooterProps> = ({
                   />
                 </div>
               ) : null}
-              <p className="text-sm text-supporting-foreground">
-                {copy.copyright}
-              </p>
+              <p className="text-sm text-supporting-foreground">{copy.copyright}</p>
             </div>
           </div>
 
@@ -146,9 +144,7 @@ export const Footer: React.FC<FooterProps> = ({
             </div>
 
             <div className="flex flex-col items-center gap-4 pt-2 text-center sm:pt-6">
-              <p className="text-normal text-supporting-foreground">
-                {copy.copyright}
-              </p>
+              <p className="text-normal text-supporting-foreground">{copy.copyright}</p>
 
               <p className="text-sm text-supporting-foreground">{copy.disclaimer}</p>
 

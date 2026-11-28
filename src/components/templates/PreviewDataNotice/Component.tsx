@@ -27,9 +27,7 @@ export function PreviewDataNotice({
       className={cn('border-y border-[#FF2D2D]/30 bg-[#5A000A] text-white', className)}
     >
       <Container className="py-2">
-        <p className="text-center text-xs leading-5 font-semibold text-balance sm:text-sm">
-          {description}
-        </p>
+        <p className="text-center text-xs leading-5 font-semibold text-balance sm:text-sm">{description}</p>
       </Container>
     </aside>
   )

@@ -12,7 +12,12 @@ export function getPublicChromeCopy(locale: UiCopyLocale) {
   })
 
   return {
-    nav: { main: t('navigation.main'), mobile: t('navigation.mobile'), open: t('navigation.open'), close: t('navigation.close') },
+    nav: {
+      main: t('navigation.main'),
+      mobile: t('navigation.mobile'),
+      open: t('navigation.open'),
+      close: t('navigation.close'),
+    },
     labels: {
       '/about': t('navigation.about'),
       '/contact': t('navigation.contact'),

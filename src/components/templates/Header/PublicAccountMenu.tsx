@@ -160,21 +160,21 @@ const renderMenuGroup = (items: AccountMenuItemConfig[]) => {
 
 const GuestTrigger = React.forwardRef<HTMLButtonElement, AccountTriggerButtonProps & { label: string }>(
   ({ className, label, ...props }, ref) => (
-  <Button
-    ref={ref}
-    type="button"
-    hoverEffect="none"
-    variant="ghost"
-    className={cn(
-      'size-11 rounded-md p-0 font-bold text-foreground hover:bg-transparent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-hidden md:size-auto md:gap-2.5 md:rounded-sm md:px-2 md:py-1.5 md:text-base',
-      className,
-    )}
-    {...props}
-  >
-    <CircleUserRound aria-hidden className="size-5 shrink-0" />
-    <span className="hidden md:inline">{label}</span>
-  </Button>
-)
+    <Button
+      ref={ref}
+      type="button"
+      hoverEffect="none"
+      variant="ghost"
+      className={cn(
+        'size-11 rounded-md p-0 font-bold text-foreground hover:bg-transparent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-hidden md:size-auto md:gap-2.5 md:rounded-sm md:px-2 md:py-1.5 md:text-base',
+        className,
+      )}
+      {...props}
+    >
+      <CircleUserRound aria-hidden className="size-5 shrink-0" />
+      <span className="hidden md:inline">{label}</span>
+    </Button>
+  ),
 )
 GuestTrigger.displayName = 'GuestTrigger'
 
@@ -280,7 +280,10 @@ export const PublicAccountMenu = ({
           {state.kind === 'guest' ? (
             <GuestTrigger aria-label={copy.openGuest} label={copy.signIn} />
           ) : (
-            <PatientTrigger aria-label={copy.openPatient ?? `${getInitials(state.displayName)}, open account menu`} state={state} />
+            <PatientTrigger
+              aria-label={copy.openPatient ?? `${getInitials(state.displayName)}, open account menu`}
+              state={state}
+            />
           )}
         </DropdownMenuTrigger>
         <DropdownMenuContent

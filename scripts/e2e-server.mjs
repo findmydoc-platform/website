@@ -96,6 +96,12 @@ try {
       stdio: 'inherit',
     })
   }
+  if (process.env.E2E_NAVIGATION_SCENARIO === 'german-only') {
+    execFileSync('pnpm', ['exec', 'tsx', 'scripts/public-e2e-navigation-language-fixture.ts'], {
+      env: { ...appEnv, NODE_ENV: 'test' },
+      stdio: 'inherit',
+    })
+  }
   startApp()
 } catch (error) {
   console.error(error)

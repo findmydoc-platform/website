@@ -22,7 +22,6 @@ const defaultCopy: HeaderNavCopy = {
   close: 'Close menu',
 }
 
-
 /* ------------------------------------------------------------------ */
 /*  Desktop dropdown for a single nav item with subItems              */
 /* ------------------------------------------------------------------ */
@@ -90,7 +89,6 @@ const DesktopDropdown: React.FC<{
                   <Link
                     href={sub.href}
                     hrefLang={sub.hrefLang}
-                    lang={sub.lang}
                     className="block rounded-sm px-3 py-2 text-foreground transition-colors hover:bg-site-section hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-hidden"
                     onClick={onClose}
                     {...newTabProps}
@@ -146,9 +144,8 @@ const MobileMenu: React.FC<{
                           <Link
                             key={sub.href}
                             href={sub.href}
-                    hrefLang={sub.hrefLang}
-                    lang={sub.lang}
-                            className="min-h-11 rounded-sm px-3 py-3 text-sm text-foreground transition-colors hover:bg-site-section hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-hidden"
+                            hrefLang={sub.hrefLang}
+                                    className="min-h-11 rounded-sm px-3 py-3 text-sm text-foreground transition-colors hover:bg-site-section hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-hidden"
                             onClick={onClose}
                             {...newTabProps}
                           >
@@ -176,8 +173,7 @@ const MobileMenu: React.FC<{
             <Link
               key={itemKey}
               href={item.href}
-            hrefLang={item.hrefLang}
-            lang={item.lang}
+              hrefLang={item.hrefLang}
               onClick={onClose}
               className="block min-h-11 py-3 text-base font-semibold text-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-hidden"
               {...newTabProps}
@@ -195,7 +191,10 @@ const MobileMenu: React.FC<{
 /*  HeaderNav — main export                                           */
 /* ------------------------------------------------------------------ */
 
-export const HeaderNav: React.FC<{ navItems: HeaderNavItem[]; copy?: HeaderNavCopy }> = ({ navItems, copy = defaultCopy }) => {
+export const HeaderNav: React.FC<{ navItems: HeaderNavItem[]; copy?: HeaderNavCopy }> = ({
+  navItems,
+  copy = defaultCopy,
+}) => {
   const items = navItems || []
   const hasMobileMenuItems = items.length > 0
   const desktopNavRef = useRef<HTMLElement>(null)
@@ -287,8 +286,7 @@ export const HeaderNav: React.FC<{ navItems: HeaderNavItem[]; copy?: HeaderNavCo
             <UiLink
               key={itemKey}
               href={item.href}
-            hrefLang={item.hrefLang}
-            lang={item.lang}
+              hrefLang={item.hrefLang}
               label={item.label}
               newTab={item.newTab}
               appearance="inline"
@@ -313,7 +311,9 @@ export const HeaderNav: React.FC<{ navItems: HeaderNavItem[]; copy?: HeaderNavCo
       ) : null}
 
       {/* Mobile panel */}
-      {hasMobileMenuItems ? <MobileMenu navItems={items} open={isMobileMenuOpen} onClose={closeMobileMenu} label={copy.mobile} /> : null}
+      {hasMobileMenuItems ? (
+        <MobileMenu navItems={items} open={isMobileMenuOpen} onClose={closeMobileMenu} label={copy.mobile} />
+      ) : null}
     </>
   )
 }

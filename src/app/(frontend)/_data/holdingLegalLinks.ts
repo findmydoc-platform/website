@@ -13,16 +13,21 @@ import { MANAGED_LEGAL_PAGE_SLUGS } from '@/utilities/legalPages'
 
 const navigationSlugs = [...MANAGED_LEGAL_PAGE_SLUGS, 'home']
 
-export const getPublishedNavigationPageSlugs = cache(unstable_cache(
-  async (locale: ContentLocale) => {
-    const payload = await getPayload({ config: configPromise })
-    return findPublishedPageSlugs(payload, navigationSlugs, locale)
-  },
-  ['public-navigation-page-slugs'],
-  { tags: navigationSlugs.map((slug) => buildSlugTag('pages', slug)) },
-))
+export const getPublishedNavigationPageSlugs = cache(
+  unstable_cache(
+    async (locale: ContentLocale) => {
+      const payload = await getPayload({ config: configPromise })
+      return findPublishedPageSlugs(payload, navigationSlugs, locale)
+    },
+    ['public-navigation-page-slugs'],
+    { tags: navigationSlugs.map((slug) => buildSlugTag('pages', slug)) },
+  ),
+)
 
 export const getHoldingLegalLinks = cache(async (locale: TemporaryLandingLocale) => {
-  const [german, english] = await Promise.all([getPublishedNavigationPageSlugs('de'), getPublishedNavigationPageSlugs('en')])
+  const [german, english] = await Promise.all([
+    getPublishedNavigationPageSlugs('de'),
+    getPublishedNavigationPageSlugs('en'),
+  ])
   return resolveHoldingLegalLinks(getTemporaryLandingPageContent(locale).footerLinks, locale, german, english)
 })

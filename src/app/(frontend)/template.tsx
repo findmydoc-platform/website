@@ -17,10 +17,7 @@ import { PreviewDataNotice } from '@/components/templates/PreviewDataNotice/Comp
 import { languageSwitcherCopy } from '@/features/languageSwitch/copy'
 import { HeaderLanguageSwitcher } from '@/features/languageSwitch/HeaderLanguageSwitcher.client'
 import { isNonProductionRuntime } from '@/features/runtimePolicy'
-import {
-  projectHoldingFooterGroups,
-  projectHoldingHeaderNavItems,
-} from '@/features/temporaryLandingMode/navigation'
+import { projectHoldingFooterGroups, projectHoldingHeaderNavItems } from '@/features/temporaryLandingMode/navigation'
 import { readHoldingViewRequestHeader, readPublicSiteModeRequestHeader } from '@/features/temporaryLandingMode'
 import { resolveHoldingMode } from '@/features/temporaryLandingMode/resolver'
 import { PATIENT_LOGIN_PATH, PATIENT_LOGOUT_PATH } from '@/i18n/patientAuthPath'
@@ -41,7 +38,6 @@ const DEFAULT_ACCOUNT_MENU_STATE: PublicAccountMenuState = { kind: 'guest' }
 
 const buildPatientDisplayName = (firstName?: string, lastName?: string): string =>
   [firstName, lastName].filter(Boolean).join(' ').trim()
-
 
 function resolvePublicAccountMenuState(authData: AuthData | null, fallbackName: string): PublicAccountMenuState {
   if (!authData || authData.userType !== 'patient') {
@@ -82,7 +78,9 @@ export default async function FrontendTemplate({ children }: { children: React.R
   const pathname = requestHeaders.get(FRONTEND_PATH_HEADER) ?? '/'
   const explicitLocale = requestHeaders.get(UI_COPY_LOCALE_HEADER)
   const cmsLocale = showSiteChrome && !explicitLocale ? await resolveCmsDocumentLocale(requestHeaders) : undefined
-  const locale = cmsLocale ?? (explicitLocale === 'de' || explicitLocale === 'en' ? explicitLocale : publicPageLocaleFromPath(pathname))
+  const locale =
+    cmsLocale ??
+    (explicitLocale === 'de' || explicitLocale === 'en' ? explicitLocale : publicPageLocaleFromPath(pathname))
   const copy = getPublicChromeCopy(locale)
   const [footerGlobal, headerGlobal, legalLinks, englishPages] = showSiteChrome
     ? await Promise.all([
@@ -91,7 +89,7 @@ export default async function FrontendTemplate({ children }: { children: React.R
         getHoldingLegalLinks(locale),
         locale === 'en' && !isHoldingPublicView ? getPublishedNavigationPageSlugs('en') : [],
       ])
-    : [null, null, {}, []] as const
+    : ([null, null, {}, []] as const)
   const localized = localizePublicNavigation({
     headerItems: normalizeHeaderNavItems(headerGlobal as HeaderType | null, locale),
     footerGroups: normalizeFooterNavGroups(footerGlobal as FooterType | null, locale),
@@ -106,9 +104,11 @@ export default async function FrontendTemplate({ children }: { children: React.R
   const headerNavItems = isHoldingPublicView
     ? projectHoldingHeaderNavItems(localized.headerItems, siteOrigin)
     : localized.headerItems
-  const homeHref = locale === 'en' && (isHoldingPublicView || englishPages.includes('home')) ? '/en' : '/'
+  const homeHref = locale === 'en' && (isHoldingPublicView || englishPages.some((slug) => slug === 'home')) ? '/en' : '/'
   const accountMenuState =
-    showSiteChrome && !isHoldingPublicView ? resolvePublicAccountMenuState(authData, copy.account.title) : DEFAULT_ACCOUNT_MENU_STATE
+    showSiteChrome && !isHoldingPublicView
+      ? resolvePublicAccountMenuState(authData, copy.account.title)
+      : DEFAULT_ACCOUNT_MENU_STATE
   const accountMenuLinks: Partial<PublicAccountMenuLinks> = {
     ...LIVE_PATIENT_ACCOUNT_MENU_LINKS,
     clinicPartner: resolveAccountHref('/partners/clinics', locale),
@@ -136,7 +136,11 @@ export default async function FrontendTemplate({ children }: { children: React.R
               rightActions={
                 isHoldingPublicView ? null : (
                   <PublicAccountMenu
-                    copy={{ ...accountCopy, openPatient: accountMenuState.kind === 'patient' ? openPatient(accountMenuState.displayName) : undefined }}
+                    copy={{
+                      ...accountCopy,
+                      openPatient:
+                        accountMenuState.kind === 'patient' ? openPatient(accountMenuState.displayName) : undefined,
+                    }}
                     lang={locale}
                     links={accountMenuLinks}
                     state={accountMenuState}

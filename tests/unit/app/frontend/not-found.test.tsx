@@ -5,6 +5,7 @@ import { FRONTEND_PATH_HEADER } from '@/i18n/requestLocale'
 
 const headers = vi.hoisted(() => vi.fn())
 vi.mock('next/headers', () => ({ headers }))
+vi.mock('@/app/(frontend)/_data/holdingLegalLinks', () => ({ getPublishedNavigationPageSlugs: async () => [] }))
 
 it.each([
   ['/fehlende-seite', 'de'],

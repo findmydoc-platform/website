@@ -1,7 +1,12 @@
 import { isNotNull, isRecord, resolveHrefFromCMSLink } from '@/blocks/_shared/utils'
 import type { ContentLocale } from '@/utilities/contentLocalization'
 import type { UiLinkProps } from '@/components/molecules/Link'
-import { getManagedLegalPageSlugFromPath, isManagedLegalPageSlug, LEGACY_LEGAL_REDIRECTS, REQUIRED_LEGAL_FOOTER_LINKS } from '@/utilities/legalPages'
+import {
+  getManagedLegalPageSlugFromPath,
+  isManagedLegalPageSlug,
+  LEGACY_LEGAL_REDIRECTS,
+  REQUIRED_LEGAL_FOOTER_LINKS,
+} from '@/utilities/legalPages'
 
 type SupportedLinkType = 'custom' | 'reference' | 'group'
 
@@ -43,7 +48,6 @@ export type HeaderSubItem = {
   href: string
   label: string | null
   hrefLang?: string
-  lang?: string
   newTab: boolean
 }
 
@@ -52,7 +56,6 @@ export type HeaderNavItem = {
   href?: string
   label: string | null
   hrefLang?: string
-  lang?: string
   newTab: boolean
   subItems?: HeaderSubItem[]
 }
@@ -80,13 +83,15 @@ function normalizeLinkRecord(
     linkType === 'reference' ? { locale: options.locale ?? 'en' } : undefined,
   )
   const legalSlug = href?.startsWith('/en/') ? href.slice('/en/'.length) : undefined
-  const publicHref = !options.locale && isManagedLegalPageSlug(legalSlug) && linkType === 'reference' ? `/${legalSlug}` : href
+  const publicHref =
+    !options.locale && isManagedLegalPageSlug(legalSlug) && linkType === 'reference' ? `/${legalSlug}` : href
   if (!publicHref && !(options.allowGroupWithoutHref && linkType === 'group')) return null
 
   const reference = isRecord(link.reference) ? link.reference.value : null
-  const localizedTitle = options.locale && options.locale !== 'en' && linkType === 'reference' && isRecord(reference)
-    ? reference.title
-    : undefined
+  const localizedTitle =
+    options.locale && options.locale !== 'en' && linkType === 'reference' && isRecord(reference)
+      ? reference.title
+      : undefined
 
   return {
     ...(publicHref ? { href: publicHref } : {}),
@@ -95,7 +100,10 @@ function normalizeLinkRecord(
   }
 }
 
-function normalizeFooterGroupItems(links: Array<{ link?: unknown }> | null | undefined, locale?: ContentLocale): UiLinkProps[] {
+function normalizeFooterGroupItems(
+  links: Array<{ link?: unknown }> | null | undefined,
+  locale?: ContentLocale,
+): UiLinkProps[] {
   return (links ?? [])
     .map((item) => normalizeLinkRecord(item?.link, { locale }))
     .filter((item): item is { href: string; label: string | null; newTab: boolean } => Boolean(item?.href))

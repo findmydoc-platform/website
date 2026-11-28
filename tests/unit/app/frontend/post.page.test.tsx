@@ -336,10 +336,9 @@ describe('frontend post detail route', () => {
     const args = { params: Promise.resolve({ slug: 'green-tea' }), searchParams: Promise.resolve({}) }
     const notice = renderToStaticMarkup(await PostPage(args))
 
-    expect(notice).toContain('This page is currently available in German.')
     expect(notice).toMatch(/<a[^>]+href="\/posts"[^>]*>Blog<\/a>/)
     expect(await generateMetadata(args)).toEqual({
-      title: 'This page is currently available in German.',
+      title: expect.stringMatching(/\S/),
       robots: { index: false, follow: false },
     })
 

@@ -68,9 +68,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   const path = requestHeaders.get(FRONTEND_PATH_HEADER) ?? '/'
   const explicitLocale = requestHeaders.get(UI_COPY_LOCALE_HEADER)
-  const documentLanguage = holdingLocale ?? cmsLocale ?? (
-    explicitLocale === 'de' || explicitLocale === 'en' ? explicitLocale : publicPageLocaleFromPath(path)
-  )
+  const documentLanguage =
+    holdingLocale ??
+    cmsLocale ??
+    (explicitLocale === 'de' || explicitLocale === 'en' ? explicitLocale : publicPageLocaleFromPath(path))
 
   return (
     <html lang={documentLanguage} suppressHydrationWarning>
@@ -94,9 +95,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <PatientAuthFormHandoffProvider>
                 <TreatmentSearchHandoffProvider>
                   <DocumentLanguage initialLocale={holdingLocale ?? cmsLocale}>
-                    <PublicErrorCopyProvider copy={errorCopy}>
-                      {children}
-                    </PublicErrorCopyProvider>
+                    <PublicErrorCopyProvider copy={errorCopy}>{children}</PublicErrorCopyProvider>
                   </DocumentLanguage>
                 </TreatmentSearchHandoffProvider>
               </PatientAuthFormHandoffProvider>

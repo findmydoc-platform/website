@@ -93,6 +93,7 @@ export async function renderClinicProfile({ params }: ClinicDetailPageArgs, loca
           locale,
         }}
         inquiryCreation={inquiryCreation}
+        reviewSubmissionAccess={draft ? undefined : { isPatient: favoriteAuthContext.isPatient, loginHref }}
         cookieConsentConfig={cookieConsentConfig}
         cookieConsentInitialConsent={cookieConsentInitialConsent}
       />

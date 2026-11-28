@@ -637,7 +637,7 @@ describe('getClinicDetailServerData (contract)', () => {
           doctor: 601,
           reviewDate: '2026-02-05T10:00:00.000Z',
           starRating: 4,
-          comment: 'Context review remains unchanged.',
+          comment: 'Context review remains unchanged.\n\nThe original contains two paragraphs.',
         },
         {
           id: 2003,
@@ -692,7 +692,7 @@ describe('getClinicDetailServerData (contract)', () => {
         id: 2100 + index,
         review,
         publishedResponse: {
-          body: `Response ${review}`,
+          body: `Response ${review}\n\nOriginal reply.`,
           approvedAt: '2026-02-07T10:00:00.000Z',
           isBlocked: false,
         },
@@ -704,30 +704,36 @@ describe('getClinicDetailServerData (contract)', () => {
       locale: 'en',
     })
 
+    const germanResult = await getClinicDetailServerData(createMockPayload(moderatedData), 'berlin-health-clinic', {
+      draft: false,
+      locale: 'de',
+    })
+
     expect(result?.reviews.totalCount).toBe(4)
     expect(result?.reviews.items).toHaveLength(4)
+    expect(germanResult?.reviews).toEqual(result?.reviews)
     expect(result?.reviews.items[0]).toMatchObject({ kind: 'text', comment: 'Original visible review.' })
-    expect(result?.reviews.items[0]).toHaveProperty('response.body', 'Response 2001')
+    expect(result?.reviews.items[0]).toHaveProperty('response.body', 'Response 2001\n\nOriginal reply.')
     expect(result?.reviews.items[1]).toMatchObject({
       kind: 'text',
-      comment: 'Context review remains unchanged.',
-      notice: 'The clinic supplied additional factual context.',
+      comment: 'Context review remains unchanged.\n\nThe original contains two paragraphs.',
+      notice: { kind: 'context', text: 'The clinic supplied additional factual context.' },
     })
-    expect(result?.reviews.items[1]).toHaveProperty('response.body', 'Response 2002')
+    expect(result?.reviews.items[1]).toHaveProperty('response.body', 'Response 2002\n\nOriginal reply.')
     expect(result?.reviews.items[2]).toMatchObject({
       kind: 'text',
       comment: 'Readable review after narrow removal.',
+      notice: { kind: 'redaction' },
     })
-    expect(result?.reviews.items[2]).toHaveProperty('response.body', 'Response 2003')
+    expect(result?.reviews.items[2]).toHaveProperty('response.body', 'Response 2003\n\nOriginal reply.')
     expect(result?.reviews.items[3]).toEqual(
       expect.objectContaining({
         kind: 'placeholder',
-        notice: expect.any(String),
       }),
     )
     expect(result?.reviews.items[3]).not.toHaveProperty('comment')
     expect(result?.reviews.items[3]).not.toHaveProperty('response')
-    expect(result?.reviews.items[3]).not.toHaveProperty('notice', 'Caller-controlled placeholder must be ignored.')
+    expect(result?.reviews.items[3]).not.toHaveProperty('notice')
     expect(JSON.stringify(result?.reviews.items)).not.toContain('Original text containing private data')
     expect(JSON.stringify(result?.reviews.items)).not.toContain('Removed review')
     expect(JSON.stringify(result?.reviews.items)).not.toContain('Withdrawn review')

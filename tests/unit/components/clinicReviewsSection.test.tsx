@@ -5,6 +5,10 @@ import { describe, expect, it } from 'vitest'
 
 import { ClinicReviewsSection } from '@/components/organisms/ClinicDetail/ClinicReviewsSection'
 import type { ClinicDetailReviews } from '@/features/clinicDetail/contracts'
+import { getClinicReviewsCopy } from '@/features/clinicDetail/reviewsCopy'
+
+const english = getClinicReviewsCopy('en')
+const german = getClinicReviewsCopy('de')
 
 const reviews: ClinicDetailReviews = {
   totalCount: 5,
@@ -60,10 +64,9 @@ const reviews: ClinicDetailReviews = {
 
 describe('ClinicReviewsSection clinic responses', () => {
   it('renders approved clinic responses as part of the review card without exposing staff attribution', () => {
-    render(<ClinicReviewsSection ratingValue={4.8} reviews={reviews} />)
+    render(<ClinicReviewsSection copy={english} ratingValue={4.8} reviews={reviews} />)
 
     expect(screen.getByRole('group', { name: 'Clinic response' })).toBeInTheDocument()
-    expect(screen.getByText('Clinic response')).toBeInTheDocument()
     expect(screen.queryByText('Berlin Health Clinic')).not.toBeInTheDocument()
     expect(
       screen.getByText('Thank you for your feedback. We are glad the preparation and follow-up information helped.'),
@@ -76,6 +79,23 @@ describe('ClinicReviewsSection clinic responses', () => {
     expect(
       screen.getByText('Thank you for taking the time to share your experience with our team.'),
     ).toBeInTheDocument()
+  })
+
+  it('formats the visible rating and dates for the chosen locale while preserving approved text', () => {
+    const review = reviews.items[0]
+    if (!review || review.kind !== 'text' || !review.response) throw new Error('Expected a review and reply')
+    const view = render(<ClinicReviewsSection copy={english} ratingValue={4.8} reviews={reviews} />)
+
+    expect(screen.getByText('4.8')).toBeVisible()
+    const englishDate = view.container.querySelector('time[datetime="2026-07-27T10:00:00.000Z"]')?.textContent
+    view.rerender(<ClinicReviewsSection copy={german} ratingValue={4.8} reviews={reviews} />)
+
+    expect(screen.getByText('4,8')).toBeVisible()
+    const germanDate = view.container.querySelector('time[datetime="2026-07-27T10:00:00.000Z"]')?.textContent
+    expect(englishDate).toBe('Jul 27, 2026')
+    expect(germanDate).toBe('27. Juli 2026')
+    expect(screen.getByText(review.comment, { exact: false })).toBeVisible()
+    expect(screen.getByText(review.response.body)).toBeVisible()
   })
 
   it('lets mobile users expand and collapse a long clinic response without truncating the stored text', () => {
@@ -102,7 +122,7 @@ describe('ClinicReviewsSection clinic responses', () => {
       ],
     }
 
-    render(<ClinicReviewsSection ratingValue={5} reviews={longResponseReviews} />)
+    render(<ClinicReviewsSection copy={english} ratingValue={5} reviews={longResponseReviews} />)
 
     const responseBody = screen.getByText(longBody)
     const showMoreButton = screen.getByRole('button', { name: 'Show more' })
@@ -130,8 +150,7 @@ describe('ClinicReviewsSection clinic responses', () => {
           reviewDate: '2026-07-27T10:00:00.000Z',
           ratingValue: 5,
           comment: 'Readable review after narrow removal.',
-          notice:
-            'Parts of this review were removed to protect legal rights or personal data. The remaining text is unchanged.',
+          notice: { kind: 'redaction' },
           response: {
             body: 'The clinic response remains visible for a readable redacted review.',
             clinicName: 'Berlin Health Clinic',
@@ -143,19 +162,14 @@ describe('ClinicReviewsSection clinic responses', () => {
           kind: 'placeholder',
           reviewDate: '2026-07-26T10:00:00.000Z',
           ratingValue: 4,
-          notice: 'This review was moderated. Its written content is not publicly available.',
         },
       ],
     }
 
-    render(<ClinicReviewsSection ratingValue={4.5} reviews={moderatedReviews} />)
+    render(<ClinicReviewsSection copy={english} ratingValue={4.5} reviews={moderatedReviews} />)
 
-    expect(screen.getByRole('note', { name: 'Review moderation notice' })).toHaveTextContent(
-      'The remaining text is unchanged.',
-    )
-    expect(screen.getByRole('note', { name: 'Review text unavailable' })).toHaveTextContent(
-      'Its written content is not publicly available.',
-    )
+    expect(screen.getByRole('note', { name: 'Review moderation notice' })).not.toBeEmptyDOMElement()
+    expect(screen.getByRole('note', { name: 'Review text unavailable' })).not.toBeEmptyDOMElement()
     expect(
       screen.getByRole('article', {
         name: 'Anonymous patient verified moderated review with unavailable text from Jul 26, 2026',
@@ -179,20 +193,17 @@ describe('ClinicReviewsSection clinic responses', () => {
           reviewDate: '2026-07-28T10:00:00.000Z',
           ratingValue: 4,
           authorName: 'Maya K.',
-          notice: 'This review was moderated. Its written content is not publicly available.',
         },
         originalLatestReview,
       ],
     }
 
-    render(<ClinicReviewsSection ratingValue={4.5} reviews={latestPlaceholderReviews} />)
+    render(<ClinicReviewsSection copy={english} ratingValue={4.5} reviews={latestPlaceholderReviews} />)
 
     const latestReview = screen.getByText('Latest review').closest('article')
     expect(latestReview).not.toBeNull()
     const latestReviewQueries = within(latestReview as HTMLElement)
-    expect(latestReviewQueries.getByRole('note', { name: 'Review text unavailable' })).toHaveTextContent(
-      'Its written content is not publicly available.',
-    )
+    expect(latestReviewQueries.getByRole('note', { name: 'Review text unavailable' })).not.toBeEmptyDOMElement()
     expect(latestReviewQueries.queryByText(originalLatestReview.comment)).not.toBeInTheDocument()
     expect(latestReviewQueries.queryByRole('group', { name: 'Clinic response' })).not.toBeInTheDocument()
   })

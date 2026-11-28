@@ -126,7 +126,7 @@ const getCachedPublicClinicDetailServerDataByIdentity = ({ id, slug }: PublicCli
 
       return getClinicDetailServerData(payload, slug, { draft: false, locale })
     },
-    ['clinic-detail-server-data', String(id), slug, locale],
+    ['clinic-detail-server-data-v2', String(id), slug, locale],
     {
       tags: buildClinicDetailDataCacheTags({ id, slug }),
     },

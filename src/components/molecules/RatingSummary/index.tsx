@@ -12,6 +12,7 @@ export type RatingStarsProps = {
   size?: 'sm' | 'lg'
   starClassName?: string
   valueClassName?: string
+  valueText?: string
   label?: string
 }
 
@@ -24,6 +25,7 @@ export function RatingStars({
   size = 'sm',
   starClassName,
   valueClassName,
+  valueText,
   label,
 }: RatingStarsProps) {
   const clamped = Math.max(0, Math.min(5, value))
@@ -52,7 +54,9 @@ export function RatingStars({
         )
       })}
       {showValue ? (
-        <span className={cn('ml-1 text-xs font-semibold text-primary', valueClassName)}>{clamped.toFixed(1)}</span>
+        <span className={cn('ml-1 text-xs font-semibold text-primary', valueClassName)}>
+          {valueText ?? clamped.toFixed(1)}
+        </span>
       ) : null}
     </div>
   )

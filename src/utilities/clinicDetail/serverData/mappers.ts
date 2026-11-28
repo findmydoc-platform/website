@@ -36,6 +36,7 @@ import {
 } from '@/utilities/listingComparison/queryState'
 import { getRelationshipName } from '@/utilities/relationships'
 import {
+  getReviewPublicMeasure,
   isVisibleReviewResponsePubliclyReadable,
   projectVisiblePublicReviewText,
 } from '@/collections/reviews/publicProjection'
@@ -410,14 +411,19 @@ function mapReviews({
         ratingValue: review.starRating,
       }
 
+      const isRedacted = getReviewPublicMeasure(review) === 'redaction'
       const item: ClinicDetailReview =
         publicText.kind === 'placeholder'
-          ? { ...base, kind: 'placeholder', notice: publicText.notice }
+          ? { ...base, kind: 'placeholder' }
           : {
               ...base,
               kind: 'text',
-              comment: normalizeWhitespace(publicText.text),
-              ...(publicText.notice ? { notice: normalizeWhitespace(publicText.notice) } : {}),
+              comment: publicText.text,
+              ...(isRedacted
+                ? { notice: { kind: 'redaction' } }
+                : publicText.notice
+                  ? { notice: { kind: 'context', text: publicText.notice } }
+                  : {}),
             }
 
       if (typeof review.publicAuthorName === 'string') {
@@ -428,17 +434,14 @@ function mapReviews({
       }
 
       const response = responseByReviewId.get(review.id)
-      const responseBody =
-        typeof response?.publishedResponse?.body === 'string'
-          ? normalizeWhitespace(response.publishedResponse.body)
-          : ''
+      const responseBody = typeof response?.publishedResponse?.body === 'string' ? response.publishedResponse.body : ''
       const approvedAt =
         typeof response?.publishedResponse?.approvedAt === 'string' ? response.publishedResponse.approvedAt : ''
 
       if (
         item.kind === 'text' &&
         isVisibleReviewResponsePubliclyReadable(review) &&
-        responseBody &&
+        responseBody.trim() &&
         approvedAt &&
         response?.publishedResponse?.isBlocked !== true
       ) {

@@ -288,7 +288,6 @@ export const clinicDetailModeratedReviewsFixture: ClinicDetailData = {
         reviewDate: '2026-01-12T09:15:00.000Z',
         ratingValue: 4,
         authorName: 'Maya K.',
-        notice: 'This review was moderated. Its written content is not publicly available.',
       },
       {
         id: 'review-redacted',
@@ -296,8 +295,7 @@ export const clinicDetailModeratedReviewsFixture: ClinicDetailData = {
         reviewDate: '2026-01-08T12:30:00.000Z',
         ratingValue: 5,
         comment: 'The appointment preparation and follow-up information were clear.',
-        notice:
-          'Parts of this review were removed to protect legal rights or personal data. The remaining text is unchanged.',
+        notice: { kind: 'redaction' },
         response: {
           body: 'Thank you for sharing your experience. We are pleased that the preparation information was helpful.',
           clinicName: 'Berlin Health Clinic',
@@ -310,11 +308,14 @@ export const clinicDetailModeratedReviewsFixture: ClinicDetailData = {
         reviewDate: '2026-01-05T10:00:00.000Z',
         ratingValue: 4,
         comment: 'The consultation itself was clear and professionally organized.',
-        notice: [
-          'This review was checked after the clinic raised a concern about how the treatment timeline was described.',
-          'The factual patient account remains visible because the review did not require removal.',
-          "This notice records that context without changing the patient's remaining words or star rating.",
-        ].join(' '),
+        notice: {
+          kind: 'context',
+          text: [
+            'This review was checked after the clinic raised a concern about how the treatment timeline was described.',
+            'The factual patient account remains visible because the review did not require removal.',
+            "This notice records that context without changing the patient's remaining words or star rating.",
+          ].join(' '),
+        },
       },
     ],
   },

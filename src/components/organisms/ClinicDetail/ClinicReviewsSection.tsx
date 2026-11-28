@@ -11,9 +11,13 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/atoms/popo
 import { cn } from '@/utilities/ui'
 
 import type { ClinicDetailReview, ClinicDetailReviews } from '@/features/clinicDetail/contracts'
+import type { ClinicReviewsCopy } from '@/features/clinicDetail/reviewsCopy'
 
-type ClinicReviewsSectionProps = {
+type ReviewsCopyProps = { copy: ClinicReviewsCopy }
+
+type ClinicReviewsSectionProps = ReviewsCopyProps & {
   ratingValue: number | null
+  submission?: React.ReactNode
   reviews: ClinicDetailReviews
 }
 
@@ -21,94 +25,50 @@ const INITIAL_VISIBLE_REVIEW_COUNT = 4
 const REVIEW_LOAD_INCREMENT = 4
 const MAX_VISIBLE_REVIEW_COUNT = 16
 const COLLAPSIBLE_RESPONSE_MIN_LENGTH = 360
-const VERIFIED_REVIEW_DESCRIPTION =
-  'Verified reviews come from patients or accompanying persons after a documented consultation or treatment through findmydoc. Reviews are checked before publication.'
-
-const reviewDateFormatter = new Intl.DateTimeFormat('en', {
-  day: '2-digit',
-  month: 'short',
-  timeZone: 'UTC',
-  year: 'numeric',
-})
-
-function formatReviewCount(count: number): string {
-  return `${count} ${count === 1 ? 'review' : 'reviews'}`
-}
-
-function formatVerifiedReviewCount(count: number): string {
-  return `${count} verified ${count === 1 ? 'review' : 'reviews'}`
-}
-
-function formatLoadedReviewProgress(
-  visibleCount: number,
-  totalCount: number,
-  hasMoreReviewsThanLoaded: boolean,
-): string {
-  return hasMoreReviewsThanLoaded
-    ? `Showing ${formatReviewCount(visibleCount)} loaded on this page of ${formatVerifiedReviewCount(totalCount)}.`
-    : `Showing ${formatReviewCount(visibleCount)} of ${formatVerifiedReviewCount(totalCount)}.`
-}
-
-function formatReviewDate(value: string): string {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-  return reviewDateFormatter.format(date)
-}
-
 function getAuthorName(review: ClinicDetailReview): string {
   return typeof review.authorName === 'string' ? review.authorName.trim() : ''
 }
 
 function ReviewRatingStars({
+  copy,
   value,
   showValue = true,
   size = 'sm',
-}: {
+}: ReviewsCopyProps & {
   value: number
   showValue?: boolean
   size?: 'sm' | 'lg'
 }) {
   return (
-    <RatingStars value={value} showValue={showValue} size={size} emptyStarClassName="fill-primary/15 text-primary/15" />
+    <RatingStars
+      value={value}
+      valueText={copy.formatRating(value)}
+      label={copy.ratingLabel(value)}
+      showValue={showValue}
+      size={size}
+      emptyStarClassName="fill-primary/15 text-primary/15"
+    />
   )
 }
 
-function getReviewerLabel(review: ClinicDetailReview): string {
-  const authorName = getAuthorName(review)
-  return authorName.length > 0 ? authorName : 'Anonymous patient'
+function getReviewerLabel(review: ClinicDetailReview, copy: ClinicReviewsCopy): string {
+  return getAuthorName(review) || copy.anonymous
 }
 
-function getReviewerInitials(review: ClinicDetailReview): string {
-  const authorName = getAuthorName(review)
-  if (authorName.length === 0) return 'AP'
-
-  const initials = authorName
+function getInitials(name: string): string {
+  return name
     .split(/\s+/)
     .filter(Boolean)
     .slice(0, 2)
     .map((part) => part[0])
     .join('')
     .toUpperCase()
-
-  return initials.length > 0 ? initials : 'AP'
 }
 
-function getClinicInitials(clinicName: string): string {
-  const initials = clinicName
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join('')
-    .toUpperCase()
-
-  return initials.length > 0 ? initials : 'CL'
-}
-
-function VerifiedReviewsInfo({ count }: { count: number }) {
+function VerifiedReviewsInfo({ copy, count }: ReviewsCopyProps & { count: number }) {
   return (
     <div className="inline-flex items-center gap-1.5">
-      <span>{formatVerifiedReviewCount(count)}</span>
+      <span>{copy.verifiedCount(count)}</span>
       <Popover>
         <PopoverTrigger asChild>
           <Button
@@ -116,47 +76,50 @@ function VerifiedReviewsInfo({ count }: { count: number }) {
             size="icon"
             variant="ghost"
             className="min-h-11 min-w-11 rounded-full p-0 text-primary hover:bg-primary/8 sm:min-h-10 sm:min-w-10"
-            aria-label="What verified reviews mean"
+            aria-label={copy.verifiedInfoLabel}
           >
             <Info className="size-4" aria-hidden={true} />
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-[min(20rem,calc(100vw-2rem))] rounded-xl border-primary/15 text-sm leading-6 text-secondary/75 shadow-brand-soft">
-          {VERIFIED_REVIEW_DESCRIPTION}
+          {copy.verifiedInfo}
         </PopoverContent>
       </Popover>
     </div>
   )
 }
 
-function ReviewMeta({ review }: { review: ClinicDetailReview }) {
+function ReviewMeta({ copy, review }: ReviewsCopyProps & { review: ClinicDetailReview }) {
   return (
     <div className="space-y-2">
-      <ReviewRatingStars value={review.ratingValue} />
+      <ReviewRatingStars copy={copy} value={review.ratingValue} />
       <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-teal-600">
         <CheckCircle2 className="size-4" aria-hidden={true} />
-        Verified review
+        {copy.verifiedReview}
       </span>
     </div>
   )
 }
 
-function ReviewerAvatar({ review }: { review: ClinicDetailReview }) {
+function ReviewerAvatar({ copy, review }: ReviewsCopyProps & { review: ClinicDetailReview }) {
   return (
-    <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-base font-semibold text-primary sm:size-14 sm:text-lg">
-      {getReviewerInitials(review)}
+    <div
+      aria-hidden={true}
+      className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-base font-semibold text-primary sm:size-14 sm:text-lg"
+    >
+      {getInitials(getReviewerLabel(review, copy))}
     </div>
   )
 }
 
-function ReviewerIdentity({ review }: { review: ClinicDetailReview }) {
-  const reviewerLabel = getReviewerLabel(review)
-  const formattedDate = formatReviewDate(review.reviewDate)
+function ReviewerIdentity({ copy, review }: ReviewsCopyProps & { review: ClinicDetailReview }) {
+  const reviewerLabel = getReviewerLabel(review, copy)
+  const formattedDate = copy.formatDate(review.reviewDate)
 
   return (
     <div className="min-w-0 space-y-1">
       <p className="text-base font-semibold [overflow-wrap:anywhere] text-secondary">{reviewerLabel}</p>
-      <p className="text-sm font-medium text-secondary/65">Patient</p>
+      <p className="text-sm font-medium text-secondary/65">{copy.patient}</p>
       <time className="block text-sm font-medium text-secondary/55" dateTime={review.reviewDate}>
         {formattedDate}
       </time>
@@ -164,7 +127,7 @@ function ReviewerIdentity({ review }: { review: ClinicDetailReview }) {
   )
 }
 
-function ClinicResponse({ review }: { review: ClinicDetailReview }) {
+function ClinicResponse({ copy, review }: ReviewsCopyProps & { review: ClinicDetailReview }) {
   const responseBodyId = `${React.useId()}-body`
   const [isExpanded, setIsExpanded] = React.useState(false)
   const response = review.kind === 'text' ? review.response : undefined
@@ -173,21 +136,21 @@ function ClinicResponse({ review }: { review: ClinicDetailReview }) {
   const canCollapse = response.body.length > COLLAPSIBLE_RESPONSE_MIN_LENGTH
 
   return (
-    <div role="group" aria-label="Clinic response" className="border-t border-primary/10 pt-5 sm:pt-6">
+    <div role="group" aria-label={copy.clinicResponse} className="border-t border-primary/10 pt-5 sm:pt-6">
       <div className="min-w-0 space-y-3">
         <div className="flex min-w-0 items-start gap-3 sm:gap-4">
           <div
             className="flex size-12 shrink-0 items-center justify-center rounded-full bg-teal-50 text-sm font-semibold text-teal-600"
             aria-hidden={true}
           >
-            {getClinicInitials(response.clinicName)}
+            {getInitials(response.clinicName)}
           </div>
           <div className="min-w-0 flex-1 space-y-1">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-              <span className="font-medium text-primary">Clinic response</span>
+              <span className="font-medium text-primary">{copy.clinicResponse}</span>
               <span className="h-4 w-px bg-primary/15" aria-hidden={true} />
               <time className="text-secondary/55" dateTime={response.approvedAt}>
-                {formatReviewDate(response.approvedAt)}
+                {copy.formatDate(response.approvedAt)}
               </time>
             </div>
           </div>
@@ -195,7 +158,7 @@ function ClinicResponse({ review }: { review: ClinicDetailReview }) {
         <p
           id={responseBodyId}
           className={cn(
-            'max-w-3xl text-base leading-7 [overflow-wrap:anywhere] whitespace-pre-line text-secondary/75 sm:ml-16',
+            'max-w-3xl text-base leading-7 [overflow-wrap:anywhere] whitespace-pre-wrap text-secondary/75 sm:ml-16',
             canCollapse && !isExpanded && 'max-h-[10.5rem] overflow-hidden sm:max-h-none sm:overflow-visible',
           )}
         >
@@ -211,7 +174,7 @@ function ClinicResponse({ review }: { review: ClinicDetailReview }) {
             aria-expanded={isExpanded}
             onClick={() => setIsExpanded((current) => !current)}
           >
-            {isExpanded ? 'Show less' : 'Show more'}
+            {isExpanded ? copy.collapseResponse : copy.expandResponse}
           </Button>
         ) : null}
       </div>
@@ -219,11 +182,16 @@ function ClinicResponse({ review }: { review: ClinicDetailReview }) {
   )
 }
 
-function ReviewModerationNotice({ notice, placeholder = false }: { notice: string; placeholder?: boolean }) {
+function ReviewModerationNotice({ copy, review }: ReviewsCopyProps & { review: ClinicDetailReview }) {
+  const placeholder = review.kind === 'placeholder'
+  const notice = placeholder ? undefined : review.notice
+  if (!placeholder && !notice) return null
+
+  const context = notice?.kind === 'context' ? notice : undefined
   return (
     <div
       role="note"
-      aria-label={placeholder ? 'Review text unavailable' : 'Review moderation notice'}
+      aria-label={placeholder ? copy.unavailableLabel : copy.moderationLabel}
       className={cn(
         'flex max-w-3xl items-start gap-3 rounded-xl border p-4 text-sm leading-6 [overflow-wrap:anywhere]',
         placeholder
@@ -232,28 +200,31 @@ function ReviewModerationNotice({ notice, placeholder = false }: { notice: strin
       )}
     >
       <Info className="mt-0.5 size-4 shrink-0 text-primary/70" aria-hidden={true} />
-      <p>{notice}</p>
+      <div>
+        {context && <p className="font-semibold">{copy.contextWording}</p>}
+        <p className="whitespace-pre-wrap">
+          {context?.text ?? (placeholder ? copy.moderationPlaceholder : copy.moderationRedaction)}
+        </p>
+      </div>
     </div>
   )
 }
 
 function ReviewListItem({
+  copy,
   review,
   focusRef,
   isFirst = false,
   isLast = false,
-}: {
+}: ReviewsCopyProps & {
   review: ClinicDetailReview
   focusRef?: React.Ref<HTMLElement>
   isFirst?: boolean
   isLast?: boolean
 }) {
-  const formattedDate = formatReviewDate(review.reviewDate)
-  const reviewerLabel = getReviewerLabel(review)
-  const articleLabel =
-    review.kind === 'placeholder'
-      ? `${reviewerLabel} verified moderated review with unavailable text from ${formattedDate}`
-      : `${reviewerLabel} verified review from ${formattedDate}`
+  const formattedDate = copy.formatDate(review.reviewDate)
+  const reviewerLabel = getReviewerLabel(review, copy)
+  const articleLabel = copy.itemLabel(reviewerLabel, formattedDate, review.kind === 'placeholder')
 
   return (
     <article
@@ -267,65 +238,61 @@ function ReviewListItem({
       )}
     >
       <div className="flex min-w-0 gap-4">
-        <ReviewerAvatar review={review} />
+        <ReviewerAvatar copy={copy} review={review} />
         <div className="min-w-0 space-y-4">
-          <ReviewerIdentity review={review} />
-          <ReviewMeta review={review} />
+          <ReviewerIdentity copy={copy} review={review} />
+          <ReviewMeta copy={copy} review={review} />
         </div>
       </div>
       <div className="min-w-0 space-y-6">
         {review.kind === 'text' ? (
-          <>
-            <p className="max-w-3xl text-base leading-7 [overflow-wrap:anywhere] whitespace-pre-line text-secondary/80">
-              {review.comment}
-            </p>
-            {review.notice ? <ReviewModerationNotice notice={review.notice} /> : null}
-            <ClinicResponse review={review} />
-          </>
-        ) : (
-          <ReviewModerationNotice notice={review.notice} placeholder={true} />
-        )}
+          <p className="max-w-3xl text-base leading-7 [overflow-wrap:anywhere] whitespace-pre-wrap text-secondary/80">
+            {review.comment}
+          </p>
+        ) : null}
+        <ReviewModerationNotice copy={copy} review={review} />
+        <ClinicResponse copy={copy} review={review} />
       </div>
     </article>
   )
 }
 
-function LatestReview({ review }: { review: ClinicDetailReview }) {
+function LatestReview({ copy, review }: ReviewsCopyProps & { review: ClinicDetailReview }) {
   return (
     <article className="space-y-5 rounded-2xl border border-primary/20 bg-background p-5 shadow-none sm:p-6 lg:p-8">
       <div className="space-y-4">
-        <p className="text-base font-semibold text-primary">Latest review</p>
-        <ReviewRatingStars value={review.ratingValue} size="lg" />
+        <p className="text-base font-semibold text-primary">{copy.latest}</p>
+        <ReviewRatingStars copy={copy} value={review.ratingValue} size="lg" />
         {review.kind === 'text' ? (
-          <>
-            <blockquote className="max-w-3xl text-lg leading-8 font-normal [overflow-wrap:anywhere] text-secondary sm:text-xl sm:leading-9">
-              “{review.comment}”
-            </blockquote>
-            {review.notice ? <ReviewModerationNotice notice={review.notice} /> : null}
-          </>
-        ) : (
-          <ReviewModerationNotice notice={review.notice} placeholder={true} />
-        )}
+          <blockquote className="max-w-3xl text-lg leading-8 font-normal [overflow-wrap:anywhere] whitespace-pre-wrap text-secondary sm:text-xl sm:leading-9">
+            {review.comment}
+          </blockquote>
+        ) : null}
+        <ReviewModerationNotice copy={copy} review={review} />
       </div>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-3 border-t border-primary/10 pt-4">
-        <ReviewerAvatar review={review} />
+        <ReviewerAvatar copy={copy} review={review} />
         <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2 text-sm text-secondary/60">
-          <p className="font-semibold [overflow-wrap:anywhere] text-secondary">{getReviewerLabel(review)}</p>
+          <p className="font-semibold [overflow-wrap:anywhere] text-secondary">{getReviewerLabel(review, copy)}</p>
           <span className="hidden h-5 w-px bg-primary/15 sm:block" aria-hidden={true} />
           <span className="inline-flex items-center gap-1.5 font-semibold text-teal-600">
             <CheckCircle2 className="size-4" aria-hidden={true} />
-            Verified review
+            {copy.verifiedReview}
           </span>
           <span className="hidden h-5 w-px bg-primary/15 sm:block" aria-hidden={true} />
-          <time dateTime={review.reviewDate}>{formatReviewDate(review.reviewDate)}</time>
+          <time dateTime={review.reviewDate}>{copy.formatDate(review.reviewDate)}</time>
         </div>
       </div>
-      {review.kind === 'text' ? <ClinicResponse review={review} /> : null}
+      <ClinicResponse copy={copy} review={review} />
     </article>
   )
 }
 
-function ReviewsSummary({ ratingValue, count }: { ratingValue: number | null; count: number }) {
+function ReviewsSummary({
+  copy,
+  ratingValue,
+  count,
+}: ReviewsCopyProps & { ratingValue: number | null; count: number }) {
   const hasRating = ratingValue !== null && count > 0
 
   return (
@@ -334,46 +301,43 @@ function ReviewsSummary({ ratingValue, count }: { ratingValue: number | null; co
         <>
           <div className="flex items-baseline gap-2">
             <span className="text-6xl leading-none font-semibold tracking-normal text-primary sm:text-7xl">
-              {ratingValue.toFixed(1)}
+              {copy.formatRating(ratingValue)}
             </span>
             <span className="text-3xl font-semibold text-secondary/55">/ 5</span>
           </div>
-          <ReviewRatingStars value={ratingValue} showValue={false} size="lg" />
+          <ReviewRatingStars copy={copy} value={ratingValue} showValue={false} size="lg" />
         </>
       ) : (
-        <p className="text-2xl font-semibold text-secondary">No patient reviews yet</p>
+        <p className="text-2xl font-semibold text-secondary">{copy.empty}</p>
       )}
       <div className="text-base font-semibold text-secondary">
-        <VerifiedReviewsInfo count={count} />
+        <VerifiedReviewsInfo copy={copy} count={count} />
       </div>
-      <p className="max-w-sm text-sm leading-6 text-secondary/60">Only verified patient reviews are shown.</p>
+      <p className="max-w-sm text-sm leading-6 text-secondary/60">{copy.onlyVerified}</p>
     </div>
   )
 }
 
-function EmptyReviewsPanel({ totalCount }: { totalCount: number }) {
+function EmptyReviewsPanel({ copy, totalCount }: ReviewsCopyProps & { totalCount: number }) {
   const hasApprovedCount = totalCount > 0
 
   return (
     <div className="rounded-2xl border border-primary/15 bg-primary/5 p-5 sm:p-6">
       <Heading as="h3" align="left" size="h5" className="text-secondary">
-        {hasApprovedCount ? 'Approved review text is being connected' : 'No patient reviews yet'}
+        {hasApprovedCount ? copy.preparing : copy.empty}
       </Heading>
       <p className="mt-2 text-base leading-7 text-secondary/65">
-        {hasApprovedCount
-          ? 'Approved review records exist, but text content is not ready for public display yet.'
-          : 'Verified reviews will appear here after moderation.'}
+        {hasApprovedCount ? copy.preparingDescription : copy.emptyDescription}
       </p>
     </div>
   )
 }
 
-export function ClinicReviewsSection({ ratingValue, reviews }: ClinicReviewsSectionProps) {
+export function ClinicReviewsSection({ copy, ratingValue, reviews, submission }: ClinicReviewsSectionProps) {
   const sectionId = React.useId()
   const headingId = `${sectionId}-heading`
   const progressId = `${sectionId}-progress`
   const [visibleCount, setVisibleCount] = React.useState(INITIAL_VISIBLE_REVIEW_COUNT)
-  const [statusMessage, setStatusMessage] = React.useState('')
   const reviewRefs = React.useRef(new Map<string, HTMLElement>())
   const pendingFocusReviewId = React.useRef<string | null>(null)
   const visibleLimit = Math.min(reviews.items.length, MAX_VISIBLE_REVIEW_COUNT)
@@ -389,9 +353,9 @@ export function ClinicReviewsSection({ ratingValue, reviews }: ClinicReviewsSect
     !hasApprovedReviewsWithoutDisplayableText && reviews.hasMore && reviews.totalCount > reviews.items.length,
   )
   const progressText = hasVisibleReviews
-    ? formatLoadedReviewProgress(visibleReviews.length, reviews.totalCount, hasMoreReviewsThanLoaded)
+    ? copy.progress(visibleReviews.length, reviews.totalCount, hasMoreReviewsThanLoaded)
     : hasApprovedReviewsWithoutDisplayableText
-      ? `${formatVerifiedReviewCount(reviews.totalCount)} are being prepared for display.`
+      ? copy.preparingCount(reviews.totalCount)
       : null
   const setReviewRef = React.useCallback(
     (reviewId: string) => (element: HTMLElement | null) => {
@@ -412,17 +376,10 @@ export function ClinicReviewsSection({ ratingValue, reviews }: ClinicReviewsSect
     reviewRefs.current.get(reviewId)?.focus({ preventScroll: false })
   }, [visibleCount])
 
-  const showMoreReviews = React.useCallback(() => {
-    setVisibleCount((current) => {
-      const next = Math.min(current + REVIEW_LOAD_INCREMENT, visibleLimit)
-      const firstNewReview = reviews.items[current]
-
-      pendingFocusReviewId.current = firstNewReview?.id ?? null
-      setStatusMessage(formatLoadedReviewProgress(next, reviews.totalCount, reviews.totalCount > reviews.items.length))
-
-      return next
-    })
-  }, [reviews.items, reviews.totalCount, visibleLimit])
+  function showMoreReviews() {
+    pendingFocusReviewId.current = reviews.items[visibleCount]?.id ?? null
+    setVisibleCount(Math.min(visibleCount + REVIEW_LOAD_INCREMENT, visibleLimit))
+  }
 
   return (
     <section aria-labelledby={headingId} data-testid="clinic-reviews-section">
@@ -430,32 +387,33 @@ export function ClinicReviewsSection({ ratingValue, reviews }: ClinicReviewsSect
         <CardContent className="space-y-6 p-5 sm:p-8 lg:p-10">
           <div className="space-y-2">
             <Heading id={headingId} as="h2" align="left" size="content-section" variant="navy">
-              Patient Reviews
+              {copy.heading}
             </Heading>
             <p id={progressId} className="max-w-3xl text-sm text-supporting-foreground">
-              {progressText ?? `Showing ${formatVerifiedReviewCount(reviews.totalCount)}.`}
+              {progressText ?? copy.emptyCount(reviews.totalCount)}
             </p>
             <p className="sr-only" aria-live="polite" aria-atomic="true">
-              {statusMessage}
+              {visibleCount > INITIAL_VISIBLE_REVIEW_COUNT ? progressText : null}
             </p>
+            {visibleReviews.some(({ kind }) => kind === 'text') ? (
+              <p className="text-sm text-supporting-foreground">{copy.originalWording}</p>
+            ) : null}
           </div>
 
           {featuredReview ? (
             <div className="grid gap-6 border-y border-primary/10 py-6 lg:grid-cols-[minmax(16rem,0.33fr)_minmax(0,1fr)] lg:gap-12 lg:py-8">
-              <ReviewsSummary ratingValue={ratingValue} count={reviews.totalCount} />
+              <ReviewsSummary copy={copy} ratingValue={ratingValue} count={reviews.totalCount} />
               <div className="lg:border-l lg:border-primary/10 lg:pl-12">
-                <LatestReview review={featuredReview} />
+                <LatestReview copy={copy} review={featuredReview} />
               </div>
             </div>
           ) : (
-            <EmptyReviewsPanel totalCount={reviews.totalCount} />
+            <EmptyReviewsPanel copy={copy} totalCount={reviews.totalCount} />
           )}
 
           {listedReviews.length ? (
             <div className="space-y-4">
-              <p className="text-sm font-semibold tracking-[0.12em] text-secondary/50 uppercase">
-                Latest patient feedback
-              </p>
+              <p className="text-sm font-semibold tracking-[0.12em] text-secondary/50 uppercase">{copy.listHeading}</p>
               <div
                 className="divide-y divide-primary/10 rounded-2xl border border-primary/15 px-4 py-4 sm:px-6 sm:py-5 lg:px-8 lg:py-6"
                 role="list"
@@ -463,6 +421,7 @@ export function ClinicReviewsSection({ ratingValue, reviews }: ClinicReviewsSect
                 {listedReviews.map((review, index) => (
                   <div key={review.id} role="listitem">
                     <ReviewListItem
+                      copy={copy}
                       review={review}
                       focusRef={setReviewRef(review.id)}
                       isFirst={index === 0}
@@ -483,13 +442,12 @@ export function ClinicReviewsSection({ ratingValue, reviews }: ClinicReviewsSect
                 aria-describedby={progressId}
                 onClick={showMoreReviews}
               >
-                Show more reviews
+                {copy.showMore}
               </Button>
-              <p className="text-sm text-secondary/55">
-                Loads the next {formatReviewCount(nextVisibleReviewCount)} inline.
-              </p>
+              <p className="text-sm text-secondary/55">{copy.showMoreHint(nextVisibleReviewCount)}</p>
             </div>
           ) : null}
+          {submission}
         </CardContent>
       </Card>
     </section>

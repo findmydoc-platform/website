@@ -89,12 +89,6 @@ vi.mock('@/components/templates/ClinicDetailConcepts/hooks/useClinicDetailIntera
   useClinicDetailInteractionState: mocks.interactionStateMock,
 }))
 
-vi.mock('@/features/clinicDetail/presentation', () => ({
-  buildOpenStreetMapHref: vi.fn(() => null),
-  formatEur: vi.fn((value: number) => `€${value}`),
-  sortTreatmentsByPrice: vi.fn((treatments: Array<{ id: string }>) => treatments),
-}))
-
 import { ClinicDetail } from '@/components/templates/ClinicDetailConcepts/ClinicDetail'
 import { DISCLAIMER_COPY } from '@/utilities/legal/disclaimers'
 

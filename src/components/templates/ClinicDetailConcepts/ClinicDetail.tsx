@@ -25,6 +25,7 @@ import {
 } from '@/features/clinicDetail/presentation'
 import type { PatientInquiryCreationContext } from '@/features/patientInquiries/creationContext'
 import { getClinicProfileTranslator } from '@/features/clinicDetail/overviewCopy'
+import { getClinicReviewsCopy } from '@/features/clinicDetail/reviewsCopy'
 import { clinicProfilePath } from '@/i18n/clinicProfilePath'
 import { cn } from '@/utilities/ui'
 
@@ -74,6 +75,7 @@ export function ClinicDetail({
   inquiryCreation = GUEST_INQUIRY_CREATION,
   analytics,
   onSubmitContactRequest,
+  reviewSubmission,
   cookieConsentConfig = null,
   cookieConsentInitialConsent = null,
 }: ClinicDetailConceptProps) {
@@ -267,7 +269,12 @@ export function ClinicDetail({
       </Container>
 
       <Container className={CONTENT_SECTION_SPACING}>
-        <ClinicReviewsSection ratingValue={data.trust.ratingValue} reviews={data.reviews} />
+        <ClinicReviewsSection
+          copy={getClinicReviewsCopy(locale)}
+          ratingValue={data.trust.ratingValue}
+          reviews={data.reviews}
+          submission={reviewSubmission}
+        />
       </Container>
 
       {data.location.fullAddress || (isOpenStreetMapAllowed && openStreetMapHref) ? (

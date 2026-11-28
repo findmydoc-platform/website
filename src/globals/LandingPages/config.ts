@@ -453,7 +453,7 @@ const localizeEditorialLandingFields = (fields: Field[]): Field[] =>
     }
 
     if ((field.type === 'text' || field.type === 'textarea') && localizedLandingTextFields.has(field.name)) {
-      return [{ ...field, localized: true }]
+      return [{ ...field, localized: true, required: false }]
     }
 
     return [field]

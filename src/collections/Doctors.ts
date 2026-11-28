@@ -171,6 +171,12 @@ export const Doctors: CollectionConfig<'doctors'> = {
               },
             },
             {
+              name: 'localizedBiography',
+              type: 'textarea',
+              localized: true,
+              admin: { description: 'Public biography in the selected language' },
+            },
+            {
               name: 'profileImage',
               type: 'upload',
               relationTo: 'doctorMedia',

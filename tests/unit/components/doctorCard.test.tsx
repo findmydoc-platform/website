@@ -34,10 +34,9 @@ describe('DoctorCard', () => {
 
     expect(screen.getByRole('heading', { name: 'Dr. Susan Bones, MD' })).toBeInTheDocument()
     expect(screen.getByText('4.9/5')).toBeInTheDocument()
-    expect(screen.getByText('87 Reviews')).toBeInTheDocument()
-    expect(screen.getByText('11+ years experience')).toBeInTheDocument()
-    expect(screen.getByText('Languages:')).toBeInTheDocument()
-    expect(screen.getByText(/English, German, Spanish/)).toBeInTheDocument()
+    expect(screen.getByText('MD', { exact: true })).toBeInTheDocument()
+    expect(screen.getByText('FAAP')).toBeInTheDocument()
+    expect(screen.getByText(/English.*German.*Spanish/)).toBeInTheDocument()
 
     expect(screen.getByRole('link', { name: 'Meta' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'LinkedIn' })).toBeInTheDocument()

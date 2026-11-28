@@ -1,5 +1,7 @@
 import type { Payload, PayloadRequest } from 'payload'
 
+import type { UiCopyLocale } from '@/i18n/requestLocale'
+
 import { versionPayloadMediaFileUrl } from './fileUrls'
 
 export type MediaCollectionSlug =
@@ -9,6 +11,7 @@ type MediaDocument = {
   id: number
   url?: string | null
   alt?: string | null
+  localizedAlt?: string | null
   filename?: string | null
   updatedAt?: string | null
 }
@@ -141,6 +144,7 @@ async function findMediaDescriptorsByIds({
   ids,
   req,
   overrideAccess = true,
+  locale,
   chunkSize = 200,
   pageSize = 500,
 }: {
@@ -149,6 +153,7 @@ async function findMediaDescriptorsByIds({
   ids: number[]
   req?: PayloadRequest
   overrideAccess?: boolean
+  locale?: UiCopyLocale
   chunkSize?: number
   pageSize?: number
 }): Promise<Map<number, MediaDescriptor>> {
@@ -168,6 +173,7 @@ async function findMediaDescriptorsByIds({
         pagination: true,
         overrideAccess,
         req,
+        ...(locale && { locale, fallbackLocale: false }),
         where: {
           id: {
             in: idChunk,
@@ -177,12 +183,14 @@ async function findMediaDescriptorsByIds({
 
       const docs = result.docs as MediaDocument[]
       docs.forEach((doc) => {
+        const alt = typeof doc.alt === 'string' && locale !== 'de' ? doc.alt : null
+        const localizedAlt = locale ? doc.localizedAlt?.trim() : undefined
         descriptorsById.set(doc.id, {
           url:
             typeof doc.url === 'string'
               ? versionPayloadMediaFileUrl(doc.url, doc.updatedAt)
               : buildMediaFileUrl(collection, doc.filename, doc.updatedAt),
-          alt: typeof doc.alt === 'string' ? doc.alt : null,
+          alt: localizedAlt || alt,
         })
       })
 
@@ -202,6 +210,7 @@ export async function buildMediaDescriptorsByOwnerId<TItem>({
   getRelation,
   req,
   overrideAccess = true,
+  locale,
   chunkSize,
   pageSize,
 }: {
@@ -212,6 +221,7 @@ export async function buildMediaDescriptorsByOwnerId<TItem>({
   getRelation: (item: TItem) => unknown
   req?: PayloadRequest
   overrideAccess?: boolean
+  locale?: UiCopyLocale
   chunkSize?: number
   pageSize?: number
 }): Promise<Map<number, MediaDescriptor>> {
@@ -233,6 +243,7 @@ export async function buildMediaDescriptorsByOwnerId<TItem>({
     ids: relationIds,
     req,
     overrideAccess,
+    locale,
     chunkSize,
     pageSize,
   })
@@ -247,7 +258,7 @@ export async function buildMediaDescriptorsByOwnerId<TItem>({
     const relationId = extractMediaRelationId(relation)
     if (!relationId) continue
 
-    const loadedDescriptor = resolveMediaDescriptorFromLoadedRelation(relation, collection)
+    const loadedDescriptor = locale ? undefined : resolveMediaDescriptorFromLoadedRelation(relation, collection)
     const descriptor = loadedDescriptor?.url ? loadedDescriptor : descriptorsByRelationId.get(relationId)
 
     if (descriptor?.url) {

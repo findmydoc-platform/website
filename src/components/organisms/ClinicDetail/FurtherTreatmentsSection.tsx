@@ -5,11 +5,14 @@ import { Heading } from '@/components/atoms/Heading'
 import { Button } from '@/components/atoms/button'
 import { Card, CardContent } from '@/components/atoms/card'
 import { UiLink } from '@/components/molecules/Link'
-import { formatEur } from '@/features/clinicDetail/presentation'
+import { formatTreatmentPrice } from '@/features/clinicDetail/presentation'
+import { getClinicProfileTranslator } from '@/features/clinicDetail/overviewCopy'
+import type { UiCopyLocale } from '@/i18n/requestLocale'
 
 import type { ClinicDetailTreatment } from '@/features/clinicDetail/contracts'
 
 type FurtherTreatmentsSectionProps = {
+  locale?: UiCopyLocale
   treatments: ClinicDetailTreatment[]
   visibleCount: number
   onShowMore: () => void
@@ -17,21 +20,31 @@ type FurtherTreatmentsSectionProps = {
 }
 
 export function FurtherTreatmentsSection({
+  locale = 'en',
   treatments,
   visibleCount,
   onShowMore,
   onChooseTreatment,
 }: FurtherTreatmentsSectionProps) {
+  const headingId = React.useId()
+  const emptyStateId = React.useId()
+  const t = getClinicProfileTranslator(locale)
   const visibleRows = React.useMemo(() => treatments.slice(0, visibleCount), [treatments, visibleCount])
   const canShowMore = visibleCount < treatments.length
 
   return (
-    <section className="space-y-5">
+    <section
+      className="space-y-5"
+      aria-labelledby={headingId}
+      aria-describedby={visibleRows.length === 0 ? emptyStateId : undefined}
+    >
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <Heading as="h2" align="left" size="content-section" variant="navy">
-          Further Treatments
+        <Heading id={headingId} as="h2" align="left" size="content-section" variant="navy">
+          {t('treatments.further')}
         </Heading>
-        <p className="text-sm text-supporting-foreground">{treatments.length} additional treatments</p>
+        <p className="text-sm text-supporting-foreground">
+          {t('treatments.furtherCount', { count: treatments.length })}
+        </p>
       </div>
 
       {visibleRows.length > 0 ? (
@@ -43,11 +56,11 @@ export function FurtherTreatmentsSection({
             >
               <div className="min-w-0">
                 <p className="text-base font-semibold text-secondary">{treatment.name}</p>
-                <p className="mt-1 text-sm text-supporting-foreground">{treatment.category ?? 'General treatment'}</p>
+                {treatment.category ? (
+                  <p className="mt-1 text-sm text-supporting-foreground">{treatment.category}</p>
+                ) : null}
                 <p className="mt-2 text-sm font-semibold text-primary">
-                  {typeof treatment.priceFrom === 'number'
-                    ? `From ${formatEur(treatment.priceFrom)}`
-                    : 'Price on request'}
+                  {formatTreatmentPrice(treatment.priceFrom, locale)}
                 </p>
               </div>
 
@@ -58,7 +71,7 @@ export function FurtherTreatmentsSection({
                   className="w-full sm:w-auto"
                   onClick={() => onChooseTreatment(treatment.id)}
                 >
-                  Choose Treatment
+                  {t('treatments.choose')}
                 </Button>
                 {treatment.comparisonLink ? (
                   <UiLink
@@ -78,12 +91,9 @@ export function FurtherTreatmentsSection({
             <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10">
               <Stethoscope className="size-4 text-primary" aria-hidden={true} />
             </span>
-            <div className="space-y-1">
-              <p className="text-sm font-semibold text-secondary">No additional treatments available yet.</p>
-              <p className="text-sm text-supporting-foreground">
-                You can still submit a contact request and describe the treatment you are looking for.
-              </p>
-            </div>
+            <p id={emptyStateId} className="text-sm font-semibold text-secondary">
+              {t('treatments.empty')}
+            </p>
           </CardContent>
         </Card>
       )}
@@ -91,7 +101,7 @@ export function FurtherTreatmentsSection({
       <div className="flex flex-wrap gap-3">
         {canShowMore ? (
           <Button type="button" variant="secondary" className="w-full md:w-auto" onClick={onShowMore}>
-            Show more treatments
+            {t('treatments.showMore')}
           </Button>
         ) : null}
       </div>

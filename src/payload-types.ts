@@ -1664,6 +1664,10 @@ export interface Doctor {
    */
   biography?: string | null;
   /**
+   * Public biography in the selected language
+   */
+  localizedBiography?: string | null;
+  /**
    * Save the doctor first, then select an image owned by this doctor and clinic.
    */
   profileImage?: (number | null) | DoctorMedia;
@@ -1752,6 +1756,10 @@ export interface DoctorMedia {
     };
     [k: string]: unknown;
   } | null;
+  /**
+   * Image description for screen readers in the selected language
+   */
+  localizedAlt?: string | null;
   /**
    * Doctor that owns this media
    */
@@ -5139,6 +5147,7 @@ export interface DoctorMediaSelect<T extends boolean = true> {
   stableId?: T;
   alt?: T;
   caption?: T;
+  localizedAlt?: T;
   doctor?: T;
   clinic?: T;
   createdBy?: T;
@@ -6117,6 +6126,7 @@ export interface DoctorsSelect<T extends boolean = true> {
   gender?: T;
   fullName?: T;
   biography?: T;
+  localizedBiography?: T;
   profileImage?: T;
   clinic?: T;
   qualifications?: T;

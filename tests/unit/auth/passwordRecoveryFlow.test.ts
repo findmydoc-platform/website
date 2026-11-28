@@ -297,44 +297,58 @@ describe('recovery from Auth request through the real static catalog and shared 
     expect(deliver).not.toHaveBeenCalled()
   })
 
-  it('technical retry preserves action, rendered link, prepared bytes, operation and idempotency key', async () => {
-    const store = fixture('patients')
-    await requestPasswordRecovery(store.req, { email, context: store.context })
-    const action = [...store.rows.authActions!.values()][0]!
-    const operation = [...store.rows.transactionalEmailOutbox!.values()][0]!
-    const fake = createFakeDeliveryAdapter()
-    const deliver = vi.fn(fake.deliver).mockResolvedValueOnce({ type: 'retryable', outcomeCode: 'provider-temporary' })
-    const worker = createTransactionalEmailWorker(store.req, {
-      now: store.now,
-      delivery: { deliver },
-      suppression: async () => 'cleared',
-    })
-    await worker.run(String(operation.id))
-    const prepared = structuredClone(store.rows.transactionalEmailOutbox!.get(Number(operation.id))!)
-    expect(prepared).toMatchObject({ state: 'prepared', attemptCount: 1 })
-    expect(
-      await bindTransactionalEmail(store.req, undefined, store.now).accept({
-        type: 'auth.password-recovery',
-        authActionId: Number(action.id),
-      }),
-    ).toMatchObject({ operationId: String(operation.id), deduplicated: true })
-    store.advance(60000)
-    await worker.run(String(operation.id))
-    expect(deliver).toHaveBeenCalledTimes(2)
-    expect(deliver.mock.calls[0]![0]).toEqual(deliver.mock.calls[1]![0])
-    expect(deliver.mock.calls[0]![0]).toMatchObject({
-      html: prepared.preparedHtml,
-      text: prepared.preparedText,
-      providerIdempotencyKey: operation.providerIdempotencyKey,
-    })
-    expect(store.rows.authActions!.size).toBe(1)
-    expect(store.rows.authActions!.get(Number(action.id))).toEqual(action)
-    expect(store.rows.transactionalEmailOutbox!.size).toBe(1)
-    expect(store.rows.transactionalEmailOutbox!.get(Number(operation.id))).toMatchObject({
-      state: 'accepted',
-      attemptCount: 2,
-    })
-  })
+  it.each(['de', 'en'] as const)(
+    'delayed delivery and technical retry preserve the %s recovery message and link',
+    async (locale) => {
+      const store = fixture('patients')
+      await requestPasswordRecovery(store.req, { email, context: store.context, locale })
+      store.advance(5 * 60_000)
+      const action = [...store.rows.authActions!.values()][0]!
+      const operation = [...store.rows.transactionalEmailOutbox!.values()][0]!
+      const fake = createFakeDeliveryAdapter()
+      const deliver = vi
+        .fn(fake.deliver)
+        .mockResolvedValueOnce({ type: 'retryable', outcomeCode: 'provider-temporary' })
+      const worker = createTransactionalEmailWorker(store.req, {
+        now: store.now,
+        delivery: { deliver },
+        suppression: async () => 'cleared',
+      })
+      await worker.run(String(operation.id))
+      const prepared = structuredClone(store.rows.transactionalEmailOutbox!.get(Number(operation.id))!)
+      expect(prepared).toMatchObject({ state: 'prepared', attemptCount: 1 })
+      expect(
+        await bindTransactionalEmail(store.req, undefined, store.now).accept({
+          type: 'auth.password-recovery',
+          authActionId: Number(action.id),
+        }),
+      ).toMatchObject({ operationId: String(operation.id), deduplicated: true })
+      store.advance(60000)
+      await worker.run(String(operation.id))
+      expect(deliver).toHaveBeenCalledTimes(2)
+      expect(deliver.mock.calls[0]![0]).toEqual(deliver.mock.calls[1]![0])
+      const delivered = deliver.mock.calls[0]![0]
+      expect(delivered.html).toContain(`lang="${locale}"`)
+      const link = [...delivered.html.matchAll(/href="([^"]+)"/g)]
+        .map((match) => new URL(match[1]!.replaceAll('&amp;', '&')))
+        .find((url) => url.pathname === '/auth/callback')!
+      expect(link.searchParams.get('locale')).toBe(locale)
+      expect(delivered.text).toContain(link.toString())
+      expect(delivered).toMatchObject({
+        subject: prepared.preparedSubject,
+        html: prepared.preparedHtml,
+        text: prepared.preparedText,
+        providerIdempotencyKey: operation.providerIdempotencyKey,
+      })
+      expect(store.rows.authActions!.size).toBe(1)
+      expect(store.rows.authActions!.get(Number(action.id))).toEqual(action)
+      expect(store.rows.transactionalEmailOutbox!.size).toBe(1)
+      expect(store.rows.transactionalEmailOutbox!.get(Number(operation.id))).toMatchObject({
+        state: 'accepted',
+        attemptCount: 2,
+      })
+    },
+  )
 
   it('revalidates current role before a technical retry with already prepared bytes', async () => {
     const store = fixture('clinicStaff')

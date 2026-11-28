@@ -1,6 +1,7 @@
 import { blogArchiveLocaleFromPath } from '@/i18n/blogArchivePath'
 import { contactLocaleFromPath } from '@/i18n/contactPath'
 import { listingComparisonLocaleFromPath } from '@/i18n/listingComparisonPath'
+import { savedClinicsLocaleFromPath } from '@/i18n/savedClinicsPath'
 import {
   AUTH_CONFIRMATION_PATH,
   PATIENT_LOGIN_PATH,
@@ -71,6 +72,7 @@ export function uiCopyLocaleFromPath(
     blogArchiveLocaleFromPath(pathname) ??
     contactLocaleFromPath(pathname) ??
     listingComparisonLocaleFromPath(pathname) ??
+    savedClinicsLocaleFromPath(pathname) ??
     patientAuthLocaleFromPath(pathname, searchParams)
   )
 }

@@ -82,7 +82,8 @@ export default async function ClinicDetailPage({ params: paramsPromise }: Clinic
         favorite={{
           isPatient: favoriteAuthContext.isPatient,
           favoriteId: favoriteStateByClinicId[String(clinicDetailData.clinicId)] ?? null,
-          loginHref: buildPatientLoginHref(clinicPath),
+          loginHref,
+          locale: 'de',
         }}
         inquiryCreation={inquiryCreation}
         cookieConsentConfig={cookieConsentContext.config}

@@ -16,7 +16,7 @@ import {
 import { RelatedDoctorSection, type RelatedDoctorItem } from '@/components/organisms/Doctors'
 import { TreatmentsStrip, type TreatmentsStripItem } from '@/components/organisms/TreatmentsStrip'
 import { useCookieConsentToolAllowed } from '@/features/cookieConsent/useCookieConsentToolAllowed'
-import { FavoriteClinicButton } from '@/features/favorites/FavoriteClinicButton'
+import { FavoriteClinicAction } from '@/features/favorites/FavoriteClinicAction.client'
 import type { ClinicDetailConceptProps } from '@/features/clinicDetail/contracts'
 import { buildOpenStreetMapHref, formatEur, sortTreatmentsByPrice } from '@/features/clinicDetail/presentation'
 import type { PatientInquiryCreationContext } from '@/features/patientInquiries/creationContext'
@@ -237,13 +237,14 @@ export function ClinicDetail({
           onDoctorSelect={interaction.toggleDoctorSelection}
           favoriteAction={
             favorite ? (
-              <FavoriteClinicButton
+              <FavoriteClinicAction
                 clinicId={data.clinicId}
+                clinicName={data.clinicName}
+                locale={favorite.locale ?? 'en'}
                 initialFavoriteId={favorite.favoriteId ?? null}
                 isPatient={favorite.isPatient}
                 loginHref={favorite.loginHref}
                 variant="hero"
-                unsavedLabel="Save clinic"
               />
             ) : undefined
           }

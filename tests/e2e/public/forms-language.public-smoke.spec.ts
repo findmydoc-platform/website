@@ -145,7 +145,7 @@ test.describe('public forms in German and English', () => {
       const path = locale === 'de' ? `/${fixturePrefix}-de` : `/en/${fixturePrefix}-en`
       const response = await page.goto(path, { waitUntil: 'domcontentloaded' })
       expect(response?.status()).toBe(200)
-      const article = page.getByRole('article').filter({ hasText: copy.hint })
+      const article = page.getByRole('main').getByRole('article')
       const form = article.locator('form')
       await expectLanguage(form, locale)
       await checkViewports(page, form)

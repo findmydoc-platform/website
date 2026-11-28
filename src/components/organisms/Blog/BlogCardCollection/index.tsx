@@ -13,7 +13,8 @@ import { UiLink } from '@/components/molecules/Link'
 import { cn } from '@/utilities/ui'
 
 export type BlogCardCollectionProps = {
-  posts: BlogCardBaseProps[]
+  posts: Array<BlogCardBaseProps & { lang?: string; languageLabel?: string; languageLabelLang?: string }>
+  moreLink?: { href: string; label: string }
   className?: string
   variant?: 'default' | 'blue'
   title?: string
@@ -50,6 +51,7 @@ export const BlogCardCollection: React.FC<BlogCardCollectionProps> = ({
   title = 'Blog',
   intro,
   background,
+  moreLink = { href: '/posts', label: 'More Articles' },
 }) => {
   const isBlue = variant === 'blue'
   const hasMediaBackground = Boolean(background?.media)
@@ -78,7 +80,7 @@ export const BlogCardCollection: React.FC<BlogCardCollectionProps> = ({
             </div>
           </div>
           <div className="mt-12 flex justify-center">
-            <UiLink href="/posts" appearance="ghostWhite" label="More Articles" size="lg" />
+            <UiLink href={moreLink.href} appearance="ghostWhite" label={moreLink.label} size="lg" />
           </div>
         </Container>
       </SectionBackground>
@@ -105,10 +107,10 @@ export const BlogCardCollection: React.FC<BlogCardCollectionProps> = ({
         </div>
         <div className="mt-12 flex justify-center">
           <UiLink
-            href="/posts"
+            href={moreLink.href}
             appearance={isBlue ? 'ghostWhite' : 'secondary'}
             hoverEffect={isBlue ? undefined : 'slideFill'}
-            label="More Articles"
+            label={moreLink.label}
             size="lg"
             className="rounded-full"
           />

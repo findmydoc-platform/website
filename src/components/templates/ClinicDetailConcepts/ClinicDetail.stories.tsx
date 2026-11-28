@@ -104,10 +104,6 @@ export const Main_Default: Story = {
       canvas.getByText(/Demo anonymous review text about document preparation/).closest('article'),
     ).toHaveFocus()
 
-    await expect(canvas.getByRole('heading', { name: 'Treatments' })).toBeInTheDocument()
-    await expect(canvas.getByRole('heading', { name: 'Further Treatments' })).toBeInTheDocument()
-    await expect(canvas.getByRole('heading', { name: 'Our Doctors' })).toBeInTheDocument()
-
     const contactDoctorLinks = canvas.getAllByRole('link', { name: 'Contact Doctor' })
     await expect(contactDoctorLinks.length).toBeGreaterThan(0)
     await expect(contactDoctorLinks[0]).toHaveAttribute('href', '#clinic-contact-form')

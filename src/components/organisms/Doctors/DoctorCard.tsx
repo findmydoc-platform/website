@@ -1,21 +1,25 @@
 import * as React from 'react'
 import { Clock, Phone, MessageCircle, ArrowRight } from 'lucide-react'
 
+import { Heading } from '@/components/atoms/Heading'
 import { Button } from '@/components/atoms/button'
 import { RatingSummary } from '@/components/molecules/RatingSummary'
 import { SocialLink } from '@/components/molecules/SocialLink'
+import { getClinicProfileTranslator } from '@/features/clinicDetail/overviewCopy'
+import type { UiCopyLocale } from '@/i18n/requestLocale'
 import { cn } from '@/utilities/ui'
 
 import type { DoctorCardData } from './types'
 
 export type DoctorCardProps = {
   data: DoctorCardData
+  locale?: UiCopyLocale
   className?: string
   titleAs?: 'h2' | 'h3'
 }
 
-export function DoctorCard({ data, className, titleAs = 'h3' }: DoctorCardProps) {
-  const Heading = titleAs
+export function DoctorCard({ data, locale = 'en', className, titleAs = 'h3' }: DoctorCardProps) {
+  const t = getClinicProfileTranslator(locale)
   const visibleQualifications = data.qualifications?.slice(0, 2) ?? []
   const remainingQualificationsCount = Math.max(0, (data.qualifications?.length ?? 0) - visibleQualifications.length)
   const visibleLanguages = data.languages?.slice(0, 3) ?? []
@@ -26,7 +30,11 @@ export function DoctorCard({ data, className, titleAs = 'h3' }: DoctorCardProps)
       <div className="p-6 md:p-8">
         <div className="flex items-start gap-4 sm:gap-6">
           <div className="min-w-0 flex-1">
-            <Heading className="text-left text-2xl leading-tight font-semibold text-secondary md:truncate md:text-3xl">
+            <Heading
+              align="left"
+              as={titleAs}
+              className="text-left text-2xl leading-tight font-semibold wrap-anywhere text-secondary md:text-3xl"
+            >
               {data.name}
             </Heading>
             {data.subtitle ? <p className="mt-1 text-base text-secondary">{data.subtitle}</p> : null}
@@ -46,12 +54,12 @@ export function DoctorCard({ data, className, titleAs = 'h3' }: DoctorCardProps)
                 ))}
                 {remainingQualificationsCount > 0 ? (
                   <span className="rounded-full border border-primary/20 bg-primary/6 px-2.5 py-1 text-xs font-medium text-secondary">
-                    +{remainingQualificationsCount} more
+                    {t('doctors.moreQualifications', { count: remainingQualificationsCount })}
                   </span>
                 ) : null}
                 {typeof data.experienceYears === 'number' ? (
                   <span className="rounded-full border border-primary/20 bg-background px-2.5 py-1 text-xs text-secondary/80">
-                    {data.experienceYears}+ years experience
+                    {t('doctors.experience', { years: data.experienceYears })}
                   </span>
                 ) : null}
               </div>
@@ -59,13 +67,14 @@ export function DoctorCard({ data, className, titleAs = 'h3' }: DoctorCardProps)
 
             {visibleLanguages.length > 0 ? (
               <p className="mt-2 text-xs text-secondary/70">
-                <span className="font-semibold text-secondary/80">Languages:</span> {visibleLanguages.join(', ')}
+                <span className="font-semibold text-secondary/80">{t('doctors.languages')}</span>{' '}
+                {new Intl.ListFormat(locale).format(visibleLanguages)}
                 {remainingLanguagesCount > 0 ? ` +${remainingLanguagesCount}` : ''}
               </p>
             ) : null}
 
             {data.socialLinks?.length ? (
-              <div className="mt-4 flex items-center gap-2" aria-label="Social links">
+              <div className="mt-4 flex items-center gap-2" aria-label={t('doctors.socialLinks')}>
                 {data.socialLinks.map((link) => (
                   <SocialLink
                     key={`${link.kind}-${link.href}`}
@@ -86,7 +95,14 @@ export function DoctorCard({ data, className, titleAs = 'h3' }: DoctorCardProps)
                 value={data.rating.value}
                 count={data.rating.reviewCount}
                 variant="stacked"
-                countFormat="reviews"
+                locale={locale}
+                ratingLabel={t('trust.ratingValue', {
+                  rating: data.rating.value.toLocaleString(locale, {
+                    minimumFractionDigits: 1,
+                    maximumFractionDigits: 1,
+                  }),
+                })}
+                countLabel={t('trust.reviewCount', { count: data.rating.reviewCount })}
               />
             </div>
           ) : null}
@@ -94,7 +110,7 @@ export function DoctorCard({ data, className, titleAs = 'h3' }: DoctorCardProps)
       </div>
 
       {data.actions ? (
-        <nav aria-label="Doctor actions" className="bg-primary px-4 py-5 md:px-8 md:py-6">
+        <nav aria-label={t('doctors.actions')} className="bg-primary px-4 py-5 md:px-8 md:py-6">
           <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
             {data.actions.availability ? (
               <a

@@ -38,4 +38,12 @@ describe('LandingHeroSearchBarClient', () => {
     expect(mocks.routerPush).toHaveBeenCalledWith('/listing-comparison?specialty=2&location=10&budget=5000')
     expect(mocks.routerPush.mock.calls[0]?.[0]).not.toContain('service=')
   })
+
+  it('hands the same selected filters to the English comparison', () => {
+    render(<LandingHeroSearchBarClient destination="/en/listing-comparison" />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Run homepage search' }))
+
+    expect(mocks.routerPush).toHaveBeenCalledWith('/en/listing-comparison?specialty=2&location=10&budget=5000')
+  })
 })

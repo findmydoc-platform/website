@@ -42,6 +42,8 @@ const CLINIC_DETAIL_RELATED_COLLECTION_TAGS = [
   buildCollectionTag('clinictreatments'),
   buildCollectionTag('doctors'),
   buildCollectionTag('doctorspecialties'),
+  buildCollectionTag('treatments'),
+  buildCollectionTag('medical-specialties'),
   buildCollectionTag('reviews'),
   buildCollectionTag('reviewResponses'),
   buildCollectionTag('accreditation'),
@@ -245,8 +247,8 @@ export async function getClinicDetailServerData(
   const profileImages = buildPublicProfileImages(payload, clinic, locale)
 
   const [clinicTreatments, doctors, clinicReviewCount, approvedClinicReviews] = await Promise.all([
-    findClinicTreatmentsByClinicId(payload, clinic.id),
-    findDoctorsByClinicId(payload, clinic.id),
+    findClinicTreatmentsByClinicId(payload, clinic.id, locale),
+    findDoctorsByClinicId(payload, clinic.id, locale),
     countApprovedClinicReviews(payload, clinic.id),
     findApprovedClinicReviewsByClinicId(payload, clinic.id),
   ])
@@ -255,11 +257,12 @@ export async function getClinicDetailServerData(
   const reviewIds = approvedClinicReviews.map((review) => review.id)
 
   const [doctorSpecialties, doctorReviewCounts, doctorMediaByDoctorId, reviewResponses] = await Promise.all([
-    findDoctorSpecialtiesByDoctorIds(payload, doctorIds),
+    findDoctorSpecialtiesByDoctorIds(payload, doctorIds, locale),
     countApprovedDoctorReviews(payload, doctorIds),
     buildDoctorProfileDescriptorsByDoctorId({
       payload,
       doctors,
+      locale,
     }),
     findPublicReviewResponsesByReviewIds(payload, reviewIds),
   ])

@@ -13,8 +13,42 @@ export type ClinicSearchValues = {
   budget: string
 }
 
+type ClinicSearchControlCopy = {
+  label: string
+  prompt: string
+  search: string
+  empty: string
+}
+
+export type ClinicSearchBarCopy = {
+  service: ClinicSearchControlCopy
+  location: ClinicSearchControlCopy
+  budget: string
+  submit: string
+}
+
+const Divider = () => <div className="h-px w-full bg-border lg:h-16 lg:w-px" aria-hidden="true" />
+
+const defaultCopy: ClinicSearchBarCopy = {
+  service: {
+    label: 'Service',
+    prompt: 'Select a service',
+    search: 'Search services…',
+    empty: 'No services available.',
+  },
+  location: {
+    label: 'Location',
+    prompt: 'Select a location',
+    search: 'Search locations…',
+    empty: 'No locations available.',
+  },
+  budget: 'Budget (EUR)',
+  submit: 'Find my Doctor!',
+}
+
 export type ClinicSearchBarProps = {
   className?: string
+  copy?: ClinicSearchBarCopy
   values: ClinicSearchValues
   onValuesChange: (values: ClinicSearchValues) => void
   /**
@@ -29,6 +63,7 @@ export type ClinicSearchBarProps = {
 
 export const ClinicSearchBar: React.FC<ClinicSearchBarProps> = ({
   className,
+  copy = defaultCopy,
   values,
   onValuesChange,
   onSearch,
@@ -37,34 +72,34 @@ export const ClinicSearchBar: React.FC<ClinicSearchBarProps> = ({
 }) => {
   const budgetId = React.useId()
 
-  const handleSearch = () => {
-    onSearch?.(values)
-  }
-
-  const Divider = () => <div className="h-px w-full bg-border md:h-16 md:w-px" aria-hidden="true" />
-
   return (
-    <div
+    <form
+      noValidate
+      onSubmit={(event) => {
+        event.preventDefault()
+        onSearch?.(values)
+      }}
       className={cn(
         'flex w-full max-w-5xl flex-col items-stretch rounded-2xl bg-card p-2 shadow-lg',
-        'md:flex-row md:items-center',
+        'lg:flex-row lg:items-center',
         className,
       )}
     >
-      <div className="flex flex-1 items-center px-4 py-2 md:px-6 md:py-0">
+      <div className="flex min-w-0 flex-1 items-center px-4 py-2 lg:px-6 lg:py-0">
         <div className="w-full">
-          <div className="text-sm text-foreground">Service</div>
+          <div className="text-sm text-foreground">{copy.service.label}</div>
           <Combobox
             options={serviceOptions}
             value={values.service}
             onValueChange={(service) => onValuesChange({ ...values, service })}
-            placeholder="Select a service"
-            searchPlaceholder="Search services…"
-            emptyLabel="No services available."
+            ariaLabel={copy.service.label}
+            placeholder={copy.service.prompt}
+            searchPlaceholder={copy.service.search}
+            emptyLabel={copy.service.empty}
             disabled={serviceOptions.length === 0}
             buttonClassName={cn(
-              'h-auto min-h-11 w-full justify-between border-0 bg-transparent px-0 py-1 text-left text-base font-medium md:min-h-0',
-              'shadow-none hover:bg-transparent',
+              'h-auto min-h-11 w-full justify-between border-0 bg-transparent px-0 py-1 text-left text-base font-medium lg:min-h-0',
+              'shadow-none hover:bg-transparent [&>span]:min-w-0 [&>span]:truncate',
             )}
           />
         </div>
@@ -72,20 +107,21 @@ export const ClinicSearchBar: React.FC<ClinicSearchBarProps> = ({
 
       <Divider />
 
-      <div className="flex flex-1 items-center px-4 py-2 md:px-6 md:py-0">
+      <div className="flex min-w-0 flex-1 items-center px-4 py-2 lg:px-6 lg:py-0">
         <div className="w-full">
-          <div className="text-sm text-foreground">Location</div>
+          <div className="text-sm text-foreground">{copy.location.label}</div>
           <Combobox
             options={locationOptions}
             value={values.location}
             onValueChange={(location) => onValuesChange({ ...values, location })}
-            placeholder="Select a location"
-            searchPlaceholder="Search locations…"
-            emptyLabel="No locations available."
+            ariaLabel={copy.location.label}
+            placeholder={copy.location.prompt}
+            searchPlaceholder={copy.location.search}
+            emptyLabel={copy.location.empty}
             disabled={locationOptions.length === 0}
             buttonClassName={cn(
-              'h-auto min-h-11 w-full justify-between border-0 bg-transparent px-0 py-1 text-left text-base font-medium md:min-h-0',
-              'shadow-none hover:bg-transparent',
+              'h-auto min-h-11 w-full justify-between border-0 bg-transparent px-0 py-1 text-left text-base font-medium lg:min-h-0',
+              'shadow-none hover:bg-transparent [&>span]:min-w-0 [&>span]:truncate',
             )}
           />
         </div>
@@ -93,10 +129,10 @@ export const ClinicSearchBar: React.FC<ClinicSearchBarProps> = ({
 
       <Divider />
 
-      <div className="flex flex-1 items-center px-4 py-2 md:px-6 md:py-0">
+      <div className="flex min-w-0 flex-1 items-center px-4 py-2 lg:px-6 lg:py-0">
         <div className="w-full">
           <label className="text-sm text-foreground" htmlFor={budgetId}>
-            Budget (EUR)
+            {copy.budget}
           </label>
           <Input
             id={budgetId}
@@ -106,24 +142,22 @@ export const ClinicSearchBar: React.FC<ClinicSearchBarProps> = ({
             step={1}
             value={values.budget}
             onChange={(e) => onValuesChange({ ...values, budget: e.target.value })}
-            className="h-auto min-h-11 border-0 bg-transparent px-0 py-1 text-base font-medium text-foreground md:min-h-0 md:text-base"
+            className="h-auto min-h-11 border-0 bg-transparent px-0 py-1 text-base font-medium text-foreground lg:min-h-0 lg:text-base"
             placeholder="12000"
-            aria-label="Budget in EUR"
           />
         </div>
       </div>
 
-      <div className="flex items-center px-2 pt-2 md:pt-0 md:pr-2 md:pl-4">
+      <div className="flex items-center px-2 pt-2 lg:pt-0 lg:pr-2 lg:pl-4">
         <Button
-          type="button"
+          type="submit"
           variant="primary"
           hoverEffect="wave"
-          className="h-10 min-h-11 w-full rounded-full px-6 md:min-h-0 md:w-auto"
-          onClick={handleSearch}
+          className="h-10 min-h-11 w-full rounded-full px-6 lg:min-h-0 lg:w-auto"
         >
-          Find my Doctor!
+          {copy.submit}
         </Button>
       </div>
-    </div>
+    </form>
   )
 }

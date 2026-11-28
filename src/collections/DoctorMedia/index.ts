@@ -71,6 +71,12 @@ export const DoctorMedia: CollectionConfig = {
     buildMediaAltField(),
     buildMediaCaptionField(),
     {
+      name: 'localizedAlt',
+      type: 'text',
+      localized: true,
+      admin: { description: 'Image description for screen readers in the selected language' },
+    },
+    {
       name: 'doctor',
       type: 'relationship',
       relationTo: 'doctors',

@@ -12,6 +12,9 @@ export type EnhancedVariant = 'light' | 'dark'
 
 export type EnhancedProps = BlogCardBaseProps & {
   variant?: EnhancedVariant
+  lang?: string
+  languageLabel?: string
+  languageLabelLang?: string
 }
 
 /**
@@ -25,6 +28,10 @@ export const Enhanced: React.FC<EnhancedProps> = ({
   excerpt,
   href,
   dateLabel,
+  dateLang,
+  lang,
+  languageLabel,
+  languageLabelLang,
   category,
   categoryLang,
   image,
@@ -36,7 +43,7 @@ export const Enhanced: React.FC<EnhancedProps> = ({
   const titleId = useId()
   const resolvedImage = image ?? {
     src: '/images/blog-placeholder-1600-900.svg',
-    alt: 'Blog placeholder',
+    alt: '',
     sizes: '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw',
     quality: 70,
   }
@@ -49,13 +56,13 @@ export const Enhanced: React.FC<EnhancedProps> = ({
   const authorName = author?.name || 'findmydoc Editorial Team'
 
   return (
-    <Link href={href} aria-labelledby={titleId} className={cn('group block', className)}>
-      <article className="flex h-full flex-col">
+    <Link href={href} hrefLang={lang} aria-labelledby={titleId} className={cn('group block', className)}>
+      <article lang={lang} className="flex h-full flex-col">
         {/* Image with Category Overlay */}
         <div className="relative mb-5 aspect-[4/3] overflow-hidden rounded-3xl">
           <Image
             src={resolvedImage.src}
-            alt={resolvedImage.alt || 'Blog placeholder'}
+            alt={resolvedImage.alt}
             fill
             className="object-cover transition-transform duration-500 group-hover:scale-105"
             sizes={imageSizes}
@@ -76,6 +83,14 @@ export const Enhanced: React.FC<EnhancedProps> = ({
         </div>
 
         <div className="mb-4 flex min-h-[7.25rem] flex-col">
+          {languageLabel && (
+            <p
+              lang={languageLabelLang}
+              className={cn('mb-2 text-xs font-medium', isDark ? 'text-white/70' : 'text-muted-foreground')}
+            >
+              {languageLabel}
+            </p>
+          )}
           {/* Title */}
           <Heading
             id={titleId}
@@ -132,7 +147,10 @@ export const Enhanced: React.FC<EnhancedProps> = ({
                 {authorName}
               </p>
               {dateLabel && (
-                <p className={cn('truncate text-xs', isDark ? 'text-white/70' : 'text-muted-foreground')}>
+                <p
+                  lang={dateLang}
+                  className={cn('truncate text-xs', isDark ? 'text-white/70' : 'text-muted-foreground')}
+                >
                   {dateLabel}
                 </p>
               )}

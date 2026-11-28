@@ -16,7 +16,7 @@ export type ClinicDetailPageJsonLdInput = {
       src?: string | null
     }
     name: string
-    specialty: string
+    specialty?: string
   }>
   heroImage: {
     src?: string | null

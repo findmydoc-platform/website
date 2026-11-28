@@ -6,6 +6,8 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Heading } from '@/components/atoms/Heading'
 import { Button } from '@/components/atoms/button'
 import { Media } from '@/components/molecules/Media'
+import { getClinicProfileTranslator } from '@/features/clinicDetail/overviewCopy'
+import type { UiCopyLocale } from '@/i18n/requestLocale'
 import { cn } from '@/utilities/ui'
 
 import { DoctorCard } from './DoctorCard'
@@ -13,6 +15,7 @@ import type { RelatedDoctorItem } from './types'
 
 export type RelatedDoctorCarouselProps = {
   doctors: RelatedDoctorItem[]
+  locale?: UiCopyLocale
   initialIndex?: number
   activeIndex?: number
   onActiveIndexChange?: (nextIndex: number) => void
@@ -28,12 +31,14 @@ function normalizeIndex(index: number, total: number) {
 
 export function RelatedDoctorCarousel({
   doctors,
+  locale = 'en',
   initialIndex = 0,
   activeIndex,
   onActiveIndexChange,
   title,
   className,
 }: RelatedDoctorCarouselProps) {
+  const t = getClinicProfileTranslator(locale)
   const total = doctors.length
   const [uncontrolledActiveIndex, setUncontrolledActiveIndex] = React.useState(() =>
     normalizeIndex(initialIndex, total),
@@ -102,20 +107,20 @@ export function RelatedDoctorCarousel({
         </div>
 
         <div className="relative z-10 col-span-12 lg:col-span-8 lg:col-start-5 lg:row-start-2 lg:pt-8">
-          <DoctorCard data={active.card} titleAs="h3" />
+          <DoctorCard data={active.card} locale={locale} titleAs="h3" />
         </div>
       </div>
 
       {canNavigate ? (
         <div className="mt-6 flex items-center justify-between">
-          <div className="flex items-center gap-2" aria-label="Related doctors">
+          <div role="group" className="flex flex-wrap items-center gap-2" aria-label={t('doctors.carousel')}>
             {doctors.map((d, idx) => {
               const isActive = idx === normalizeIndex(resolvedActiveIndex, total)
               return (
                 <button
                   key={d.id}
                   type="button"
-                  aria-label={`Show doctor ${idx + 1}: ${d.card.name}`}
+                  aria-label={t('doctors.carouselItem', { position: idx + 1, doctor: d.card.name })}
                   aria-current={isActive ? 'true' : undefined}
                   className={cn(
                     'cursor-pointer rounded-full transition-[background-color,width,height] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-hidden',
@@ -128,10 +133,22 @@ export function RelatedDoctorCarousel({
           </div>
 
           <div className="flex items-center gap-2">
-            <Button type="button" variant="brandOutlineThick" size="icon" aria-label="Previous doctor" onClick={goPrev}>
+            <Button
+              type="button"
+              variant="brandOutlineThick"
+              size="icon"
+              aria-label={t('doctors.previous')}
+              onClick={goPrev}
+            >
               <ChevronLeft className="size-5" aria-hidden="true" />
             </Button>
-            <Button type="button" variant="brandOutlineThick" size="icon" aria-label="Next doctor" onClick={goNext}>
+            <Button
+              type="button"
+              variant="brandOutlineThick"
+              size="icon"
+              aria-label={t('doctors.next')}
+              onClick={goNext}
+            >
               <ChevronRight className="size-5" aria-hidden="true" />
             </Button>
           </div>

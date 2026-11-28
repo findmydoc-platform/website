@@ -6,6 +6,7 @@ import type { FAQItem } from '@/components/organisms/FAQ'
 import type { LandingTestimonial } from '@/components/organisms/Landing/LandingTestimonials.types'
 import { resolveHrefFromCMSLink } from '@/blocks/_shared/utils'
 import type { LandingPage, PlatformContentMedia } from '@/payload-types'
+import type { ContentLocale } from '@/utilities/contentLocalization'
 import { getCachedGlobal } from '@/utilities/getGlobals'
 import { resolveMediaImage, type MediaImageUsage, type ResolvedMediaImage } from '@/utilities/media/resolveMediaImage'
 import { landingSocialHosts, normalizeSafeLandingHref } from './safeLandingHref'
@@ -208,15 +209,16 @@ const normalizeFeatures = (
   fieldPath: string,
 ): LandingFeature[] =>
   requireLandingArray(items, fieldPath).map((item) => ({
-    title: item.title,
+    title: item.title ?? '',
     subtitle: optionalText(item.subtitle),
-    description: item.description,
+    description: item.description ?? '',
     icon: landingFeatureIcons[item.icon] ?? landingFeatureIcons.checkCircle,
   }))
 
 const normalizeTestimonials = (
   testimonials: LandingPage['home']['testimonials'] | null | undefined,
   fieldPath: string,
+  decorativeImages = false,
 ): LandingTestimonial[] => {
   return requireLandingArray(testimonials, fieldPath).map((testimonial, index) => {
     const image = resolveRequiredLandingImage(
@@ -227,34 +229,34 @@ const normalizeTestimonials = (
     )
 
     return {
-      quote: testimonial.quote,
+      quote: testimonial.quote ?? '',
       author: testimonial.author,
-      role: testimonial.role,
-      image,
+      role: testimonial.role ?? '',
+      image: decorativeImages ? { ...image, alt: '' } : image,
     }
   })
 }
 
 const normalizeFaq = (faq: LandingPage['home']['faq'], fieldPath: string): LandingFaqContent => ({
-  title: faq.title,
-  description: faq.description,
+  title: faq.title ?? '',
+  description: faq.description ?? '',
   items: requireLandingArray(faq.items, `${fieldPath}.items`).map((item, index) => ({
     id: optionalText(item.id) ?? `faq-${index + 1}`,
-    question: item.question,
-    answer: item.answer,
+    question: item.question ?? '',
+    answer: item.answer ?? '',
   })),
 })
 
 const normalizeProcess = (process: LandingPage['home']['process'], fieldPath: string): LandingProcessContent => ({
-  title: process.title,
-  subtitle: process.subtitle,
+  title: process.title ?? '',
+  subtitle: process.subtitle ?? '',
   steps: requireLandingArray(process.steps, `${fieldPath}.steps`).map((step) => ({
     step: step.step,
-    title: step.title,
-    description: step.description,
+    title: step.title ?? '',
+    description: step.description ?? '',
   })),
   stepImages: requireLandingArray(process.steps, `${fieldPath}.steps`).map((step, index) =>
-    resolveRequiredLandingImage(step.image, `${fieldPath}.steps.${index}.image`, step.title),
+    resolveRequiredLandingImage(step.image, `${fieldPath}.steps.${index}.image`, step.title ?? ''),
   ),
 })
 
@@ -381,6 +383,7 @@ export const normalizeHomeLandingContent = (landingPages: LandingPage) => {
   const home = requireLandingSection(landingPages.home, 'home')
   const seo = requireLandingSection(home.seo, 'home.seo')
   const hero = requireLandingSection(home.hero, 'home.hero')
+  const image = resolveRequiredLandingImage(hero.image, 'home.hero.image', '', 'hero')
   const features = requireLandingSection(home.features, 'home.features')
   const process = requireLandingSection(home.process, 'home.process')
   const faq = requireLandingSection(home.faq, 'home.faq')
@@ -395,27 +398,29 @@ export const normalizeHomeLandingContent = (landingPages: LandingPage) => {
       description: seo.description,
     },
     hero: {
-      title: hero.title,
-      description: hero.description,
-      image: resolveRequiredLandingImage(hero.image, 'home.hero.image', hero.title),
+      title: hero.title ?? '',
+      description: hero.description ?? '',
+      image: { ...image, alt: hero.imageAlt?.trim() ?? '' },
     },
-    testimonials: normalizeTestimonials(home.testimonials, 'home.testimonials'),
-    testimonialsIntro,
-    categoriesIntro,
+    testimonials: normalizeTestimonials(home.testimonials, 'home.testimonials', true).filter(({ quote, role }) =>
+      Boolean(quote && role),
+    ),
+    testimonialsIntro: { title: testimonialsIntro.title ?? '', description: testimonialsIntro.description ?? '' },
+    categoriesIntro: { title: categoriesIntro.title ?? '', description: categoriesIntro.description ?? '' },
     features: {
-      title: features.title,
-      description: features.description,
+      title: features.title ?? '',
+      description: features.description ?? '',
       backgroundImage: resolveRequiredLandingImage(
         features.backgroundImage,
         'home.features.backgroundImage',
-        features.title,
+        features.title ?? '',
       ).src,
       items: normalizeFeatures(features.items, 'home.features.items'),
     },
     process: normalizeProcess(process, 'home.process'),
     faq: normalizeFaq(faq, 'home.faq'),
-    blogTeaser,
-    contact,
+    blogTeaser: { title: blogTeaser.title ?? '', description: blogTeaser.description ?? '' },
+    contact: { title: contact.title ?? '', description: contact.description ?? '' },
   } satisfies HomeLandingContent
 }
 
@@ -496,8 +501,8 @@ export const normalizeClinicPartnerLandingContent = (landingPages: LandingPage) 
   } satisfies ClinicPartnerLandingContent
 }
 
-export const getHomeLandingContent = async (): Promise<HomeLandingContent> => {
-  const landingPages = (await getCachedGlobal('landingPages', 2)()) as LandingPage | null | undefined
+export const getHomeLandingContent = async (locale: ContentLocale = 'de'): Promise<HomeLandingContent> => {
+  const landingPages = (await getCachedGlobal('landingPages', 2, locale)()) as LandingPage | null | undefined
 
   return normalizeHomeLandingContent(requireLandingPagesGlobal(landingPages))
 }

@@ -4,16 +4,24 @@ import * as React from 'react'
 import { useRouter } from 'next/navigation'
 
 import type { ComboboxOption } from '@/components/atoms/combobox'
-import { ClinicSearchBar, type ClinicSearchValues } from '@/components/molecules/ClinicSearchBar'
+import {
+  ClinicSearchBar,
+  type ClinicSearchBarCopy,
+  type ClinicSearchValues,
+} from '@/components/molecules/ClinicSearchBar'
 
 type LandingHeroSearchBarClientProps = {
   className?: string
+  copy?: ClinicSearchBarCopy
+  destination?: string
   serviceOptions?: ComboboxOption[]
   locationOptions?: ComboboxOption[]
 }
 
 export function LandingHeroSearchBarClient({
   className,
+  copy,
+  destination = '/listing-comparison',
   serviceOptions,
   locationOptions,
 }: LandingHeroSearchBarClientProps) {
@@ -27,6 +35,7 @@ export function LandingHeroSearchBarClient({
   return (
     <ClinicSearchBar
       className={className}
+      copy={copy}
       values={values}
       onValuesChange={setValues}
       serviceOptions={serviceOptions}
@@ -44,7 +53,7 @@ export function LandingHeroSearchBarClient({
         }
 
         const query = params.toString()
-        router.push(query ? `/listing-comparison?${query}` : '/listing-comparison')
+        router.push(query ? `${destination}?${query}` : destination)
       }}
     />
   )

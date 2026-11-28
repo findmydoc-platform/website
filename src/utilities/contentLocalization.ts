@@ -58,6 +58,7 @@ export const appendContentLocaleToPath = (path: string, locale?: ContentLocale |
 }
 
 const reservedEnglishPageSlugs = new Set([
+  'contact',
   'auth/password/reset',
   'listing-comparison',
   'login/patient',

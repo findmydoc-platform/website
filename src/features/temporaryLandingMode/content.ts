@@ -16,7 +16,7 @@ type TemporaryLandingCopy = {
   contactConsent: string
   contactDescription: string
   contactEyebrow: string
-  contactFormLabels: ContactRequestFormLabels
+  contactFormLabels?: ContactRequestFormLabels
   contactTitle: string
   description: string
   eyebrow: string
@@ -56,17 +56,6 @@ const copyByLocale: Record<TemporaryLandingLocale, TemporaryLandingCopy> = {
     contactDescription:
       'Use this contact form to send us a direct request. Include a short title, your message, and your email so we can reply.',
     contactEyebrow: 'Contact',
-    contactFormLabels: {
-      emailPlaceholder: 'Email',
-      emailRequiredMessage: 'Email is required.',
-      genericErrorMessage: 'Could not send your request right now.',
-      messagePlaceholder: 'Message',
-      messageRequiredMessage: 'Message is required.',
-      namePlaceholder: 'Name',
-      nameRequiredMessage: 'Name is required.',
-      submittingLabel: 'Sending...',
-      successMessage: 'Your request has been sent successfully.',
-    },
     contactTitle: 'Contact us',
     description:
       'findmydoc brings together patient reviews and quality indicators in one place - transparent, comparable, easy to understand.',
@@ -110,17 +99,6 @@ const copyByLocale: Record<TemporaryLandingLocale, TemporaryLandingCopy> = {
     contactDescription:
       'Nutze dieses Kontaktformular für eine direkte Anfrage. Gib einen kurzen Titel, deine Nachricht und deine E-Mail an, damit wir antworten können.',
     contactEyebrow: 'Kontakt',
-    contactFormLabels: {
-      emailPlaceholder: 'E-Mail',
-      emailRequiredMessage: 'E-Mail ist erforderlich.',
-      genericErrorMessage: 'Deine Anfrage konnte gerade nicht gesendet werden.',
-      messagePlaceholder: 'Nachricht',
-      messageRequiredMessage: 'Nachricht ist erforderlich.',
-      namePlaceholder: 'Name',
-      nameRequiredMessage: 'Name ist erforderlich.',
-      submittingLabel: 'Wird gesendet...',
-      successMessage: 'Deine Anfrage wurde erfolgreich gesendet.',
-    },
     contactTitle: 'Kontaktiere uns',
     description:
       'findmydoc bündelt Erfahrungsberichte und Qualitätsindikatoren an einem Ort - transparent, vergleichbar, verständlich.',
@@ -169,6 +147,7 @@ const copyByLocale: Record<TemporaryLandingLocale, TemporaryLandingCopy> = {
       'Bu form üzerinden bize doğrudan ulaşabilirsiniz. Kısa bir başlık, mesajınız ve size dönüş yapabilmemiz için e-posta adresinizi ekleyin.',
     contactEyebrow: 'İletişim',
     contactFormLabels: {
+      emailInvalidMessage: 'Geçerli bir e-posta adresi girin.',
       emailPlaceholder: 'E-posta',
       emailRequiredMessage: 'E-posta zorunludur.',
       genericErrorMessage: 'Talebiniz şu anda gönderilemedi.',

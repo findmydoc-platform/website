@@ -1,3 +1,4 @@
+import { CONTACT_PATHS } from '@/i18n/contactPath'
 import { getServerSideSitemap } from 'next-sitemap'
 import { getPayload } from 'payload'
 import config from '@payload-config'
@@ -11,7 +12,7 @@ import type { ContentLocale } from '@/utilities/contentLocalization'
 import { TEMPORARY_LANDING_PATHS } from '@/features/temporaryLandingMode/i18n'
 import { getServerSideURL } from '@/utilities/getURL'
 
-const fixedPublicPaths = ['/', '/posts', '/contact', '/about', '/listing-comparison'] as const
+const fixedPublicPaths = ['/', '/posts', ...Object.values(CONTACT_PATHS), '/about', '/listing-comparison'] as const
 const excludedPublicPaths = new Set(['/search'])
 
 type SitemapEntry = {

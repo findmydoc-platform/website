@@ -1,3 +1,4 @@
+import { contactLocaleFromPath } from '@/i18n/contactPath'
 import type { FooterNavGroup, HeaderNavItem } from '@/utilities/normalizeNavItems'
 import type { UiLinkProps } from '@/components/molecules/Link'
 import { temporaryLandingLocaleFromPath } from './i18n'
@@ -48,7 +49,7 @@ export const classifyHoldingPublicDestination = (href: string, siteOrigin: strin
   if (pathname === '/posts') return 'blog-index'
   if (/^\/posts\/page\/[1-9]\d*$/.test(pathname)) return 'blog-pagination'
   if (/^\/posts\/[^/]+$/.test(pathname)) return 'blog-article'
-  if (pathname === '/contact') return 'contact'
+  if (contactLocaleFromPath(pathname)) return 'contact'
   if (pathname === '/privacy-policy') return 'privacy'
   if (pathname === '/imprint') return 'imprint'
 

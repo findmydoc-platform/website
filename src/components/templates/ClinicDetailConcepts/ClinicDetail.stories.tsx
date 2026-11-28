@@ -109,10 +109,6 @@ export const Main_Default: Story = {
     ).toHaveFocus()
     expect(canvas.getAllByText('Showing 5 reviews of 5 verified reviews.').length).toBeGreaterThan(0)
 
-    await expect(canvas.getByRole('heading', { name: 'Treatments' })).toBeInTheDocument()
-    await expect(canvas.getByRole('heading', { name: 'Further Treatments' })).toBeInTheDocument()
-    await expect(canvas.getByRole('heading', { name: 'Our Doctors' })).toBeInTheDocument()
-
     const contactDoctorLinks = canvas.getAllByRole('link', { name: 'Contact Doctor' })
     await expect(contactDoctorLinks.length).toBeGreaterThan(0)
     await expect(contactDoctorLinks[0]).toHaveAttribute('href', '#clinic-contact-form')

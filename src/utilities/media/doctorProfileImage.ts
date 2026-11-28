@@ -1,31 +1,19 @@
 import type { Payload } from 'payload'
 
 import type { Doctor } from '@/payload-types'
-
+import type { UiCopyLocale } from '@/i18n/requestLocale'
 import { resolveAvatarPlaceholder } from '@/utilities/placeholders/avatar'
 
-import {
-  buildMediaDescriptorsByOwnerId,
-  resolveMediaImageDescriptorForOwner,
-  type MediaDescriptor,
-} from './relationMedia'
-
-function resolveDoctorDisplayName(doctor: Doctor): string {
-  if (typeof doctor.fullName === 'string' && doctor.fullName.trim().length > 0) {
-    return doctor.fullName
-  }
-
-  const parts = [doctor.firstName, doctor.lastName].filter((part) => typeof part === 'string' && part.trim().length > 0)
-  const fallbackName = parts.join(' ').trim()
-  return fallbackName.length > 0 ? fallbackName : `Doctor ${doctor.id}`
-}
+import { buildMediaDescriptorsByOwnerId, type MediaDescriptor } from './relationMedia'
 
 export async function buildDoctorProfileDescriptorsByDoctorId({
   payload,
   doctors,
+  locale,
 }: {
   payload: Payload
   doctors: Doctor[]
+  locale: UiCopyLocale
 }): Promise<Map<number, MediaDescriptor>> {
   return buildMediaDescriptorsByOwnerId({
     payload,
@@ -33,30 +21,21 @@ export async function buildDoctorProfileDescriptorsByDoctorId({
     collection: 'doctorMedia',
     getOwnerId: (doctor) => doctor.id,
     getRelation: (doctor) => doctor.profileImage,
+    locale,
   })
 }
 
 export function resolveDoctorProfileImage({
   doctor,
   descriptorsByDoctorId,
+  fallbackAlt,
 }: {
   doctor: Doctor
   descriptorsByDoctorId?: ReadonlyMap<number, MediaDescriptor>
+  fallbackAlt: string
 }): { src: string; alt: string } {
-  const profileImageDescriptor = resolveMediaImageDescriptorForOwner({
-    ownerId: doctor.id,
-    relation: doctor.profileImage,
-    collection: 'doctorMedia',
-    descriptorsByOwnerId: descriptorsByDoctorId,
-  })
-
-  return {
-    src:
-      profileImageDescriptor?.url ??
-      resolveAvatarPlaceholder({
-        persona: 'doctor',
-        gender: doctor.gender,
-      }),
-    alt: profileImageDescriptor?.alt ?? `${resolveDoctorDisplayName(doctor)} portrait`,
-  }
+  const image = descriptorsByDoctorId?.get(doctor.id)
+  return image?.url
+    ? { src: image.url, alt: image.alt || fallbackAlt }
+    : { src: resolveAvatarPlaceholder({ persona: 'doctor', gender: doctor.gender }), alt: '' }
 }

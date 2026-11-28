@@ -52,7 +52,7 @@ const tileVariants = cva(
 type TileVariantProps = VariantProps<typeof tileVariants>
 
 type TreatmentsStripProps = {
-  eyebrow?: string
+  eyebrow?: string | null
   heading: string
   items: TreatmentsStripItem[]
   activeIndex: number
@@ -88,7 +88,9 @@ export const TreatmentsStrip: React.FC<TreatmentsStripProps> = ({
     <section className={cn('w-full', className)} aria-labelledby={titleId}>
       <Container className="py-16">
         <header className="max-w-3xl">
-          <p className="text-left text-base font-normal tracking-[5px] text-primary uppercase">{eyebrow}</p>
+          {eyebrow ? (
+            <p className="text-left text-base font-normal tracking-[5px] text-primary uppercase">{eyebrow}</p>
+          ) : null}
           <Heading id={titleId} as="h2" align="left" className="text-5xl leading-[0.95] text-secondary sm:text-size-72">
             {heading}
           </Heading>
@@ -265,7 +267,11 @@ function ActiveCard({ item, lifted = false }: { item: TreatmentsStripItem; lifte
         {item.cta || item.comparisonLink ? (
           <div className="mt-5 flex flex-col items-center gap-2">
             {item.cta ? (
-              <Button type="button" className="rounded-full px-6" onClick={item.cta.onClick}>
+              <Button
+                type="button"
+                className="h-auto min-h-9 rounded-full px-4 text-wrap md:px-3 lg:px-6"
+                onClick={item.cta.onClick}
+              >
                 {item.cta.label}
               </Button>
             ) : null}

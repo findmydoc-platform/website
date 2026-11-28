@@ -89,6 +89,7 @@ export function HeroOverviewSection({
                   <DoctorPreviewListItem
                     key={doctor.id}
                     doctor={doctor}
+                    selectLabel={t('doctors.select', { doctor: doctor.name })}
                     selected={activeDoctorId === doctor.id}
                     ratingText={
                       typeof doctor.ratingValue === 'number' && doctor.reviewCount

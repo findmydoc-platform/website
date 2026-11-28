@@ -1,4 +1,6 @@
 import type { VerificationBadgeVariant } from '@/components/atoms/verification-badge'
+import { getListingComparisonTranslator } from '@/features/listingComparison/copy'
+import type { UiCopyLocale } from '@/i18n/requestLocale'
 import type { ListingCardData } from '@/components/organisms/Listing'
 import type { Clinic } from '@/payload-types'
 import { resolveMediaImage } from '@/utilities/media/resolveMediaImage'
@@ -10,16 +12,15 @@ import { resolveScopedPriceFrom } from './pricing'
 import { extractRelationId } from './relations'
 import type { CityMeta, ClinicPresentationMeta, ClinicRow } from './types'
 
-const DEFAULT_LOCATION_LABEL = 'Unknown location'
 const PLACEHOLDER_MEDIA = {
   src: '/images/placeholders/clinic-placeholder.webp',
-  alt: 'Clinic placeholder image',
 }
 const CLINIC_MEDIA_API_PREFIX = '/api/clinicMedia/file/'
 
 type ListingCardPresentationOptions = {
   availableClinicMediaFiles?: ReadonlySet<string>
   mediaByClinicId?: ReadonlyMap<number, MediaDescriptor>
+  locale?: UiCopyLocale
 }
 
 function normalizeVerification(value: unknown): VerificationBadgeVariant {
@@ -72,23 +73,30 @@ function resolveAvailableMediaSrc(
   return PLACEHOLDER_MEDIA.src
 }
 
+const countryNames = {
+  de: new Intl.DisplayNames('de', { type: 'region', fallback: 'none' }),
+  en: new Intl.DisplayNames('en', { type: 'region', fallback: 'none' }),
+}
+
 export function buildClinicPresentationMeta(
   clinic: Clinic,
   cityMetaById: Map<number, CityMeta>,
+  locale: UiCopyLocale = 'en',
 ): ClinicPresentationMeta {
   const cityRelation = clinic.address?.city
   const cityId = extractRelationId(cityRelation)
-  const cityName =
-    typeof cityRelation === 'object' && cityRelation !== null && 'name' in cityRelation
-      ? String((cityRelation as { name?: unknown }).name ?? '')
-      : ((cityId ? cityMetaById.get(cityId)?.name : undefined) ?? '')
+  const projectedCity = cityId ? cityMetaById.get(cityId)?.name : undefined
+  const city = projectedCity ?? getRelationshipName(cityRelation)
 
-  const country = getRelationshipName(clinic.address?.country)
-  const location = [cityName, country].filter((item) => item && item.trim().length > 0).join(', ')
+  const countryRelation = clinic.address?.country
+  const isoCode = typeof countryRelation === 'object' ? countryRelation?.isoCode?.trim().toUpperCase() : undefined
+  const localizedCountry = isoCode && /^[A-Z]{2}$/.test(isoCode) ? countryNames[locale].of(isoCode) : undefined
+  const country = localizedCountry ?? getRelationshipName(countryRelation)
+  const location = [city, country].filter((item) => item && item.trim().length > 0).join(', ')
 
   return {
     cityId,
-    location: location || DEFAULT_LOCATION_LABEL,
+    location,
     locationHref: mapLocationHref(clinic.coordinates),
   }
 }
@@ -124,7 +132,7 @@ export function buildScopedClinicRows({
       {
         clinic,
         cityId,
-        location: presentation?.location ?? DEFAULT_LOCATION_LABEL,
+        location: presentation?.location ?? '',
         locationHref: presentation?.locationHref,
         priceFrom,
       },
@@ -137,10 +145,19 @@ export function mapListingCardResults(
   reviewCounts: Map<number, number>,
   options: ListingCardPresentationOptions = {},
 ): ListingCardData[] {
+  const locale = options.locale ?? 'en'
+  const t = getListingComparisonTranslator(locale)
+  const formatRating = new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+  const verificationLabels = {
+    unverified: t('badgeUnverified'),
+    bronze: t('badgeBronze'),
+    silver: t('badgeSilver'),
+    gold: t('badgeGold'),
+  }
   return pageRows.map(({ clinic, location, locationHref, priceFrom }) => {
     const ratingValue = typeof clinic.averageRating === 'number' ? clinic.averageRating : 0
     const ratingCount = reviewCounts.get(clinic.id) ?? 0
-    const fallbackMediaAlt = `${clinic.name} image`
+    const fallbackMediaAlt = t('clinicImage', { clinic: clinic.name })
     const descriptorFromLookup = options.mediaByClinicId?.get(clinic.id)
     const resolvedImage =
       typeof clinic.thumbnail === 'object' && clinic.thumbnail !== null
@@ -169,22 +186,25 @@ export function mapListingCardResults(
       }) ?? []
 
     const slug = clinic.slug || slugify(clinic.name)
+    const verification = normalizeVerification(clinic.verification)
 
     return {
       id: clinic.id,
       name: clinic.name,
-      location,
+      location: location || t('unknownLocation'),
       locationHref,
       media: {
         src: mediaSrc,
-        alt: mediaAlt || PLACEHOLDER_MEDIA.alt,
+        alt: mediaAlt,
       },
       verification: {
-        variant: normalizeVerification(clinic.verification),
+        variant: verification,
+        label: verificationLabels[verification],
       },
       rating: {
         value: ratingValue,
         count: ratingCount,
+        ariaLabel: t('ratingOutOfFive', { rating: formatRating.format(ratingValue) }),
       },
       tags,
       priceFrom:
@@ -192,14 +212,14 @@ export function mapListingCardResults(
           ? {
               value: priceFrom,
               currency: 'EUR',
-              label: 'From',
+              label: t('priceFrom'),
             }
           : undefined,
       actions: {
         details: {
           href: `/clinics/${encodeURIComponent(slug)}`,
-          label: 'Details',
-          ariaLabel: `View details for ${clinic.name}`,
+          label: t('details'),
+          ariaLabel: t('detailsFor', { clinic: clinic.name }),
         },
       },
     }

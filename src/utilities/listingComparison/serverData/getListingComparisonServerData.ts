@@ -4,7 +4,10 @@ import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 import { unstable_cache } from 'next/cache'
 import type { City, Clinic, MedicalSpecialty, Treatment } from '@/payload-types'
-import { CLINICS_BREADCRUMB, HOME_BREADCRUMB } from '@/utilities/breadcrumbs'
+import { getListingComparisonTranslator } from '@/features/listingComparison/copy'
+import { getTaxonomyDisplayName, getTaxonomySearchLabels } from '@/features/listingComparison/taxonomy'
+import { LISTING_COMPARISON_PATHS } from '@/i18n/listingComparisonPath'
+import type { UiCopyLocale } from '@/i18n/requestLocale'
 import { buildCollectionTag, buildSitemapTag, buildSurfaceTag } from '@/utilities/cachePolicy'
 import { buildFreshnessSignals } from '@/utilities/freshness'
 import { findLatestIsoTimestampString } from '@/utilities/timestamps'
@@ -45,7 +48,7 @@ import {
 } from './specialtyScope'
 import type { ListingComparisonServerData, SpecialtyMeta, TreatmentMeta } from './types'
 
-const LISTING_COMPARISON_CACHE_KEY_VERSION = '2026-07-08'
+const LISTING_COMPARISON_CACHE_KEY_VERSION = '2026-11-28'
 
 type ListingComparisonCacheFacets = {
   readonly cityDocs: readonly City[]
@@ -69,7 +72,7 @@ const getCachedListingComparisonCacheFacets = () =>
         specialtyDocs,
       }
     },
-    ['listing-comparison-cache-facets'],
+    ['listing-comparison-cache-facets', LISTING_COMPARISON_CACHE_KEY_VERSION],
     {
       tags: [buildCollectionTag('cities'), buildCollectionTag('treatments'), buildCollectionTag('medical-specialties')],
     },
@@ -155,6 +158,7 @@ const resolveListingComparisonDataCacheKey = async (
 
 export const getCachedListingComparisonServerData = async (
   searchParams: ListingComparisonRawSearchParams = {},
+  locale: UiCopyLocale = 'en',
 ): Promise<ListingComparisonServerData> => {
   const cacheKey = await resolveListingComparisonDataCacheKey(searchParams)
 
@@ -162,9 +166,9 @@ export const getCachedListingComparisonServerData = async (
     async () => {
       const payload = await getPayload({ config: configPromise })
 
-      return getListingComparisonServerData(payload, searchParams)
+      return getListingComparisonServerData(payload, searchParams, locale)
     },
-    ['listing-comparison-server-data', cacheKey],
+    ['listing-comparison-server-data', locale, cacheKey],
     {
       tags: buildListingComparisonDataCacheTags(),
     },
@@ -289,9 +293,11 @@ function countPriceEntries(clinicTreatments: Awaited<ReturnType<typeof findClini
 export async function getListingComparisonServerData(
   payload: Payload,
   searchParams: ListingComparisonRawSearchParams = {},
+  locale: UiCopyLocale = 'en',
 ): Promise<ListingComparisonServerData> {
   const parsed = parseListingComparisonQueryState(searchParams)
   const initialQueryState = parsed.state
+  const t = getListingComparisonTranslator(locale)
 
   const { cityDocs, treatmentDocs, specialtyDocs, approvedClinics, availableClinicMediaFiles } =
     await findListingComparisonCatalog(payload)
@@ -327,18 +333,25 @@ export async function getListingComparisonServerData(
   })
 
   const cityIdByValue = new Map(cityMeta.map((city) => [String(city.id), city.id]))
-  const cityMetaById = new Map(cityMeta.map((city) => [city.id, city]))
+  const localizedCityMeta = toCityMetaFromDocs(cityDocs, locale)
+  const cityMetaById = new Map(localizedCityMeta.map((city) => [city.id, city]))
   const selectedCityIds = new Set(resolveSelectedIdsFromOptions(selectedCityValues, cityIdByValue))
 
   const specialtiesMeta: SpecialtyMeta[] = specialtyDocs.map((specialty) => ({
     id: specialty.id,
     name: specialty.name,
+    displayName: specialty.displayName,
     slug: slugify(specialty.name),
     parentId: extractRelationId(specialty.parentSpecialty),
   }))
-  const specialtyOptions = buildSpecialtyFilterOptions(specialtiesMeta)
+  const canonicalSpecialtyOptions = buildSpecialtyFilterOptions(specialtiesMeta)
+  const localizedSpecialties = specialtiesMeta.map((specialty) => ({
+    ...specialty,
+    name: getTaxonomyDisplayName(specialty, locale),
+  }))
+  const specialtyOptions = buildSpecialtyFilterOptions(localizedSpecialties)
 
-  const specialtyById = new Map(specialtiesMeta.map((specialty) => [specialty.id, specialty]))
+  const specialtyById = new Map(localizedSpecialties.map((specialty) => [specialty.id, specialty]))
   const specialtyIdByValue = new Map(specialtiesMeta.map((specialty) => [String(specialty.id), specialty.id]))
   const specialtyOptionByValue = new Map(specialtyOptions.map((specialty) => [specialty.value, specialty]))
   const specialtyTree = buildSpecialtyTree(specialtiesMeta)
@@ -346,6 +359,7 @@ export async function getListingComparisonServerData(
   const treatmentsMeta: TreatmentMeta[] = treatmentDocs.map((treatment) => ({
     id: treatment.id,
     name: treatment.name,
+    displayName: treatment.displayName,
     slug: slugify(treatment.name),
     medicalSpecialtyId: extractRelationId(treatment.medicalSpecialty),
   }))
@@ -355,7 +369,7 @@ export async function getListingComparisonServerData(
     requestedSpecialtyValues: initialQueryState.specialties,
     requestedTreatmentValues: initialQueryState.treatments,
     legacyServiceValue: parsed.legacy.service ?? undefined,
-    specialtyOptions,
+    specialtyOptions: canonicalSpecialtyOptions,
     treatmentOptions: allTreatmentOptions,
   })
   const selectedSpecialtyValues = serviceFilters.specialties
@@ -398,7 +412,7 @@ export async function getListingComparisonServerData(
   })
 
   const presentationByClinicId = new Map(
-    ratingFilteredClinics.map((clinic) => [clinic.id, buildClinicPresentationMeta(clinic, cityMetaById)]),
+    ratingFilteredClinics.map((clinic) => [clinic.id, buildClinicPresentationMeta(clinic, cityMetaById, locale)]),
   )
 
   let scopedTreatmentIds: Set<number> | null = null
@@ -460,6 +474,7 @@ export async function getListingComparisonServerData(
   const results = mapListingCardResults(pageRows, reviewCounts, {
     availableClinicMediaFiles,
     mediaByClinicId,
+    locale,
   })
 
   const cityFacetRows = applyPriceWindow(
@@ -470,14 +485,18 @@ export async function getListingComparisonServerData(
   )
 
   const cityOptionsWithCounts = buildCityFacetOptions({
-    cityOptions,
+    cityOptions: toBaseFilterOptions(localizedCityMeta),
     cityIdByValue,
     selectedCityValues,
     cityFacetRows,
   })
 
   const treatmentOptionsWithCounts = buildTreatmentFacetOptions({
-    treatmentsMeta,
+    treatmentsMeta: treatmentsMeta.map((treatment) => ({
+      ...treatment,
+      name: getTaxonomyDisplayName(treatment, locale),
+      searchLabels: treatment.displayName ? getTaxonomySearchLabels(treatment) : undefined,
+    })),
     specialtyOptions,
     selectedTreatmentIds: new Set(selectedTreatmentIds),
     selectedSpecialtyIds,
@@ -511,8 +530,8 @@ export async function getListingComparisonServerData(
   const specialtyContext = {
     selected: selectedSpecialties,
     breadcrumbs: [
-      HOME_BREADCRUMB,
-      CLINICS_BREADCRUMB,
+      { label: t('home'), href: locale === 'en' ? '/en' : '/' },
+      { label: t('clinics'), href: LISTING_COMPARISON_PATHS[locale] },
       ...selectedSpecialtyPath.map((specialty) => ({
         label: specialty.name,
         href: buildListingComparisonHref(
@@ -521,7 +540,7 @@ export async function getListingComparisonServerData(
             page: 1,
             specialties: [String(specialty.id)],
           },
-          { priceMax: priceBounds.max },
+          { priceMax: priceBounds.max, locale },
         ),
       })),
     ],

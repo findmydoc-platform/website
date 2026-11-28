@@ -19,9 +19,6 @@ export function resolveListingComparisonIndexing(
     }
   }
 
-  // Discovery for the English comparison remains disabled during the UI copy rollout.
-  if (locale === 'en') return { canonicalPath, robots: NOINDEX_FOLLOW_ROBOTS }
-
   return {
     canonicalPath,
     reason: 'canonical-route',

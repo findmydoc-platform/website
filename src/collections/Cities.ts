@@ -34,6 +34,14 @@ export const Cities: CollectionConfig = {
       },
     },
     {
+      name: 'displayName',
+      type: 'text',
+      localized: true,
+      admin: {
+        description: 'Patient-facing label in the selected language',
+      },
+    },
+    {
       name: 'airportcode',
       type: 'text',
       required: false,

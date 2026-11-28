@@ -8,6 +8,7 @@ import { CheckboxWithLabel } from '@/components/molecules/CheckboxWithLabel'
 import { ListingFilters } from '@/components/organisms/Listing'
 import type { RatingFilterValue } from '@/components/molecules/RatingFilter'
 import type { CheckboxOption } from '@/components/molecules/CheckboxGroup'
+import { getListingComparisonTranslator } from '@/features/listingComparison/copy'
 import type { UiCopyLocale } from '@/i18n/requestLocale'
 import { clampPriceRange, normalizePriceBounds, type PriceBounds } from '@/utilities/listingComparison/priceRange'
 import { cn } from '@/utilities/ui'
@@ -23,6 +24,7 @@ type ListingTreatmentOption = {
   value: string
   label: string
   plainLabel: string
+  searchLabels?: string[]
   disabled?: boolean
 }
 
@@ -254,28 +256,6 @@ function RadioOptionWithLabel({ name, label, checked, disabled, onSelect }: Radi
   )
 }
 
-// Comparison copy has not shipped in the shared UI catalog yet.
-const treatmentSearchCopy = {
-  de: {
-    section: 'Behandlungen',
-    all: 'Alle Behandlungen',
-    search: 'Behandlungen suchen',
-    clear: 'Löschen',
-    clearSearch: 'Behandlungssuche löschen',
-    noMatches: 'Keine Behandlungen passen zur Suche.',
-    noTreatments: 'Für das gewählte Fachgebiet sind keine Behandlungen verfügbar.',
-  },
-  en: {
-    section: 'Treatment',
-    all: 'All treatments',
-    search: 'Search treatments',
-    clear: 'Clear',
-    clearSearch: 'Clear treatment search',
-    noMatches: 'No treatments match your search.',
-    noTreatments: 'No treatments available for the current specialty scope.',
-  },
-}
-
 export function ListingComparisonFilters({
   locale = 'en',
   treatmentSearchValue,
@@ -289,7 +269,7 @@ export function ListingComparisonFilters({
   onChange,
   defaultOpenSections,
 }: ListingComparisonFiltersProps) {
-  const copy = treatmentSearchCopy[locale]
+  const t = getListingComparisonTranslator(locale)
   const normalizedPriceBounds = React.useMemo(() => normalizePriceBounds(priceBounds), [priceBounds])
   const activePriceBounds = React.useMemo(
     () => ({
@@ -459,7 +439,9 @@ export function ListingComparisonFilters({
       .map((group) => {
         const options = group.options.filter((option) => {
           if (selectedTreatmentSet.has(option.value)) return true
-          return option.plainLabel.toLowerCase().includes(normalizedTreatmentSearch)
+          return (option.searchLabels ?? [option.plainLabel]).some((label) =>
+            label.toLowerCase().includes(normalizedTreatmentSearch),
+          )
         })
 
         if (options.length === 0) return null
@@ -473,14 +455,15 @@ export function ListingComparisonFilters({
 
   const treatmentSummary = React.useMemo(() => {
     const selectedTreatmentLabels = treatments.map((value) => treatmentPlainLabelByValue.get(value) ?? value)
-    if (selectedTreatmentLabels.length === 0) return copy.all
-    if (selectedTreatmentLabels.length === 1) return selectedTreatmentLabels[0] ?? copy.all
+    if (selectedTreatmentLabels.length === 0) return t('allTreatments')
+    if (selectedTreatmentLabels.length === 1) return selectedTreatmentLabels[0] ?? t('allTreatments')
 
-    const first = selectedTreatmentLabels[0] ?? copy.section
+    const first = selectedTreatmentLabels[0] ?? t('treatment')
     return `${first} +${selectedTreatmentLabels.length - 1}`
-  }, [copy, treatments, treatmentPlainLabelByValue])
+  }, [t, treatments, treatmentPlainLabelByValue])
 
-  const treatmentEmptyStateMessage = normalizedTreatmentSearch.length > 0 ? copy.noMatches : copy.noTreatments
+  const treatmentEmptyStateMessage =
+    normalizedTreatmentSearch.length > 0 ? t('noMatchingTreatments') : t('noScopedTreatments')
 
   const onChangeRef = React.useRef<typeof onChange>(onChange)
   // Update ref synchronously during render (standard pattern for storing latest callback)
@@ -578,18 +561,25 @@ export function ListingComparisonFilters({
 
   return (
     <ListingFilters.Root
+      heading={t('filters')}
       defaultPriceRange={initialPriceRange}
       priceBounds={activePriceBounds}
       defaultRating={initialValues?.rating ?? null}
       onPriceChange={(nextRange) => setPriceRange(clampPriceRange(nextRange, activePriceBounds))}
       onRatingChange={setRating}
     >
-      <ListingFilters.Price />
+      <ListingFilters.Price
+        label={t('priceRange')}
+        minimumLabel={t('minimumPrice')}
+        maximumLabel={t('maximumPrice')}
+        formatValue={(value) => t('eurValue', { value })}
+        locale={locale}
+      />
 
       {normalizedCityOptions.length > 0 ? (
         <CollapsibleFilterSection
-          label="City"
-          summary={cities.length > 0 ? `${cities.length} selected` : 'All'}
+          label={t('city')}
+          summary={cities.length > 0 ? t('selected', { count: cities.length }) : t('all')}
           isOpen={openSections.city}
           onToggle={() => toggleOpenSection('city')}
         >
@@ -612,8 +602,8 @@ export function ListingComparisonFilters({
 
       {normalizedWaitTimeOptions.length > 0 ? (
         <CollapsibleFilterSection
-          label="Wait time"
-          summary={waitTimes.length > 0 ? `${waitTimes.length} selected` : 'All'}
+          label={t('waitTime')}
+          summary={waitTimes.length > 0 ? t('selected', { count: waitTimes.length }) : t('all')}
           isOpen={openSections.waitTime}
           onToggle={() => toggleOpenSection('waitTime')}
         >
@@ -635,19 +625,19 @@ export function ListingComparisonFilters({
       {specialtyOptions.length > 0 ? (
         <>
           <CollapsibleFilterSection
-            label="Medical Specialty"
+            label={t('medicalSpecialty')}
             summary={
               selectedParentSpecialty
                 ? (specialtyOptionByValue.get(selectedParentSpecialty)?.label ?? selectedParentSpecialty)
-                : 'All'
+                : t('all')
             }
             isOpen={openSections.medicalSpecialty}
             onToggle={() => toggleOpenSection('medicalSpecialty')}
           >
-            <div className="space-y-2" role="radiogroup" aria-label="Medical Specialty">
+            <div className="space-y-2" role="radiogroup" aria-label={t('medicalSpecialty')}>
               <RadioOptionWithLabel
                 name={medicalSpecialtyGroupName}
-                label="All specialties"
+                label={t('allSpecialties')}
                 checked={specialty === null}
                 onSelect={() => {
                   handleSpecialtyChange(null)
@@ -669,19 +659,19 @@ export function ListingComparisonFilters({
           </CollapsibleFilterSection>
 
           <CollapsibleFilterSection
-            label="Subspecialty"
+            label={t('subspecialty')}
             summary={
               selectedChildSpecialty
                 ? (specialtyOptionByValue.get(selectedChildSpecialty)?.label ?? selectedChildSpecialty)
-                : 'All'
+                : t('all')
             }
             isOpen={openSections.subspecialty}
             onToggle={() => toggleOpenSection('subspecialty')}
           >
-            <div className="space-y-2" role="radiogroup" aria-label="Subspecialty">
+            <div className="space-y-2" role="radiogroup" aria-label={t('subspecialty')}>
               <RadioOptionWithLabel
                 name={subspecialtyGroupName}
-                label="All subspecialties"
+                label={t('allSubspecialties')}
                 checked={selectedChildSpecialty === null}
                 onSelect={() => {
                   handleSpecialtyChange(selectedParentSpecialty)
@@ -701,7 +691,7 @@ export function ListingComparisonFilters({
               ))}
 
               {visibleChildSpecialtyOptions.length === 0 ? (
-                <p className="text-xs text-muted-foreground">Select a parent specialty to see subspecialties.</p>
+                <p className="text-xs text-muted-foreground">{t('chooseSpecialty')}</p>
               ) : null}
             </div>
           </CollapsibleFilterSection>
@@ -710,7 +700,7 @@ export function ListingComparisonFilters({
 
       {treatmentGroups.length > 0 ? (
         <CollapsibleFilterSection
-          label={copy.section}
+          label={t('treatment')}
           summary={treatmentSummary}
           isOpen={treatmentIsOpen}
           onToggle={() => setOpenSections((current) => ({ ...current, treatment: !treatmentIsOpen }))}
@@ -718,14 +708,14 @@ export function ListingComparisonFilters({
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <Label htmlFor={treatmentSearchId} className="sr-only">
-                {copy.search}
+                {t('searchTreatments')}
               </Label>
               <Input
                 ref={treatmentSearchInput}
                 id={treatmentSearchId}
                 type="text"
                 value={treatmentSearch}
-                placeholder={copy.search}
+                placeholder={t('searchTreatments')}
                 onChange={(event) => setTreatmentSearch(event.currentTarget.value)}
                 onKeyDown={(event) => {
                   if (event.key !== 'Escape') return
@@ -739,9 +729,9 @@ export function ListingComparisonFilters({
                   type="button"
                   className="cursor-pointer rounded-md border border-border bg-background px-2 py-2 text-xs font-medium text-foreground hover:bg-muted"
                   onClick={clearTreatmentSearch}
-                  aria-label={copy.clearSearch}
+                  aria-label={t('clearSearch')}
                 >
-                  {copy.clear}
+                  {t('clear')}
                 </button>
               ) : null}
             </div>
@@ -778,7 +768,7 @@ export function ListingComparisonFilters({
         </CollapsibleFilterSection>
       ) : null}
 
-      <ListingFilters.Rating />
+      <ListingFilters.Rating label={t('minimumRating')} allLabel={t('all')} locale={locale} />
     </ListingFilters.Root>
   )
 }

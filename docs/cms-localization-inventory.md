@@ -41,11 +41,11 @@ At the baseline, Pages localize title, layout and SEO text. Posts localize title
 | --- | --- | --- | --- |
 | `categories` | `title` and the display labels derived from it | `stableId`, `slug`, parent and breadcrumb document relationships | Admin content taxonomy. MCP find, create and update. |
 | `tags` | `name` | `stableId`, `slug`, post, clinic and treatment links | Admin content taxonomy. MCP find, create and update. |
-| `medical-specialties` | `name`, `description` | `stableId`, `parentSpecialty`, `iconKey`, `featureImage`, doctor links. Keep hierarchy relationships shared and derive labels per locale. | Admin specialty taxonomy. MCP find, create and update. |
-| `countries` | Display `name` | `stableId`, `isoCode`, `currency`, and the language value as a fact about the country. Localize the language label at display when needed. | Admin location data. MCP find, create and update. |
-| `cities` | Display `name` where a localized name is used | `stableId`, `airportcode`, `coordinates`, `country`. Preserve the canonical locality used in addresses. | Admin location data. MCP find. |
+| `medical-specialties` | `displayName` for patient-facing labels. `description` is editorial. | `stableId`, `name`, `parentSpecialty`, `iconKey`, `featureImage`, doctor links. Keep hierarchy relationships shared and derive labels per locale. | Admin specialty taxonomy. MCP find, create and update. |
+| `countries` | The comparison displays the localized region name for `isoCode`, when available. | `stableId`, `name`, `isoCode`, `currency`, and the language value as a fact about the country. Localize the language label at display when needed. | Admin location data. MCP find, create and update. |
+| `cities` | `displayName` where a localized name is used | `stableId`, `name`, `airportcode`, `coordinates`, `country`. Preserve the canonical locality used in addresses. | Admin location data. MCP find. |
 
-Category and tag slugs remain taxonomy keys. Keep translated names from regenerating shared slugs. Verify address consumers and imports that currently use a name as a lookup value before translating country or city names. The public address should continue to identify the same place. [Category config](../src/collections/Categories.ts) · [Tags config](../src/collections/Tags.ts) · [Specialties config](../src/collections/MedicalSpecialties.ts) · [Countries config](../src/collections/Countries.ts) · [Cities config](../src/collections/Cities.ts)
+Category and tag slugs remain taxonomy keys. The comparison uses localized display names with shared name fallback for existing records. Filter URLs identify records by ID and still accept the shared legacy names. Address consumers and imports keep using the existing locality identity. [Category config](../src/collections/Categories.ts) · [Tags config](../src/collections/Tags.ts) · [Specialties config](../src/collections/MedicalSpecialties.ts) · [Countries config](../src/collections/Countries.ts) · [Cities config](../src/collections/Cities.ts)
 
 ## Globals and landing content
 
@@ -85,7 +85,7 @@ Asset publication and attachment rules stay tied to the existing media and profi
 
 | Model | Localized | Shared | Existing authoring |
 | --- | --- | --- | --- |
-| `treatments` | `name`, `description` and SEO copy derived from them | `stableId`, specialty, tags and offering links, computed average price and rating | Admin treatment catalog. MCP find, create and update. |
+| `treatments` | `displayName` for patient-facing labels. `description` and derived SEO copy are editorial. | `stableId`, `name`, specialty, tags and offering links, computed average price and rating | Admin treatment catalog. MCP find, create and update. |
 | `accreditation` | `description` and a translated display `name` when the issuer has an approved equivalent | `stableId`, official acronym, issuing country as a fact and icon reference | Admin accreditation catalog. MCP find, create and update. |
 | `doctors` and `doctorspecialties` | Localized explanations of qualifications or certifications when the source contains prose | Official degree and certification names and the underlying credential facts in `qualifications` and `certifications[].certification`. Preserve the original evidence if separate display text is needed. | Existing profile and specialty authoring listed above. Review the exact representation with clinical content owners before migrating free-text records. |
 | Managed legal `pages` | Reviewed legal title, layout and SEO text and native locale publication | One Page ID per legal document, the managed legal route identity and a shared record of the applicable policy | Admin legal pages and MCP find. Managed Pages hooks currently enforce reserved slugs and protect deletion. Preserve those rules and the consent link when adding localized routes. |

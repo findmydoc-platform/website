@@ -11,12 +11,21 @@ import { ListingFiltersJumpBar } from './ListingFiltersJumpBar.client'
 type ListingComparisonTrust = TrustQualitySectionProps & {
   disclaimer?: Pick<
     DisclaimerNoticeProps,
-    'copy' | 'routeLabel' | 'variant' | 'surface' | 'size' | 'title' | 'showVariantLabel'
+    'copy' | 'routeLabel' | 'accessibleLabel' | 'variant' | 'surface' | 'size' | 'title' | 'showVariantLabel'
   >
 }
 
 export type ListingComparisonProps = {
   hero: FeatureHeroProps
+  locale?: string
+  copy?: {
+    skipToResults: string
+    filtersAndResults: string
+    filters: string
+    results: string
+    resultCount: string
+    jumpToFilters: string
+  }
   filters: React.ReactNode
   results: ListingCardData[]
   totalResultsCount?: number
@@ -31,6 +40,8 @@ export type ListingComparisonProps = {
 
 export function ListingComparison({
   hero,
+  locale,
+  copy,
   filters,
   results,
   totalResultsCount,
@@ -61,8 +72,7 @@ export function ListingComparison({
   const defaultHeader = sortControl ? (
     <div className="flex flex-wrap items-center justify-between gap-4">
       <p className="text-sm text-supporting-foreground" role="status" aria-live="polite" aria-atomic="true">
-        Showing <span className="font-semibold text-foreground">{visibleCount}</span> of{' '}
-        <span className="font-semibold text-foreground">{totalCount}</span> {resultsLabel}
+        {copy?.resultCount ?? `Showing ${visibleCount} of ${totalCount} ${resultsLabel}`}
       </p>
       <div className="flex items-center gap-2">
         <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
@@ -76,20 +86,28 @@ export function ListingComparison({
         href="#clinic-results"
         className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-md focus:bg-background focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-foreground focus:shadow"
       >
-        Skip to results
+        {copy?.skipToResults ?? 'Skip to results'}
       </a>
 
       <FeatureHero {...hero} />
 
       <main>
-        <section className="bg-site-section py-12" aria-label="Clinic filters and results">
+        <section className="bg-site-section py-12" aria-label={copy?.filtersAndResults ?? 'Clinic filters and results'}>
           <Container>
             <div className="grid gap-8 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)] lg:items-start">
-              <div id={filtersContainerId} className="order-1 min-w-0 lg:order-1" aria-label="Filters">
+              <div
+                id={filtersContainerId}
+                className="order-1 min-w-0 lg:order-1"
+                aria-label={copy?.filters ?? 'Filters'}
+              >
                 {filters}
               </div>
 
-              <section id="clinic-results" className="order-2 min-w-0 space-y-4 lg:order-2" aria-label="Clinic results">
+              <section
+                id="clinic-results"
+                className="order-2 min-w-0 space-y-4 lg:order-2"
+                aria-label={copy?.results ?? 'Clinic results'}
+              >
                 {resultsContext}
                 {defaultHeader}
                 {results.length > 0
@@ -97,6 +115,7 @@ export function ListingComparison({
                       <ListingCard
                         key={data.id}
                         data={data}
+                        locale={locale}
                         cornerAction={renderResultCornerAction?.(data)}
                         articleRef={onResultElement ? (element) => onResultElement(data.id, element) : undefined}
                       />
@@ -111,7 +130,7 @@ export function ListingComparison({
               </section>
             </div>
           </Container>
-          <ListingFiltersJumpBar targetId={filtersContainerId} />
+          <ListingFiltersJumpBar targetId={filtersContainerId} label={copy?.jumpToFilters} />
         </section>
 
         {trustSectionProps ? <TrustQualitySection {...trustSectionProps} /> : null}

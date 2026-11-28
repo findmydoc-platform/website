@@ -6,21 +6,25 @@ import { Label } from '@/components/atoms/label'
 
 export type RatingFilterValue = number | null
 
-const ratingOptions: Array<{ label: string; value: RatingFilterValue }> = [
-  { label: 'All', value: null },
-  { label: '4.5+ ★', value: 4.5 },
-  { label: '4+ ★', value: 4 },
-  { label: '3+ ★', value: 3 },
-]
+const ratingOptions: RatingFilterValue[] = [null, 4.5, 4, 3]
 
 export interface RatingFilterProps {
   label?: string
+  allLabel?: string
+  locale?: string
   defaultValue?: RatingFilterValue
   value?: RatingFilterValue
   onChange?: (value: RatingFilterValue) => void
 }
 
-export function RatingFilter({ label = 'Minimum rating', defaultValue = null, value, onChange }: RatingFilterProps) {
+export function RatingFilter({
+  label = 'Minimum rating',
+  allLabel = 'All',
+  locale = 'en',
+  defaultValue = null,
+  value,
+  onChange,
+}: RatingFilterProps) {
   const [internalValue, setInternalValue] = useState<RatingFilterValue>(defaultValue)
   const isControlled = value !== undefined
 
@@ -39,15 +43,15 @@ export function RatingFilter({ label = 'Minimum rating', defaultValue = null, va
       <div className="flex flex-wrap gap-2">
         {ratingOptions.map((option) => (
           <Button
-            key={option.label}
+            key={String(option)}
             type="button"
             size="xs"
-            variant={option.value === current ? 'filter' : 'outline'}
-            aria-pressed={option.value === current}
+            variant={option === current ? 'filter' : 'outline'}
+            aria-pressed={option === current}
             className="rounded-lg px-4"
-            onClick={() => handleSelect(option.value)}
+            onClick={() => handleSelect(option)}
           >
-            {option.label}
+            {option === null ? allLabel : `${option.toLocaleString(locale)}+ ★`}
           </Button>
         ))}
       </div>

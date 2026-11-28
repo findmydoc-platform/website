@@ -31,10 +31,12 @@ export type ListingCardData = {
   media: ListingCardMedia
   verification: {
     variant: VerificationBadgeVariant
+    label?: string
   }
   rating: {
     value: number
     count: number
+    ariaLabel?: string
   }
   waitTime?: ListingWaitTime
   tags: string[]
@@ -54,11 +56,13 @@ export function ListingCard({
   className,
   cornerAction,
   articleRef,
+  locale,
 }: {
   data: ListingCardData
   className?: string
   cornerAction?: React.ReactNode
   articleRef?: React.Ref<HTMLElement>
+  locale?: string
 }) {
   return (
     <article
@@ -90,6 +94,7 @@ export function ListingCard({
             {data.priceFrom ? (
               <PriceSummary
                 priceFrom={data.priceFrom}
+                locale={locale}
                 className="@min-[40rem]:col-start-2 @min-[40rem]:row-start-1 @min-[40rem]:text-right"
               />
             ) : null}
@@ -102,7 +107,7 @@ export function ListingCard({
               >
                 {data.name}
               </Heading>
-              <VerificationBadge variant={data.verification.variant} />
+              <VerificationBadge variant={data.verification.variant} label={data.verification.label} />
               <div className="text-sm text-foreground">
                 <LocationLine value={data.location} href={data.locationHref} />
               </div>
@@ -110,7 +115,12 @@ export function ListingCard({
           </div>
 
           <div className="flex flex-wrap items-center gap-4 text-foreground md:gap-6">
-            <RatingSummary value={data.rating.value} count={data.rating.count} />
+            <RatingSummary
+              value={data.rating.value}
+              count={data.rating.count}
+              ratingLabel={data.rating.ariaLabel}
+              locale={locale}
+            />
 
             {data.waitTime ? <WaitTime value={data.waitTime.label} /> : null}
           </div>

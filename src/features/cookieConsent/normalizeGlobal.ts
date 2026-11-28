@@ -1,13 +1,32 @@
+import type { UiCopyLocale } from '@/i18n/requestLocale'
 import type { CookieConsent as CookieConsentGlobal } from '@/payload-types'
 import { REQUIRED_LEGAL_FOOTER_LINKS } from '@/utilities/legalPages'
 
 import { DEFAULT_COOKIE_CONSENT_CATEGORIES, normalizeCookieConsentCategories } from './categories'
+import type { CookieConsentCategoryKey } from './categories'
 import { COOKIE_CONSENT_DEFAULT_VERSION } from './constants'
 import type { CookieConsentConfig } from './types'
 import { APPROVED_COOKIE_CONSENT_PROMPT } from './promptCopy'
-import { COOKIE_CONSENT_TOOL_REGISTRY, findActiveConsentCategory } from './toolConsent'
+import { COOKIE_CONSENT_TOOL_REGISTRY, findActiveConsentCategory, type CookieConsentToolKey } from './toolConsent'
+
+export type CookieConsentUiCopy = Pick<
+  CookieConsentConfig,
+  | 'settings'
+  | 'reopenLabel'
+  | 'privacyPolicyLabel'
+  | 'privacyPolicyDescription'
+  | 'newTabDescription'
+  | 'serviceScope'
+  | 'closeLabel'
+> & {
+  imprintLabel: string
+  categories: Record<CookieConsentCategoryKey, { label: string; description: string }>
+  noServices: string
+  services: Record<CookieConsentToolKey, { description: string; privacyLabel: string }>
+}
 
 const defaultConfig: CookieConsentConfig = {
+  locale: 'en',
   enabled: true,
   consentVersion: COOKIE_CONSENT_DEFAULT_VERSION,
   banner: APPROVED_COOKIE_CONSENT_PROMPT.en,
@@ -22,26 +41,35 @@ const defaultConfig: CookieConsentConfig = {
   categories: withServiceDetails(
     DEFAULT_COOKIE_CONSENT_CATEGORIES.map(({ enabled: _enabled, ...category }) => category),
   ),
+  serviceScope: 'Selecting this category permits all services listed below.',
+  newTabDescription: ' (opens in a new tab)',
+  closeLabel: 'Close',
+  privacyPolicyDescription: 'Read the page that explains how we handle optional cookies and third-party services.',
   privacyPolicyLabel: 'Privacy Policy',
   privacyPolicyHref: '/privacy-policy',
   reopenLabel: 'Cookie settings',
   imprintLink: REQUIRED_LEGAL_FOOTER_LINKS.find((link) => link.href === '/imprint'),
 }
 
-function withServiceDetails(categories: CookieConsentConfig['categories']): CookieConsentConfig['categories'] {
+function withServiceDetails(
+  categories: CookieConsentConfig['categories'],
+  copy?: CookieConsentUiCopy,
+): CookieConsentConfig['categories'] {
   return categories.map((category) => {
     const services = category.tools
       .filter((tool) => findActiveConsentCategory(categories, tool) === category.key)
       .map((tool) => ({
         name: COOKIE_CONSENT_TOOL_REGISTRY[tool].label,
-        description: COOKIE_CONSENT_TOOL_REGISTRY[tool].description,
+        description: copy?.services[tool].description ?? COOKIE_CONSENT_TOOL_REGISTRY[tool].description,
+        privacyLabel: copy?.services[tool].privacyLabel ?? `${COOKIE_CONSENT_TOOL_REGISTRY[tool].label} privacy notice`,
         privacyHref: COOKIE_CONSENT_TOOL_REGISTRY[tool].privacyHref,
       }))
     return {
       ...category,
       description:
         services.length === 0
-          ? 'No services are currently available in this category. Selecting it does not enable optional processing.'
+          ? (copy?.noServices ??
+            'No services are currently available in this category. Selecting it does not enable optional processing.')
           : category.description,
       services,
     }
@@ -62,21 +90,30 @@ function normalizeNumber(value: unknown, fallback: number): number {
 
 function normalizeCategories(
   value: unknown,
-  fallback: CookieConsentConfig['categories'],
+  useEnglishCmsCopy: boolean,
+  copy?: CookieConsentUiCopy,
 ): CookieConsentConfig['categories'] {
-  const normalizedCategories = normalizeCookieConsentCategories(value, DEFAULT_COOKIE_CONSENT_CATEGORIES)
+  const fallback = DEFAULT_COOKIE_CONSENT_CATEGORIES.map((category) => ({
+    ...category,
+    ...copy?.categories[category.key],
+  }))
+  const normalizedCategories = normalizeCookieConsentCategories(value, fallback)
 
   return withServiceDetails(
     normalizedCategories
       .filter((category) => category.enabled)
-      .map(({ enabled: _enabled, ...category }) => category)
-      .slice(0, fallback.length),
+      .map(({ enabled: _enabled, ...category }) => ({
+        ...category,
+        label: useEnglishCmsCopy ? category.label : (copy?.categories[category.key].label ?? category.label),
+      })),
+    copy,
   )
 }
 
 function normalizePrivacyPolicyHref(value: unknown): string | null {
   if (value && typeof value === 'object') {
-    const slug = (value as { slug?: unknown }).slug
+    const page = value as { slug?: unknown; legacyEnglishSlug?: unknown }
+    const slug = page.legacyEnglishSlug || page.slug
     if (typeof slug === 'string' && slug.trim().length > 0) {
       return `/${slug.replace(/^\/+/, '')}`
     }
@@ -85,15 +122,16 @@ function normalizePrivacyPolicyHref(value: unknown): string | null {
   return null
 }
 
+type CookieConsentGlobalInput = CookieConsentGlobal & {
+  privacyPolicyPage?: unknown
+  optionalCategorySettings?: unknown
+  optionalCategories?: unknown
+}
+
 export function normalizeCookieConsentGlobal(
-  global:
-    | (CookieConsentGlobal & {
-        privacyPolicyPage?: unknown
-        optionalCategorySettings?: unknown
-        optionalCategories?: unknown
-      })
-    | null
-    | undefined,
+  global: CookieConsentGlobalInput | null | undefined,
+  locale: UiCopyLocale = 'en',
+  copy?: CookieConsentUiCopy,
 ): CookieConsentConfig | null {
   if (!global) {
     return null
@@ -102,29 +140,44 @@ export function normalizeCookieConsentGlobal(
   const categorySource =
     global.optionalCategorySettings !== undefined ? global.optionalCategorySettings : global.optionalCategories
 
+  const prompt = locale === 'de' ? global.germanPrompt : global
+  const promptFallback = APPROVED_COOKIE_CONSENT_PROMPT[locale]
+  const english = locale === 'en' ? global : undefined
+  const settings = copy?.settings ?? defaultConfig.settings
+
   return {
+    locale,
     enabled: normalizeBoolean(global.enabled, defaultConfig.enabled),
     consentVersion: normalizeNumber(global.consentVersion, defaultConfig.consentVersion),
     banner: {
-      title: normalizeText(global.bannerTitle, defaultConfig.banner.title),
-      description: normalizeText(global.bannerDescription, defaultConfig.banner.description),
-      acceptLabel: normalizeText(global.acceptLabel, defaultConfig.banner.acceptLabel),
-      rejectLabel: normalizeText(global.rejectLabel, defaultConfig.banner.rejectLabel),
-      customizeLabel: normalizeText(global.customizeLabel, defaultConfig.banner.customizeLabel),
+      title: normalizeText(prompt?.bannerTitle, promptFallback.title),
+      description: normalizeText(prompt?.bannerDescription, promptFallback.description),
+      acceptLabel: normalizeText(prompt?.acceptLabel, promptFallback.acceptLabel),
+      rejectLabel: normalizeText(prompt?.rejectLabel, promptFallback.rejectLabel),
+      customizeLabel: normalizeText(prompt?.customizeLabel, promptFallback.customizeLabel),
     },
     settings: {
-      title: normalizeText(global.settingsTitle, defaultConfig.settings.title),
-      description: normalizeText(global.settingsDescription, defaultConfig.settings.description),
-      essentialLabel: normalizeText(global.essentialLabel, defaultConfig.settings.essentialLabel),
-      essentialDescription: normalizeText(global.essentialDescription, defaultConfig.settings.essentialDescription),
-      cancelLabel: normalizeText(global.cancelLabel, defaultConfig.settings.cancelLabel),
-      saveLabel: normalizeText(global.saveLabel, defaultConfig.settings.saveLabel),
+      title: normalizeText(english?.settingsTitle, settings.title),
+      description: normalizeText(english?.settingsDescription, settings.description),
+      essentialLabel: normalizeText(english?.essentialLabel, settings.essentialLabel),
+      essentialDescription: normalizeText(english?.essentialDescription, settings.essentialDescription),
+      cancelLabel: normalizeText(english?.cancelLabel, settings.cancelLabel),
+      saveLabel: normalizeText(english?.saveLabel, settings.saveLabel),
     },
-    categories: normalizeCategories(categorySource, defaultConfig.categories),
-    privacyPolicyLabel: normalizeText(global.privacyPolicyLabel, defaultConfig.privacyPolicyLabel),
+    categories: normalizeCategories(categorySource, locale === 'en', copy),
+    serviceScope: copy?.serviceScope ?? defaultConfig.serviceScope,
+    newTabDescription: copy?.newTabDescription ?? defaultConfig.newTabDescription,
+    closeLabel: copy?.closeLabel ?? defaultConfig.closeLabel,
+    privacyPolicyDescription: copy?.privacyPolicyDescription ?? defaultConfig.privacyPolicyDescription,
+    privacyPolicyLabel: normalizeText(
+      english?.privacyPolicyLabel,
+      copy?.privacyPolicyLabel ?? defaultConfig.privacyPolicyLabel,
+    ),
     privacyPolicyHref: normalizePrivacyPolicyHref(global.privacyPolicyPage),
-    reopenLabel: normalizeText(global.reopenLabel, defaultConfig.reopenLabel),
-    imprintLink: defaultConfig.imprintLink,
+    reopenLabel: normalizeText(english?.reopenLabel, copy?.reopenLabel ?? defaultConfig.reopenLabel),
+    imprintLink: defaultConfig.imprintLink
+      ? { ...defaultConfig.imprintLink, label: copy?.imprintLabel ?? defaultConfig.imprintLink.label }
+      : undefined,
   }
 }
 

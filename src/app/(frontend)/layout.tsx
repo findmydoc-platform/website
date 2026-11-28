@@ -2,17 +2,17 @@ import type { Metadata } from 'next'
 
 import React from 'react'
 
+import { getCookieConsentConfigs } from './_data/cookieConsent'
 import { resolveCmsDocumentLocale } from './_data/documentLocale'
 import { AdminBarClientAdapter } from '@/app/(frontend)/AdminBarClientAdapter.client'
 import { TreatmentSearchHandoffProvider } from '@/app/(frontend)/listing-comparison/TreatmentSearchHandoff.client'
 import { SupabaseAuthHashUrlScrubber } from '@/app/(frontend)/_components/SupabaseAuthHashUrlScrubber.client'
 import { createSiteMetadata } from '@/utilities/generateMeta'
-import { getGlobal } from '@/utilities/getGlobals'
 import { getServerSideURL } from '@/utilities/getURL'
 import { cookies, draftMode, headers } from 'next/headers'
 
 import './globals.css'
-import { COOKIE_CONSENT_COOKIE_NAME, resolveCookieConsentContext } from '@/features/cookieConsent'
+import { COOKIE_CONSENT_COOKIE_NAME, parseCookieConsentState } from '@/features/cookieConsent'
 import { CookieConsentLauncherSlotProvider } from '@/features/cookieConsent/CookieConsentLauncherSlot.client'
 import { CookieConsentClientAdapter } from '@/features/cookieConsent/CookieConsentClientAdapter.client'
 import {
@@ -21,7 +21,6 @@ import {
   shouldBlockSearchIndexingForRequest,
 } from '@/features/searchIndexing'
 import { JsonLdScript, buildSiteBaseJsonLd } from '@/utilities/structuredData'
-import type { CookieConsent as CookieConsentType } from '@/payload-types'
 import { isPreviewRuntime } from '@/features/runtimePolicy'
 import {
   getTemporaryLandingBlogCopy,
@@ -45,13 +44,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const [{ isEnabled }, requestCookies, cookieConsent, cmsLocale] = await Promise.all([
     draftMode(),
     cookies(),
-    getGlobal('cookieConsent', 1),
+    getCookieConsentConfigs(),
     holdingLocale ? undefined : resolveCmsDocumentLocale(requestHeaders),
   ])
-  const cookieConsentContext = resolveCookieConsentContext(
-    cookieConsent as CookieConsentType,
-    requestCookies.get(COOKIE_CONSENT_COOKIE_NAME)?.value ?? null,
-  )
+  const consentVersion = cookieConsent.en?.consentVersion
+  const initialConsent =
+    consentVersion === undefined
+      ? null
+      : parseCookieConsentState(requestCookies.get(COOKIE_CONSENT_COOKIE_NAME)?.value ?? null, consentVersion)
 
   return (
     <html lang={holdingLocale ?? cmsLocale ?? uiCopyLocaleFromHeaders(requestHeaders)} suppressHydrationWarning>
@@ -79,10 +79,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               </PatientAuthFormHandoffProvider>
             </LanguageSwitchRouteProvider>
           </div>
-          <CookieConsentClientAdapter
-            config={cookieConsentContext.config}
-            initialConsent={cookieConsentContext.initialConsent}
-          />
+          <CookieConsentClientAdapter config={cookieConsent} initialConsent={initialConsent} />
         </CookieConsentLauncherSlotProvider>
         {isPreviewRuntime(process.env) ? <VercelToolbar /> : null}
       </body>

@@ -121,7 +121,7 @@ export const CookieConsent: GlobalConfig = {
               label: 'German prompt copy',
               admin: {
                 description:
-                  'German translation stored independently. The public consent prompt uses the English fields above.',
+                  'The public consent prompt uses these fields for German pages and the fields above for English pages.',
               },
               fields: [
                 {

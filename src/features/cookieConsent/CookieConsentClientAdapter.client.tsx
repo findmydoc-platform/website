@@ -13,23 +13,37 @@ import {
   usePostHogAnalyticsReady,
 } from '@/posthog/client-api'
 
+import { temporaryLandingLocaleFromPath } from '@/features/temporaryLandingMode/i18n'
+import { AUTH_CONFIRMATION_PATH, localizedPatientAuthPath } from '@/i18n/patientAuthPath'
+import { patientAuthLocaleFromPath, type UiCopyLocale } from '@/i18n/requestLocale'
+import { getManagedLegalPageSlugFromPath } from '@/utilities/legalPages'
+
+import type { CookieConsentConfig } from './types'
 import { readCookieConsentFromDocument, writeCookieConsentToDocument } from './cookie'
 import { useCookieConsentLauncherSlot } from './CookieConsentLauncherSlot.client'
 
-export function CookieConsentClientAdapter(
-  props: Omit<
-    CookieConsentManagerProps,
-    'onAnalyticsConsentChange' | 'onPersistConsent' | 'readConsent' | 'launcherContainer' | 'onInitialPromptClose'
-  >,
-) {
+type CookieConsentClientAdapterProps = Pick<CookieConsentManagerProps, 'initialConsent'> & {
+  config: CookieConsentConfig | Record<UiCopyLocale, CookieConsentConfig | null> | null
+}
+
+export function CookieConsentClientAdapter({ config, ...props }: CookieConsentClientAdapterProps) {
   const pathname = usePathname()
   const launcherSlot = useCookieConsentLauncherSlot()
-  const legalHrefs = [props.config?.privacyPolicyHref, props.config?.imprintLink?.href]
-  const deferInitialPrompt = legalHrefs.some((href) => {
-    if (!href?.startsWith('/') || href.startsWith('//')) return false
-    const legalPath = new URL(href, 'http://localhost:3000').pathname.replace(/\/+$/, '') || '/'
-    return legalPath === (pathname?.replace(/\/+$/, '') || '/')
-  })
+  const path = pathname?.replace(/\/+$/, '') || '/'
+  const locale =
+    patientAuthLocaleFromPath(path) ??
+    (path === '/en' ||
+    path.startsWith('/en/') ||
+    path === localizedPatientAuthPath(AUTH_CONFIRMATION_PATH, 'en') ||
+    temporaryLandingLocaleFromPath(path) === 'tr'
+      ? 'en'
+      : 'de')
+  const activeConfig = config && 'de' in config ? config[locale] : config
+  const deferInitialPrompt = Boolean(
+    getManagedLegalPageSlugFromPath(path) ||
+    path === activeConfig?.privacyPolicyHref ||
+    path === activeConfig?.imprintLink?.href,
+  )
   const sdkReady = usePostHogAnalyticsReady()
   const [diagnostics, setDiagnostics] = useState({
     cookieValid: false,
@@ -38,7 +52,7 @@ export function CookieConsentClientAdapter(
     sessionAvailable: false,
     reason: 'consent_uninitialized',
   })
-  const version = props.config?.consentVersion
+  const version = activeConfig?.consentVersion
   const updateDiagnostics = useCallback(() => {
     let cookieValid = false
     try {
@@ -64,6 +78,7 @@ export function CookieConsentClientAdapter(
       <span hidden data-analytics-diagnostics={JSON.stringify(diagnostics)} />
       <CookieConsentManager
         {...props}
+        config={activeConfig}
         deferInitialPrompt={deferInitialPrompt}
         launcherContainer={launcherSlot}
         onInitialPromptClose={() => {

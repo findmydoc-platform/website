@@ -27,6 +27,9 @@ vi.mock('@/app/(frontend)/AdminBarClientAdapter.client', () => ({ AdminBarClient
 vi.mock('@/app/(frontend)/_components/SupabaseAuthHashUrlScrubber.client', () => ({
   SupabaseAuthHashUrlScrubber: () => null,
 }))
+vi.mock('@/app/(frontend)/_data/cookieConsent', () => ({
+  getCookieConsentConfigs: async () => ({ de: null, en: null }),
+}))
 vi.mock('@/features/cookieConsent/CookieConsentClientAdapter.client', () => ({
   CookieConsentClientAdapter: () => null,
 }))

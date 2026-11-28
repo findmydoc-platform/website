@@ -20,8 +20,10 @@ vi.mock('@/utilities/content/serverData', () => ({
   getCachedPublicPostRoute: mocks.getCachedPublicPostRoute,
   findPublicPageRoute: mocks.findPublicPageRoute,
 }))
-vi.mock('@/utilities/getGlobals', () => ({ getGlobal: async () => ({}) }))
 vi.mock('@/app/(frontend)/AdminBarClientAdapter.client', () => ({ AdminBarClientAdapter: () => null }))
+vi.mock('@/app/(frontend)/_data/cookieConsent', () => ({
+  getCookieConsentConfigs: async () => ({ de: null, en: null }),
+}))
 vi.mock('@/features/cookieConsent/CookieConsentClientAdapter.client', () => ({
   CookieConsentClientAdapter: () => null,
 }))

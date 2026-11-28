@@ -355,7 +355,7 @@ describe('landingPageContent normalizers', () => {
     const content = normalizeClinicPartnerLandingContent(landingPages)
 
     expect(content.teamCta.buttonLink).toBeUndefined()
-    expect(content.metadata.title).toBe(landingPages.clinicPartners.seo.title)
+    expect(content.metadata.title).toBe(landingPages.clinicPartners.seo?.title)
   })
 
   it('resolves CTA reference links through the shared CMS link shape', () => {

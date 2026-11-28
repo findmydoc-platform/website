@@ -134,7 +134,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
         'relative flex items-center justify-center bg-site-canvas py-14 sm:py-20',
         isClinicLanding
           ? 'min-h-[34rem] overflow-hidden sm:min-h-[48rem]'
-          : 'min-h-[32rem] flex-col md:min-h-[39rem] lg:pb-28',
+          : 'min-h-[32rem] flex-col py-9 sm:py-16 md:min-h-[39rem] lg:py-20 lg:pb-28',
       )}
     >
       {imageSrc ? (
@@ -161,7 +161,8 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
           size="hero"
           align="center"
           headingAs="h1"
-          titleClassName="font-semibold"
+          spacing={isHomepage ? 'editorial' : undefined}
+          titleClassName={cn('font-semibold', isHomepage && 'text-3xl md:text-6xl lg:text-7xl')}
         />
 
         {isClinicLanding && Array.isArray(socialLinks) && socialLinks.length > 0 && (

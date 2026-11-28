@@ -91,11 +91,13 @@ describe('seedGlobalsBaseline', () => {
     expect(updateGlobal).toHaveBeenCalledWith(
       expect.objectContaining({
         slug: 'landingPages',
+        locale: 'all',
+        fallbackLocale: false,
         context: { disableRevalidate: true },
         data: expect.objectContaining({
           home: expect.objectContaining({
             hero: expect.objectContaining({
-              title: 'Clinic Comparison Türkiye for Aesthetic Treatments',
+              title: { de: expect.any(String), en: expect.any(String) },
               image: 42,
             }),
           }),
@@ -103,19 +105,18 @@ describe('seedGlobalsBaseline', () => {
             cta: expect.objectContaining({
               link: expect.objectContaining({
                 type: 'custom',
-                url: '/contact',
+                url: { de: '/contact', en: '/en/contact' },
               }),
             }),
             registrationIntro: expect.objectContaining({
-              title: 'Ready for verified visibility?',
-              description:
-                'Share the key details. We review your request personally and follow up with the next steps.',
+              title: { de: expect.any(String), en: expect.any(String) },
+              description: { de: expect.any(String), en: expect.any(String) },
             }),
             teamCta: expect.objectContaining({
-              buttonText: 'About us',
+              buttonText: { de: expect.any(String), en: expect.any(String) },
               link: expect.objectContaining({
                 type: 'custom',
-                url: '/about',
+                url: { de: '/about', en: '/en/about' },
               }),
             }),
           }),

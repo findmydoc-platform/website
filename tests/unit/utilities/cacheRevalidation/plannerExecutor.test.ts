@@ -242,7 +242,7 @@ describe('cache revalidation planner', () => {
         'surface:partners-clinics',
         'surface:sitemap:pages',
       ],
-      paths: ['/', '/about', '/partners/clinics'],
+      paths: ['/', '/about', '/en/about', '/partners/clinics', '/en/partners/clinics'],
     })
 
     expect(
@@ -491,7 +491,7 @@ describe('cache revalidation planner', () => {
       'surface:home',
       'surface:partners-clinics',
     ])
-    expect(plan.paths).toEqual(['/', '/partners/clinics'])
+    expect(plan.paths).toEqual(['/', '/partners/clinics', '/en/partners/clinics'])
     expect(plan.paths.some((path) => path.startsWith('/clinics/'))).toBe(false)
   })
 

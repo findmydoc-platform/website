@@ -37,18 +37,18 @@ const mocks = vi.hoisted(() => {
 
   return {
     aboutContent,
-    aboutPageComponent: vi.fn(() => null),
     createSiteMetadataMock: vi.fn((args: unknown) => args),
     getAboutLandingContentMock: vi.fn(async () => aboutContent),
+    getLandingLanguages: vi.fn(async () => ({ de: true, en: true })),
   }
 })
 
-vi.mock('@/components/templates/AboutPage/Component', () => ({
-  AboutPage: mocks.aboutPageComponent,
-}))
-
 vi.mock('@/utilities/generateMeta', () => ({
   createSiteMetadata: mocks.createSiteMetadataMock,
+}))
+
+vi.mock('@/utilities/landing/editorialLandingAvailability', () => ({
+  getEditorialLandingLanguages: mocks.getLandingLanguages,
 }))
 
 vi.mock('@/utilities/landing/landingPageContent', () => ({
@@ -60,39 +60,42 @@ describe('frontend about page route', () => {
     vi.resetModules()
     vi.clearAllMocks()
     mocks.getAboutLandingContentMock.mockResolvedValue(mocks.aboutContent)
+    mocks.getLandingLanguages.mockResolvedValue({ de: true, en: true })
   })
 
-  it('sets metadata for the canonical about route', async () => {
-    const pageModule = await import('@/app/(frontend)/about/page')
+  it.each([
+    ['de', '/about'],
+    ['en', '/en/about'],
+  ] as const)('uses the %s route canonical and links both renditions', async (locale, path) => {
+    const pageModule =
+      locale === 'de' ? await import('@/app/(frontend)/about/page') : await import('@/app/(frontend)/en/about/page')
 
     const metadata = await pageModule.generateMetadata()
 
     expect(metadata).toEqual({
       title: 'About findmydoc',
       description: 'Meet the team behind findmydoc.',
-      path: '/about',
+      path,
       alternates: {
-        canonical: '/about',
+        canonical: path,
+        languages: { de: '/about', en: '/en/about', 'x-default': '/about' },
       },
     })
+    expect(mocks.getAboutLandingContentMock).toHaveBeenCalledWith(locale)
     expect(mocks.createSiteMetadataMock).toHaveBeenCalledWith({
       title: 'About findmydoc',
       description: 'Meet the team behind findmydoc.',
-      path: '/about',
+      path,
     })
   })
 
-  it('renders the about template with normalized landing content', async () => {
-    const pageModule = await import('@/app/(frontend)/about/page')
+  it('leaves an unavailable English rendition out of German alternates and search', async () => {
+    mocks.getLandingLanguages.mockResolvedValue({ de: true, en: false })
+    const german = await import('@/app/(frontend)/about/page')
+    const english = await import('@/app/(frontend)/en/about/page')
 
-    const result = await pageModule.default()
-
-    expect(result.type).toBe(mocks.aboutPageComponent)
-    expect(result.props).toEqual({
-      hero: mocks.aboutContent.hero,
-      why: mocks.aboutContent.why,
-      team: mocks.aboutContent.team,
-      transparency: mocks.aboutContent.transparency,
-    })
+    expect(await german.generateMetadata()).toMatchObject({ alternates: { canonical: '/about' } })
+    expect((await german.generateMetadata()).alternates?.languages).toBeUndefined()
+    expect(await english.generateMetadata()).toMatchObject({ robots: { index: false, follow: false } })
   })
 })

@@ -4,62 +4,16 @@ import Image from 'next/image'
 import React, { useEffect, useId, useRef, useState } from 'react'
 
 import { Heading } from '@/components/atoms/Heading'
-import { TrustAtom, type TrustAtomTone } from '@/components/atoms/TrustAtom'
+import { TrustAtom } from '@/components/atoms/TrustAtom'
 import { Container } from '@/components/molecules/Container'
 import { SocialLink, type SocialPlatform } from '@/components/molecules/SocialLink'
 import { UiLink } from '@/components/molecules/Link'
 import { cn } from '@/utilities/ui'
 
 import type { AboutTeamMember } from './types'
-import { accountabilityLabels } from './aboutPageViewModel'
+import type { AboutPageCopy } from '@/features/uiCopy/aboutPage'
 import { resolveImageObjectPositionStyle } from './aboutPageUtils'
 
-type TeamAccountabilityDetails = {
-  owns: string
-  decisionBoundary: string
-  protects: string
-}
-
-const teamAccountabilityDetails: TeamAccountabilityDetails[] = [
-  {
-    owns: 'Sets the standards for partner relationships, commercial accountability, and sustainable clinic growth.',
-    decisionBoundary:
-      'Keeps partner decisions measurable and transparent before clinic information becomes part of the comparison experience.',
-    protects:
-      'Protects patient trust by making sure commercial growth does not outrun responsible clinic presentation.',
-  },
-  {
-    owns: 'Owns the communication standards that make clinic information clear, consistent, and human.',
-    decisionBoundary: 'Keeps service claims grounded before outreach, campaigns, or clinic stories reach patients.',
-    protects: 'Protects patients from overstated promises by keeping clinic communication precise and accountable.',
-  },
-  {
-    owns: 'Owns the comparison product and the user experience that turns clinic signals into useful decisions.',
-    decisionBoundary:
-      'Keeps product choices focused on patient questions before new features add noise to the comparison flow.',
-    protects: 'Protects a simple, trustworthy product experience where evidence stays easier to evaluate.',
-  },
-  {
-    owns: 'Owns legal clarity, privacy expectations, and responsible engagement across patient and clinic interactions.',
-    decisionBoundary:
-      'Keeps comparison context separate from medical advice, consent boundaries, and unsupported partner claims.',
-    protects: 'Protects the legal foundation that lets patients and clinics use the platform with confidence.',
-  },
-  {
-    owns: 'Owns the platform architecture that keeps clinic information structured, available, and reliable.',
-    decisionBoundary:
-      'Keeps technical decisions accountable before data quality, access, or system resilience can affect patients.',
-    protects: 'Protects platform trust by keeping the experience secure, observable, and resilient as it scales.',
-  },
-]
-
-const detailRows: Array<{ key: keyof TeamAccountabilityDetails; label: string; tone: TrustAtomTone }> = [
-  { key: 'owns', label: 'Owns', tone: 'primary' },
-  { key: 'decisionBoundary', label: 'Decision boundary', tone: 'accent' },
-  { key: 'protects', label: 'Protects', tone: 'secondary' },
-]
-
-const defaultProfileLinks: NonNullable<AboutTeamMember['profileLinks']> = [{ href: '/contact', label: 'Contact' }]
 const spotlightImageSizes = '(min-width: 640px) 144px, 120px'
 const spotlightSocialPlatforms = ['linkedin', 'github'] as const satisfies SocialPlatform[]
 const socialPlatformLabels: Record<(typeof spotlightSocialPlatforms)[number], string> = {
@@ -67,22 +21,11 @@ const socialPlatformLabels: Record<(typeof spotlightSocialPlatforms)[number], st
   linkedin: 'LinkedIn',
 }
 
-function getTeamAccountabilityDetails(
-  member: AboutTeamMember,
-  index: number,
-  accountabilityLabel: string,
-): TeamAccountabilityDetails {
-  return (
-    teamAccountabilityDetails[index] ?? {
-      owns: member.whatWeDo,
-      decisionBoundary: `Keeps ${accountabilityLabel.toLowerCase()} decisions visible before they affect the comparison experience.`,
-      protects: 'Protects patient trust by making the responsibility behind this part of the system explicit.',
-    }
-  )
-}
+type ContactLink = AboutPageCopy['contact']
+type TeamCopy = AboutPageCopy['team']
 
-const getTeamProfileLinks = (member: AboutTeamMember) =>
-  member.profileLinks && member.profileLinks.length > 0 ? member.profileLinks : defaultProfileLinks
+const getTeamProfileLinks = (member: AboutTeamMember, contact: ContactLink) =>
+  member.profileLinks?.length ? member.profileLinks : [{ ...contact, newTab: false }]
 
 const getTeamSocialLinks = (member: AboutTeamMember) =>
   spotlightSocialPlatforms
@@ -101,9 +44,13 @@ const getTeamSocialLinks = (member: AboutTeamMember) =>
       Boolean(item),
     )
 
-const TeamProfileLinks: React.FC<{ className?: string; member: AboutTeamMember }> = ({ className, member }) => {
+const TeamProfileLinks: React.FC<{ className?: string; member: AboutTeamMember; contact: ContactLink }> = ({
+  className,
+  member,
+  contact,
+}) => {
   const socialLinks = getTeamSocialLinks(member)
-  const profileLinks = getTeamProfileLinks(member)
+  const profileLinks = getTeamProfileLinks(member, contact)
 
   if (socialLinks.length === 0 && profileLinks.length === 0) return null
 
@@ -157,10 +104,16 @@ const TeamSpotlight: React.FC<{
   id: string
   labelledBy: string
   spotlightRef: React.Ref<HTMLElement>
-}> = ({ member, index, id, labelledBy, spotlightRef }) => {
+  copy: TeamCopy
+  contact: ContactLink
+}> = ({ member, index, id, labelledBy, spotlightRef, copy, contact }) => {
   const [imageReady, setImageReady] = useState(false)
-  const accountabilityLabel = accountabilityLabels[index] ?? 'Trust accountability'
-  const details = getTeamAccountabilityDetails(member, index, accountabilityLabel)
+  const details = copy.members[index] ?? {
+    label: copy.defaultRole,
+    owns: member.whatWeDo,
+    decisionBoundary: copy.decision,
+    protects: copy.protection,
+  }
 
   useEffect(() => {
     setImageReady(false)
@@ -200,19 +153,19 @@ const TeamSpotlight: React.FC<{
               />
             </div>
             <div className="motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-1 min-w-0 motion-safe:duration-200 motion-reduce:animate-none">
-              <p className="text-xs font-semibold tracking-[0.16em] text-primary uppercase">{accountabilityLabel}</p>
+              <p className="text-xs font-semibold tracking-[0.16em] text-primary uppercase">{details.label}</p>
               <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
                 <Heading as="h3" align="left" size="h5" className="text-secondary">
                   {member.name}
                 </Heading>
                 <p className="text-sm font-medium text-secondary/56">{member.role}</p>
               </div>
-              <TeamProfileLinks className="mt-4" member={member} />
+              <TeamProfileLinks className="mt-4" member={member} contact={contact} />
             </div>
           </div>
         </div>
         <div className="divide-y divide-site-divider/70">
-          {detailRows.map((row) => (
+          {copy.rows.map((row) => (
             <div
               key={row.key}
               className="motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-1 grid gap-3 py-6 motion-safe:duration-200 motion-reduce:animate-none sm:grid-cols-[minmax(9rem,0.42fr)_minmax(0,1fr)] sm:gap-6 sm:py-7"
@@ -238,9 +191,8 @@ const TeamMemberTab: React.FC<{
   onKeyDown: (event: React.KeyboardEvent<HTMLButtonElement>) => void
   panelId: string
   tabId: string
-}> = ({ member, index, isActive, onKeyDown, onSelect, panelId, tabId }) => {
-  const accountabilityLabel = accountabilityLabels[index] ?? 'Trust accountability'
-
+  roleLabel: string
+}> = ({ member, index, isActive, onKeyDown, onSelect, panelId, tabId, roleLabel }) => {
   return (
     <button
       id={tabId}
@@ -295,7 +247,7 @@ const TeamMemberTab: React.FC<{
               isActive ? 'text-primary' : 'text-primary/58 group-hover:text-primary group-focus-visible:text-primary',
             )}
           >
-            {accountabilityLabel}
+            {roleLabel}
           </span>
         </span>
         <span className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -326,7 +278,11 @@ const TeamMemberTab: React.FC<{
   )
 }
 
-export const AccountabilitySection: React.FC<{ team: AboutTeamMember[] }> = ({ team }) => {
+export const AccountabilitySection: React.FC<{ team: AboutTeamMember[]; copy: TeamCopy; contact: ContactLink }> = ({
+  team,
+  copy,
+  contact,
+}) => {
   const [activeIndex, setActiveIndex] = useState(0)
   const componentId = useId()
   const spotlightRef = useRef<HTMLElement | null>(null)
@@ -385,9 +341,9 @@ export const AccountabilitySection: React.FC<{ team: AboutTeamMember[] }> = ({ t
         <div className="grid gap-10 border-t border-site-divider/70 pt-14 sm:pt-18 lg:grid-cols-[minmax(0,1.04fr)_minmax(24rem,0.96fr)] lg:gap-14 lg:pt-20">
           <div className="lg:sticky lg:top-24 lg:self-start">
             <div className="max-w-lg" data-about-team-reveal-item="">
-              <p className="text-sm font-semibold tracking-[0.18em] text-primary uppercase">Accountability layer</p>
+              <p className="text-sm font-semibold tracking-[0.18em] text-primary uppercase">{copy.intro}</p>
               <Heading id="about-accountability-heading" as="h2" align="left" size="h4" className="mt-3 text-secondary">
-                The people accountable for the system
+                {copy.title}
               </Heading>
             </div>
             <div className="mt-10 sm:mt-12">
@@ -397,14 +353,17 @@ export const AccountabilitySection: React.FC<{ team: AboutTeamMember[] }> = ({ t
                 id={activePanelId}
                 labelledBy={activeTabId}
                 spotlightRef={spotlightRef}
+                copy={copy}
+                contact={contact}
               />
             </div>
           </div>
-          <div role="tablist" aria-label="Team accountability roles">
+          <div role="tablist" aria-label={copy.rolesLabel}>
             {team.map((member, index) => (
               <TeamMemberTab
                 key={`${member.name}-${member.role}`}
                 member={member}
+                roleLabel={copy.members[index]?.label ?? copy.defaultRole}
                 index={index}
                 isActive={index === activeIndex}
                 onSelect={() => selectTeamMember(index, { scrollSpotlight: shouldScrollToSpotlight() })}

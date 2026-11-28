@@ -280,6 +280,7 @@ describe('landingPageContent normalizers', () => {
     const landingPages = attachRequiredMedia(cloneBaselineLandingPages())
     const firstProcessStep = landingPages.clinicPartners.process.steps[0]
     if (!firstProcessStep) throw new Error('Expected baseline clinic partner process step')
+    firstProcessStep.imageAlt = 'Test locale-specific onboarding alternative'
     firstProcessStep.image = {
       alt: 'Clinic onboarding image',
       url: '/api/platformContentMedia/file/partner-process-step-1-reach-out-v2.webp',
@@ -300,6 +301,7 @@ describe('landingPageContent normalizers', () => {
       '/api/platformContentMedia/file/partner-process-step-1-reach-out-v2.webp',
     )
     expect(content.process.stepImages[0]?.sizes).toBe('(max-width: 1024px) 100vw, 50vw')
+    expect(content.process.stepImages[0]?.alt).toBe('Test locale-specific onboarding alternative')
     expect(content.process.stepImages[0]?.quality).toBe(85)
   })
 
@@ -353,7 +355,7 @@ describe('landingPageContent normalizers', () => {
     const content = normalizeClinicPartnerLandingContent(landingPages)
 
     expect(content.teamCta.buttonLink).toBeUndefined()
-    expect(content.metadata.title).toBe(landingPages.clinicPartners.seo.title)
+    expect(content.metadata.title).toBe(landingPages.clinicPartners.seo?.title)
   })
 
   it('resolves CTA reference links through the shared CMS link shape', () => {

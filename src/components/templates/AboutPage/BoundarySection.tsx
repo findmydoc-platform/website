@@ -5,24 +5,29 @@ import { TrustAtom } from '@/components/atoms/TrustAtom'
 import { Container } from '@/components/molecules/Container'
 import { cn } from '@/utilities/ui'
 
+import type { AboutPageCopy } from '@/features/uiCopy/aboutPage'
 import type { AboutTextSection } from './types'
-import { getAtomMotion, getBoundaryItem, getSignalItem } from './aboutPageUtils'
+import { getAtomMotion } from './aboutPageUtils'
 
-export const BoundarySection: React.FC<{ section: AboutTextSection }> = ({ section }) => {
+export const BoundarySection: React.FC<{
+  section: AboutTextSection
+  copy: AboutPageCopy['boundary']
+  signals: AboutPageCopy['signal']['items']
+}> = ({ section, copy, signals }) => {
   return (
     <section className="bg-site-section/60" aria-labelledby="about-boundary-heading">
       <Container>
         <div className="grid gap-10 border-y border-site-divider/70 py-14 sm:py-18 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.5fr)] lg:gap-16 lg:py-20">
           <div className="max-w-sm" data-about-boundary-reveal="">
-            <p className="text-sm font-semibold tracking-[0.18em] text-primary uppercase">Trust boundaries</p>
+            <p className="text-sm font-semibold tracking-[0.18em] text-primary uppercase">{copy.intro}</p>
             <Heading id="about-boundary-heading" as="h2" align="left" size="h4" className="mt-3 text-secondary">
               {section.title}
             </Heading>
           </div>
           <ol className="grid gap-3">
             {section.items.map((item, index) => {
-              const boundary = getBoundaryItem(index)
-              const atom = getSignalItem(index)
+              const boundary = copy.items[index] ?? copy.items[0]
+              const atom = signals[index] ?? signals[0]
               const motion = getAtomMotion(index)
 
               return (

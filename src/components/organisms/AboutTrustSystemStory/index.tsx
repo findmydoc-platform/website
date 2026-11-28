@@ -3,77 +3,14 @@
 import * as React from 'react'
 
 import { Heading } from '@/components/atoms/Heading'
-import { TrustAtom, type TrustAtomTone } from '@/components/atoms/TrustAtom'
+import { TrustAtom } from '@/components/atoms/TrustAtom'
+
+import type { AboutPageCopy } from '@/features/uiCopy/aboutPage'
 
 import styles from './AboutTrustSystemStory.module.css'
 
-const storyCards = [
-  {
-    tone: 'primary',
-    label: 'Why',
-    title: 'Patients start with uncertainty.',
-    body: (
-      <>
-        Choosing care abroad often means piecing together clinics, credentials, prices, reviews and privacy concerns
-        without a shared structure.
-      </>
-    ),
-  },
-  {
-    tone: 'accent',
-    label: 'How',
-    title: 'We turn trust signals into clearer decisions.',
-    body: (
-      <>
-        findmydoc organizes provider information into comparable signals:{' '}
-        <span className={styles.accentWord}>verification</span>
-        {', '}
-        <span className={styles.accentWord}>transparency</span>
-        {', '}
-        <span className={styles.accentWord}>privacy</span>
-        {' and '}
-        <span className={styles.accentWord}>access</span>.
-      </>
-    ),
-  },
-  {
-    tone: 'secondary',
-    label: 'What',
-    title: 'A clearer path forward for patients and clinics.',
-    body: (
-      <>
-        Patients can understand their options with more confidence. Clinics can show the signals that make their care
-        trustworthy.
-      </>
-    ),
-    mission: {
-      title: 'This is why we build findmydoc.',
-      body: 'To make trust easier to understand before care begins.',
-    },
-  },
-] satisfies ReadonlyArray<{
-  tone: TrustAtomTone
-  label: string
-  title: string
-  body: React.ReactNode
-  mission?: {
-    title: string
-    body: string
-  }
-}>
-
-const signalLabels = [
-  { className: styles.labelVerification, label: 'Verification' },
-  { className: styles.labelTransparency, label: 'Transparency' },
-  { className: styles.labelAccess, label: 'Access' },
-  { className: styles.labelPrivacy, label: 'Privacy' },
-] as const
-
-const ringLabels = [
-  { className: styles.ringLabelCore, label: 'Safer decisions' },
-  { className: styles.ringLabelMiddle, label: 'Verified evidence' },
-  { className: styles.ringLabelOuter, label: 'Compare & request care' },
-] as const
+const signalLabelStyles = [styles.labelVerification, styles.labelTransparency, styles.labelAccess, styles.labelPrivacy]
+const ringLabelStyles = [styles.ringLabelCore, styles.ringLabelMiddle, styles.ringLabelOuter]
 
 const palette = [
   { color: '#006DE5', glow: 'rgb(0 109 229 / .14)' },
@@ -270,6 +207,7 @@ type HomepageRingRenderer = {
 }
 
 type AboutTrustSystemStoryProps = {
+  copy: AboutPageCopy['story']
   fixedProgress?: number
 }
 
@@ -672,7 +610,8 @@ function getBuildAngle(particle: Particle, index: number, particleCount: number)
   return normalizeRadians(baseAngle + (particle.clusterJitter - 0.5) * 0.25)
 }
 
-export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fixedProgress }) => {
+export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fixedProgress, copy }) => {
+  const { cards: storyCards, rings: ringLabels, signals: signalLabels } = copy
   const [runtimeEnabled, setRuntimeEnabled] = React.useState(() => typeof fixedProgress === 'number')
   const storyRef = React.useRef<HTMLElement | null>(null)
   const shellRef = React.useRef<HTMLDivElement | null>(null)
@@ -1193,7 +1132,7 @@ export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fi
         data-testid="about-trust-system-story"
       >
         <Heading id="about-trust-system-story-heading" as="h2" align="left" size="h3" className={styles.storyHeading}>
-          findmydoc trust system scroll story
+          {copy.heading}
         </Heading>
         <div className={styles.accessibleSummary}>
           <ol>
@@ -1213,11 +1152,11 @@ export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fi
             ))}
           </ol>
           <p>
-            <strong>Patient Confidence</strong> Trust at the core.
+            <strong>{copy.patientConfidence}</strong> {copy.trustAtCore}.
           </p>
           <ul>
             {ringLabels.map((ringLabel) => (
-              <li key={ringLabel.label}>{ringLabel.label}</li>
+              <li key={ringLabel}>{ringLabel}</li>
             ))}
           </ul>
         </div>
@@ -1267,38 +1206,34 @@ export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fi
                 <div ref={centerOrbRef} className={styles.centerOrb} aria-hidden="true" />
                 <div ref={centerContentRef} className={styles.centerContent}>
                   <div className={styles.patientCore}>
-                    <strong>
-                      Patient
-                      <br />
-                      Confidence
-                    </strong>
-                    <span>Trust at the core</span>
+                    <strong>{copy.patientConfidence}</strong>
+                    <span>{copy.trustAtCore}</span>
                   </div>
                 </div>
                 <div className={styles.ringLabelLayer}>
                   {ringLabels.map((ringLabel, index) => (
                     <div
-                      key={ringLabel.label}
+                      key={ringLabel}
                       ref={(element) => {
                         ringLabelRefs.current[index] = element
                       }}
-                      className={`${styles.ringLabel} ${ringLabel.className}`}
+                      className={`${styles.ringLabel} ${ringLabelStyles[index]}`}
                       data-ring-label={index}
                       data-visible="false"
                     >
-                      {ringLabel.label}
+                      {ringLabel}
                     </div>
                   ))}
                 </div>
                 {signalLabels.map((signalLabel, index) => (
                   <div
-                    key={signalLabel.label}
+                    key={signalLabel}
                     ref={(element) => {
                       signalLabelRefs.current[index] = element
                     }}
-                    className={`${styles.signalLabel} ${signalLabel.className}`}
+                    className={`${styles.signalLabel} ${signalLabelStyles[index]}`}
                   >
-                    {signalLabel.label}
+                    {signalLabel}
                   </div>
                 ))}
               </div>
@@ -1332,7 +1267,7 @@ export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fi
       </section>
 
       <noscript>
-        <div className={styles.noScript}>This preview needs JavaScript enabled for the scroll animation.</div>
+        <div className={styles.noScript}>{copy.noScript}</div>
       </noscript>
     </div>
   )

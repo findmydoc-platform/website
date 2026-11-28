@@ -84,7 +84,7 @@ test('about page exposes the trust story, team controls, and closing actions @sm
   await page.setViewportSize({ width: 375, height: 812 })
   await page.goto('/about', { waitUntil: 'domcontentloaded' })
 
-  const trustStory = page.getByRole('region', { name: /findmydoc trust system scroll story/i })
+  const trustStory = page.getByTestId('about-trust-system-story')
   await trustStory.scrollIntoViewIfNeeded()
   await expect(trustStory).toBeVisible()
   await scrollTrustStoryToProgress(page, 0.96)
@@ -117,7 +117,7 @@ test('about trust story respects reduced motion @smoke', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 640 })
   await page.goto('/about', { waitUntil: 'domcontentloaded' })
 
-  const trustStory = page.getByRole('region', { name: /findmydoc trust system scroll story/i })
+  const trustStory = page.getByTestId('about-trust-system-story')
   await trustStory.scrollIntoViewIfNeeded()
   const cards = trustStory.locator('[data-card]')
 

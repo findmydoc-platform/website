@@ -8,12 +8,11 @@ import { AccountabilitySection } from './AccountabilitySection'
 import { BoundarySection } from './BoundarySection'
 import { ClosingActionsSection } from './ClosingActionsSection'
 import { SignalContextSection } from './SignalContextSection'
-import { heroActions } from './aboutPageViewModel'
 import type { AboutPageProps } from './types'
 
 export type { AboutPageProps } from './types'
 
-export const AboutPage: React.FC<AboutPageProps> = ({ hero, why, team, transparency }) => {
+export const AboutPage: React.FC<AboutPageProps> = ({ hero, why, team, transparency, copy }) => {
   return (
     <article className="bg-site-canvas text-foreground">
       <LandingHero
@@ -21,26 +20,26 @@ export const AboutPage: React.FC<AboutPageProps> = ({ hero, why, team, transpare
         description={hero.description}
         image={hero.image}
         variant="image-backdrop"
-        actions={heroActions}
+        actions={copy.heroActions}
       />
 
       <ScrollReveal preset="surface" staggerSelector="[data-about-signal-reveal]">
-        <SignalContextSection section={why} />
+        <SignalContextSection section={why} copy={copy.signal} />
       </ScrollReveal>
 
       <ScrollReveal preset="surface">
-        <AboutTrustSystemStory />
+        <AboutTrustSystemStory copy={copy.story} />
       </ScrollReveal>
 
       <ScrollReveal preset="surface" staggerSelector="[data-about-team-reveal-item]">
-        <AccountabilitySection team={team} />
+        <AccountabilitySection team={team} copy={copy.team} contact={copy.contact} />
       </ScrollReveal>
 
       <ScrollReveal preset="surface" staggerSelector="[data-about-boundary-reveal]">
-        <BoundarySection section={transparency} />
+        <BoundarySection section={transparency} copy={copy.boundary} signals={copy.signal.items} />
       </ScrollReveal>
 
-      <ClosingActionsSection />
+      <ClosingActionsSection copy={copy.closing} />
     </article>
   )
 }

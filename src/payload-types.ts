@@ -7232,46 +7232,50 @@ export interface LandingPage {
     };
   };
   clinicPartners: {
-    seo: {
+    seo?: {
       /**
        * Browser and search title for this landing route.
        */
-      title: string;
+      title?: string | null;
       /**
        * Search description for this landing route.
        */
-      description: string;
+      description?: string | null;
     };
     hero: {
       /**
        * Main hero headline.
        */
-      title: string;
+      title?: string | null;
       /**
        * Hero supporting text.
        */
-      description: string;
+      description?: string | null;
       /**
        * Hero image shown on this landing route.
        */
       image: number | PlatformContentMedia;
+      /**
+       * Optional alternative text for this image on this page.
+       */
+      imageAlt?: string | null;
     };
     features: {
       /**
        * Section headline.
        */
-      title: string;
+      title?: string | null;
       /**
        * Section supporting text.
        */
-      description: string;
+      description?: string | null;
       /**
        * Feature items shown in the landing feature section.
        */
       items: {
-        title: string;
+        title?: string | null;
         subtitle?: string | null;
-        description: string;
+        description?: string | null;
         /**
          * Icon shown next to this feature.
          */
@@ -7280,35 +7284,39 @@ export interface LandingPage {
       }[];
     };
     process: {
-      title: string;
-      subtitle: string;
+      title?: string | null;
+      subtitle?: string | null;
       /**
        * Process timeline steps.
        */
       steps: {
         step: number;
-        title: string;
-        description: string;
+        title?: string | null;
+        description?: string | null;
         /**
          * Image shown for this process step.
          */
         image: number | PlatformContentMedia;
+        /**
+         * Optional alternative text for this image on this page.
+         */
+        imageAlt?: string | null;
         id?: string | null;
       }[];
     };
-    categoriesIntro: {
+    categoriesIntro?: {
       /**
        * Section headline.
        */
-      title: string;
+      title?: string | null;
       /**
        * Section supporting text.
        */
-      description: string;
+      description?: string | null;
     };
     cta: {
-      title: string;
-      buttonText: string;
+      title?: string | null;
+      buttonText?: string | null;
       link: {
         type?: ('reference' | 'custom') | null;
         newTab?: boolean | null;
@@ -7329,11 +7337,15 @@ export interface LandingPage {
      */
     team: {
       name: string;
-      role: string;
+      role?: string | null;
       /**
        * Portrait shown for this team member.
        */
       image: number | PlatformContentMedia;
+      /**
+       * Optional alternative text for this image on this page.
+       */
+      imageAlt?: string | null;
       isPhoto?: boolean | null;
       photoDisplay?: ('original' | 'grayscale') | null;
       socials?: {
@@ -7345,18 +7357,18 @@ export interface LandingPage {
       };
       id?: string | null;
     }[];
-    teamIntro: {
+    teamIntro?: {
       /**
        * Section headline.
        */
-      title: string;
+      title?: string | null;
       /**
        * Section supporting text.
        */
-      description: string;
+      description?: string | null;
     };
     teamCta: {
-      buttonText: string;
+      buttonText?: string | null;
       link: {
         type?: ('reference' | 'custom') | null;
         newTab?: boolean | null;
@@ -7376,106 +7388,114 @@ export interface LandingPage {
      * Testimonials shown in the carousel.
      */
     testimonials: {
-      quote: string;
+      quote?: string | null;
       author: string;
-      role: string;
+      role?: string | null;
       /**
        * Portrait shown for this testimonial.
        */
       image: number | PlatformContentMedia;
+      /**
+       * Optional alternative text for this image on this page.
+       */
+      imageAlt?: string | null;
       id?: string | null;
     }[];
-    testimonialsIntro: {
+    testimonialsIntro?: {
       /**
        * Section headline.
        */
-      title: string;
+      title?: string | null;
       /**
        * Section supporting text.
        */
-      description: string;
+      description?: string | null;
     };
     faq: {
       /**
        * Section headline.
        */
-      title: string;
+      title?: string | null;
       /**
        * Section supporting text.
        */
-      description: string;
+      description?: string | null;
       /**
        * FAQ questions and answers.
        */
       items: {
-        question: string;
-        answer: string;
+        question?: string | null;
+        answer?: string | null;
         id?: string | null;
       }[];
     };
-    blogTeaser: {
+    blogTeaser?: {
       /**
        * Section headline.
        */
-      title: string;
+      title?: string | null;
       /**
        * Section supporting text.
        */
-      description: string;
+      description?: string | null;
     };
-    registrationIntro: {
+    registrationIntro?: {
       /**
        * Section headline.
        */
-      title: string;
+      title?: string | null;
       /**
        * Section supporting text.
        */
-      description: string;
+      description?: string | null;
     };
-    contact: {
+    contact?: {
       /**
        * Section headline.
        */
-      title: string;
+      title?: string | null;
       /**
        * Section supporting text.
        */
-      description: string;
+      description?: string | null;
     };
   };
   about: {
-    seo: {
+    seo?: {
       /**
        * Browser and search title for this landing route.
        */
-      title: string;
+      title?: string | null;
       /**
        * Search description for this landing route.
        */
-      description: string;
+      description?: string | null;
     };
     hero: {
       /**
        * Main hero headline.
        */
-      title: string;
+      title?: string | null;
       /**
        * Hero supporting text.
        */
-      description: string;
+      description?: string | null;
       /**
        * Hero image shown on this landing route.
        */
       image: number | PlatformContentMedia;
+      /**
+       * Optional alternative text for this image on this page.
+       */
+      imageAlt?: string | null;
     };
     why: {
-      title: string;
+      title?: string | null;
       /**
        * Short statements shown in the why-we-exist section.
        */
       items: {
-        text: string;
+        text?: string | null;
         id?: string | null;
       }[];
     };
@@ -7484,24 +7504,28 @@ export interface LandingPage {
      */
     team: {
       name: string;
-      role: string;
+      role?: string | null;
       /**
        * Portrait shown for this team member.
        */
       image: number | PlatformContentMedia;
       /**
+       * Optional alternative text for this image on this page.
+       */
+      imageAlt?: string | null;
+      /**
        * One concise responsibility line for this team member.
        */
-      whatWeDo: string;
+      whatWeDo?: string | null;
       id?: string | null;
     }[];
     transparency: {
-      title: string;
+      title?: string | null;
       /**
        * Transparency points shown near the end of the about page.
        */
       items: {
-        text: string;
+        text?: string | null;
         id?: string | null;
       }[];
     };
@@ -7771,6 +7795,7 @@ export interface LandingPagesSelect<T extends boolean = true> {
               title?: T;
               description?: T;
               image?: T;
+              imageAlt?: T;
             };
         features?:
           | T
@@ -7799,6 +7824,7 @@ export interface LandingPagesSelect<T extends boolean = true> {
                     title?: T;
                     description?: T;
                     image?: T;
+                    imageAlt?: T;
                     id?: T;
                   };
             };
@@ -7828,6 +7854,7 @@ export interface LandingPagesSelect<T extends boolean = true> {
               name?: T;
               role?: T;
               image?: T;
+              imageAlt?: T;
               isPhoto?: T;
               photoDisplay?: T;
               socials?:
@@ -7867,6 +7894,7 @@ export interface LandingPagesSelect<T extends boolean = true> {
               author?: T;
               role?: T;
               image?: T;
+              imageAlt?: T;
               id?: T;
             };
         testimonialsIntro?:
@@ -7922,6 +7950,7 @@ export interface LandingPagesSelect<T extends boolean = true> {
               title?: T;
               description?: T;
               image?: T;
+              imageAlt?: T;
             };
         why?:
           | T
@@ -7940,6 +7969,7 @@ export interface LandingPagesSelect<T extends boolean = true> {
               name?: T;
               role?: T;
               image?: T;
+              imageAlt?: T;
               whatWeDo?: T;
               id?: T;
             };

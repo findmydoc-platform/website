@@ -123,6 +123,7 @@ import * as migration_20261128_145222_localized_comparison_labels from './202611
 import * as migration_20261128_154949_localized_clinic_profile_overview from './20261128_154949_localized_clinic_profile_overview'
 import * as migration_20261128_160635_localized_full_home_content from './20261128_160635_localized_full_home_content'
 import * as migration_20261128_161951_localized_clinic_team_profiles from './20261128_161951_localized_clinic_team_profiles'
+import * as migration_20261128_162629_localized_editorial_landing_pages from './20261128_162629_localized_editorial_landing_pages'
 
 export const migrations = [
   {
@@ -749,5 +750,10 @@ export const migrations = [
     up: migration_20261128_161951_localized_clinic_team_profiles.up,
     down: migration_20261128_161951_localized_clinic_team_profiles.down,
     name: '20261128_161951_localized_clinic_team_profiles',
+  },
+  {
+    up: migration_20261128_162629_localized_editorial_landing_pages.up,
+    down: migration_20261128_162629_localized_editorial_landing_pages.down,
+    name: '20261128_162629_localized_editorial_landing_pages',
   },
 ]

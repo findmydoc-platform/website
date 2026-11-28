@@ -1,3 +1,4 @@
+import { ABOUT_PATHS, CLINIC_PARTNER_PATHS } from '@/i18n/editorialLandingPaths'
 import {
   buildCollectionTag,
   buildClinicPath,
@@ -471,7 +472,7 @@ const buildClinicSurfacePlan = (event: ClinicSurfaceRevalidationEvent): Revalida
   if (includesCollection(PARTNER_DEPENDENCY_COLLECTIONS, collection)) {
     tags.push(buildSurfaceTag('partners-clinics'))
     surfaceIds.push('partners-clinics')
-    paths.push(buildFixedPublicPath('partners-clinics'))
+    paths.push(...Object.values(CLINIC_PARTNER_PATHS))
   }
 
   return createPlan({
@@ -545,7 +546,7 @@ const buildGlobalPlan = (global: CoreGlobalRevalidationSlug, event: GlobalRevali
           buildSurfaceTag('partners-clinics'),
           buildSitemapTag('pages'),
         ],
-        paths: [buildFixedPublicPath('home'), buildFixedPublicPath('about'), buildFixedPublicPath('partners-clinics')],
+        paths: [buildFixedPublicPath('home'), ...Object.values(ABOUT_PATHS), ...Object.values(CLINIC_PARTNER_PATHS)],
       })
   }
 }
@@ -665,6 +666,8 @@ const buildSeedFinalFlushPlan = (event: SeedFinalFlushRevalidationEvent): Revali
       if (surface === 'posts-list') {
         return [buildPostsIndexPath(), buildPostsIndexPath('en')]
       }
+      if (surface === 'about') return Object.values(ABOUT_PATHS)
+      if (surface === 'partners-clinics') return Object.values(CLINIC_PARTNER_PATHS)
 
       try {
         return [buildFixedPublicPath(surface)]

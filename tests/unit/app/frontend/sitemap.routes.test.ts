@@ -155,9 +155,13 @@ describe('frontend sitemap routes', () => {
     expect(body.entries.find((entry: { loc: string }) => entry.loc.endsWith('/listing-comparison'))).toMatchObject({
       lastmod: '2026-01-06T00:00:00.000Z',
     })
-    expect(routeMocks.unstableCache).toHaveBeenCalledWith(expect.any(Function), ['pages-sitemap', 'localized'], {
-      tags: ['surface:sitemap:pages'],
-    })
+    expect(routeMocks.unstableCache).toHaveBeenCalledWith(
+      expect.any(Function),
+      ['pages-sitemap', 'localized-archives'],
+      {
+        tags: ['surface:sitemap:pages'],
+      },
+    )
   })
 
   it('normalizes and deduplicates CMS pages in the pages sitemap', async () => {

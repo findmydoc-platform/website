@@ -92,7 +92,7 @@ const getPagesSitemap = unstable_cache(
 
     return Array.from(sitemapByPath.values())
   },
-  ['pages-sitemap', 'localized'],
+  ['pages-sitemap', 'localized-archives'],
   {
     tags: [buildSitemapTag('pages')],
   },

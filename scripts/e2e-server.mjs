@@ -96,6 +96,12 @@ try {
       stdio: 'inherit',
     })
   }
+  if (process.env.E2E_FULL_HOME_SCENARIO) {
+    execFileSync('pnpm', ['exec', 'tsx', 'scripts/public-e2e-home-fixture.ts'], {
+      env: appEnv,
+      stdio: 'inherit',
+    })
+  }
   startApp()
 } catch (error) {
   console.error(error)

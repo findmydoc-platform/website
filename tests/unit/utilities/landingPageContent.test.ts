@@ -69,6 +69,7 @@ const attachRequiredMedia = (landingPages: LandingPage): LandingPage => {
 describe('landingPageContent normalizers', () => {
   it('maps CMS media, icon keys, and FAQ row IDs for the home landing page', () => {
     const landingPages = attachRequiredMedia(cloneBaselineLandingPages())
+    landingPages.home.hero.imageAlt = 'Fixture for the home hero alternative text'
     const firstFeature = landingPages.home.features.items[0]
     if (!firstFeature) throw new Error('Expected baseline home feature fixture')
     firstFeature.icon = 'target'
@@ -82,7 +83,8 @@ describe('landingPageContent normalizers', () => {
 
     expect(content.hero.image).toMatchObject({
       src: '/platform-media/home-hero-large.webp',
-      sizes: '(max-width: 1024px) 100vw, 50vw',
+      sizes: '100vw',
+      alt: 'Fixture for the home hero alternative text',
       quality: 85,
     })
     expect(content.features.items[0]?.icon).toBe(Target)

@@ -7057,6 +7057,10 @@ export interface LandingPage {
        * Hero image shown on this landing route.
        */
       image: number | PlatformContentMedia;
+      /**
+       * Describe the hero image for screen readers. Leave empty if decorative.
+       */
+      imageAlt?: string | null;
     };
     /**
      * Testimonials shown in the carousel.
@@ -7619,6 +7623,7 @@ export interface LandingPagesSelect<T extends boolean = true> {
               title?: T;
               description?: T;
               image?: T;
+              imageAlt?: T;
             };
         testimonials?:
           | T

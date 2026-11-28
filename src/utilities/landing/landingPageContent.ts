@@ -6,6 +6,7 @@ import type { FAQItem } from '@/components/organisms/FAQ'
 import type { LandingTestimonial } from '@/components/organisms/Landing/LandingTestimonials.types'
 import { resolveHrefFromCMSLink } from '@/blocks/_shared/utils'
 import type { LandingPage, PlatformContentMedia } from '@/payload-types'
+import type { ContentLocale } from '@/utilities/contentLocalization'
 import { getCachedGlobal } from '@/utilities/getGlobals'
 import { resolveMediaImage, type MediaImageUsage, type ResolvedMediaImage } from '@/utilities/media/resolveMediaImage'
 import { landingSocialHosts, normalizeSafeLandingHref } from './safeLandingHref'
@@ -217,6 +218,7 @@ const normalizeFeatures = (
 const normalizeTestimonials = (
   testimonials: LandingPage['home']['testimonials'] | null | undefined,
   fieldPath: string,
+  decorativeImages = false,
 ): LandingTestimonial[] => {
   return requireLandingArray(testimonials, fieldPath).map((testimonial, index) => {
     const image = resolveRequiredLandingImage(
@@ -230,7 +232,7 @@ const normalizeTestimonials = (
       quote: testimonial.quote,
       author: testimonial.author,
       role: testimonial.role,
-      image,
+      image: decorativeImages ? { ...image, alt: '' } : image,
     }
   })
 }
@@ -381,6 +383,7 @@ export const normalizeHomeLandingContent = (landingPages: LandingPage) => {
   const home = requireLandingSection(landingPages.home, 'home')
   const seo = requireLandingSection(home.seo, 'home.seo')
   const hero = requireLandingSection(home.hero, 'home.hero')
+  const image = resolveRequiredLandingImage(hero.image, 'home.hero.image', '', 'hero')
   const features = requireLandingSection(home.features, 'home.features')
   const process = requireLandingSection(home.process, 'home.process')
   const faq = requireLandingSection(home.faq, 'home.faq')
@@ -397,9 +400,11 @@ export const normalizeHomeLandingContent = (landingPages: LandingPage) => {
     hero: {
       title: hero.title,
       description: hero.description,
-      image: resolveRequiredLandingImage(hero.image, 'home.hero.image', hero.title),
+      image: { ...image, alt: hero.imageAlt?.trim() ?? '' },
     },
-    testimonials: normalizeTestimonials(home.testimonials, 'home.testimonials'),
+    testimonials: normalizeTestimonials(home.testimonials, 'home.testimonials', true).filter(({ quote, role }) =>
+      Boolean(quote && role),
+    ),
     testimonialsIntro,
     categoriesIntro,
     features: {
@@ -496,8 +501,8 @@ export const normalizeClinicPartnerLandingContent = (landingPages: LandingPage) 
   } satisfies ClinicPartnerLandingContent
 }
 
-export const getHomeLandingContent = async (): Promise<HomeLandingContent> => {
-  const landingPages = (await getCachedGlobal('landingPages', 2)()) as LandingPage | null | undefined
+export const getHomeLandingContent = async (locale: ContentLocale = 'de'): Promise<HomeLandingContent> => {
+  const landingPages = (await getCachedGlobal('landingPages', 2, locale)()) as LandingPage | null | undefined
 
   return normalizeHomeLandingContent(requireLandingPagesGlobal(landingPages))
 }

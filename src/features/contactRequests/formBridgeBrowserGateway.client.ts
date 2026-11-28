@@ -11,14 +11,10 @@ export async function submitFormBridgeContactRequest(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
-  })
+    redirect: 'error',
+  }).catch(() => null)
 
-  if (!response.ok) {
-    const errorPayload = await response.json().catch(() => ({}))
-    const errorMessage =
-      typeof (errorPayload as { error?: unknown }).error === 'string'
-        ? (errorPayload as { error: string }).error
-        : (genericErrorMessage ?? 'Could not send your request right now.')
-    throw new Error(errorMessage)
+  if (!response?.ok) {
+    throw new Error(genericErrorMessage ?? 'Could not send your request right now.')
   }
 }

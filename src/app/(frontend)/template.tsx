@@ -2,6 +2,7 @@ import React from 'react'
 
 import { localizePublicNavigation, resolveAccountHref } from '@/app/(frontend)/_data/publicNavigation'
 import { getHoldingLegalLinks, getPublishedNavigationPageSlugs } from '@/app/(frontend)/_data/holdingLegalLinks'
+import { resolveCmsDocumentLocale } from '@/app/(frontend)/_data/documentLocale'
 import { FrontendChrome } from '@/app/(frontend)/FrontendChrome.client'
 import { extractSupabaseUserData } from '@/auth/utilities/jwtValidation'
 import type { AuthData } from '@/auth/types/authTypes'
@@ -22,6 +23,7 @@ import {
 } from '@/features/temporaryLandingMode/navigation'
 import { readHoldingViewRequestHeader, readPublicSiteModeRequestHeader } from '@/features/temporaryLandingMode'
 import { resolveHoldingMode } from '@/features/temporaryLandingMode/resolver'
+import { PATIENT_LOGIN_PATH, PATIENT_LOGOUT_PATH } from '@/i18n/patientAuthPath'
 import { FRONTEND_PATH_HEADER, UI_COPY_LOCALE_HEADER } from '@/i18n/requestLocale'
 import { publicPageLocaleFromPath } from '@/i18n/publicNavigationPath'
 import { getPublicChromeCopy } from '@/features/uiCopy/publicChrome'
@@ -32,10 +34,7 @@ import { headers } from 'next/headers'
 import type { Footer as FooterType, Header as HeaderType } from '@/payload-types'
 
 const LIVE_PATIENT_ACCOUNT_MENU_LINKS: Partial<PublicAccountMenuLinks> = {
-  dashboard: '/patient/inquiries',
-  favorites: '/patient/favorites',
   profile: null,
-  signOut: '/logout',
 }
 
 const DEFAULT_ACCOUNT_MENU_STATE: PublicAccountMenuState = { kind: 'guest' }
@@ -82,7 +81,8 @@ export default async function FrontendTemplate({ children }: { children: React.R
 
   const pathname = requestHeaders.get(FRONTEND_PATH_HEADER) ?? '/'
   const explicitLocale = requestHeaders.get(UI_COPY_LOCALE_HEADER)
-  const locale = explicitLocale === 'de' || explicitLocale === 'en' ? explicitLocale : publicPageLocaleFromPath(pathname)
+  const cmsLocale = showSiteChrome && !explicitLocale ? await resolveCmsDocumentLocale(requestHeaders) : undefined
+  const locale = cmsLocale ?? (explicitLocale === 'de' || explicitLocale === 'en' ? explicitLocale : publicPageLocaleFromPath(pathname))
   const copy = getPublicChromeCopy(locale)
   const [footerGlobal, headerGlobal, legalLinks, englishPages] = showSiteChrome
     ? await Promise.all([
@@ -114,7 +114,8 @@ export default async function FrontendTemplate({ children }: { children: React.R
     clinicPartner: resolveAccountHref('/partners/clinics', locale),
     dashboard: resolveAccountHref('/patient/inquiries', locale),
     favorites: resolveAccountHref('/patient/favorites', locale),
-    login: resolveAccountHref('/login/patient', locale),
+    login: resolveAccountHref(PATIENT_LOGIN_PATH, locale),
+    signOut: resolveAccountHref(PATIENT_LOGOUT_PATH, locale),
     registerPatient: resolveAccountHref('/register/patient', locale),
   }
   const { openPatient, ...accountCopy } = copy.account

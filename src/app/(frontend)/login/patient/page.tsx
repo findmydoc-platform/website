@@ -6,20 +6,37 @@ import { PreparedInquiryConfirmation } from '@/app/(frontend)/_components/Prepar
 import { Heading } from '@/components/atoms/Heading'
 import { AuthFlashStatus } from '@/app/(frontend)/_components/AuthFlashStatus'
 import * as LoginForm from '@/components/organisms/Auth/LoginForm'
-import { PATIENT_LOGIN_PATH } from '@/features/favorites/redirects'
+import { PATIENT_LOGIN_HOME_PATHS, sanitizePatientLoginNext } from '@/features/favorites/redirects'
 import { readInquiryPreparationRegistration } from '@/features/inquiryCommunication/service'
 import { readPreparationBinding } from '@/features/inquiryPreparations/context'
 import { patientLoginCopy } from '@/features/uiCopy/patientLogin'
 import { PatientLoginFormRoot } from '@/features/uiCopy/PatientLoginFormRoot.client'
-import { localizedPatientAuthPath } from '@/i18n/patientAuthPath'
+import { LISTING_COMPARISON_PATHS } from '@/i18n/listingComparisonPath'
+import { PATIENT_LOGIN_PATH, localizedPatientAuthPath } from '@/i18n/patientAuthPath'
 import { ENGLISH_PATIENT_LOGIN_PATH } from '@/i18n/requestLocale'
-import { sanitizeInternalRedirectPathOrNull } from '@/utilities/routing/sanitizeInternalRedirectPath'
+import type { UiCopyLocale } from '@/i18n/requestLocale'
 import Link from 'next/link'
 import { headers } from 'next/headers'
 import { createLocalReq, getPayload } from 'payload'
 import config from '@payload-config'
 
 export const dynamic = 'force-dynamic'
+
+const LOCALIZED_PATIENT_RETURN_PATHS = [
+  PATIENT_LOGIN_HOME_PATHS,
+  LISTING_COMPARISON_PATHS,
+  { de: '/patient/favorites', en: '/en/patient/favorites' },
+]
+
+function localizeReturnPath(path: string, locale: UiCopyLocale): string {
+  const pathname = path.split(/[?#]/, 1)[0]!
+  const normalizedPath = pathname.replace(/\/$/, '') || '/'
+  const localizedPaths = LOCALIZED_PATIENT_RETURN_PATHS.find(
+    ({ de, en }) => normalizedPath === de || normalizedPath === en,
+  )
+
+  return localizedPaths ? localizedPaths[locale] + path.slice(pathname.length) : path
+}
 
 export default async function LoginPage({
   searchParams: searchParamsPromise,
@@ -46,11 +63,12 @@ export default async function LoginPage({
     : ''
   const resendHref = `${registrationHref}${inquiryQuery}#patient-verification-resend`
   const requestedNext = resolvedSearchParams?.next
-  const validatedNext = sanitizeInternalRedirectPathOrNull({
-    nextPath: typeof requestedNext === 'string' ? requestedNext : null,
-    blockedPaths: [PATIENT_LOGIN_PATH, ENGLISH_PATIENT_LOGIN_PATH],
-  })
-  const postLoginRedirectPath = validatedNext ?? (preparation ? '/patient/inquiries' : '/')
+  const validatedNext = sanitizePatientLoginNext(typeof requestedNext === 'string' ? requestedNext : null)
+  const homeHref = PATIENT_LOGIN_HOME_PATHS[copy.locale]
+  const postLoginRedirectPath = localizeReturnPath(
+    validatedNext ?? (preparation ? '/patient/inquiries' : homeHref),
+    copy.locale,
+  )
 
   const switchQuery = new URLSearchParams()
   if (validatedNext) switchQuery.set('next', validatedNext)
@@ -144,7 +162,7 @@ export default async function LoginPage({
           </p>
           <p className="text-sm text-muted-foreground">
             <Link
-              href="/"
+              href={homeHref}
               className="inline-flex min-h-11 items-center align-middle text-primary underline underline-offset-4 sm:inline"
             >
               {copy.backHome}

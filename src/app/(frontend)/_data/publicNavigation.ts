@@ -18,7 +18,7 @@ function resolveFixedDestination(href: string, locale: UiCopyLocale, holding: bo
   const [de, { en }] = route
   const englishAvailable = en && (!holding || isTemporaryLandingPublicExemptPath(en))
   const localized = locale === 'en' && englishAvailable ? en : de
-  return { key: de, href: localized + suffix, hrefLang: localized === en ? 'en' : 'de' }
+  return { key: de, href: localized + suffix, hrefLang: localized === en || de === '/admin/login' ? 'en' : 'de' }
 }
 
 export const resolveAccountHref = (href: string, locale: UiCopyLocale) =>

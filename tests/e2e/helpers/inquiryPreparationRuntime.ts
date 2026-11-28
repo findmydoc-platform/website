@@ -23,18 +23,20 @@ export function registerInquiryPreparationRuntime({
   origin,
   artifacts,
   clinicCount = 1,
+  templateKind = 'baseline',
 }: {
   origin: string
   artifacts: string
   clinicCount?: number
+  templateKind?: 'empty' | 'baseline'
 }) {
   const users = new Map<string, SyntheticUser>()
+  const sessions = new Map<string, SyntheticUser>()
   const confirmationLinks = new Map<string, string>()
   const providerRequests: string[] = []
   let auth: Server
   let next: ChildProcess
   const clinics: Array<{ id: number; slug: string; name: string; doctorId: number | string }> = []
-  let userToken = ''
   let identityPause: { entered: () => void; released: Promise<void> } | undefined
   const tokenHash = 'b'.repeat(56)
   const sanitizedLog = () =>
@@ -97,7 +99,7 @@ export function registerInquiryPreparationRuntime({
         keys: [{ version: 'browser-v1', secret: 'synthetic-preparation-browser-verification-key' }], // pragma: allowlist secret
       }), // pragma: allowlist secret
     })
-    await setupTestDatabase({ templateKind: 'baseline' })
+    await setupTestDatabase({ templateKind })
     for (let index = 0; index < clinicCount; index++)
       clinics.push((await fixtureCommand('create', index + 1)) as (typeof clinics)[number])
     auth = createServer((request, response) => {
@@ -116,7 +118,8 @@ export function registerInquiryPreparationRuntime({
             response.end(JSON.stringify({ msg: 'Invalid login credentials' }))
             return
           }
-          userToken = tokenFor(user)
+          const userToken = tokenFor(user)
+          sessions.set(userToken, user)
           result = {
             access_token: userToken,
             refresh_token: 'synthetic-browser-refresh',
@@ -161,7 +164,8 @@ export function registerInquiryPreparationRuntime({
         } else if (request.method === 'POST' && url.pathname === '/auth/v1/verify') {
           const user = [...users.values()].find((item) => !item.email_confirmed_at)!
           user.email_confirmed_at = new Date().toISOString()
-          userToken = tokenFor(user)
+          const userToken = tokenFor(user)
+          sessions.set(userToken, user)
           result = {
             access_token: userToken,
             refresh_token: 'synthetic-browser-refresh',
@@ -177,11 +181,11 @@ export function registerInquiryPreparationRuntime({
             pause.entered()
             await pause.released
           }
-          result = [...users.values()].find(
-            (item) =>
-              request.headers.authorization === `Bearer ${tokenFor(item)}` ||
-              request.headers.authorization === `Bearer ${userToken}`,
-          )
+          result = sessions.get(request.headers.authorization?.replace(/^Bearer /, '') ?? '')
+        } else if (request.method === 'POST' && url.pathname === '/auth/v1/logout') {
+          sessions.delete(request.headers.authorization?.replace(/^Bearer /, '') ?? '')
+          response.writeHead(204).end()
+          return
         }
         response.writeHead(result ? 200 : 401, { 'Content-Type': 'application/json' })
         response.end(JSON.stringify(result ?? { message: 'Invalid synthetic identity' }))
@@ -242,11 +246,11 @@ export function registerInquiryPreparationRuntime({
     },
     resetIdentities() {
       users.clear()
-      userToken = ''
+      sessions.clear()
     },
     existingUser(email: string, verified = true) {
       users.clear()
-      userToken = ''
+      sessions.clear()
       const user: SyntheticUser = {
         id: randomUUID(),
         email,

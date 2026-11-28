@@ -1,22 +1,27 @@
+import { CONTACT_PATHS } from './contactPath'
 import { LISTING_COMPARISON_PATHS } from './listingComparisonPath'
-import { localizedPatientAuthPath } from './patientAuthPath'
+import { localizedPatientAuthPath, PATIENT_LOGIN_PATH, PATIENT_LOGOUT_PATH } from './patientAuthPath'
 import { uiCopyLocaleFromPath, type UiCopyLocale } from './requestLocale'
 
 /** Fixed navigation targets. CMS Pages and Posts resolve from their published locale instead. */
 export const publicNavigationPaths: Record<string, { en?: string }> = {
   '/about': {},
-  '/contact': {},
+  [CONTACT_PATHS.de]: { en: CONTACT_PATHS.en },
   '/listing-comparison': { en: LISTING_COMPARISON_PATHS.en },
   '/partners/clinics': {},
   '/register/clinic': {},
   '/admin/login': {},
   '/posts': {},
-  '/login/patient': { en: localizedPatientAuthPath('/login/patient', 'en') },
+  [PATIENT_LOGIN_PATH]: { en: localizedPatientAuthPath(PATIENT_LOGIN_PATH, 'en') },
+  [PATIENT_LOGOUT_PATH]: { en: localizedPatientAuthPath(PATIENT_LOGOUT_PATH, 'en') },
   '/register/patient': { en: localizedPatientAuthPath('/register/patient', 'en') },
   '/patient/favorites': {},
   '/patient/inquiries': {},
 }
 
 export function publicPageLocaleFromPath(pathname: string): UiCopyLocale {
-  return uiCopyLocaleFromPath(pathname) ?? (pathname === '/en' || pathname.startsWith('/en/') ? 'en' : 'de')
+  const localized = uiCopyLocaleFromPath(pathname)
+  if (localized) return localized
+  if (pathname === '/admin' || pathname.startsWith('/admin/') || pathname.startsWith('/auth/')) return 'en'
+  return pathname === '/en' || pathname.startsWith('/en/') ? 'en' : 'de'
 }

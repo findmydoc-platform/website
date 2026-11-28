@@ -1,7 +1,20 @@
 import type * as React from 'react'
 
+import type {
+  ClinicRegistrationFailure,
+  ClinicRegistrationFormValues,
+  ClinicRegistrationSubmitData,
+} from '@/features/clinicRegistration/publicSubmission'
+import type { ClinicApplicationCopy } from '@/features/uiCopy/clinicApplication'
+import type { UiCopyLocale } from '@/i18n/requestLocale'
+
 import type { usePublicFormValidation } from '@/components/molecules/PublicFormValidation/usePublicFormValidation'
 import type { MedicalSpecialtyIconKey } from '@/utilities/medicalSpecialties/iconKeys'
+
+export type {
+  ClinicRegistrationFormValues,
+  ClinicRegistrationSubmitData,
+} from '@/features/clinicRegistration/publicSubmission'
 
 export type ClinicRegistrationStep = 1 | 2 | 3 | 4
 export type ClinicRegistrationFunnelVariant = 'default' | 'landing'
@@ -11,22 +24,15 @@ export type PublicFormValidationController = ReturnType<typeof usePublicFormVali
 
 export type ClinicRegistrationFunnelProps = {
   className?: string
+  copy: ClinicApplicationCopy
+  locale: UiCopyLocale
   initialSelectedTreatmentCategoryIds?: string[]
   initialStep?: ClinicRegistrationStep
   initialValues?: Partial<ClinicRegistrationFormValues>
-  onSubmit?: (data: ClinicRegistrationSubmitData) => Promise<void>
+  onSubmit: (data: ClinicRegistrationSubmitData) => Promise<ClinicRegistrationFailure | void>
   reviewSummary?: ClinicRegistrationReviewSummary
   treatmentCategories?: ClinicRegistrationTreatmentCategory[]
   variant?: ClinicRegistrationFunnelVariant
-}
-
-export type ClinicRegistrationFormValues = {
-  clinicName: string
-  clinicWebsite: string
-  contactEmail: string
-  contactFirstName: string
-  contactLastName: string
-  contactRole: string
 }
 
 export type ClinicRegistrationReviewSummary = {
@@ -36,10 +42,6 @@ export type ClinicRegistrationReviewSummary = {
   contactEmail: string
   contactName: string
   contactRole: string
-}
-
-export type ClinicRegistrationSubmitData = ClinicRegistrationFormValues & {
-  medicalSpecialties: string[]
 }
 
 export type ClinicRegistrationTreatmentCategory = {

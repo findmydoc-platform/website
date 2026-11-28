@@ -1,4 +1,5 @@
 import { PUBLIC_DISCOVERY_SURFACE_PATHS } from '@/features/publicDiscovery/site'
+import { CLINIC_APPLICATION_PATHS } from '@/i18n/clinicApplicationPath'
 import { buildPagePath, buildPostPath } from '@/utilities/cachePolicy'
 import { isReservedPageSlug, type ContentLocale } from '@/utilities/contentLocalization'
 import { isPublicStaticAssetPath } from '@/utilities/routing/publicStaticAssets'
@@ -34,7 +35,7 @@ const DEDICATED_PAGE_PATHS = new Set([
   '/patient/favorites',
   '/patient/inquiries',
   '/posts',
-  '/register/clinic',
+  ...Object.values(CLINIC_APPLICATION_PATHS),
   '/register/patient',
   ...PUBLIC_DISCOVERY_SURFACE_PATHS,
 ])

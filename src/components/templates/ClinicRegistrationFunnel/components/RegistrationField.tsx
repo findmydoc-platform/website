@@ -13,6 +13,7 @@ import type {
 
 export function RegistrationField({
   descriptionId,
+  disabled,
   icon: Icon,
   id,
   label,
@@ -26,12 +27,13 @@ export function RegistrationField({
   variant = 'default',
 }: {
   descriptionId?: string
+  disabled?: boolean
   icon?: IconComponent
   id: string
   label: string
   name: keyof ClinicRegistrationFormValues
   onValueChange: (value: string) => void
-  placeholder: string
+  placeholder?: string
   required?: boolean
   type?: React.HTMLInputTypeAttribute
   validation: PublicFormValidationController
@@ -59,6 +61,7 @@ export function RegistrationField({
               ? 'rounded-2xl border-slate-200 bg-white/95 focus-visible:border-secondary/40 focus-visible:ring-2 focus-visible:ring-accent/70'
               : 'rounded-[8px] border-slate-300 bg-[#fbfcff]',
           )}
+          disabled={disabled}
           id={id}
           name={name}
           onChange={(event) => {

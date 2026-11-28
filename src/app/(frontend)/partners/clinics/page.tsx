@@ -18,6 +18,7 @@ import { ClinicRegistrationLandingSection } from '../../_components/ClinicRegist
 import { normalizePost } from '@/utilities/blog/normalizePost'
 import { getCachedLatestPosts } from '@/utilities/content/serverData'
 import { createSiteMetadata } from '@/utilities/generateMeta'
+import { clinicApplicationCopy } from '@/features/uiCopy/clinicApplication.server'
 import { getClinicRegistrationTreatmentCategories } from '@/utilities/clinicRegistration/treatmentCategories'
 import { getClinicPartnerLandingContent } from '@/utilities/landing/landingPageContent'
 import { getLandingMedicalSpecialtyCategories } from '@/utilities/landing/medicalSpecialtyCategories'
@@ -28,12 +29,14 @@ export const revalidate = 600
 
 export default async function ClinicLandingPage() {
   const payload = await getPayload({ config: configPromise })
-  const [landingContent, posts, landingSpecialtyCategories, clinicRegistrationTreatmentCategories] = await Promise.all([
-    getClinicPartnerLandingContent(),
-    getCachedLatestPosts(3),
-    getLandingMedicalSpecialtyCategories(payload),
-    getClinicRegistrationTreatmentCategories(payload),
-  ])
+  const [landingContent, posts, landingSpecialtyCategories, clinicRegistrationTreatmentCategories, applicationCopy] =
+    await Promise.all([
+      getClinicPartnerLandingContent(),
+      getCachedLatestPosts(3),
+      getLandingMedicalSpecialtyCategories(payload),
+      getClinicRegistrationTreatmentCategories(payload, 'de'),
+      clinicApplicationCopy('de'),
+    ])
 
   const normalizedPosts = posts.map((post) => normalizePost(post))
   const partnerContactHref = '#contact'
@@ -125,6 +128,8 @@ export default async function ClinicLandingPage() {
       <ScrollReveal>
         <ClinicRegistrationLandingSection
           className="border-t border-site-divider/60"
+          copy={applicationCopy}
+          locale="de"
           title={landingContent.registrationIntro.title}
           description={landingContent.registrationIntro.description}
           id="contact"

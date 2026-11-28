@@ -1,39 +1,37 @@
-type ClinicRegistrationFormData = {
-  clinicName: string
-  clinicWebsite: string
-  contactEmail: string
-  contactFirstName: string
-  contactLastName: string
-  contactRole: string
-  medicalSpecialties: string[]
-}
+import type {
+  ClinicRegistrationFailure,
+  ClinicRegistrationSubmitData,
+} from '@/features/clinicRegistration/publicSubmission'
 
-type SuccessResponse = {
-  success?: boolean
-  error?: string
-}
+// Keep the existing endpoint response contract out of public wording.
+const fieldFailures = new Map<string, ClinicRegistrationFailure>([
+  ['Clinic name is required', 'nameRequired'],
+  ['Invalid clinicName', 'nameTooLong'],
+  ['Invalid clinicWebsite', 'websiteInvalid'],
+  ['Contact first name is required', 'firstNameRequired'],
+  ['Invalid contactFirstName', 'firstNameTooLong'],
+  ['Contact last name is required', 'lastNameRequired'],
+  ['Invalid contactLastName', 'lastNameTooLong'],
+  ['Invalid contactEmail', 'emailInvalid'],
+  ['Invalid contactRole', 'roleInvalid'],
+  ['Invalid medicalSpecialties', 'specialtiesInvalid'],
+])
 
-const postJson = async <T>(url: string, payload: unknown): Promise<{ body: T | null; response: Response }> => {
-  const response = await fetch(url, {
+export async function submitClinicRegistration(
+  formData: ClinicRegistrationSubmitData,
+): Promise<ClinicRegistrationFailure | undefined> {
+  const response = await fetch('/api/auth/register/clinic', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(formData),
   })
+  const body: { success?: unknown; error?: unknown } | null = await response.json().catch(() => null)
 
-  const body = (await response.json().catch(() => null)) as T | null
-
-  return {
-    body,
-    response,
+  if (response.status === 202 && body?.success === true) return
+  if (response.status === 400 && typeof body?.error === 'string') {
+    return fieldFailures.get(body.error) ?? 'failed'
   }
-}
-
-export async function submitClinicRegistration(formData: ClinicRegistrationFormData): Promise<void> {
-  const { body, response } = await postJson<SuccessResponse>('/api/auth/register/clinic', formData)
-
-  if (!response.ok) {
-    throw new Error(body?.error || 'Clinic registration failed')
-  }
+  return 'failed'
 }

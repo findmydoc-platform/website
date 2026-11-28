@@ -1,5 +1,6 @@
 import * as React from 'react'
 
+import type { ClinicApplicationCopy } from '@/features/uiCopy/clinicApplication'
 import { Field, FieldError } from '@/components/atoms/field'
 import { Heading } from '@/components/atoms/Heading'
 import { cn } from '@/utilities/ui'
@@ -9,13 +10,15 @@ import type {
   ClinicRegistrationTreatmentCategory,
   PublicFormValidationController,
 } from '../types'
-import { treatmentCategoriesRequiredMessage } from '../validation'
 import { StepActions } from '../components/StepActions'
 import { StepForm } from '../components/StepForm'
 import { TreatmentCategoryOptionCard } from '../components/TreatmentCategoryOptionCard'
 
 export function TreatmentCategoriesStep({
+  backLabel,
+  copy,
   headingRef,
+  nextLabel,
   onBack,
   onNext,
   onToggleCategory,
@@ -24,7 +27,10 @@ export function TreatmentCategoriesStep({
   validation,
   variant = 'default',
 }: {
+  backLabel: string
+  copy: ClinicApplicationCopy['specialties']
   headingRef: React.Ref<HTMLHeadingElement>
+  nextLabel: string
   onBack: () => void
   onNext: () => void
   onToggleCategory: (categoryId: string) => void
@@ -46,7 +52,7 @@ export function TreatmentCategoriesStep({
       ariaLabelledBy={headingId}
       onSubmit={() => {
         if (selectedCategories.length === 0) {
-          validation.setCustomFieldError('treatmentCategories', treatmentCategoriesRequiredMessage)
+          validation.setCustomFieldError('treatmentCategories', copy.required)
           groupRef.current?.focus()
           return
         }
@@ -65,7 +71,7 @@ export function TreatmentCategoriesStep({
           size="h3"
           tabIndex={-1}
         >
-          Choose focus areas
+          {copy.title}
         </Heading>
         <p
           className={cn(
@@ -74,7 +80,7 @@ export function TreatmentCategoriesStep({
           )}
           id={descriptionId}
         >
-          Choose the main categories for clinic search. This helps us prioritize the right results for you.
+          {copy.description}
         </p>
 
         <Field className="mt-8 min-w-0 gap-3 sm:mt-10 lg:mt-12" data-invalid={error ? true : undefined}>
@@ -89,7 +95,7 @@ export function TreatmentCategoriesStep({
             ref={groupRef}
             tabIndex={-1}
           >
-            <legend className="sr-only">Select treatment categories</legend>
+            <legend className="sr-only">{copy.legend}</legend>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
               {treatmentCategories.map((category) => (
                 <TreatmentCategoryOptionCard
@@ -111,7 +117,13 @@ export function TreatmentCategoriesStep({
           )}
         </Field>
       </div>
-      <StepActions onBack={onBack} primaryLabel="Continue" primaryType="submit" variant={variant} />
+      <StepActions
+        backLabel={backLabel}
+        onBack={onBack}
+        primaryLabel={nextLabel}
+        primaryType="submit"
+        variant={variant}
+      />
     </StepForm>
   )
 }

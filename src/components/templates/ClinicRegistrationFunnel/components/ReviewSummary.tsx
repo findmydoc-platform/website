@@ -1,14 +1,17 @@
 import { BriefcaseBusiness, Building2, UserRound } from 'lucide-react'
 
+import type { ClinicApplicationCopy } from '@/features/uiCopy/clinicApplication'
 import { cn } from '@/utilities/ui'
 import type { ClinicRegistrationFunnelVariant, ClinicRegistrationReviewSummary } from '../types'
 import { SummaryGroup } from './SummaryGroup'
 
 export function ReviewSummary({
+  copy,
   reviewSummary,
   selectedCategoryLabels,
   variant = 'default',
 }: {
+  copy: ClinicApplicationCopy['context']['summary']
   reviewSummary: ClinicRegistrationReviewSummary
   selectedCategoryLabels: string[]
   variant?: ClinicRegistrationFunnelVariant
@@ -19,7 +22,7 @@ export function ReviewSummary({
 
   return (
     <div className={cn('grid', isLanding ? 'mt-10 gap-8' : 'mt-12 gap-10')}>
-      <SummaryGroup icon={Building2} label="Clinic details" variant={variant}>
+      <SummaryGroup icon={Building2} label={copy.clinic} variant={variant}>
         <strong className={cn('block text-base font-medium [overflow-wrap:anywhere] break-words', valueClassName)}>
           {reviewSummary.clinicName}
         </strong>
@@ -27,9 +30,9 @@ export function ReviewSummary({
           {reviewSummary.clinicWebsite ?? reviewSummary.clinicAddress}
         </span>
       </SummaryGroup>
-      <SummaryGroup icon={BriefcaseBusiness} label="Departments" variant={variant}>
+      <SummaryGroup icon={BriefcaseBusiness} label={copy.specialties} variant={variant}>
         <div className="mt-2 flex flex-wrap gap-2">
-          {(selectedCategoryLabels.length > 0 ? selectedCategoryLabels : ['Not selected yet']).map((label) => (
+          {(selectedCategoryLabels.length > 0 ? selectedCategoryLabels : [copy.emptySpecialties]).map((label) => (
             <span
               className={cn(
                 'rounded-full px-2.5 py-0.5 text-xs break-words',
@@ -42,7 +45,7 @@ export function ReviewSummary({
           ))}
         </div>
       </SummaryGroup>
-      <SummaryGroup icon={UserRound} label="Contact person" variant={variant}>
+      <SummaryGroup icon={UserRound} label={copy.contact} variant={variant}>
         <strong className={cn('block text-base font-medium [overflow-wrap:anywhere] break-words', valueClassName)}>
           {reviewSummary.contactName}
         </strong>

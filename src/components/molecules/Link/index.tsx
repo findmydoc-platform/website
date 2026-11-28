@@ -6,6 +6,7 @@ import { cn } from '@/utilities/ui'
 // This folder is atomic UI. Keep it Payload-free.
 export type UiLinkProps = {
   href: string
+  hrefLang?: string
   appearance?: 'inline' | ButtonProps['variant']
   children?: React.ReactNode
   className?: string
@@ -21,6 +22,7 @@ export type UiLinkProps = {
 export const UiLink: React.FC<UiLinkProps> = (props) => {
   const {
     href,
+    hrefLang,
     appearance = 'inline',
     children,
     className,
@@ -43,7 +45,13 @@ export const UiLink: React.FC<UiLinkProps> = (props) => {
 
   if (appearance === 'inline') {
     return (
-      <Link className={cn(className, inlineClasses)} href={href} prefetch={prefetch} {...newTabProps}>
+      <Link
+        className={cn(className, inlineClasses)}
+        href={href}
+        hrefLang={hrefLang}
+        prefetch={prefetch}
+        {...newTabProps}
+      >
         {label && label}
         {children && children}
       </Link>
@@ -52,7 +60,13 @@ export const UiLink: React.FC<UiLinkProps> = (props) => {
 
   return (
     <Button asChild className={className} hoverEffect={hoverEffect} size={size} shape={shape} variant={appearance}>
-      <Link className={cn(className, variantClasses)} href={href} prefetch={prefetch} {...newTabProps}>
+      <Link
+        className={cn(className, variantClasses)}
+        href={href}
+        hrefLang={hrefLang}
+        prefetch={prefetch}
+        {...newTabProps}
+      >
         {label && label}
         {children && children}
       </Link>

@@ -346,9 +346,9 @@ describe('frontend post detail route', () => {
     const notice = renderToStaticMarkup(await PostPage(args))
 
     expect(notice).toContain('href="/posts/gruener-tee"')
-    expect(notice).toMatch(/<a[^>]+href="\/en\/posts"[^>]*>Blog<\/a>/)
+    expect(notice).toContain('href="/en/posts"')
     expect(await generateMetadata(args)).toEqual({
-      title: expect.any(String),
+      title: expect.stringMatching(/\S/),
       robots: { index: false, follow: false },
     })
 

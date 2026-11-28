@@ -62,8 +62,39 @@ const DEFAULT_PUBLIC_ACCOUNT_MENU_LINKS: PublicAccountMenuLinks = {
   signOut: '/logout',
 }
 
+type PublicAccountMenuCopy = {
+  signIn: string
+  openGuest: string
+  openPatient?: string
+  title: string
+  description: string
+  patientLogin: string
+  registerPatient: string
+  inquiries: string
+  favorites: string
+  profile: string
+  signOut: string
+  clinicPartners: string
+}
+
+const defaultCopy: PublicAccountMenuCopy = {
+  signIn: 'Sign in',
+  openGuest: 'Sign in, open account menu',
+  title: 'Patient account',
+  description: 'Sign in or create an account.',
+  patientLogin: 'Patient login',
+  registerPatient: 'Create patient account',
+  inquiries: 'My inquiries',
+  favorites: 'Favorites',
+  profile: 'Profile',
+  signOut: 'Sign out',
+  clinicPartners: 'For clinics',
+}
+
 type PublicAccountMenuProps = {
   className?: string
+  copy?: PublicAccountMenuCopy
+  lang?: string
   links?: Partial<PublicAccountMenuLinks>
   state: PublicAccountMenuState
 }
@@ -101,7 +132,7 @@ const AccountMenuLinkItem = ({ className, href, icon: Icon, label }: AccountMenu
     >
       <Link href={href}>
         <Icon aria-hidden />
-        <span className="min-w-0 truncate">{label}</span>
+        <span className="min-w-0 whitespace-normal">{label}</span>
       </Link>
     </DropdownMenuItem>
   )
@@ -127,23 +158,24 @@ const renderMenuGroup = (items: AccountMenuItemConfig[]) => {
   )
 }
 
-const GuestTrigger = React.forwardRef<HTMLButtonElement, AccountTriggerButtonProps>(({ className, ...props }, ref) => (
-  <Button
-    ref={ref}
-    type="button"
-    hoverEffect="none"
-    variant="ghost"
-    className={cn(
-      'size-11 rounded-md p-0 font-bold text-foreground hover:bg-transparent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-hidden md:size-auto md:gap-2.5 md:rounded-sm md:px-2 md:py-1.5 md:text-base',
-      className,
-    )}
-    aria-label="Sign in, open account menu"
-    {...props}
-  >
-    <CircleUserRound aria-hidden className="size-5 shrink-0" />
-    <span className="hidden md:inline">Sign in</span>
-  </Button>
-))
+const GuestTrigger = React.forwardRef<HTMLButtonElement, AccountTriggerButtonProps & { label: string }>(
+  ({ className, label, ...props }, ref) => (
+    <Button
+      ref={ref}
+      type="button"
+      hoverEffect="none"
+      variant="ghost"
+      className={cn(
+        'size-11 rounded-md p-0 font-bold text-foreground hover:bg-transparent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-hidden md:size-auto md:gap-2.5 md:rounded-sm md:px-2 md:py-1.5 md:text-base',
+        className,
+      )}
+      {...props}
+    >
+      <CircleUserRound aria-hidden className="size-5 shrink-0" />
+      <span className="hidden md:inline">{label}</span>
+    </Button>
+  ),
+)
 GuestTrigger.displayName = 'GuestTrigger'
 
 const PatientTrigger = React.forwardRef<
@@ -158,11 +190,10 @@ const PatientTrigger = React.forwardRef<
       'size-11 rounded-full border-0 bg-transparent p-0 hover:bg-card focus-visible:bg-card focus-visible:ring-1 focus-visible:ring-border/70 focus-visible:ring-offset-0',
       className,
     )}
-    aria-label={`${getInitials(state.displayName)}, open account menu`}
     {...props}
   >
-    <Avatar className="size-9 border border-border bg-muted">
-      {state.avatarUrl ? <AvatarImage src={state.avatarUrl} alt={`${state.displayName} profile`} /> : null}
+    <Avatar aria-hidden className="size-9 border border-border bg-muted">
+      {state.avatarUrl ? <AvatarImage src={state.avatarUrl} alt="" /> : null}
       <AvatarFallback className="text-xs font-semibold text-foreground">
         {getInitials(state.displayName)}
       </AvatarFallback>
@@ -171,18 +202,18 @@ const PatientTrigger = React.forwardRef<
 ))
 PatientTrigger.displayName = 'PatientTrigger'
 
-const GuestMenuContent = ({ links }: { links: PublicAccountMenuLinks }) => {
+const GuestMenuContent = ({ links, copy }: { links: PublicAccountMenuLinks; copy: PublicAccountMenuCopy }) => {
   const primaryGroup = renderMenuGroup([
-    { href: links.login, icon: LogIn, label: 'Patient login' },
-    { href: links.registerPatient, icon: UserPlus, label: 'Create patient account' },
+    { href: links.login, icon: LogIn, label: copy.patientLogin },
+    { href: links.registerPatient, icon: UserPlus, label: copy.registerPatient },
   ])
-  const secondaryGroup = renderMenuGroup([{ href: links.clinicPartner, icon: Hospital, label: 'For clinics' }])
+  const secondaryGroup = renderMenuGroup([{ href: links.clinicPartner, icon: Hospital, label: copy.clinicPartners }])
 
   return (
     <>
       <DropdownMenuLabel className="px-2 py-2">
-        <span className="block text-sm font-semibold text-foreground">Patient account</span>
-        <span className="block text-xs font-normal text-muted-foreground">Sign in or create an account.</span>
+        <span className="block text-sm font-semibold text-foreground">{copy.title}</span>
+        <span className="block text-xs font-normal text-muted-foreground">{copy.description}</span>
       </DropdownMenuLabel>
       {primaryGroup}
       {primaryGroup && secondaryGroup ? <DropdownMenuSeparator /> : null}
@@ -193,21 +224,23 @@ const GuestMenuContent = ({ links }: { links: PublicAccountMenuLinks }) => {
 
 const PatientMenuContent = ({
   links,
+  copy,
   state,
 }: {
   links: PublicAccountMenuLinks
+  copy: PublicAccountMenuCopy
   state: Extract<PublicAccountMenuState, { kind: 'patient' }>
 }) => {
   const primaryGroup = renderMenuGroup([
-    { href: links.dashboard, icon: Inbox, label: 'My inquiries' },
-    { href: links.profile, icon: UserRound, label: 'Profile' },
-    { href: links.favorites, icon: Heart, label: 'Favorites' },
+    { href: links.dashboard, icon: Inbox, label: copy.inquiries },
+    { href: links.profile, icon: UserRound, label: copy.profile },
+    { href: links.favorites, icon: Heart, label: copy.favorites },
   ])
   const secondaryGroup = renderMenuGroup([
     {
       href: links.signOut,
       icon: LogOut,
-      label: 'Sign out',
+      label: copy.signOut,
       className:
         '!text-destructive hover:!text-destructive focus:!text-destructive active:!text-destructive [&_svg]:text-destructive focus:[&_svg]:text-destructive',
     },
@@ -231,25 +264,38 @@ const PatientMenuContent = ({
   )
 }
 
-export const PublicAccountMenu = ({ className, links: linkOverrides, state }: PublicAccountMenuProps) => {
+export const PublicAccountMenu = ({
+  className,
+  copy = defaultCopy,
+  lang = 'en',
+  links: linkOverrides,
+  state,
+}: PublicAccountMenuProps) => {
   const links = { ...DEFAULT_PUBLIC_ACCOUNT_MENU_LINKS, ...linkOverrides }
 
   return (
-    <div lang="en" className={cn('flex shrink-0 items-center', className)}>
+    <div lang={lang} className={cn('flex shrink-0 items-center', className)}>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          {state.kind === 'guest' ? <GuestTrigger /> : <PatientTrigger state={state} />}
+          {state.kind === 'guest' ? (
+            <GuestTrigger aria-label={copy.openGuest} label={copy.signIn} />
+          ) : (
+            <PatientTrigger
+              aria-label={copy.openPatient ?? `${getInitials(state.displayName)}, open account menu`}
+              state={state}
+            />
+          )}
         </DropdownMenuTrigger>
         <DropdownMenuContent
-          lang="en"
+          lang={lang}
           align="end"
           sideOffset={8}
           className="w-[min(18rem,calc(100vw-2rem))] duration-200 ease-out motion-reduce:duration-0 motion-reduce:data-[state=closed]:animate-none motion-reduce:data-[state=open]:animate-none"
         >
           {state.kind === 'guest' ? (
-            <GuestMenuContent links={links} />
+            <GuestMenuContent links={links} copy={copy} />
           ) : (
-            <PatientMenuContent links={links} state={state} />
+            <PatientMenuContent links={links} copy={copy} state={state} />
           )}
         </DropdownMenuContent>
       </DropdownMenu>

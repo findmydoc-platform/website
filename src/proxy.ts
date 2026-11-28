@@ -4,6 +4,8 @@ import type { User } from '@supabase/supabase-js'
 import { type NextRequest, NextResponse } from 'next/server'
 
 import { isPlatformUser } from '@/auth/utilities/supabaseAuthPolicy'
+import { getPublicErrorCopy } from '@/features/uiCopy/publicErrors'
+import { publicPageLocaleFromPath } from '@/i18n/publicNavigationPath'
 import { isPreviewRuntime } from '@/features/runtimePolicy'
 import {
   HOLDING_VIEW_REQUEST_HEADER,
@@ -229,7 +231,12 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
       return privateResponse(withSearchRobotsHeader(nextWithTemporaryLandingHeaders(request, holdingMode)))
     }
 
-    return privateResponse(withSearchRobotsHeader(new NextResponse('Not Found', { status: 404 })))
+    const locale = publicPageLocaleFromPath(pathname)
+    const response = new NextResponse(getPublicErrorCopy(locale).notFound, {
+      status: 404,
+      headers: { 'Content-Language': locale },
+    })
+    return privateResponse(withSearchRobotsHeader(response))
   }
 
   return privateResponse(withSearchRobotsHeader(nextWithPublicMode(request, holdingMode, translationSource)))

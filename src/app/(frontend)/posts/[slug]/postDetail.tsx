@@ -27,7 +27,6 @@ import { CmsDocumentLanguage } from '@/features/uiCopy/DocumentLanguage.client'
 import type { ContentLocale, ContentLocaleContext } from '@/utilities/contentLocalization'
 import { buildPostsIndexPath } from '@/utilities/content/postPaths'
 import type { PostSummaryDoc } from '@/utilities/content/serverData'
-import { createBlogBreadcrumb, HOME_BREADCRUMB } from '@/utilities/breadcrumbs'
 import { JsonLdScript, buildArticlePageJsonLd } from '@/utilities/structuredData'
 
 export type PostPageArgs = {
@@ -44,11 +43,14 @@ export async function renderPost(args: PostPageArgs, pathLocale: ContentLocale) 
   if (!route) {
     if (!germanPath) return <PayloadRedirects url={requestPath} />
 
-    const blogBreadcrumb = createBlogBreadcrumb(buildPostsIndexPath({ locale: 'en' }))
+    const t = await getTranslations({ locale: 'en', namespace: 'blog.navigation' })
     return (
       <CmsTranslationUnavailable
         germanPath={germanPath}
-        breadcrumbs={[HOME_BREADCRUMB, { ...blogBreadcrumb, current: false }]}
+        breadcrumbs={[
+          { label: t('home'), href: '/en' },
+          { label: t('blog'), href: buildPostsIndexPath({ locale: 'en' }), current: false },
+        ]}
       />
     )
   }

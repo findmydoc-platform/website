@@ -134,7 +134,7 @@ export function DoctorCard({ data, className, titleAs = 'h3' }: DoctorCardProps)
                 asChild
                 variant="link"
                 size="clear"
-                className="ml-auto text-base font-medium text-primary-foreground underline"
+                className="ml-auto min-h-11 items-center text-base font-medium text-primary-foreground underline md:min-h-0"
               >
                 <a
                   aria-label={data.actions.booking.label}

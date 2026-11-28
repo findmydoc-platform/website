@@ -53,7 +53,7 @@ export const Footer: React.FC<FooterProps> = ({
           <div className="flex flex-col gap-8 md:hidden">
             <div className="flex flex-col items-start gap-3">
               <Logo loading="lazy" priority="low" src={logoSrc} showPreviewBadge={showPreviewBadge} className="h-10" />
-              <p className="max-w-72 text-sm leading-6 text-muted-foreground">{footerDescription}</p>
+              <p className="max-w-72 text-sm leading-6 text-supporting-foreground">{footerDescription}</p>
             </div>
 
             {visibleMobileFooterGroups.length > 0 ? (
@@ -86,7 +86,7 @@ export const Footer: React.FC<FooterProps> = ({
             ) : null}
 
             <div className="flex flex-col items-start gap-4 border-t border-site-divider/60 pt-4">
-              <p className="text-sm text-muted-foreground">{DISCLAIMER_COPY.platform}</p>
+              <p className="text-sm text-supporting-foreground">{DISCLAIMER_COPY.platform}</p>
               {!holdingMode ? (
                 <div className="flex flex-wrap items-center gap-4">
                   <SocialLink href="https://meta.com" aria-label="Meta" platform="meta" variant="outline" />
@@ -99,7 +99,7 @@ export const Footer: React.FC<FooterProps> = ({
                   />
                 </div>
               ) : null}
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-supporting-foreground">
                 © Copyright {new Date().getFullYear()}. findmydoc All Rights Reserved
               </p>
             </div>
@@ -115,7 +115,7 @@ export const Footer: React.FC<FooterProps> = ({
                   showPreviewBadge={showPreviewBadge}
                   className="h-11"
                 />
-                <p className="max-w-72 text-sm leading-6 text-muted-foreground">{footerDescription}</p>
+                <p className="max-w-72 text-sm leading-6 text-supporting-foreground">{footerDescription}</p>
               </div>
 
               <nav aria-label="Footer primary" className="w-full md:flex-1">
@@ -139,11 +139,11 @@ export const Footer: React.FC<FooterProps> = ({
             </div>
 
             <div className="flex flex-col items-center gap-4 pt-2 text-center sm:pt-6">
-              <p className="text-normal text-muted-foreground">
+              <p className="text-normal text-supporting-foreground">
                 © Copyright {new Date().getFullYear()}. findmydoc All Rights Reserved
               </p>
 
-              <p className="text-sm text-muted-foreground">{DISCLAIMER_COPY.platform}</p>
+              <p className="text-sm text-supporting-foreground">{DISCLAIMER_COPY.platform}</p>
 
               {!holdingMode ? (
                 <div className="flex flex-wrap items-center justify-center gap-4">

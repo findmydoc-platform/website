@@ -317,7 +317,7 @@ const Root: React.FC<LandingTestimonialsCarouselRootProps> = ({
     >
       <div
         className={cn(
-          'relative rounded-3xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/25',
+          'relative rounded-3xl focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
           className,
         )}
         role="region"
@@ -445,7 +445,7 @@ const Dots: React.FC<DotsProps> = ({ className }) => {
             type="button"
             onClick={() => goToIndex(index)}
             className={cn(
-              'flex h-11 w-11 cursor-pointer items-center justify-center rounded-full transition-colors duration-300 focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:outline-none',
+              'flex h-11 w-11 cursor-pointer items-center justify-center rounded-full transition-colors duration-300 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none',
               isActive ? 'text-primary' : 'text-border hover:text-primary/50',
             )}
             aria-label={`Go to slide ${index + 1} of ${testimonials.length}`}

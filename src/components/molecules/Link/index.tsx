@@ -38,7 +38,7 @@ export const UiLink: React.FC<UiLinkProps> = (props) => {
   const size = appearance === 'link' ? 'default' : sizeFromProps
   const newTabProps = newTab ? { rel: 'noopener noreferrer', target: '_blank' } : {}
 
-  const variantClasses = variant === 'footer' ? 'text-normal text-muted-foreground hover:text-foreground' : ''
+  const variantClasses = variant === 'footer' ? 'text-normal text-supporting-foreground hover:text-foreground' : ''
   const inlineClasses = variant === 'content' ? 'text-link' : variantClasses
 
   if (appearance === 'inline') {

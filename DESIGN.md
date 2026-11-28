@@ -20,7 +20,7 @@ colors:
   popover: '#FFFFFF'
   popover-foreground: '#333333'
   border: '#E2E8F0'
-  input: '#E2E8F0'
+  input: '#76849A'
   ring: '#006DE5'
   site-canvas: '{colors.muted}'
   site-chrome: '{colors.muted}'
@@ -476,7 +476,8 @@ The palette is built from a clear medical blue, a deep navy anchor, a mint accen
 - **Foreground (#333333):** Default body text. Keep long-form content on foreground or secondary, not muted foreground.
 - **Supporting foreground (#646565):** Use for explanatory copy on the light site canvas, secondary facts such as a result count on white, placeholders, and inactive category labels. Keep the numbers in the count in foreground. This gray corresponds to 75% foreground mixed with 25% site canvas in the clinic profile.
 - **Muted foreground (#999999):** Reserve for low-emphasis decoration on light surfaces. Use supporting foreground for readable small text.
-- **Border/input (#E2E8F0):** Subtle separation for cards, inputs, dividers, and low-emphasis panels.
+- **Border (#E2E8F0):** Subtle separation for cards, dividers, and low-emphasis panels.
+- **Input (#76849A):** Field boundaries on light surfaces. This color reaches 3.79:1 against white and 3.60:1 against the site canvas.
 - **Destructive (#B91C1C):** Error and destructive action color only. White text on this color has a 6.47:1 contrast ratio. The public site and Storybook use the same token for destructive controls and form validation.
 - **Accent 2 (#E0E0E0):** Neutral secondary accent surface for legacy or low-emphasis UI states. Use it only when muted is too quiet and mint would imply action or success.
 - **Status surfaces:** Success, warning, and error are soft surfaces for inline status panels, validation summaries, and contextual chips. Pair them with secondary or foreground text; do not use them as the only status cue.
@@ -578,7 +579,7 @@ Google DESIGN.md does not export shadow or border tokens in the current `css-tai
 
 | Token                    | Value                                     | Use                                                             |
 | ------------------------ | ----------------------------------------- | --------------------------------------------------------------- |
-| `border-default`         | `1px solid #E2E8F0`                       | Cards, inputs, dividers, low-emphasis panels                    |
+| `border-default`         | `1px solid #E2E8F0`                       | Cards, dividers, low-emphasis panels                            |
 | `shadow-xs`              | `0px 1px 2px 0px rgb(0 0 0 / 0.05)`       | Default card lift with a visible border                         |
 | `shadow-brand-soft`      | `0px 4px 21px 1px rgb(48 123 196 / 0.10)` | Brand-matched cards/images and Figma-derived marketing surfaces |
 | `shadow-elevated-strong` | `0px 4px 4px 0px rgb(0 0 0 / 0.25)`       | Intentionally raised overlays or dense content separation       |
@@ -626,7 +627,7 @@ Components should consume the YAML tokens through Tailwind theme variables and s
 - **Landing feature bands:** Use large section spacing, icon circles, three-column desktop rhythm, and short copy. Mint/accent bands are allowed when the section communicates benefits or proof.
 - **Landing pricing/team/contact panels:** Use 30-32px radii, soft borders, translucent white or white/95 surfaces, brand-soft shadows, and generous padding. These panels should not adopt listing-card density.
 - **FeatureHero and listing comparison:** Use `content-hero` behavior: secondary/navy hero, compact feature bullets, filter/results grid, strong primary price/action treatment, and listing cards with tight information hierarchy.
-- **Listing cards:** Use `comparison-card` behavior: image thumbnail, clinic name, location, verification, rating, tags, price, favorite action, and details CTA in one scan path. Keep radii and padding compact enough for repeated comparison.
+- **Listing cards:** Let titles wrap and place the verification badge on its own line when space is tight. Use `comparison-card` behavior: image thumbnail, clinic name, location, verification, rating, tags, price, favorite action, and details CTA in one scan path. Keep radii and padding compact enough for repeated comparison.
 - **Clinic detail overview:** Use `detail-evidence-card` for quality snapshots and doctor preview cards, with larger hero media and overlap allowed. The page is still `content-evidence`; every large card must carry inspectable facts or a clear next action.
 - **Clinic treatment strips:** May use a saturated primary block and larger radius when it separates a curated action set. Keep treatment names, price cues, and CTA labels explicit.
 

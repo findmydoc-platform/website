@@ -42,7 +42,7 @@
   --popover-foreground: #333333;
 
   --border: #e2e8f0;
-  --input: #e2e8f0;
+  --input: #76849a;
   --ring: #006de5;
 
   /* Public site surfaces */
@@ -188,6 +188,7 @@
   /* Radius scale with semantic naming (--radius = medium/base) */
   --radius-xs: calc(var(--radius) * 0.25); /* 0.125rem = 2px */
   --radius-sm: calc(var(--radius) * 0.5); /* 0.25rem  = 4px */
+  --radius-md: var(--radius);
   --radius-base: var(--radius); /* 0.5rem   = 8px (medium/default) */
   --radius-lg: calc(var(--radius) * 1.5); /* 0.75rem  = 12px */
   --radius-xl: calc(var(--radius) * 2); /* 1rem     = 16px */

@@ -64,15 +64,15 @@ export function ListingCard({
     <article
       ref={articleRef}
       className={cn(
-        'relative w-full overflow-hidden rounded-2xl border border-border bg-card p-4 shadow-xs md:flex md:items-stretch md:gap-6 md:p-6',
+        '@container relative w-full overflow-hidden rounded-2xl border border-border bg-card p-4 shadow-xs md:p-6',
         className,
       )}
     >
       {cornerAction ? <div className="absolute top-4 right-4 z-10 md:top-5 md:right-5">{cornerAction}</div> : null}
 
-      <div className="flex flex-1 flex-col gap-4 md:flex-row md:gap-6">
-        <div className="w-full self-stretch md:max-w-32 md:flex-[1_0_0]">
-          <div className="relative aspect-[16/10] w-full overflow-hidden rounded-xl md:aspect-square md:rounded-none">
+      <div className="grid gap-4 @min-[28rem]:grid-cols-[7rem_minmax(0,1fr)] @min-[40rem]:grid-cols-[8rem_minmax(0,1fr)_9rem] @min-[40rem]:gap-6">
+        <div className="min-w-0">
+          <div className="relative aspect-[16/10] w-full overflow-hidden rounded-xl @min-[28rem]:aspect-square">
             <Media
               htmlElement={null}
               src={data.media.src}
@@ -85,24 +85,27 @@ export function ListingCard({
           </div>
         </div>
 
-        <div className="min-w-0 flex-1 space-y-3 md:pt-1">
-          {data.priceFrom ? <PriceSummary priceFrom={data.priceFrom} /> : null}
-
-          <div className="flex flex-col">
-            <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:gap-3">
+        <div className={cn('min-w-0 space-y-3', cornerAction && '@min-[28rem]:pr-12 @min-[40rem]:pr-0')}>
+          <div className="grid items-start gap-3 @min-[40rem]:grid-cols-[minmax(0,1fr)_auto]">
+            {data.priceFrom ? (
+              <PriceSummary
+                priceFrom={data.priceFrom}
+                className="@min-[40rem]:col-start-2 @min-[40rem]:row-start-1 @min-[40rem]:text-right"
+              />
+            ) : null}
+            <div className="min-w-0 space-y-2 @min-[40rem]:col-start-1 @min-[40rem]:row-start-1">
               <Heading
                 as="h3"
                 align="left"
                 size="h5"
-                className="text-xl leading-tight font-semibold text-foreground sm:text-2xl md:truncate"
+                className="text-xl leading-tight font-semibold break-words text-foreground sm:text-2xl"
               >
                 {data.name}
               </Heading>
-              <VerificationBadge variant={data.verification.variant} className="shrink-0" />
-            </div>
-
-            <div className="mt-1 flex items-center gap-2 text-sm text-foreground">
-              <LocationLine value={data.location} href={data.locationHref} />
+              <VerificationBadge variant={data.verification.variant} />
+              <div className="text-sm text-foreground">
+                <LocationLine value={data.location} href={data.locationHref} />
+              </div>
             </div>
           </div>
 
@@ -115,7 +118,12 @@ export function ListingCard({
           <TagList tags={data.tags} />
         </div>
 
-        <div className={cn('flex shrink-0 flex-col gap-3 md:w-36 md:items-end', cornerAction ? 'md:pt-14' : 'md:pt-1')}>
+        <div
+          className={cn(
+            'flex min-w-0 flex-col gap-3 @min-[28rem]:col-start-2 @min-[40rem]:col-start-3 @min-[40rem]:row-start-1',
+            cornerAction && '@min-[40rem]:pt-14',
+          )}
+        >
           <Button asChild shape="pill" className="h-12 w-full text-sm font-semibold">
             <a href={data.actions.details.href} aria-label={data.actions.details.ariaLabel}>
               {data.actions.details.label}

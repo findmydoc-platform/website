@@ -67,9 +67,11 @@ export const LightVariant: Story = {
     ],
     variant: 'light',
   },
-  parameters: {
-    backgrounds: { default: 'dark' },
-  },
+  render: (args) => (
+    <div className="bg-secondary p-6">
+      <Breadcrumb {...args} />
+    </div>
+  ),
 }
 
 export const CustomSeparator: Story = {

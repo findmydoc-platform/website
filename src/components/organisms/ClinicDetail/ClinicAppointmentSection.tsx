@@ -54,9 +54,9 @@ type ClinicAppointmentSectionProps = {
 }
 
 const inputClassName =
-  'h-14 w-full rounded-[28px] border border-primary/45 bg-background px-4 text-sm text-secondary outline-hidden transition-colors placeholder:text-secondary/45 focus:border-primary focus:ring-2 focus:ring-primary/20 read-only:cursor-not-allowed read-only:border-border read-only:bg-muted read-only:text-secondary/75 aria-invalid:border-destructive/70 aria-invalid:focus:ring-destructive/15'
+  'h-14 w-full rounded-[28px] border border-input bg-background px-4 text-base text-secondary outline-hidden transition-colors md:text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 read-only:cursor-not-allowed read-only:border-border read-only:bg-muted read-only:text-secondary/75 aria-invalid:border-destructive/70 aria-invalid:focus:ring-destructive/15'
 const textAreaClassName =
-  'min-h-32 w-full rounded-[24px] border border-primary/45 bg-background px-4 py-3 text-sm text-secondary outline-hidden transition-colors placeholder:text-secondary/45 focus:border-primary focus:ring-2 focus:ring-primary/20 aria-invalid:border-destructive/70 aria-invalid:focus:ring-destructive/15'
+  'min-h-32 w-full rounded-[24px] border border-input bg-background px-4 py-3 text-base text-secondary outline-hidden transition-colors md:text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 aria-invalid:border-destructive/70 aria-invalid:focus:ring-destructive/15'
 
 const isAutofilled = (element: Element): boolean => {
   for (const selector of [':autofill', ':-webkit-autofill']) {
@@ -547,7 +547,7 @@ export function ClinicAppointmentSection({
           <Button
             type="submit"
             shape="pill"
-            className="w-full px-8 sm:w-auto"
+            className="min-h-11 w-full px-8 sm:w-auto"
             disabled={formBlocked || isSubmitting || isSubmitted}
           >
             {isSubmitting

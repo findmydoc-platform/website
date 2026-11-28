@@ -187,7 +187,7 @@ export function ClinicLocationSection({
 
               <div className="flex flex-wrap gap-2">
                 {isOpenStreetMapAllowed && (openStreetMapDirectionsHref || openStreetMapViewHref) ? (
-                  <Button asChild size="sm">
+                  <Button asChild size="sm" className="min-h-11 md:min-h-0">
                     <a
                       href={openStreetMapDirectionsHref ?? openStreetMapViewHref}
                       target="_blank"
@@ -198,7 +198,13 @@ export function ClinicLocationSection({
                   </Button>
                 ) : null}
                 {onContactClick ? (
-                  <Button type="button" size="sm" variant="secondary" onClick={() => onContactClick('location_card')}>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    className="min-h-11 md:min-h-0"
+                    onClick={() => onContactClick('location_card')}
+                  >
                     Contact
                   </Button>
                 ) : null}
@@ -208,6 +214,7 @@ export function ClinicLocationSection({
                     type="button"
                     size="sm"
                     variant="secondary"
+                    className="min-h-11 md:min-h-0"
                     onClick={() => setIsMapOverlayOpen(true)}
                   >
                     <Expand className="size-3.5" aria-hidden="true" />
@@ -242,7 +249,7 @@ export function ClinicLocationSection({
 
             <div className="flex w-full flex-wrap gap-2 pr-10 sm:w-auto sm:justify-end">
               {isOpenStreetMapAllowed && openStreetMapViewHref ? (
-                <Button asChild size="sm" variant="secondary">
+                <Button asChild size="sm" className="min-h-11 md:min-h-0" variant="secondary">
                   <a
                     href={openStreetMapViewHref}
                     target="_blank"
@@ -254,7 +261,7 @@ export function ClinicLocationSection({
                 </Button>
               ) : null}
               {isOpenStreetMapAllowed && (openStreetMapDirectionsHref || openStreetMapViewHref) ? (
-                <Button asChild size="sm">
+                <Button asChild size="sm" className="min-h-11 md:min-h-0">
                   <a
                     href={openStreetMapDirectionsHref ?? openStreetMapViewHref}
                     target="_blank"
@@ -265,12 +272,24 @@ export function ClinicLocationSection({
                 </Button>
               ) : null}
               {onContactClick ? (
-                <Button type="button" size="sm" variant="secondary" onClick={handleMapOverlayContactClick}>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  className="min-h-11 md:min-h-0"
+                  onClick={handleMapOverlayContactClick}
+                >
                   Contact
                 </Button>
               ) : null}
               {isOpenStreetMapAllowed ? (
-                <Button type="button" size="sm" variant="secondary" onClick={() => setIsMapOverlayOpen(false)}>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  className="min-h-11 md:min-h-0"
+                  onClick={() => setIsMapOverlayOpen(false)}
+                >
                   <X className="size-3.5" aria-hidden="true" />
                   Close map
                 </Button>

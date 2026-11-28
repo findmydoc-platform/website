@@ -74,7 +74,7 @@ export const Combobox: React.FC<ComboboxProps> = ({
           )}
           disabled={disabled}
         >
-          <span className={cn(!selected && 'text-muted-foreground')}>{selected?.label ?? placeholder}</span>
+          <span className={cn(!selected && 'text-supporting-foreground')}>{selected?.label ?? placeholder}</span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" aria-hidden="true" />
         </Button>
       </PopoverTrigger>

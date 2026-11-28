@@ -58,7 +58,7 @@ export const Select: React.FC<
           name={name}
           render={({ field }) => {
             const opts = Array.isArray(options) ? options : []
-            const selectedValue = typeof field.value === 'string' ? field.value : undefined
+            const selectedValue = typeof field.value === 'string' ? field.value : ''
 
             return (
               <SelectComponent name={field.name} onValueChange={field.onChange} value={selectedValue}>

@@ -97,6 +97,21 @@ describe('patient verification command through the production catalog', () => {
     },
   )
 
+  it.each(['de', 'en'] as const)('renders the stored %s locale on every delivery attempt', async (locale) => {
+    const { action, catalog } = fixture()
+    Object.assign(action, { locale })
+    const command = { type: 'auth.email-verification', authActionId: 41 } as const
+    for (const attempt of [1, 2]) {
+      const decision = await catalog['auth.email-verification'].revalidate(command)
+      if (decision.status !== 'eligible') throw new Error(`Attempt ${attempt} was suppressed.`)
+      const prepared = await decision.prepare()
+      expect(prepared.html).toContain(`lang="${locale}"`)
+      const callback = new URL(prepared.text.match(/https:\/\/example.test\/auth\/callback\?[^\s\]]+/)![0])
+      expect(callback.searchParams.get('locale')).toBe(locale)
+      expect(callback.searchParams.get('type')).toBe('magiclink')
+    }
+  })
+
   it('accepts one action identity and renders the pinned verification template without native sending', async () => {
     const { catalog, admin } = fixture()
     const created: unknown[] = []

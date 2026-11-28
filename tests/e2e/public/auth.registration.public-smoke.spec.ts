@@ -264,6 +264,7 @@ for (const variant of patientRegistrationLocales) {
         firstName: 'John',
         lastName: 'Doe',
         password: patientTestPassword,
+        locale: variant.locale,
       },
     }
     expect(submissions).toEqual([submission, submission])

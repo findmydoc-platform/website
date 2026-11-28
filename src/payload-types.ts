@@ -3303,6 +3303,7 @@ export interface AuthAction {
         value: number | PlatformStaff;
       } | null);
   principalBoundAt?: string | null;
+  locale?: ('de' | 'en') | null;
   supabaseSubject?: string | null;
   subjectBoundAt?: string | null;
   correlationDigest?: string | null;
@@ -6328,6 +6329,7 @@ export interface AuthActionsSelect<T extends boolean = true> {
   supabaseTokenType?: T;
   principal?: T;
   principalBoundAt?: T;
+  locale?: T;
   supabaseSubject?: T;
   subjectBoundAt?: T;
   correlationDigest?: T;

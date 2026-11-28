@@ -1,3 +1,5 @@
+import { patientAuthLocaleSchema } from '@/auth/actions/patientAuthLocale'
+import { AUTH_CONFIRMATION_PATH, localizedPatientAuthPath } from '@/i18n/patientAuthPath'
 import { preparationCookie } from '@/features/inquiryPreparations/context'
 import { NextRequest, NextResponse } from 'next/server'
 import { randomUUID } from 'node:crypto'
@@ -23,9 +25,11 @@ export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
   if (requestUrl.searchParams.getAll('type').includes('magiclink')) {
-    const response = NextResponse.redirect(new URL('/auth/confirm?type=patient-verification', requestUrl.origin), {
-      status: 303,
-    })
+    const locale = patientAuthLocaleSchema.safeParse(requestUrl.searchParams.get('locale'))
+    const confirmPath = localizedPatientAuthPath(AUTH_CONFIRMATION_PATH, locale.data ?? 'de')
+    const confirmUrl = new URL(confirmPath, requestUrl.origin)
+    confirmUrl.searchParams.set('type', 'patient-verification')
+    const response = NextResponse.redirect(confirmUrl, { status: 303 })
     clearPatientVerificationContext(response)
     const id = requestUrl.searchParams.get('authActionId') ?? ''
     const token = requestUrl.searchParams.get('token_hash') ?? ''
@@ -36,7 +40,11 @@ export async function GET(request: NextRequest) {
       !/^[1-9]\d*$/.test(id) ||
       !Number.isSafeInteger(Number(id)) ||
       !supabaseEmailTokenHashSchema.safeParse(token).success ||
-      [...requestUrl.searchParams.keys()].some((key) => !['authActionId', 'token_hash', 'type'].includes(key)) ||
+      (requestUrl.searchParams.has('locale') &&
+        (!locale.success || requestUrl.searchParams.getAll('locale').length !== 1)) ||
+      [...requestUrl.searchParams.keys()].some(
+        (key) => !['authActionId', 'token_hash', 'type', 'locale'].includes(key),
+      ) ||
       ['authActionId', 'token_hash', 'type'].some((key) => requestUrl.searchParams.getAll(key).length !== 1)
     )
       return applyPrivateAuthHeaders(response)

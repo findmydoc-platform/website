@@ -1,3 +1,5 @@
+import type { UiCopyLocale } from '@/i18n/requestLocale'
+
 type RegistrationFormData = Record<string, string>
 
 type PatientRegistrationFailure =
@@ -5,6 +7,7 @@ type PatientRegistrationFailure =
 
 export async function submitPatientRegistration(
   formData: RegistrationFormData,
+  locale: UiCopyLocale,
 ): Promise<PatientRegistrationFailure | undefined> {
   const email = formData.email ?? ''
   const password = formData.password ?? ''
@@ -15,7 +18,7 @@ export async function submitPatientRegistration(
   const response = await fetch('/api/auth/register/patient', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password, firstName, lastName }),
+    body: JSON.stringify({ email, password, firstName, lastName, locale }),
   })
 
   if (response.status === 400) return 'invalidPayload'

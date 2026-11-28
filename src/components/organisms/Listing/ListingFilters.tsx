@@ -168,7 +168,7 @@ const Root = ({
       }}
     >
       <aside className={cn('min-w-0 space-y-8 rounded-2xl bg-background p-5 shadow-sm sm:p-6', className)}>
-        <Heading as="h2" align="left" size="h5" className="font-semibold">
+        <Heading as="h2" align="left" size="content-section" className="text-secondary">
           Filter
         </Heading>
         {children}

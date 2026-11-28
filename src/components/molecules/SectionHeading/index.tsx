@@ -16,6 +16,7 @@ const sectionHeadingVariants = cva('flex w-full flex-col gap-6', {
     tone: {
       default: '',
       accent: '',
+      brand: '',
     },
   },
   defaultVariants: {
@@ -34,6 +35,7 @@ const titleVariants = cva('font-bold tracking-tight', {
     tone: {
       default: 'text-foreground',
       accent: 'text-accent-foreground',
+      brand: 'text-secondary',
     },
   },
   defaultVariants: {
@@ -51,6 +53,7 @@ const descriptionVariants = cva('', {
     tone: {
       default: '',
       accent: 'text-accent-foreground/80',
+      brand: 'text-supporting-foreground',
     },
   },
   defaultVariants: {

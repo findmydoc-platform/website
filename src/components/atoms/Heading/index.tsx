@@ -11,6 +11,8 @@ const headingVariants = cva('font-bold normal-case tracking-tight', {
     },
     size: {
       section: 'text-size-56',
+      'content-section':
+        'text-[length:var(--text-content-section)] leading-[1.2] lg:text-[length:var(--text-content-section-wide)]',
       h1: 'text-4xl md:text-5xl lg:text-6xl',
       h2: 'text-3xl md:text-4xl lg:text-5xl',
       h3: 'text-2xl md:text-3xl lg:text-4xl',

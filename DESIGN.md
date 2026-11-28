@@ -12,6 +12,7 @@ colors:
   secondary-foreground: '#FFFFFF'
   muted: '#F8F9FA'
   muted-foreground: '#999999'
+  supporting-foreground: '#646565'
   accent: '#42E2B7'
   accent-foreground: '#07004C'
   card: '#FFFFFF'
@@ -53,6 +54,18 @@ colors:
   sidebar-border: '#E5E5E5'
   sidebar-ring: '#A3A3A3'
 typography:
+  content-section:
+    fontFamily: 'DM Sans, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif'
+    fontSize: 1.6875rem
+    fontWeight: 700
+    lineHeight: 32.4px
+    letterSpacing: -0.025em
+  content-section-wide:
+    fontFamily: 'DM Sans, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif'
+    fontSize: 2rem
+    fontWeight: 700
+    lineHeight: 38.4px
+    letterSpacing: -0.025em
   h1:
     fontFamily: 'DM Sans, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif'
     fontSize: 3.125rem
@@ -174,6 +187,11 @@ spacing:
   page-inset-xl: 5rem
   page-inset-xxl: 8rem
 components:
+  supporting-text:
+    textColor: '{colors.supporting-foreground}'
+  content-section-title:
+    textColor: '{colors.secondary}'
+    typography: '{typography.content-section}'
   page:
     backgroundColor: '{colors.background}'
     textColor: '{colors.foreground}'
@@ -423,7 +441,8 @@ The palette is built from a clear medical blue, a deep navy anchor, a mint accen
 - **Muted (#F8F9FA):** The public site canvas, chrome, and structural section background. This keeps clinical content open without pure-white page glare.
 - **Card and popover (#FFFFFF):** Use white for repeated cards, dialogs, floating panels, popovers, and form surfaces on muted backgrounds.
 - **Foreground (#333333):** Default body text. Keep long-form content on foreground or secondary, not muted foreground.
-- **Muted foreground (#999999):** Secondary metadata only. Do not use it for required form labels, prices, clinic names, or key comparison data.
+- **Supporting foreground (#646565):** Use for explanatory copy on the light site canvas and secondary facts such as a result count on white. Keep the numbers in the count in foreground. This gray corresponds to 75% foreground mixed with 25% site canvas in the clinic profile.
+- **Muted foreground (#999999):** Reserve for low-emphasis decoration on light surfaces. Use supporting foreground for readable small text.
 - **Border/input (#E2E8F0):** Subtle separation for cards, inputs, dividers, and low-emphasis panels.
 - **Destructive (#B91C1C):** Error and destructive action color only. This is intentionally darker than Tailwind red-500 so white text passes WCAG AA.
 - **Accent 2 (#E0E0E0):** Neutral secondary accent surface for legacy or low-emphasis UI states. Use it only when muted is too quiet and mint would imply action or success.
@@ -443,6 +462,8 @@ Use DM Sans as the brand typeface for all public UI. It is chosen for a neutral 
 - **H1-H4:** Bold, compact, centered by default in the base layer. Override alignment only when the layout needs scanning, comparison, or form completion.
 - **Landing-editorial type:** Prefer centered headings, larger display moments, short explanatory paragraphs, and generous line spacing. Landing copy should invite understanding, not enumerate every fact.
 - **Content-evidence type:** Prefer scan-friendly labels, compact headings, tabular or prominent numeric treatment for prices/ratings, and left alignment when comparing data. Long names must wrap cleanly instead of shrinking the whole layout.
+- **Content section titles:** Use left-aligned, bold navy type at 27px, increasing to 32px at the large breakpoint. Use 1.2 line height and tight tracking. Use this role for a section title such as the clinic comparison filter.
+- **Landing section introductions:** Pair a centered navy title with supporting foreground for its description on the light canvas. Use the existing editorial type sizes and section spacing.
 - **H5 caps:** Uppercase, wide-tracked section labeling. Use sparingly; it is a cue, not body copy.
 - **Body text:** Use 16px/24px for default copy and 20px/32px for prominent explanatory text.
 - **Labels:** Use 12px bold labels for compact controls and validation contexts. Keep form labels readable and avoid muted foreground when the label is required.

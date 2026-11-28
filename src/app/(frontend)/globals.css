@@ -27,6 +27,7 @@
 
   --muted: #f8f9fa;
   --muted-foreground: #999999;
+  --supporting-foreground: #646565;
 
   --accent: #42e2b7;
   --accent-foreground: #07004c;
@@ -127,6 +128,7 @@
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+  --color-supporting-foreground: var(--supporting-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
 
@@ -164,6 +166,8 @@
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
 
+  --text-content-section: 1.6875rem;
+  --text-content-section-wide: 2rem;
   --text-size-56: 3.5rem; /* 56px */
   --text-size-56--line-height: 1.14; /* 64px */
   --text-size-40: 2.5rem; /* 40px */

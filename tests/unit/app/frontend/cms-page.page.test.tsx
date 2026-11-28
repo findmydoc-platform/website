@@ -2,6 +2,9 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Where } from 'payload'
 
+import { TEMPORARY_LANDING_MODE_REQUEST_HEADER } from '@/features/temporaryLandingMode'
+import { FRONTEND_PATH_HEADER } from '@/i18n/requestLocale'
+
 const mocks = vi.hoisted(() => ({
   draftMode: vi.fn(),
   find: vi.fn(),
@@ -44,6 +47,12 @@ function routeArgs(slug: string, locale?: string) {
   }
 }
 
+function mockHoldingPath(path: string) {
+  mocks.headers.mockResolvedValue(
+    new Headers({ [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: '1', [FRONTEND_PATH_HEADER]: `/${path}` }),
+  )
+}
+
 describe('frontend CMS page route metadata', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -73,6 +82,55 @@ describe('frontend CMS page route metadata', () => {
       alternates: { canonical: '/en', languages: { de: '/', en: '/en', 'x-default': '/' } },
     })
     expect(metadata.robots).not.toMatchObject({ index: false })
+  })
+
+  it.each(['imprint', 'privacy-policy'])(
+    'serves each published Holding %s language and keeps it out of search',
+    async (slug) => {
+      const { default: Page, generateMetadata } = await import('@/app/(frontend)/(pages)/[...slug]/page')
+      findPages(true, { de: { ...germanPage, slug }, en: { ...englishPage, slug } })
+
+      for (const locale of ['de', 'en']) {
+        const path = locale === 'de' ? slug : `en/${slug}`
+        mockHoldingPath(path)
+        const args = routeArgs(path)
+        expect(renderToStaticMarkup(await Page(args))).toMatch(new RegExp(`<article[^>]+lang="${locale}"`))
+        expect(await generateMetadata(args)).toMatchObject({
+          alternates: { canonical: `/${path}` },
+          robots: { index: false, follow: false },
+        })
+      }
+    },
+  )
+
+  it.each(['imprint', 'privacy-policy'])('does not serve an unpublished English Holding %s rendition', async (slug) => {
+    const { default: Page, generateMetadata } = await import('@/app/(frontend)/(pages)/[...slug]/page')
+    findPages(false, { de: { ...germanPage, slug }, en: { ...englishPage, slug } })
+
+    mockHoldingPath(`en/${slug}`)
+    const args = routeArgs(`en/${slug}`)
+    await expect(Page(args)).rejects.toMatchObject({ digest: 'NEXT_HTTP_ERROR_FALLBACK;404' })
+    expect((await generateMetadata(args)).robots).toEqual({ index: false, follow: false })
+  })
+
+  it('links from the English Holding home to each published legal rendition', async () => {
+    const { default: Page } = await import('@/app/(frontend)/(pages)/[...slug]/page')
+    mockHoldingPath('en')
+    mocks.find.mockImplementation(({ collection, locale }) => ({
+      docs:
+        collection === 'pages' ? [{ slug: 'imprint' }, ...(locale === 'de' ? [{ slug: 'privacy-policy' }] : [])] : [],
+    }))
+
+    const html = renderToStaticMarkup(await Page(routeArgs('en')))
+
+    expect(
+      Array.from(html.matchAll(/<a[^>]+href="(\/(?:en\/)?(?:imprint|privacy-policy))"[^>]*>([^<]*)<\/a>/g)).map(
+        ([, path, label]) => ({ path, label }),
+      ),
+    ).toEqual([
+      { path: '/privacy-policy', label: expect.stringMatching(/\(DE\)$/) },
+      { path: '/en/imprint', label: expect.not.stringMatching(/\(DE\)$/) },
+    ])
   })
 
   it('keeps the Turkish Holding introduction unavailable in Full', async () => {

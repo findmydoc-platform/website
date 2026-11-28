@@ -13,15 +13,18 @@ import { getCachedLatestPosts } from '@/utilities/content/serverData'
 import { createSiteMetadata } from '@/utilities/generateMeta'
 import { getServerSideURL } from '@/utilities/getURL'
 
+import { getHoldingLegalLinks } from './holdingLegalLinks'
+
 export type HoldingHomeSearchParams = Record<string, string | string[] | undefined>
 
 export async function renderHoldingHome(locale: TemporaryLandingLocale, searchParams?: HoldingHomeSearchParams) {
   const contentLocale = resolveTemporaryLandingContentLocale(locale)
-  const posts = await getCachedLatestPosts(3, contentLocale)
+  const [posts, legalLinks] = await Promise.all([getCachedLatestPosts(3, contentLocale), getHoldingLegalLinks(locale)])
   return (
     <FormBridgeTemporaryLandingPageAdapter
       contentLocale={contentLocale}
       locale={locale}
+      legalLinks={legalLinks}
       languageOptions={buildTemporaryLandingLanguageOptions(searchParams)}
       posts={posts.map((post) => normalizePost(post, { contentLocale }))}
     />

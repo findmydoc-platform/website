@@ -11,16 +11,18 @@ import { findPublishedPageSlugs } from '@/utilities/content/serverData/pages'
 import type { ContentLocale } from '@/utilities/contentLocalization'
 import { MANAGED_LEGAL_PAGE_SLUGS } from '@/utilities/legalPages'
 
-const getPublishedLegalSlugs = unstable_cache(
+const navigationSlugs = [...MANAGED_LEGAL_PAGE_SLUGS, 'home']
+
+export const getPublishedNavigationPageSlugs = cache(unstable_cache(
   async (locale: ContentLocale) => {
     const payload = await getPayload({ config: configPromise })
-    return findPublishedPageSlugs(payload, MANAGED_LEGAL_PAGE_SLUGS, locale)
+    return findPublishedPageSlugs(payload, navigationSlugs, locale)
   },
-  ['holding-legal-page-slugs'],
-  { tags: MANAGED_LEGAL_PAGE_SLUGS.map((slug) => buildSlugTag('pages', slug)) },
-)
+  ['public-navigation-page-slugs'],
+  { tags: navigationSlugs.map((slug) => buildSlugTag('pages', slug)) },
+))
 
 export const getHoldingLegalLinks = cache(async (locale: TemporaryLandingLocale) => {
-  const [german, english] = await Promise.all([getPublishedLegalSlugs('de'), getPublishedLegalSlugs('en')])
+  const [german, english] = await Promise.all([getPublishedNavigationPageSlugs('de'), getPublishedNavigationPageSlugs('en')])
   return resolveHoldingLegalLinks(getTemporaryLandingPageContent(locale).footerLinks, locale, german, english)
 })

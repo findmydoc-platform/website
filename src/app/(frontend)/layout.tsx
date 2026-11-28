@@ -32,8 +32,21 @@ import {
 import { LanguageSwitchRouteProvider } from '@/features/languageSwitch/LanguageSwitchRouteProvider.client'
 import { PatientAuthFormHandoffProvider } from '@/features/languageSwitch/PatientAuthFormHandoff.client'
 import { DocumentLanguage } from '@/features/uiCopy/DocumentLanguage.client'
-import { uiCopyLocaleFromHeaders } from '@/i18n/requestLocale'
+import { FRONTEND_PATH_HEADER, UI_COPY_LOCALE_HEADER } from '@/i18n/requestLocale'
+import { publicPageLocaleFromPath } from '@/i18n/publicNavigationPath'
+import { getPublicErrorCopy } from '@/features/uiCopy/publicErrors'
+import { PublicErrorCopyProvider } from './_components/PublicErrorCopyProvider.client'
 import { VercelToolbar } from '@vercel/toolbar/next'
+
+const errorCopy = {
+  de: getBoundaryCopy('de'),
+  en: getBoundaryCopy('en'),
+}
+
+function getBoundaryCopy(locale: 'de' | 'en') {
+  const { unexpected, retry } = getPublicErrorCopy(locale)
+  return { unexpected, retry }
+}
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const requestHeaders = await headers()
@@ -53,8 +66,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     requestCookies.get(COOKIE_CONSENT_COOKIE_NAME)?.value ?? null,
   )
 
+  const path = requestHeaders.get(FRONTEND_PATH_HEADER) ?? '/'
+  const explicitLocale = requestHeaders.get(UI_COPY_LOCALE_HEADER)
+  const documentLanguage = holdingLocale ?? cmsLocale ?? (
+    explicitLocale === 'de' || explicitLocale === 'en' ? explicitLocale : publicPageLocaleFromPath(path)
+  )
+
   return (
-    <html lang={holdingLocale ?? cmsLocale ?? uiCopyLocaleFromHeaders(requestHeaders)} suppressHydrationWarning>
+    <html lang={documentLanguage} suppressHydrationWarning>
       <head>
         <link href="/favicon.ico" rel="icon" sizes="32x32" />
         <link href="/favicon.svg" rel="icon" type="image/svg+xml" />
@@ -74,7 +93,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <LanguageSwitchRouteProvider>
               <PatientAuthFormHandoffProvider>
                 <TreatmentSearchHandoffProvider>
-                  <DocumentLanguage initialLocale={holdingLocale ?? cmsLocale}>{children}</DocumentLanguage>
+                  <DocumentLanguage initialLocale={holdingLocale ?? cmsLocale}>
+                    <PublicErrorCopyProvider copy={errorCopy}>
+                      {children}
+                    </PublicErrorCopyProvider>
+                  </DocumentLanguage>
                 </TreatmentSearchHandoffProvider>
               </PatientAuthFormHandoffProvider>
             </LanguageSwitchRouteProvider>

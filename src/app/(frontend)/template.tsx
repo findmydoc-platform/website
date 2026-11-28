@@ -1,6 +1,7 @@
 import React from 'react'
 
-import { getHoldingLegalLinks } from '@/app/(frontend)/_data/holdingLegalLinks'
+import { localizePublicNavigation, resolveAccountHref } from '@/app/(frontend)/_data/publicNavigation'
+import { getHoldingLegalLinks, getPublishedNavigationPageSlugs } from '@/app/(frontend)/_data/holdingLegalLinks'
 import { FrontendChrome } from '@/app/(frontend)/FrontendChrome.client'
 import { extractSupabaseUserData } from '@/auth/utilities/jwtValidation'
 import type { AuthData } from '@/auth/types/authTypes'
@@ -16,14 +17,14 @@ import { languageSwitcherCopy } from '@/features/languageSwitch/copy'
 import { HeaderLanguageSwitcher } from '@/features/languageSwitch/HeaderLanguageSwitcher.client'
 import { isNonProductionRuntime } from '@/features/runtimePolicy'
 import {
-  getHoldingLegalLinkLocale,
   projectHoldingFooterGroups,
   projectHoldingHeaderNavItems,
 } from '@/features/temporaryLandingMode/navigation'
 import { readHoldingViewRequestHeader, readPublicSiteModeRequestHeader } from '@/features/temporaryLandingMode'
 import { resolveHoldingMode } from '@/features/temporaryLandingMode/resolver'
-import { FRONTEND_PATH_HEADER } from '@/i18n/requestLocale'
-import { DEFAULT_CONTENT_LOCALE } from '@/utilities/contentLocalization'
+import { FRONTEND_PATH_HEADER, UI_COPY_LOCALE_HEADER } from '@/i18n/requestLocale'
+import { publicPageLocaleFromPath } from '@/i18n/publicNavigationPath'
+import { getPublicChromeCopy } from '@/features/uiCopy/publicChrome'
 import { getCachedGlobal } from '@/utilities/getGlobals'
 import { getServerSideURL } from '@/utilities/getURL'
 import { normalizeFooterNavGroups, normalizeHeaderNavItems } from '@/utilities/normalizeNavItems'
@@ -39,18 +40,17 @@ const LIVE_PATIENT_ACCOUNT_MENU_LINKS: Partial<PublicAccountMenuLinks> = {
 
 const DEFAULT_ACCOUNT_MENU_STATE: PublicAccountMenuState = { kind: 'guest' }
 
-const buildPatientDisplayName = (firstName?: string, lastName?: string, email?: string): string => {
-  const displayName = `${firstName} ${lastName}`.trim()
-  return displayName || email || 'Patient account'
-}
+const buildPatientDisplayName = (firstName?: string, lastName?: string): string =>
+  [firstName, lastName].filter(Boolean).join(' ').trim()
 
-function resolvePublicAccountMenuState(authData: AuthData | null): PublicAccountMenuState {
+
+function resolvePublicAccountMenuState(authData: AuthData | null, fallbackName: string): PublicAccountMenuState {
   if (!authData || authData.userType !== 'patient') {
     return DEFAULT_ACCOUNT_MENU_STATE
   }
 
   return {
-    displayName: buildPatientDisplayName(authData.firstName, authData.lastName, authData.userEmail),
+    displayName: buildPatientDisplayName(authData.firstName, authData.lastName) || authData.userEmail || fallbackName,
     email: authData.userEmail,
     kind: 'patient',
   }
@@ -80,39 +80,66 @@ export default async function FrontendTemplate({ children }: { children: React.R
   const headerLogoSrc = configuredHeaderLogoSrc
   const footerLogoSrc = configuredFooterLogoSrc
 
-  const normalizedFooterGroups = showSiteChrome
-    ? normalizeFooterNavGroups((await getCachedGlobal('footer', 1)()) as FooterType)
-    : []
-  const normalizedHeaderNavItems = showSiteChrome
-    ? normalizeHeaderNavItems((await getCachedGlobal('header', 1)()) as HeaderType)
-    : []
-  const legalLinks =
-    isHoldingPublicView && showSiteChrome
-      ? await getHoldingLegalLinks(getHoldingLegalLinkLocale(requestHeaders.get(FRONTEND_PATH_HEADER) ?? '/'))
-      : undefined
+  const pathname = requestHeaders.get(FRONTEND_PATH_HEADER) ?? '/'
+  const explicitLocale = requestHeaders.get(UI_COPY_LOCALE_HEADER)
+  const locale = explicitLocale === 'de' || explicitLocale === 'en' ? explicitLocale : publicPageLocaleFromPath(pathname)
+  const copy = getPublicChromeCopy(locale)
+  const [footerGlobal, headerGlobal, legalLinks, englishPages] = showSiteChrome
+    ? await Promise.all([
+        getCachedGlobal('footer', 1, locale)(),
+        getCachedGlobal('header', 1, locale)(),
+        getHoldingLegalLinks(locale),
+        locale === 'en' && !isHoldingPublicView ? getPublishedNavigationPageSlugs('en') : [],
+      ])
+    : [null, null, {}, []] as const
+  const localized = localizePublicNavigation({
+    headerItems: normalizeHeaderNavItems(headerGlobal as HeaderType | null, locale),
+    footerGroups: normalizeFooterNavGroups(footerGlobal as FooterType | null, locale),
+    locale,
+    holding: isHoldingPublicView,
+    copy,
+    legalLinks,
+  })
   const footerGroups = isHoldingPublicView
-    ? projectHoldingFooterGroups(normalizedFooterGroups, siteOrigin, legalLinks)
-    : normalizedFooterGroups
+    ? projectHoldingFooterGroups(localized.footerGroups, siteOrigin)
+    : localized.footerGroups
   const headerNavItems = isHoldingPublicView
-    ? projectHoldingHeaderNavItems(normalizedHeaderNavItems, siteOrigin, legalLinks)
-    : normalizedHeaderNavItems
+    ? projectHoldingHeaderNavItems(localized.headerItems, siteOrigin)
+    : localized.headerItems
+  const homeHref = locale === 'en' && (isHoldingPublicView || englishPages.includes('home')) ? '/en' : '/'
   const accountMenuState =
-    showSiteChrome && !isHoldingPublicView ? resolvePublicAccountMenuState(authData) : DEFAULT_ACCOUNT_MENU_STATE
+    showSiteChrome && !isHoldingPublicView ? resolvePublicAccountMenuState(authData, copy.account.title) : DEFAULT_ACCOUNT_MENU_STATE
+  const accountMenuLinks: Partial<PublicAccountMenuLinks> = {
+    ...LIVE_PATIENT_ACCOUNT_MENU_LINKS,
+    clinicPartner: resolveAccountHref('/partners/clinics', locale),
+    dashboard: resolveAccountHref('/patient/inquiries', locale),
+    favorites: resolveAccountHref('/patient/favorites', locale),
+    login: resolveAccountHref('/login/patient', locale),
+    registerPatient: resolveAccountHref('/register/patient', locale),
+  }
+  const { openPatient, ...accountCopy } = copy.account
 
   return (
     <>
       <FrontendChrome holdingMode={isHoldingPublicView}>
         {showSiteChrome ? (
-          <div className="full-width" lang={DEFAULT_CONTENT_LOCALE}>
+          <div className="full-width" lang={locale}>
             <Header
               navItems={headerNavItems}
+              navigationCopy={copy.nav}
+              homeHref={homeHref}
               languageSwitcher={
                 <HeaderLanguageSwitcher copyByLocale={languageSwitcherCopy} hideWithoutRoute={isHoldingPublicView} />
               }
               logoSrc={headerLogoSrc}
               rightActions={
                 isHoldingPublicView ? null : (
-                  <PublicAccountMenu links={LIVE_PATIENT_ACCOUNT_MENU_LINKS} state={accountMenuState} />
+                  <PublicAccountMenu
+                    copy={{ ...accountCopy, openPatient: accountMenuState.kind === 'patient' ? openPatient(accountMenuState.displayName) : undefined }}
+                    lang={locale}
+                    links={accountMenuLinks}
+                    state={accountMenuState}
+                  />
                 )
               }
               showPreviewBadge={showPreviewBadge}
@@ -122,7 +149,7 @@ export default async function FrontendTemplate({ children }: { children: React.R
 
         {showSiteChrome && showPreviewBadge ? (
           <div className="full-width">
-            <PreviewDataNotice />
+            <PreviewDataNotice {...copy.preview} lang={locale} />
           </div>
         ) : null}
       </FrontendChrome>
@@ -131,9 +158,10 @@ export default async function FrontendTemplate({ children }: { children: React.R
 
       <FrontendChrome holdingMode={isHoldingPublicView}>
         {showSiteChrome ? (
-          <div className="full-width" lang={DEFAULT_CONTENT_LOCALE}>
+          <div className="full-width" lang={locale}>
             <Footer
               footerGroups={footerGroups}
+              copy={copy.footer}
               logoSrc={footerLogoSrc}
               showPreviewBadge={showPreviewBadge}
               holdingMode={isHoldingPublicView}

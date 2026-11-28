@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import '@testing-library/jest-dom'
-import { act, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import AdminLogoutPage from '@/app/(frontend)/admin/logout/page'
@@ -32,6 +32,10 @@ vi.mock('@/auth/utilities/supaBaseClient', () => ({
       signOut: mocks.signOutMock,
     },
   }),
+}))
+
+vi.mock('@/auth/utilities/supaBaseServer', () => ({
+  createClient: async () => ({ auth: { signOut: mocks.signOutMock } }),
 }))
 
 vi.mock('@/posthog/client-api', () => ({
@@ -94,5 +98,20 @@ describe('frontend logout pages', () => {
     expect(mocks.replaceMock).toHaveBeenCalledWith('/next/exit-preview?redirect=%2Fadmin%2Flogin')
 
     consoleError.mockRestore()
+  })
+
+  it('keeps the patient on the localized logout page when the provider cannot end the session', async () => {
+    mocks.signOutMock.mockResolvedValueOnce({ error: new Error('provider unavailable') })
+
+    render(await EnglishLogoutPage())
+    await finishLogout()
+
+    expect(screen.getByRole('alert')).toHaveTextContent('en-error-fixture')
+    expect(mocks.replaceMock).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'en-retry-fixture' }))
+    await finishLogout()
+
+    expect(mocks.replaceMock).toHaveBeenCalledWith('/next/exit-preview?redirect=%2Fen%2Flogin%2Fpatient')
   })
 })

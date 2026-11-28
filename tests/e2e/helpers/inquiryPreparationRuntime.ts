@@ -105,15 +105,6 @@ export function registerInquiryPreparationRuntime({
     auth = createServer((request, response) => {
       void (async () => {
         const url = new URL(request.url!, origin)
-        if (request.headers.origin === origin) {
-          response.setHeader('Access-Control-Allow-Origin', origin)
-          response.setHeader('Access-Control-Allow-Headers', request.headers['access-control-request-headers'] ?? '')
-          response.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-        }
-        if (request.method === 'OPTIONS') {
-          response.writeHead(204).end()
-          return
-        }
         providerRequests.push(`${request.method} ${url.pathname}`)
         const chunks: Buffer[] = []
         for await (const chunk of request) chunks.push(Buffer.from(chunk))

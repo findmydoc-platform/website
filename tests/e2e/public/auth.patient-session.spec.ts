@@ -10,7 +10,6 @@ if (new URL(origin).hostname !== 'localhost') throw new Error('The patient sessi
 
 const artifacts = 'output/playwright/patient-auth'
 const runtime = registerInquiryPreparationRuntime({ origin, artifacts, clinicCount: 0, templateKind: 'empty' })
-const patientEmail = 'session-patient@example.test'
 const patientPassword = 'SyntheticPatient123' // pragma: allowlist secret
 const accountButton = /open account menu|kontomenü öffnen/i
 const signOut = /sign out|abmelden/i
@@ -27,6 +26,7 @@ test('patients can correct sign-in failures, continue, and sign out in both lang
   const feedback = { validation: new Set<string>(), credentials: new Set<string>(), signOut: new Set<string>() }
 
   for (const copy of cases) {
+    const patientEmail = `session-patient-${copy.locale}@example.test`
     runtime.existingUser(patientEmail)
     const context = await browser.newContext({ baseURL: origin, viewport: { width: 375, height: 500 } })
     try {
@@ -82,19 +82,23 @@ test('patients can correct sign-in failures, continue, and sign out in both lang
       const menu = page.getByRole('banner').getByRole('button', { name: accountButton })
       await menu.click()
       const logout = page.getByRole('menuitem', { name: signOut })
-      await expect(logout).toHaveAttribute('href', `${copy.base}/logout`)
+      const logoutPath = `${copy.base}/logout`
+      await expect(logout).toHaveAttribute('href', logoutPath)
 
       let releaseLogout = () => {}
       const statusCanFinish = new Promise<void>((resolve) => {
         releaseLogout = resolve
       })
-      await page.route('**/auth/v1/logout?*', async (route) => {
-        await statusCanFinish
-        await route.continue()
-      })
+      await page.route(
+        (url) => url.pathname === logoutPath,
+        async (route) => {
+          if (route.request().method() === 'POST') await statusCanFinish
+          await route.continue()
+        },
+      )
       try {
         await logout.click()
-        await expect(page).toHaveURL(`${copy.base}/logout`)
+        await expect(page).toHaveURL(logoutPath)
         const status = main.getByRole('status')
         await expect(status).toBeVisible()
         await expect(status).toContainText(/\S/)

@@ -18,6 +18,8 @@ const languages = [
     alternate: 'English',
     alternatePrefix: '/en',
     submit: 'Anmelden',
+    emailLabel: 'E-Mail',
+    passwordLabel: 'Passwort',
     save: (clinic: string) => `${clinic} speichern`,
     remove: (clinic: string) => `${clinic} aus gespeicherten Kliniken entfernen`,
   },
@@ -28,12 +30,25 @@ const languages = [
     alternate: 'Deutsch',
     alternatePrefix: '',
     submit: 'Sign in',
+    emailLabel: 'Email',
+    passwordLabel: 'Password',
     save: (clinic: string) => `Save ${clinic} to saved clinics`,
     remove: (clinic: string) => `Remove ${clinic} from saved clinics`,
   },
 ] as const
 
-for (const { locale, prefix, languageMenu, alternate, alternatePrefix, submit, save, remove } of languages) {
+for (const {
+  locale,
+  prefix,
+  languageMenu,
+  alternate,
+  alternatePrefix,
+  submit,
+  emailLabel,
+  passwordLabel,
+  save,
+  remove,
+} of languages) {
   test(`saves and removes a clinic through the ${locale} comparison and private saved list`, async ({
     page,
     context,
@@ -57,10 +72,10 @@ for (const { locale, prefix, languageMenu, alternate, alternatePrefix, submit, s
     await expect(page).toHaveURL((url) => url.pathname === loginPath && url.searchParams.get('next') === entry)
     await expect(page.locator('html')).toHaveAttribute('lang', locale)
 
-    const form = page.getByRole('main').getByRole('form')
-    await form.locator('input[type="email"]').fill(email)
-    await form.locator('input[type="password"]').fill('SyntheticPatient123') // pragma: allowlist secret
-    await form.getByRole('button', { name: submit, exact: true }).click()
+    const login = page.getByRole('main')
+    await login.getByLabel(emailLabel, { exact: true }).fill(email)
+    await login.getByLabel(passwordLabel, { exact: true }).fill('SyntheticPatient123') // pragma: allowlist secret
+    await login.getByRole('button', { name: submit, exact: true }).click()
     await expect(page).toHaveURL(entry)
 
     const unsavedAction = page.getByRole('button', { name: save(clinic.name) })

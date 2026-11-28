@@ -13,6 +13,7 @@ export default defineConfig({
   reporter: [['list']],
   use: {
     baseURL: resolvePlaywrightBaseURL(),
+    actionTimeout: 15_000,
     screenshot: 'only-on-failure',
     trace: 'retain-on-failure',
   },

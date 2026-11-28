@@ -77,7 +77,7 @@ export function PatientLogout({
             <Heading as="h1" align="center" size="h4" className="text-2xl font-semibold">
               {title}
             </Heading>
-            <p role="status" className="text-muted-foreground">
+            <p role="status" className="text-foreground">
               {description}
             </p>
           </>

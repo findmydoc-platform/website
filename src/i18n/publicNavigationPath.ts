@@ -1,3 +1,4 @@
+import { BLOG_ARCHIVE_PATHS } from './blogArchivePath'
 import { CONTACT_PATHS } from './contactPath'
 import { LISTING_COMPARISON_PATHS } from './listingComparisonPath'
 import { localizedPatientAuthPath, PATIENT_LOGIN_PATH, PATIENT_LOGOUT_PATH } from './patientAuthPath'
@@ -12,7 +13,7 @@ export const publicNavigationPaths: Record<string, { en?: string }> = {
   '/partners/clinics': {},
   '/register/clinic': {},
   '/admin/login': {},
-  '/posts': {},
+  [BLOG_ARCHIVE_PATHS.de]: { en: BLOG_ARCHIVE_PATHS.en },
   [PATIENT_LOGIN_PATH]: { en: localizedPatientAuthPath(PATIENT_LOGIN_PATH, 'en') },
   [PATIENT_LOGOUT_PATH]: { en: localizedPatientAuthPath(PATIENT_LOGOUT_PATH, 'en') },
   '/register/patient': { en: localizedPatientAuthPath('/register/patient', 'en') },

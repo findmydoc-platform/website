@@ -1,3 +1,4 @@
+import { BLOG_ARCHIVE_PATHS, blogArchiveLocaleFromPath } from '@/i18n/blogArchivePath'
 import { contactLocaleFromPath } from '@/i18n/contactPath'
 import type { FooterNavGroup, HeaderNavItem } from '@/utilities/normalizeNavItems'
 import type { UiLinkProps } from '@/components/molecules/Link'
@@ -80,9 +81,9 @@ export const classifyHoldingPublicDestination = (href: string, siteOrigin: strin
 
   const pathname = normalizePathname(decodedPathname)
   if (temporaryLandingLocaleFromPath(pathname)) return 'holding-home'
-  if (pathname === '/posts') return 'blog-index'
-  if (/^\/posts\/page\/[1-9]\d*$/.test(pathname)) return 'blog-pagination'
-  if (/^\/posts\/[^/]+$/.test(pathname)) return 'blog-article'
+  if (pathname === BLOG_ARCHIVE_PATHS.de || pathname === BLOG_ARCHIVE_PATHS.en) return 'blog-index'
+  if (blogArchiveLocaleFromPath(pathname)) return 'blog-pagination'
+  if (/^(?:\/en)?\/posts\/[^/]+$/.test(pathname)) return 'blog-article'
   if (contactLocaleFromPath(pathname)) return 'contact'
   const legalSlug = getManagedLegalPageSlugFromPath(pathname)
   if (legalSlug) return legalSlug === 'privacy-policy' ? 'privacy' : 'imprint'

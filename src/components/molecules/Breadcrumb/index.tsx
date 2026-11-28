@@ -12,6 +12,7 @@ export type BreadcrumbItem = {
 export type BreadcrumbProps = {
   items: BreadcrumbItem[]
   separator?: React.ReactNode
+  label?: string
   variant?: 'default' | 'light'
   className?: string
   lang?: string
@@ -50,6 +51,7 @@ const breadcrumbColors = {
 export const Breadcrumb: React.FC<BreadcrumbProps> = ({
   items,
   separator = '›',
+  label = 'Breadcrumb',
   variant = 'default',
   className,
   lang,
@@ -61,7 +63,7 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
   const colors = breadcrumbColors[variant]
 
   return (
-    <nav className={cn('text-sm', colors.trail, className)} aria-label="Breadcrumb" lang={lang}>
+    <nav className={cn('text-sm', colors.trail, className)} aria-label={label} lang={lang}>
       <ol className="flex flex-wrap items-center gap-x-4 gap-y-1">
         {items.map((item, index) => {
           const isCurrent = item.current ?? index === items.length - 1

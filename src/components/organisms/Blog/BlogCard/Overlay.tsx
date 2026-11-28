@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useId } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Heading } from '@/components/atoms/Heading'
@@ -8,6 +8,9 @@ import { cn } from '@/utilities/ui'
 import type { BlogCardBaseProps } from '@/utilities/blog/normalizePost'
 
 export type OverlayProps = BlogCardBaseProps & {
+  lang?: string
+  languageLabel?: string
+  languageLabelLang?: string
   overlayOpacity?: number
 }
 
@@ -21,13 +24,18 @@ export const Overlay: React.FC<OverlayProps> = ({
   excerpt,
   href,
   dateLabel,
+  dateLang,
   category,
   categoryLang,
   image,
   author,
   overlayOpacity = 80,
   className,
+  lang,
+  languageLabel,
+  languageLabelLang,
 }) => {
+  const languageLabelId = useId()
   const resolvedImage = image ?? {
     src: '/images/blog-placeholder-1600-900.svg',
     alt: 'Blog placeholder',
@@ -49,6 +57,9 @@ export const Overlay: React.FC<OverlayProps> = ({
     <Link
       href={href}
       aria-label={title}
+      aria-describedby={languageLabel ? languageLabelId : undefined}
+      hrefLang={lang}
+      lang={lang}
       className={cn(
         'group block rounded-3xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none sm:rounded-4xl',
         className,
@@ -87,6 +98,15 @@ export const Overlay: React.FC<OverlayProps> = ({
         </div>
 
         <div className="p-4 sm:absolute sm:right-0 sm:bottom-0 sm:left-0 sm:px-6 sm:pt-6 sm:pb-4 md:p-8">
+          {languageLabel && (
+            <span
+              id={languageLabelId}
+              lang={languageLabelLang}
+              className="mb-1 block text-xs font-medium text-foreground/75 sm:text-white/90"
+            >
+              {languageLabel}
+            </span>
+          )}
           <Heading
             as="h3"
             size="h3"
@@ -115,7 +135,11 @@ export const Overlay: React.FC<OverlayProps> = ({
             </div>
             <div className="flex min-w-0 flex-col">
               <span className="truncate text-sm font-medium text-foreground sm:text-white">{authorName}</span>
-              {dateLabel && <span className="truncate text-xs text-foreground/70 sm:text-white/60">{dateLabel}</span>}
+              {dateLabel && (
+                <span lang={dateLang} className="truncate text-xs text-foreground/70 sm:text-white/60">
+                  {dateLabel}
+                </span>
+              )}
             </div>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useId } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Heading } from '@/components/atoms/Heading'
@@ -10,7 +10,9 @@ import type { BlogCardBaseProps } from '@/utilities/blog/normalizePost'
  * Used for: Blog listing grid (paginated posts)
  * Visual: Category badge top-right, vertical stack, author name + date (no avatar)
  */
-export const Simple: React.FC<BlogCardBaseProps & { lang?: string }> = ({
+export const Simple: React.FC<
+  BlogCardBaseProps & { lang?: string; languageLabel?: string; languageLabelLang?: string }
+> = ({
   title,
   excerpt,
   href,
@@ -22,7 +24,10 @@ export const Simple: React.FC<BlogCardBaseProps & { lang?: string }> = ({
   author,
   className,
   lang,
+  languageLabel,
+  languageLabelLang,
 }) => {
+  const languageLabelId = useId()
   const resolvedImage = image ?? {
     src: '/images/blog-placeholder-1600-900.svg',
     alt: 'Blog placeholder',
@@ -37,6 +42,8 @@ export const Simple: React.FC<BlogCardBaseProps & { lang?: string }> = ({
     <Link
       href={href}
       aria-label={title}
+      aria-describedby={languageLabel ? languageLabelId : undefined}
+      hrefLang={lang}
       lang={lang}
       className={cn(
         'group block rounded-3xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none',
@@ -70,6 +77,15 @@ export const Simple: React.FC<BlogCardBaseProps & { lang?: string }> = ({
         </div>
 
         <div className="mb-3 flex min-h-[6.8rem] flex-col">
+          {languageLabel && (
+            <span
+              id={languageLabelId}
+              lang={languageLabelLang}
+              className="mb-1 text-xs font-medium text-muted-foreground"
+            >
+              {languageLabel}
+            </span>
+          )}
           {/* Title */}
           <Heading
             as="h3"

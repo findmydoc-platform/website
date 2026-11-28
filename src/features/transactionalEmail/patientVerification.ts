@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { normalizeEmail } from '@/auth/utilities/emailNormalization'
 import { supabaseEmailTokenHashSchema } from '@/auth/utilities/supabaseEmailTokenHash'
 import { verificationCorrelations, type VerificationCorrelationKey } from '@/auth/actions/verificationCorrelation'
+import type { PatientAuthLocale } from '@/auth/actions/patientAuthLocale'
 import { authActionPolicies } from '@/auth/actions/contracts'
 import type { EmailEnvironment } from './environment'
 import type { CatalogEntry, CatalogRevalidation } from './catalog'
@@ -22,7 +23,11 @@ type Dependencies = {
   admin(): Promise<Admin>
 }
 
-export function patientVerificationCallback(environment: EmailEnvironment, id: number): URL {
+export function patientVerificationCallback(
+  environment: EmailEnvironment,
+  id: number,
+  locale?: PatientAuthLocale,
+): URL {
   const origins: Record<EmailEnvironment, string> = {
     preview: 'https://preview.findmydoc.eu',
     production: 'https://findmydoc.eu',
@@ -32,6 +37,7 @@ export function patientVerificationCallback(environment: EmailEnvironment, id: n
   }
   const callback = new URL('/auth/callback', origins[environment])
   callback.searchParams.set('authActionId', String(id))
+  if (locale) callback.searchParams.set('locale', locale)
   return callback
 }
 
@@ -112,7 +118,8 @@ export function createPatientVerificationCatalogEntry(dependencies: Dependencies
           current.action.supabaseSubject !== source.action.supabaseSubject
         )
           throw new TransactionalEmailError('source-missing')
-        const callback = patientVerificationCallback(dependencies.environment, current.action.id)
+        const locale = current.action.locale ?? undefined
+        const callback = patientVerificationCallback(dependencies.environment, current.action.id, locale)
         const generated = await current.admin.generateLink({
           type: policy.supabaseTokenType,
           email: current.email,
@@ -127,7 +134,7 @@ export function createPatientVerificationCatalogEntry(dependencies: Dependencies
           throw new TransactionalEmailError('source-missing')
         callback.searchParams.set('token_hash', generated.data.properties.hashed_token)
         callback.searchParams.set('type', policy.supabaseTokenType)
-        return renderPatientEmailVerification(current.email, callback.toString())
+        return renderPatientEmailVerification(current.email, callback.toString(), locale)
       },
     }
   }

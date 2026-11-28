@@ -1,3 +1,4 @@
+import { BLOG_ARCHIVE_PATHS } from '@/i18n/blogArchivePath'
 import { CONTACT_PATHS } from '@/i18n/contactPath'
 import { getServerSideSitemap } from 'next-sitemap'
 import { getPayload } from 'payload'
@@ -12,7 +13,13 @@ import type { ContentLocale } from '@/utilities/contentLocalization'
 import { TEMPORARY_LANDING_PATHS } from '@/features/temporaryLandingMode/i18n'
 import { getServerSideURL } from '@/utilities/getURL'
 
-const fixedPublicPaths = ['/', '/posts', ...Object.values(CONTACT_PATHS), '/about', '/listing-comparison'] as const
+const fixedPublicPaths = [
+  '/',
+  ...Object.values(BLOG_ARCHIVE_PATHS),
+  ...Object.values(CONTACT_PATHS),
+  '/about',
+  '/listing-comparison',
+] as const
 const excludedPublicPaths = new Set(['/search'])
 
 type SitemapEntry = {
@@ -85,7 +92,7 @@ const getPagesSitemap = unstable_cache(
 
     return Array.from(sitemapByPath.values())
   },
-  ['pages-sitemap', 'localized'],
+  ['pages-sitemap', 'localized-archives'],
   {
     tags: [buildSitemapTag('pages')],
   },
@@ -103,7 +110,7 @@ export async function GET(request: Request) {
   if (access.temporaryLandingMode) {
     const siteUrl = getServerSideURL()
     return getServerSideSitemap(
-      [...Object.values(TEMPORARY_LANDING_PATHS), '/posts'].map((path) => ({
+      [...Object.values(TEMPORARY_LANDING_PATHS), BLOG_ARCHIVE_PATHS.de].map((path) => ({
         loc: buildSitemapLocation(siteUrl, path),
       })),
     )

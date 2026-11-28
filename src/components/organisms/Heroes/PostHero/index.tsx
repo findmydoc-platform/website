@@ -24,6 +24,8 @@ export type PostHeroProps = {
   /** @deprecated Use author.name instead */
   authors?: string
   publishedAt?: string
+  dateLabel?: string
+  breadcrumbLabel?: string
   readTime?: string
   readTimeLang?: string
   breadcrumbs?: BreadcrumbItem[]
@@ -47,6 +49,8 @@ export const PostHero: React.FC<PostHeroProps> = ({
   author,
   authors, // deprecated
   publishedAt,
+  dateLabel,
+  breadcrumbLabel,
   readTime,
   readTimeLang,
   breadcrumbs,
@@ -62,7 +66,7 @@ export const PostHero: React.FC<PostHeroProps> = ({
   })
   const authorAvatar = displayAuthor?.avatar || avatarFallback
   const authorRole = displayAuthor?.role || (author ? 'Author' : 'Editorial Team')
-  const resolvedImage = image ?? { src: BLOG_PLACEHOLDER_SRC, alt: 'Blog placeholder' }
+  const resolvedImage = image ?? { src: BLOG_PLACEHOLDER_SRC, alt: '' }
   const clampedOverlayOpacity = Math.max(0, Math.min(100, overlayOpacity))
   const strongOverlay = clampedOverlayOpacity / 100
   const softOverlay = Math.max(strongOverlay * 0.55, 0)
@@ -71,7 +75,7 @@ export const PostHero: React.FC<PostHeroProps> = ({
 
   return (
     <div className="relative isolate overflow-hidden">
-      <div className="absolute inset-0 -z-10 select-none" lang={image ? undefined : 'en'}>
+      <div className="absolute inset-0 -z-10 select-none">
         <FallbackImage
           fill
           priority
@@ -103,7 +107,7 @@ export const PostHero: React.FC<PostHeroProps> = ({
           <div className="text-left lg:col-span-7 lg:col-start-3">
             {/* Breadcrumb Navigation */}
             {breadcrumbs && breadcrumbs.length > 0 && (
-              <Breadcrumb items={breadcrumbs} variant="light" className="mb-4 sm:mb-6" lang="en" />
+              <Breadcrumb items={breadcrumbs} label={breadcrumbLabel} variant="light" className="mb-4 sm:mb-6" />
             )}
 
             {/* Category Badge */}
@@ -168,7 +172,7 @@ export const PostHero: React.FC<PostHeroProps> = ({
                 {publishedAt && (
                   <div className="flex items-center gap-1.5">
                     <Calendar className="h-4 w-4" />
-                    <time dateTime={publishedAt}>{formatDateTime(publishedAt)}</time>
+                    <time dateTime={publishedAt}>{dateLabel ?? formatDateTime(publishedAt)}</time>
                   </div>
                 )}
                 {readTime && (

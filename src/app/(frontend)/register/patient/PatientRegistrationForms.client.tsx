@@ -29,7 +29,7 @@ function readResendHash() {
 }
 
 type Props = {
-  registration: Omit<ComponentProps<typeof PatientRegistrationForm>, 'formRef' | 'onSubmit'>
+  registration: Omit<ComponentProps<typeof PatientRegistrationForm>, 'formRef' | 'onSubmit' | 'locale'>
   resend: Omit<ComponentProps<typeof PatientVerificationResendForm>, 'formRef' | 'onRequest'>
   locale: UiCopyLocale
   targets: Required<LanguageSwitchTargets>
@@ -87,7 +87,7 @@ export function PatientRegistrationForms({ registration, resend, locale, targets
 
   return (
     <div className="flex w-full max-w-md flex-col gap-6">
-      <PatientRegistrationForm {...registration} formRef={registrationForm} />
+      <PatientRegistrationForm {...registration} formRef={registrationForm} locale={locale} />
       <PatientVerificationResendForm {...resend} formRef={resendForm} />
     </div>
   )

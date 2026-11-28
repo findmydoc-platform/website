@@ -465,6 +465,27 @@ describe('AuthAction lifecycle through the system command boundary', () => {
     expect(JSON.stringify(first)).not.toContain('patient+tag@example.test')
   })
 
+  it('keeps the registration locale across technical retries and an authorized resend', async () => {
+    const system = bindAuthActions(fixture.req, {
+      environment: 'test',
+      now: () => now,
+      verificationKeys: [{ version: 'test-v1', secret: 'synthetic-correlation-material-only-for-tests' }],
+    })
+    const email = 'patient@example.test'
+    const first = await system.reservePatientVerification({ email, locale: 'de' })
+    const retry = await system.reservePatientVerification({ email, locale: 'en' })
+    expect(retry.id).toBe(first.id)
+    expect(retry.locale).toBe('de')
+    now += 300000
+    const resend = await system.reservePatientVerification({ email, resendOf: first.id })
+    expect(resend.id).not.toBe(first.id)
+    expect(resend.locale).toBe('de')
+    now += 86400000
+    const afterExpiry = await system.reservePatientVerification({ email })
+    expect(afterExpiry.id).not.toBe(resend.id)
+    expect(afterExpiry.locale).toBe('de')
+  })
+
   it('separates environments and addresses, and resumes a previous-key action after rotation', async () => {
     const old = { version: 'test-v1', secret: 'synthetic-correlation-material-only-for-tests' }
     const current = { version: 'test-v2', secret: 'synthetic-rotated-material-only-for-tests-v2' }

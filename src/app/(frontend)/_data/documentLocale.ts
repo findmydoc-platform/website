@@ -29,12 +29,13 @@ const DEDICATED_PATHS = new Set([
   ...Object.values(SAVED_CLINICS_PATHS),
   '/patient/inquiries',
   '/posts',
+  '/en/posts',
   '/register/clinic',
   '/register/patient',
   ...PUBLIC_DISCOVERY_SURFACE_PATHS,
 ])
 
-const DEDICATED_PATH_FAMILIES = /^\/(?:admin(?:\/|$)|(?:clinics|patient\/inquiries|posts\/page)\/[^/]+$)/
+const DEDICATED_PATH_FAMILIES = /^\/(?:admin(?:\/|$)|(?:clinics|patient\/inquiries|(?:en\/)?posts\/page)\/[^/]+$)/
 
 export const resolveCmsDocumentLocale = cache(async (requestHeaders: Headers): Promise<ContentLocale | undefined> => {
   if (requestHeaders.has(UI_COPY_LOCALE_HEADER)) return undefined

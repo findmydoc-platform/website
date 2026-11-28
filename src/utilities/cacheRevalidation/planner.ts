@@ -256,7 +256,7 @@ const buildCollectionPlan = (event: CollectionRevalidationEvent): RevalidationPl
       buildSurfaceTag('home'),
       buildSurfaceTag('partners-clinics'),
     )
-    paths.push(buildPostsIndexPath())
+    paths.push(buildPostsIndexPath(), buildPostsIndexPath('en'))
     surfaceIds.push('post-detail', 'posts-list', 'home', 'partners-clinics', 'surface:sitemap:posts')
   }
 
@@ -617,7 +617,7 @@ const buildPostsListPlan = (event: PostsListRevalidationEvent): RevalidationPlan
       buildSurfaceTag('partners-clinics'),
       buildSitemapTag('posts'),
     ],
-    paths: [buildPostsIndexPath()],
+    paths: [buildPostsIndexPath(), buildPostsIndexPath('en')],
   })
 }
 
@@ -663,7 +663,7 @@ const buildSeedFinalFlushPlan = (event: SeedFinalFlushRevalidationEvent): Revali
   const paths = [
     ...surfaces.flatMap((surface) => {
       if (surface === 'posts-list') {
-        return [buildPostsIndexPath()]
+        return [buildPostsIndexPath(), buildPostsIndexPath('en')]
       }
 
       try {

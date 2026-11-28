@@ -94,6 +94,9 @@ describe('frontend document language', () => {
     ['/en/contact', 'en'],
     ['/en/logout', 'en'],
     ['/posts', 'de'],
+    ['/posts/page/2', 'de'],
+    ['/en/posts', 'en'],
+    ['/en/posts/page/2', 'en'],
     ['/auth/invite/complete', 'en'],
   ])('renders %s in %s', async (path, locale) => {
     const layout = await renderLayout(path)

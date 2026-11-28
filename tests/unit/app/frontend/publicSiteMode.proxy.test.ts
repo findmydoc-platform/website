@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { unstable_doesMiddlewareMatch } from 'next/experimental/testing/server'
 import { NextRequest } from 'next/server'
+import { UI_COPY_LOCALE_HEADER } from '@/i18n/requestLocale'
 import nextConfig from '../../../../next.config.js'
 
 import {
@@ -278,7 +279,7 @@ describe('public site mode proxy', () => {
       '/posts/foo/bar',
       '/posts/page/0',
       '/posts/page/2/extra',
-      '/en/posts',
+      '/en/posts/page/0',
     ]
 
     for (const path of allowedPaths) {
@@ -297,6 +298,17 @@ describe('public site mode proxy', () => {
       expect(response.headers.get('location')).toBeNull()
       expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
     }
+  })
+
+  it.each(['/en/posts', '/en/posts/page/2'])('allows %s with public chrome and noindex in Holding', async (path) => {
+    mockHoldingMode('holding')
+    const response = await proxy(new NextRequest(`https://findmydoc.eu${path}`))
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
+    expect(response.headers.get(`x-middleware-request-${SEARCH_INDEXING_REQUEST_HEADER}`)).toBe('noindex')
+    expect(response.headers.get(`x-middleware-request-${HOLDING_VIEW_REQUEST_HEADER}`)).toBe('public')
+    expect(response.headers.get(`x-middleware-request-${UI_COPY_LOCALE_HEADER}`)).toBe('en')
   })
 
   it('applies temporary landing mode to canonical crawl entrypoints', async () => {

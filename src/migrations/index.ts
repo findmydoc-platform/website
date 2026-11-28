@@ -120,6 +120,7 @@ import * as migration_20261127_132120_blog_editorial_upload from './20261127_132
 import * as migration_20261127_132530_clinic_onboarding_decision_grant from './20261127_132530_clinic_onboarding_decision_grant'
 import * as migration_20261128_143007_patient_auth_action_locale from './20261128_143007_patient_auth_action_locale'
 import * as migration_20261128_145222_localized_comparison_labels from './20261128_145222_localized_comparison_labels'
+import * as migration_20261128_154949_localized_clinic_profile_overview from './20261128_154949_localized_clinic_profile_overview'
 
 export const migrations = [
   {
@@ -731,5 +732,10 @@ export const migrations = [
     up: migration_20261128_145222_localized_comparison_labels.up,
     down: migration_20261128_145222_localized_comparison_labels.down,
     name: '20261128_145222_localized_comparison_labels',
+  },
+  {
+    up: migration_20261128_154949_localized_clinic_profile_overview.up,
+    down: migration_20261128_154949_localized_clinic_profile_overview.down,
+    name: '20261128_154949_localized_clinic_profile_overview',
   },
 ]

@@ -317,6 +317,19 @@ export const Clinics: CollectionConfig<'clinics'> = {
               },
             },
             {
+              name: 'localizedDescription',
+              label: 'Localized Description',
+              type: 'richText',
+              localized: true,
+              access: {
+                create: platformClinicTrustFieldAccess,
+                update: platformClinicTrustFieldAccess,
+              },
+              admin: {
+                description: 'Patient-facing overview in the selected language',
+              },
+            },
+            {
               name: 'tags',
               type: 'relationship',
               relationTo: 'tags',

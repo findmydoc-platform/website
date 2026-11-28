@@ -61,7 +61,12 @@ describe('clinic related collection revalidation hooks', () => {
       req,
     } as ClinicTreatmentChangeArgs)
 
-    expect(getPathCalls()).toEqual(['/clinics/berlin-health', '/clinics/munich-care'])
+    expect(getPathCalls()).toEqual([
+      '/clinics/berlin-health',
+      '/en/clinics/berlin-health',
+      '/clinics/munich-care',
+      '/en/clinics/munich-care',
+    ])
     expect(getTagCalls()).toEqual([
       'entity:clinictreatments:200',
       'collection:clinictreatments',
@@ -88,7 +93,7 @@ describe('clinic related collection revalidation hooks', () => {
       req,
     } as ClinicTreatmentChangeArgs)
 
-    expect(getPathCalls()).toEqual(['/clinics/berlin-health'])
+    expect(getPathCalls()).toEqual(['/clinics/berlin-health', '/en/clinics/berlin-health'])
     expect(getTagCalls()).toEqual(
       expect.arrayContaining([
         'entity:clinictreatments:201',
@@ -138,7 +143,7 @@ describe('clinic related collection revalidation hooks', () => {
       req,
     })
 
-    expect(getPathCalls()).toEqual(['/clinics/berlin-health'])
+    expect(getPathCalls()).toEqual(['/clinics/berlin-health', '/en/clinics/berlin-health'])
     expect(getTagCalls()).toEqual(
       expect.arrayContaining([
         'entity:reviews:301',
@@ -182,7 +187,7 @@ describe('clinic related collection revalidation hooks', () => {
       req,
     } as ReviewChangeArgs)
 
-    expect(getPathCalls()).toEqual(['/clinics/berlin-health'])
+    expect(getPathCalls()).toEqual(['/clinics/berlin-health', '/en/clinics/berlin-health'])
     expect(getTagCalls()).toEqual(
       expect.arrayContaining([
         'entity:reviews:302',
@@ -253,7 +258,7 @@ describe('clinic related collection revalidation hooks', () => {
         req,
       } as ReviewChangeArgs)
 
-      expect(getPathCalls()).toEqual(['/clinics/berlin-health'])
+      expect(getPathCalls()).toEqual(['/clinics/berlin-health', '/en/clinics/berlin-health'])
       expect(getTagCalls()).toEqual(
         expect.arrayContaining([
           'entity:reviews:305',
@@ -299,7 +304,7 @@ describe('clinic related collection revalidation hooks', () => {
       req,
     } as ReviewChangeArgs)
 
-    expect(getPathCalls()).toEqual(['/clinics/berlin-health'])
+    expect(getPathCalls()).toEqual(['/clinics/berlin-health', '/en/clinics/berlin-health'])
     expect(getTagCalls()).toEqual(
       expect.arrayContaining(['entity:reviews:304', 'collection:reviews', 'surface:clinic-detail:12']),
     )
@@ -362,7 +367,7 @@ describe('clinic related collection revalidation hooks', () => {
       req,
     } as ReviewResponseChangeArgs)
 
-    expect(getPathCalls()).toEqual(['/clinics/berlin-health'])
+    expect(getPathCalls()).toEqual(['/clinics/berlin-health', '/en/clinics/berlin-health'])
     expect(getTagCalls()).toEqual([
       'entity:reviewResponses:401',
       'collection:reviewResponses',

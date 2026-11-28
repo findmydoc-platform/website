@@ -12,6 +12,8 @@ import {
   buildOpenStreetMapViewHref,
 } from '@/utilities/openStreetMap'
 import { cn } from '@/utilities/ui'
+import { getClinicProfileTranslator } from '@/features/clinicDetail/overviewCopy'
+import type { UiCopyLocale } from '@/i18n/requestLocale'
 
 const clinicLocationPlaceholderMapSrc = '/images/clinic-detail/clinic-location-placeholder-map.webp'
 
@@ -22,6 +24,7 @@ type ClinicLocation = {
 
 type ClinicLocationSectionProps = {
   clinicName: string
+  locale?: UiCopyLocale
   location: ClinicLocation
   mapHref?: string
   mapEmbedHref?: string
@@ -71,6 +74,7 @@ function ClinicLocationPlaceholder({ message }: { message: string }) {
 
 export function ClinicLocationSection({
   clinicName,
+  locale = 'en',
   location,
   mapHref,
   mapEmbedHref,
@@ -81,7 +85,8 @@ export function ClinicLocationSection({
   const expandMapButtonRef = React.useRef<HTMLButtonElement | null>(null)
   const wasMapOverlayOpen = React.useRef(false)
   const shouldSkipMapOverlayFocusRestore = React.useRef(false)
-  const overlayAddressText = location.fullAddress ?? 'Address available on request'
+  const t = getClinicProfileTranslator(locale)
+  const overlayAddressText = location.fullAddress ?? t('location.noAddress')
   const openStreetMapViewHref = React.useMemo(
     () => (isOpenStreetMapAllowed ? (mapHref ?? buildOpenStreetMapViewHref(location)) : undefined),
     [isOpenStreetMapAllowed, location, mapHref],
@@ -98,11 +103,11 @@ export function ClinicLocationSection({
   const renderMapFrame = React.useCallback(
     (interactive: boolean, embedHref?: string) => {
       if (!isOpenStreetMapAllowed) {
-        return <ClinicLocationPlaceholder message="OpenStreetMap is hidden until optional cookies are accepted." />
+        return <ClinicLocationPlaceholder message={t('location.consent')} />
       }
 
       if (embedHref) {
-        const iframeTitle = interactive ? `Interactive map of ${clinicName}` : `Map preview of ${clinicName}`
+        const iframeTitle = t(interactive ? 'location.interactive' : 'location.preview', { clinic: clinicName })
 
         return (
           <>
@@ -130,12 +135,12 @@ export function ClinicLocationSection({
         <div className="flex h-full items-center justify-center bg-linear-to-br from-primary/12 via-background to-primary/20">
           <div className="inline-flex items-center gap-2 rounded-full bg-background/90 px-4 py-2 text-sm font-medium text-secondary">
             <MapPin className="size-4 text-primary" aria-hidden="true" />
-            Map preview unavailable
+            {t('location.unavailable')}
           </div>
         </div>
       )
     },
-    [clinicName, isOpenStreetMapAllowed],
+    [clinicName, isOpenStreetMapAllowed, t],
   )
 
   React.useEffect(() => {
@@ -168,10 +173,10 @@ export function ClinicLocationSection({
 
   return (
     <Dialog open={isMapOverlayOpen} onOpenChange={setIsMapOverlayOpen}>
-      <section className="space-y-4" aria-label="Clinic Location">
+      <section className="space-y-4" aria-label={t('location.heading')}>
         <div className="space-y-1">
           <Heading as="h2" align="left" size="content-section" variant="navy">
-            Clinic Location
+            {t('location.heading')}
           </Heading>
         </div>
 
@@ -182,7 +187,7 @@ export function ClinicLocationSection({
 
           <Card className="absolute right-6 bottom-6 left-6 z-10 border-primary/25 bg-background/94 backdrop-blur-sm lg:left-auto lg:w-96">
             <CardContent className="space-y-3 p-4">
-              <p className="text-xs tracking-[0.12em] text-secondary/55 uppercase">Address</p>
+              <p className="text-xs tracking-[0.12em] text-secondary/55 uppercase">{t('location.address')}</p>
               <p className="text-sm font-medium text-secondary">{overlayAddressText}</p>
 
               <div className="flex flex-wrap gap-2">
@@ -193,7 +198,7 @@ export function ClinicLocationSection({
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      Directions
+                      {t('location.directions')}
                     </a>
                   </Button>
                 ) : null}
@@ -205,7 +210,7 @@ export function ClinicLocationSection({
                     className="min-h-11 md:min-h-0"
                     onClick={() => onContactClick('location_card')}
                   >
-                    Contact
+                    {t('location.contact')}
                   </Button>
                 ) : null}
                 {isOpenStreetMapAllowed ? (
@@ -218,7 +223,7 @@ export function ClinicLocationSection({
                     onClick={() => setIsMapOverlayOpen(true)}
                   >
                     <Expand className="size-3.5" aria-hidden="true" />
-                    Expand map
+                    {t('location.expand')}
                   </Button>
                 ) : null}
               </div>
@@ -227,6 +232,7 @@ export function ClinicLocationSection({
         </div>
 
         <DialogContent
+          closeLabel={t('location.close')}
           className="flex h-[min(88dvh,900px)] max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-[1400px] flex-col overflow-hidden border-primary/25 bg-background/96 p-0 shadow-brand-soft sm:max-h-[calc(100dvh-4rem)] sm:w-[min(calc(100vw-4rem),1400px)]"
           overlayClassName="bg-secondary/35 backdrop-blur-sm"
           onCloseAutoFocus={(event) => {
@@ -239,7 +245,7 @@ export function ClinicLocationSection({
             <div className="space-y-1">
               <DialogTitle asChild>
                 <Heading as="h3" align="left" size="h5" className="text-secondary">
-                  Expanded Map View
+                  {t('location.expanded')}
                 </Heading>
               </DialogTitle>
               <DialogDescription asChild>
@@ -254,9 +260,9 @@ export function ClinicLocationSection({
                     href={openStreetMapViewHref}
                     target="_blank"
                     rel="noopener noreferrer"
-                    aria-label="View map in OpenStreetMap"
+                    aria-label={t('location.openStreetMap')}
                   >
-                    View map
+                    {t('location.view')}
                   </a>
                 </Button>
               ) : null}
@@ -267,7 +273,7 @@ export function ClinicLocationSection({
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    Directions
+                    {t('location.directions')}
                   </a>
                 </Button>
               ) : null}
@@ -279,7 +285,7 @@ export function ClinicLocationSection({
                   className="min-h-11 md:min-h-0"
                   onClick={handleMapOverlayContactClick}
                 >
-                  Contact
+                  {t('location.contact')}
                 </Button>
               ) : null}
               {isOpenStreetMapAllowed ? (
@@ -291,7 +297,7 @@ export function ClinicLocationSection({
                   onClick={() => setIsMapOverlayOpen(false)}
                 >
                   <X className="size-3.5" aria-hidden="true" />
-                  Close map
+                  {t('location.close')}
                 </Button>
               ) : null}
             </div>
@@ -304,11 +310,11 @@ export function ClinicLocationSection({
           </div>
 
           <div className="px-3 pb-3 sm:px-6 sm:pb-6">
-            <p className="text-xs text-secondary/55">Map data © OpenStreetMap contributors</p>
+            <p className="text-xs text-secondary/55">{t('location.attribution')}</p>
           </div>
         </DialogContent>
 
-        <p className="text-xs text-secondary/55">Map data © OpenStreetMap contributors</p>
+        <p className="text-xs text-secondary/55">{t('location.attribution')}</p>
       </section>
     </Dialog>
   )

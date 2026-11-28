@@ -1,3 +1,6 @@
+import { readdirSync } from 'node:fs'
+import { relative, sep } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { FRONTEND_PATH_HEADER, UI_COPY_LOCALE_HEADER, uiCopyLocaleFromPath } from '@/i18n/requestLocale'
 
@@ -35,6 +38,21 @@ async function renderLayout(pathname: string) {
   const { default: RootLayout } = await import('@/app/(frontend)/layout')
   return RootLayout({ children: null })
 }
+
+const frontendRoutes = fileURLToPath(new URL('../../../../src/app/(frontend)/', import.meta.url))
+const cmsRouteDirectories = new Set(['(pages)/[...slug]', 'posts/[slug]', 'en/posts/[slug]'])
+const dedicatedPagePaths = readdirSync(frontendRoutes, { recursive: true, withFileTypes: true })
+  .filter((entry) => entry.isFile() && entry.name === 'page.tsx')
+  .map((entry) => relative(frontendRoutes, entry.parentPath).split(sep))
+  .filter((segments) => !cmsRouteDirectories.has(segments.join('/')))
+  .map(
+    (segments) =>
+      '/' +
+      segments
+        .filter((segment) => !segment.startsWith('('))
+        .map((segment) => (segment.startsWith('[') ? 'route-param' : segment))
+        .join('/'),
+  )
 
 describe('frontend document language', () => {
   beforeEach(() => {
@@ -77,10 +95,15 @@ describe('frontend document language', () => {
     ['/en/logout', 'en'],
     ['/posts', 'de'],
     ['/auth/invite/complete', 'en'],
-  ])('renders %s in %s without looking for a CMS document', async (path, locale) => {
+  ])('renders %s in %s', async (path, locale) => {
     const layout = await renderLayout(path)
 
     expect(layout.props.lang).toBe(locale)
+  })
+
+  it.each(dedicatedPagePaths)('does not look up a CMS document for %s', async (path) => {
+    await renderLayout(path)
+
     expect(mocks.findPublicPageRoute).not.toHaveBeenCalled()
     expect(mocks.getCachedPublicPostRoute).not.toHaveBeenCalled()
   })

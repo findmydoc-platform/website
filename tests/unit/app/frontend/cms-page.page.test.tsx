@@ -5,21 +5,30 @@ import type { Where } from 'payload'
 
 import { TEMPORARY_LANDING_MODE_REQUEST_HEADER } from '@/features/temporaryLandingMode'
 import { FRONTEND_PATH_HEADER } from '@/i18n/requestLocale'
+import { cloneBaselineLandingPages } from '../../helpers/landingPagesBaseline'
 
 const mocks = vi.hoisted(() => ({
   draftMode: vi.fn(),
   find: vi.fn(),
+  findGlobal: vi.fn(),
   headers: vi.fn(),
 }))
 
 vi.mock('next/headers', () => ({ draftMode: mocks.draftMode, headers: mocks.headers }))
+vi.mock('next/navigation', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('next/navigation')>()),
+  useRouter: () => ({ push: vi.fn() }),
+}))
 vi.mock('@payload-config', () => ({ default: {} }))
 vi.mock('payload', async (importOriginal) => ({
   ...(await importOriginal<typeof import('payload')>()),
-  getPayload: async () => ({ find: mocks.find }),
+  getPayload: async () => ({ find: mocks.find, findGlobal: mocks.findGlobal }),
 }))
 vi.mock('@/app/(frontend)/_components/PayloadRedirects', () => ({ PayloadRedirects: () => null }))
 vi.mock('@/blocks/RenderBlocks', () => ({ RenderBlocks: () => null }))
+vi.mock('@/features/contactRequests/LocalizedPublicContactSection', () => ({
+  LocalizedPublicContactSection: () => null,
+}))
 vi.mock('@/features/uiCopy/publicContact', () => ({ publicContactCopy: async () => undefined }))
 vi.mock('@/components/organisms/LivePreviewListener', () => ({ LivePreviewListener: () => null }))
 
@@ -27,19 +36,22 @@ const germanPage = { id: 4, slug: 'pflege/deutschland', meta: { title: 'German p
 const englishPage = { id: 4, slug: 'care/germany', meta: { title: 'English page' } }
 
 function findPages(publishedEnglish: boolean, paths = { de: germanPage, en: englishPage }) {
-  mocks.find.mockImplementation(({ locale, where }: { locale: string; where: Where }) => {
-    const candidates = locale === 'de' ? [paths.de] : publishedEnglish ? [paths.en] : []
-    const conditions = where?.and ?? [where]
-    const slug = conditions.find((condition) => condition?.slug)?.slug
-    const id = conditions.find((condition) => condition?.id)?.id
-    return {
-      docs: candidates.filter(
-        (page) =>
-          (!slug || (!Array.isArray(slug) && slug.equals === page.slug)) &&
-          (!id || (!Array.isArray(id) && id.equals === page.id)),
-      ),
-    }
-  })
+  mocks.find.mockImplementation(
+    ({ collection, locale, where }: { collection: string; locale: string; where: Where }) => {
+      if (collection !== 'pages') return { docs: [] }
+      const candidates = locale === 'de' ? [paths.de] : publishedEnglish ? [paths.en] : []
+      const conditions = where?.and ?? [where]
+      const slug = conditions.find((condition) => condition?.slug)?.slug
+      const id = conditions.find((condition) => condition?.id)?.id
+      return {
+        docs: candidates.filter(
+          (page) =>
+            (!slug || (!Array.isArray(slug) && slug.equals === page.slug)) &&
+            (!id || (!Array.isArray(id) && id.equals === page.id)),
+        ),
+      }
+    },
+  )
 }
 
 function routeArgs(slug: string, locale?: string) {
@@ -77,7 +89,18 @@ describe('frontend CMS page route metadata', () => {
     findPages(true, { de: { ...germanPage, slug: 'home' }, en: { ...englishPage, slug: 'home' } })
     const args = routeArgs('en')
 
-    expect(renderToStaticMarkup(await Page(args))).toMatch(/<article[^>]+lang="en"/)
+    const global = cloneBaselineLandingPages('en')
+    global.home.hero.title = 'English CMS hero fixture'
+    global.home.hero.image = { url: '/fixture-home-hero.png' } as typeof global.home.hero.image
+    global.home.testimonials = []
+    global.home.process.steps = []
+    global.home.features.backgroundImage = global.home.hero.image
+    mocks.findGlobal.mockResolvedValue(global)
+
+    const markup = renderToStaticMarkup(await Page(args))
+    expect(markup).toMatch(/<article[^>]+lang="en"/)
+    expect(markup).toMatch(/<h1[^>]*>English CMS hero fixture<\/h1>/)
+    expect(markup).toMatch(/href="\/en\/listing-comparison"/)
     const metadata = await generateMetadata(args)
     expect(metadata).toMatchObject({
       title: expect.stringContaining(englishPage.meta.title),

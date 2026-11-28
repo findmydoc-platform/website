@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   payloadFindMock: vi.fn(),
   payloadFindGlobalMock: vi.fn(),
   getCachedLatestPostsMock: vi.fn(),
+  getCachedPostArchivePageMock: vi.fn(),
   getLandingMedicalSpecialtyCategoriesMock: vi.fn(),
   normalizePostMock: vi.fn((post: unknown) => post),
   temporaryLandingPageComponent: vi.fn(() => null),
@@ -35,6 +36,10 @@ vi.mock('@/features/cookieConsent/CookieConsentClientAdapter.client', () => ({
 }))
 vi.mock('@vercel/toolbar/next', () => ({ VercelToolbar: () => null }))
 
+vi.mock('next/navigation', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('next/navigation')>()),
+  useRouter: () => ({ push: vi.fn() }),
+}))
 vi.mock('@payload-config', () => ({
   default: {},
 }))
@@ -57,6 +62,7 @@ vi.mock('@/utilities/blog/normalizePost', () => ({
 
 vi.mock('@/utilities/content/serverData', () => ({
   getCachedLatestPosts: mocks.getCachedLatestPostsMock,
+  getCachedPostArchivePage: mocks.getCachedPostArchivePageMock,
 }))
 
 vi.mock('@/utilities/media/resolveMediaImage', () => ({
@@ -68,8 +74,8 @@ vi.mock('@/utilities/media/resolveMediaImage', () => ({
   }),
 }))
 
-vi.mock('@/features/contactRequests/FormBridgePublicContactSectionAdapter.client', () => ({
-  FormBridgePublicContactSectionAdapter: vi.fn(() => null),
+vi.mock('@/features/contactRequests/LocalizedPublicContactSection', () => ({
+  LocalizedPublicContactSection: () => null,
 }))
 
 vi.mock('@/features/contactRequests/FormBridgeTemporaryLandingPageAdapter', () => ({
@@ -85,6 +91,7 @@ describe('frontend home page route', () => {
     mocks.payloadFindMock.mockResolvedValue({ docs: [] })
     mocks.payloadFindGlobalMock.mockResolvedValue(cloneBaselineLandingPages())
     mocks.getCachedLatestPostsMock.mockResolvedValue([])
+    mocks.getCachedPostArchivePageMock.mockResolvedValue({ docs: [] })
     mocks.getLandingMedicalSpecialtyCategoriesMock.mockResolvedValue({
       categories: [],
       items: [],
@@ -280,32 +287,16 @@ describe('frontend home page route', () => {
     })
   })
 
-  it('loads regular homepage data when landing request header is missing', async () => {
+  it('renders the German homepage from the German CMS fields with a German comparison link', async () => {
+    const global = cloneBaselineLandingPages()
+    global.home.hero.title = 'German CMS hero fixture'
+    mocks.payloadFindGlobalMock.mockImplementation(({ locale }) => (locale === 'de' ? global : null))
     const pageModule = await import('@/app/(frontend)/page')
-    await pageModule.default({})
 
-    expect(mocks.getPayloadMock).toHaveBeenCalledTimes(2)
-    expect(mocks.getCachedLatestPostsMock).toHaveBeenCalledTimes(1)
-    expect(mocks.getCachedLatestPostsMock).toHaveBeenCalledWith(3)
-    expect(mocks.payloadFindMock).toHaveBeenCalledTimes(1)
-    expect(mocks.payloadFindMock).toHaveBeenCalledWith({
-      collection: 'cities',
-      depth: 0,
-      limit: 250,
-      overrideAccess: false,
-      pagination: false,
-      sort: 'name',
-      select: {
-        id: true,
-        name: true,
-      },
-    })
-    expect(mocks.getLandingMedicalSpecialtyCategoriesMock).toHaveBeenCalledTimes(1)
-    expect(mocks.payloadFindGlobalMock).toHaveBeenCalledWith({
-      slug: 'landingPages',
-      depth: 2,
-      overrideAccess: false,
-    })
+    const markup = renderToStaticMarkup(await pageModule.default({}))
+    expect(markup).toMatch(/<article[^>]+lang="de"/)
+    expect(markup).toMatch(/<h1[^>]*>German CMS hero fixture<\/h1>/)
+    expect(markup).toMatch(/href="\/listing-comparison"/)
   })
 
   it('fails fast when regular landing content global is missing', async () => {
@@ -320,21 +311,27 @@ describe('frontend home page route', () => {
 
   it('returns CMS homepage metadata when landing request header is missing', async () => {
     const landingPages = cloneBaselineLandingPages()
-    landingPages.home.seo.title = 'Test homepage title'
-    landingPages.home.seo.description = 'Test homepage description'
+    landingPages.home.seo = { title: 'Test homepage title', description: 'Test homepage description' }
     mocks.payloadFindGlobalMock.mockResolvedValueOnce(landingPages)
     const pageModule = await import('@/app/(frontend)/page')
     const metadata = await pageModule.generateMetadata()
 
-    expect(mocks.getPayloadMock).toHaveBeenCalledTimes(1)
-    expect(mocks.payloadFindGlobalMock).toHaveBeenCalledWith({
-      slug: 'landingPages',
-      depth: 2,
-      overrideAccess: false,
-    })
     expect(metadata).toMatchObject({
       title: 'Test homepage title | findmydoc',
       description: 'Test homepage description',
+      alternates: { canonical: '/' },
+    })
+  })
+
+  it('advertises a reciprocal alternate once the English CMS home is published', async () => {
+    mocks.payloadFindMock.mockImplementation(({ collection, locale }) => ({
+      docs: collection === 'pages' && locale === 'en' ? [{ slug: 'home' }] : [],
+    }))
+    const pageModule = await import('@/app/(frontend)/page')
+
+    expect((await pageModule.generateMetadata()).alternates).toEqual({
+      canonical: '/',
+      languages: { de: '/', en: '/en', 'x-default': '/' },
     })
   })
 })

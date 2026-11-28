@@ -23,6 +23,7 @@ import {
   TEMPORARY_LANDING_PATHS,
 } from '@/features/temporaryLandingMode'
 import { getManagedLegalPageSlugFromPath } from '@/utilities/legalPages'
+import { generateFullHomeMetadata, renderFullHome } from '../../_data/fullHome'
 import { generateHoldingHomeMetadata, renderHoldingHome, type HoldingHomeSearchParams } from '../../_data/holdingHome'
 
 type Args = {
@@ -69,6 +70,18 @@ export default async function Page(args: Args) {
     return germanPath ? <CmsTranslationUnavailable germanPath={germanPath} /> : <PayloadRedirects url={url} />
   }
 
+  if (url === '/en' && route.locale === 'en' && !draft) {
+    return renderFullHome('en', {
+      page: route.page,
+      extraContent: (
+        <>
+          <PayloadRedirects disableNotFound url={url} />
+          <RenderBlocks blocks={route.page.layout} contentLocale={{ locale: 'en', fallbackLocale: false }} />
+        </>
+      ),
+    })
+  }
+
   return (
     <article className="pt-12 pb-20 sm:pt-16 sm:pb-24" lang={route.locale}>
       <CmsDocumentLanguage locale={route.locale} />
@@ -91,13 +104,15 @@ export async function generateMetadata(args: Args): Promise<Metadata> {
   if (holdingLocale) return generateHoldingHomeMetadata(holdingLocale)
   if (isTurkishHoldingHome((await args.params).slug)) return { robots: { index: false, follow: false } }
 
-  const { route, draft, germanPath, holdingLegal } = await loadRoute(args, requestHeaders)
+  const { route, draft, url, germanPath, holdingLegal } = await loadRoute(args, requestHeaders)
   if (!route) {
     return {
       robots: { index: false, follow: false },
       ...(germanPath ? { title: cmsTranslationNoticeTitle } : {}),
     }
   }
+
+  if (url === '/en' && route.locale === 'en' && !draft) return generateFullHomeMetadata('en', route.page)
 
   const metadata = await generateMeta({ doc: route.page, path: route.canonicalPath, sourceCollection: 'pages' })
   if (draft || holdingLegal) return { ...metadata, robots: { index: false, follow: false } }

@@ -163,130 +163,287 @@
     "data": {
       "home": {
         "seo": {
-          "title": "Gain International Patients | Global Clinic Visibility Platform",
-          "description": "Gain international patients through a trusted comparison platform. Increase clinic reach, visibility, and qualified global patient inquiries."
+          "title": {
+            "de": "Kliniken in der Türkei vergleichen",
+            "en": "Compare clinics in Türkiye"
+          },
+          "description": {
+            "de": "Vergleiche Kliniken für ästhetische Behandlungen und Zahnmedizin in der Türkei. Prüfe Profile, Leistungen und Qualifikationen und kontaktiere Kliniken direkt.",
+            "en": "Compare aesthetic and dental clinics in Türkiye. Review clinic profiles, treatments and qualifications, and contact clinics directly."
+          }
         },
         "hero": {
-          "title": "Clinic Comparison Türkiye for Aesthetic Treatments",
-          "description": "Compare selected aesthetic clinics in Türkiye in a transparent and structured way. Our platform helps you understand treatment options, review clinic information and contact clinics directly with confidence.",
-          "imageStableId": "landing-home-hero-telemedicine"
+          "title": {
+            "de": "Kliniken für ästhetische Behandlungen in der Türkei vergleichen",
+            "en": "Compare clinics for aesthetic treatments in Türkiye"
+          },
+          "description": {
+            "de": "Finde Kliniken in der Türkei und vergleiche ihre Behandlungen, Fachgebiete und Qualifikationen. Kontaktiere eine Klinik direkt, wenn du Fragen hast.",
+            "en": "Find clinics in Türkiye and compare their treatments, specialties and qualifications. Contact a clinic directly if you have questions."
+          },
+          "imageStableId": "landing-home-hero-telemedicine",
+          "imageAlt": {
+            "de": "Eine Person vergleicht Klinikprofile auf einem Laptop.",
+            "en": "A person compares clinic profiles on a laptop."
+          }
         },
         "testimonials": [
           {
-            "quote": "The platform makes treatment research easier by structuring clinic details around what patients need before deciding.",
+            "quote": {
+              "de": "Die Plattform erleichtert die Recherche, weil sie die Klinikdetails danach ordnet, was Patientinnen und Patienten vor einer Entscheidung wissen müssen.",
+              "en": "The platform makes treatment research easier by structuring clinic details around what patients need before deciding."
+            },
             "author": "Maya Bennett",
-            "role": "Digital Health Research Advisor",
+            "role": {
+              "de": "Beraterin für digitale Gesundheitsforschung",
+              "en": "Digital Health Research Advisor"
+            },
             "imageStableId": "landing-testimonial-home-maya-bennett"
           },
           {
-            "quote": "I appreciate how trust signals are integrated into the comparison flow instead of being hidden in long profile text.",
+            "quote": {
+              "de": "Ich finde gut, dass Informationen zur Vertrauenswürdigkeit direkt im Vergleich stehen und nicht in langen Profiltexten versteckt sind.",
+              "en": "I appreciate how trust signals are integrated into the comparison flow instead of being hidden in long profile text."
+            },
             "author": "Daniel Ortega",
-            "role": "Healthcare UX Reviewer",
+            "role": {
+              "de": "Tester für Nutzerfreundlichkeit im Gesundheitswesen",
+              "en": "Healthcare UX Reviewer"
+            },
             "imageStableId": "landing-testimonial-home-daniel-ortega"
           },
           {
-            "quote": "For users planning treatment abroad, the direct contact step is clear, practical, and aligned with real decision journeys.",
+            "quote": {
+              "de": "Für Menschen, die eine Behandlung im Ausland planen, ist der direkte Kontakt verständlich und praktisch. Er passt zu den Entscheidungen, die sie treffen müssen.",
+              "en": "For users planning treatment abroad, the direct contact step is clear, practical, and aligned with real decision journeys."
+            },
             "author": "Sophie Klein",
-            "role": "International Care Pathway Consultant",
+            "role": {
+              "de": "Beraterin für internationale Versorgung",
+              "en": "International Care Pathway Consultant"
+            },
             "imageStableId": "landing-testimonial-home-sophie-klein"
           }
         ],
         "testimonialsIntro": {
-          "title": "Expert feedback",
-          "description": "Perspectives from healthcare and product experts who reviewed the patient decision flow."
+          "title": {
+            "de": "Stimmen von Fachleuten",
+            "en": "Expert feedback"
+          },
+          "description": {
+            "de": "Fachleute aus dem Gesundheitswesen und der Produktentwicklung haben den Ablauf aus Patientensicht geprüft.",
+            "en": "Perspectives from healthcare and product experts who reviewed the patient decision flow."
+          }
         },
         "categoriesIntro": {
-          "title": "Categories",
-          "description": "Explore verified clinics by specialty and compare the best options for your needs."
+          "title": {
+            "de": "Nach Fachgebiet suchen",
+            "en": "Browse by specialty"
+          },
+          "description": {
+            "de": "Wähle ein Fachgebiet und vergleiche die Kliniken, die dazu passende Behandlungen anbieten.",
+            "en": "Choose a specialty and compare clinics that offer the relevant treatments."
+          }
         },
         "features": {
-          "title": "Benefits for Patients",
-          "description": "Compare verified clinics for dental care, hair transplants, and aesthetic treatments with clear trust signals and transparent profile data.",
+          "title": {
+            "de": "Was du vergleichen kannst",
+            "en": "What you can compare"
+          },
+          "description": {
+            "de": "Hier findest du Angaben zu Zahnbehandlungen, Haartransplantationen und ästhetischen Eingriffen.",
+            "en": "Find information on dental care, hair transplants and aesthetic treatments."
+          },
           "items": [
             {
-              "title": "Qualified Leads",
-              "subtitle": "",
-              "description": "Compare aesthetic clinics based on treatments, specializations and qualifications. All information is presented clearly to support informed decision making.",
+              "title": {
+                "de": "Behandlungen und Fachgebiete",
+                "en": "Treatments and specialties"
+              },
+              "subtitle": {
+                "de": "",
+                "en": ""
+              },
+              "description": {
+                "de": "Vergleiche die Behandlungen und Fachgebiete der Kliniken an einem Ort.",
+                "en": "Compare clinic treatments and specialties in one place."
+              },
               "icon": "checkCircle"
             },
             {
-              "title": "Reputation Boost",
-              "subtitle": "",
-              "description": "Clinics create and manage their own profiles and provide relevant qualifications according to their aesthetic services. This ensures reliable and comparable information.",
+              "title": {
+                "de": "Klinikprofile und Qualifikationen",
+                "en": "Clinic profiles and qualifications"
+              },
+              "subtitle": {
+                "de": "",
+                "en": ""
+              },
+              "description": {
+                "de": "In den Profilen findest du Angaben der Kliniken über ihr Team, ihre Leistungen und ihre Qualifikationen.",
+                "en": "Clinic profiles contain information provided by the clinics about their teams, treatments and qualifications."
+              },
               "icon": "trendingUp"
             },
             {
-              "title": "Visibility Increase",
-              "subtitle": "",
-              "description": "Patients contact clinics directly without intermediaries, obligations or hidden fees.",
+              "title": {
+                "de": "Direkter Kontakt",
+                "en": "Direct contact"
+              },
+              "subtitle": {
+                "de": "",
+                "en": ""
+              },
+              "description": {
+                "de": "Stelle deine Fragen direkt an die Klinik, bevor du über eine Behandlung entscheidest.",
+                "en": "Ask the clinic your questions directly before deciding on treatment."
+              },
               "icon": "eye"
             }
           ],
           "backgroundImageStableId": "landing-home-feature-background"
         },
         "process": {
-          "title": "How It Works for Patients",
-          "subtitle": "A transparent onboarding flow from profile setup to verified visibility and direct patient inquiries.",
+          "title": {
+            "de": "So findest du eine passende Klinik",
+            "en": "How to find a clinic"
+          },
+          "subtitle": {
+            "de": "Vom ersten Vergleich bis zu deinen Fragen an die Klinik.",
+            "en": "Start with a comparison and ask the clinic about the details."
+          },
           "steps": [
             {
               "step": 1,
-              "title": "Reach Out",
-              "description": "You contact us and receive a clear overview of how the platform works, including visibility options, regions, and patient demand.",
+              "title": {
+                "de": "Kliniken suchen",
+                "en": "Find clinics"
+              },
+              "description": {
+                "de": "Wähle ein Fachgebiet oder einen Ort aus, um passende Kliniken zu finden.",
+                "en": "Select a specialty or location to find relevant clinics."
+              },
               "imageStableId": "landing-process-reach-out"
             },
             {
               "step": 2,
-              "title": "Finalize Profile",
-              "description": "Clinics create and manage their own profiles. This ensures full control over medical information, treatments offered, languages, expertise, and international patient services presented clearly for patient comparison.",
+              "title": {
+                "de": "Profile vergleichen",
+                "en": "Compare profiles"
+              },
+              "description": {
+                "de": "Sieh dir die angebotenen Behandlungen und die Angaben zu Team und Qualifikationen an.",
+                "en": "Review the treatments, teams and qualifications described in the profiles."
+              },
               "imageStableId": "landing-process-create-profile"
             },
             {
               "step": 3,
-              "title": "Verification & Quality Check",
-              "description": "Clinics are required to provide relevant qualifications and certifications according to their medical services. This verification process ensures credibility, transparency, and a high-quality environment for international patients.",
+              "title": {
+                "de": "Klinik kontaktieren",
+                "en": "Contact a clinic"
+              },
+              "description": {
+                "de": "Richte Fragen zu einer Behandlung direkt an die Klinik.",
+                "en": "Send your questions about treatment directly to the clinic."
+              },
               "imageStableId": "landing-process-verification"
             },
             {
               "step": 4,
-              "title": "Connect with Patients",
-              "description": "Qualified international patients contact your clinic directly through the platform, ready to discuss treatments, and next steps.",
+              "title": {
+                "de": "Nächste Schritte klären",
+                "en": "Discuss the next steps"
+              },
+              "description": {
+                "de": "Frag die Klinik nach einem individuellen Angebot, Terminen und der Nachsorge.",
+                "en": "Ask the clinic about a personal quote, scheduling and aftercare."
+              },
               "imageStableId": "landing-home-process-connect-patients"
             }
           ]
         },
         "faq": {
-          "title": "FAQ",
-          "description": "This section answers the most common questions clinics and medical networks have about gaining international patients through our comparison platform.",
+          "title": {
+            "de": "Häufige Fragen",
+            "en": "Frequently asked questions"
+          },
+          "description": {
+            "de": "Fragen zur Suche, zum Klinikvergleich und zur Kontaktaufnahme.",
+            "en": "Answers about finding, comparing and contacting clinics."
+          },
           "items": [
             {
-              "question": "How does this platform help clinics gain international patients?",
-              "answer": "By combining global visibility, patient guidance, and quality-focused clinic presentation in one trusted comparison environment."
+              "question": {
+                "de": "Wie finde ich Kliniken für eine bestimmte Behandlung?",
+                "en": "How do I find a clinic for a specific treatment?"
+              },
+              "answer": {
+                "de": "Wähle ein passendes Fachgebiet aus und prüfe im Klinikprofil, welche Behandlungen die Klinik anbietet.",
+                "en": "Select a relevant specialty and check the clinic profile for the treatments it offers."
+              }
             },
             {
-              "question": "Are the patient inquiries exclusive?",
-              "answer": "Inquiries are handled according to your clinic profile settings and availability."
+              "question": {
+                "de": "Was kann ich im Klinikvergleich sehen?",
+                "en": "What can I see in the clinic comparison?"
+              },
+              "answer": {
+                "de": "Die Klinikprofile zeigen unter anderem angebotene Behandlungen, Standort und Angaben zum Team und zu Qualifikationen, soweit sie vorliegen.",
+                "en": "Clinic profiles show available details such as treatments, location, team and qualifications."
+              }
             },
             {
-              "question": "Which countries and regions are covered?",
-              "answer": "Coverage depends on active campaigns and regional demand at the time of listing."
+              "question": {
+                "de": "Wie erreiche ich eine Klinik?",
+                "en": "How can I contact a clinic?"
+              },
+              "answer": {
+                "de": "Öffne das Profil der Klinik. Dort kannst du eine Anfrage an die Klinik vorbereiten.",
+                "en": "Open the clinic profile to prepare an inquiry for the clinic."
+              }
             },
             {
-              "question": "Is this platform suitable for clinic groups and networks?",
-              "answer": "Yes. Groups can maintain consistent branding while showcasing individual locations."
+              "question": {
+                "de": "Wo kann ich nach den Gesamtkosten fragen?",
+                "en": "Where can I ask about the total cost?"
+              },
+              "answer": {
+                "de": "Bitte die Klinik um ein individuelles Angebot und frage, welche Leistungen und Nachsorgetermine enthalten sind.",
+                "en": "Ask the clinic for a personal quote and confirm which services and follow-up appointments are included."
+              }
             },
             {
-              "question": "Are patient inquiries focused on Europe?",
-              "answer": "Demand is strongest across Europe, but can include other regions depending on campaigns."
+              "question": {
+                "de": "An wen kann ich mich mit Fragen zur Website wenden?",
+                "en": "Who can I ask about the website?"
+              },
+              "answer": {
+                "de": "Nutze das Kontaktformular auf dieser Seite, um findmydoc zu erreichen.",
+                "en": "Use the contact form on this page to reach findmydoc."
+              }
             }
           ]
         },
         "blogTeaser": {
-          "title": "From our blog",
-          "description": "Explore practical insights, expert perspectives, and the latest topics across health and medicine."
+          "title": {
+            "de": "Aus unserem Blog",
+            "en": "From our blog"
+          },
+          "description": {
+            "de": "Artikel zur Behandlungsplanung und zu Themen aus Gesundheit und Medizin.",
+            "en": "Explore practical insights, expert perspectives, and the latest topics across health and medicine."
+          }
         },
         "contact": {
-          "title": "Contact",
-          "description": "Planning treatment abroad? Share your goals and we will help you find relevant clinics and next steps with confidence."
+          "title": {
+            "de": "Kontakt",
+            "en": "Contact"
+          },
+          "description": {
+            "de": "Du hast Fragen zur Kliniksuche oder zu findmydoc? Schreib uns.",
+            "en": "Have a question about finding a clinic or using findmydoc? Send us a message."
+          }
         }
       },
       "clinicPartners": {

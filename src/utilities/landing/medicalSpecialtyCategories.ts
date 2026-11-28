@@ -1,5 +1,9 @@
 import type { Payload } from 'payload'
 
+import { getTaxonomyDisplayName } from '@/features/listingComparison/taxonomy'
+import { LISTING_COMPARISON_PATHS } from '@/i18n/listingComparisonPath'
+import type { ContentLocale } from '@/utilities/contentLocalization'
+
 import { resolveMediaImage, type ResolvedMediaImage } from '@/utilities/media/resolveMediaImage'
 
 const LANDING_SPECIALTY_PLACEHOLDER_SRC = '/images/placeholders/clinic-placeholder.webp'
@@ -20,6 +24,7 @@ const EXCLUDED_LEVEL3_NAMES = new Set([
 type MedicalSpecialtyRecord = {
   id: number
   name: string
+  displayName?: unknown
   description?: string | null
   featureImage?: unknown
   parentSpecialty?: unknown
@@ -121,7 +126,12 @@ function buildRoundRobinFeaturedIds(
 
 export function mapMedicalSpecialtiesToLandingCategories(
   specialties: MedicalSpecialtyRecord[],
+  locale?: ContentLocale,
 ): LandingMedicalSpecialtyCategoriesData {
+  const displayName = (specialty: MedicalSpecialtyRecord) =>
+    locale ? getTaxonomyDisplayName(specialty, locale) : specialty.name
+  const comparisonPath = LISTING_COMPARISON_PATHS[locale ?? 'de']
+  const sortLocale = locale ?? 'en'
   const filtered = specialties.filter((specialty) => !isExcludedLevel3Name(specialty.name))
   const specialtiesById = new Map(filtered.map((specialty) => [specialty.id, specialty]))
 
@@ -138,7 +148,7 @@ export function mapMedicalSpecialtiesToLandingCategories(
       if (!parent) return []
       if (extractRelationId(parent.parentSpecialty) !== null) return []
 
-      const mediaAlt = `${specialty.name} category image`
+      const mediaAlt = locale ? '' : `${specialty.name} category image`
       const media =
         specialty.featureImage && typeof specialty.featureImage === 'object'
           ? (specialty.featureImage as LandingCategoryMedia)
@@ -156,20 +166,20 @@ export function mapMedicalSpecialtiesToLandingCategories(
       return [
         {
           id: String(specialty.id),
-          title: specialty.name,
-          subtitle: specialty.description ?? null,
+          title: displayName(specialty),
+          subtitle: locale ? null : (specialty.description ?? null),
           categories: [String(parent.id)],
-          href: `/listing-comparison?specialty=${encodeURIComponent(String(specialty.id))}`,
-          image,
+          href: `${comparisonPath}?specialty=${encodeURIComponent(String(specialty.id))}`,
+          image: locale ? { ...image, alt: '' } : image,
         },
       ]
     })
-    .sort((left, right) => left.title.localeCompare(right.title, 'en', { sensitivity: 'base' }))
+    .sort((left, right) => left.title.localeCompare(right.title, sortLocale, { sensitivity: 'base' }))
 
   const categories = level1Specialties
     .filter((specialty) => items.some((item) => item.categories.includes(String(specialty.id))))
     .map((specialty) => ({
-      label: specialty.name,
+      label: displayName(specialty),
       value: String(specialty.id),
     }))
 
@@ -177,9 +187,9 @@ export function mapMedicalSpecialtiesToLandingCategories(
   items.sort((left, right) => {
     const leftCategoryLabel = categoryLabelByValue.get(left.categories[0] ?? '') ?? ''
     const rightCategoryLabel = categoryLabelByValue.get(right.categories[0] ?? '') ?? ''
-    const categoryOrder = leftCategoryLabel.localeCompare(rightCategoryLabel, 'en', { sensitivity: 'base' })
+    const categoryOrder = leftCategoryLabel.localeCompare(rightCategoryLabel, sortLocale, { sensitivity: 'base' })
     if (categoryOrder !== 0) return categoryOrder
-    return left.title.localeCompare(right.title, 'en', { sensitivity: 'base' })
+    return left.title.localeCompare(right.title, sortLocale, { sensitivity: 'base' })
   })
 
   const featuredIds = buildRoundRobinFeaturedIds(items, categories, 4)
@@ -193,9 +203,11 @@ export function mapMedicalSpecialtiesToLandingCategories(
 
 export async function getLandingMedicalSpecialtyCategories(
   payload: Payload,
+  locale?: ContentLocale,
 ): Promise<LandingMedicalSpecialtyCategoriesData> {
   const specialtiesResult = await payload.find({
     collection: 'medical-specialties',
+    ...(locale ? { locale, fallbackLocale: false } : {}),
     depth: 1,
     limit: 1000,
     pagination: false,
@@ -204,11 +216,12 @@ export async function getLandingMedicalSpecialtyCategories(
     select: {
       id: true,
       name: true,
+      ...(locale ? { displayName: true } : {}),
       description: true,
       featureImage: true,
       parentSpecialty: true,
     },
   })
 
-  return mapMedicalSpecialtiesToLandingCategories(specialtiesResult.docs as MedicalSpecialtyRecord[])
+  return mapMedicalSpecialtiesToLandingCategories(specialtiesResult.docs as MedicalSpecialtyRecord[], locale)
 }

@@ -1108,7 +1108,7 @@ function ResponsiveStepCard({ step, bulletColor }: { step: OrbitStepLayout; bull
             <Heading as="h3" size="h6" align="left" className="text-lg leading-6">
               {step.title}
             </Heading>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground lg:mt-1 lg:text-[13px]">{step.body}</p>
+            <p className="mt-2 text-sm leading-6 text-supporting-foreground lg:mt-1 lg:text-[13px]">{step.body}</p>
           </div>
         </div>
       </div>

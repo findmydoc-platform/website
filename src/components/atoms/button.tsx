@@ -21,8 +21,8 @@ const buttonVariants = cva(
         xs: 'h-6 px-2',
       },
       variant: {
-        default: 'bg-primary text-primary-foreground hover:bg-primary/90',
-        primary: 'bg-primary text-primary-foreground hover:bg-primary/80 focus-visible:ring-ring',
+        default: 'bg-primary text-primary-foreground hover:bg-primary-hover',
+        primary: 'bg-primary text-primary-foreground hover:bg-primary-hover focus-visible:ring-ring',
         secondary:
           'border border-primary/30 bg-card text-primary hover:border-primary hover:bg-primary/5 focus-visible:ring-ring',
         accent: 'bg-accent text-accent-foreground hover:bg-accent/80 focus-visible:ring-ring',
@@ -47,11 +47,6 @@ const buttonVariants = cva(
     },
     // Note: `before:content-[...]` is required for Tailwind pseudo-elements.
     compoundVariants: [
-      {
-        variant: ['default', 'primary'],
-        shape: 'pill',
-        className: 'hover:bg-primary-hover',
-      },
       {
         variant: 'primary',
         hoverEffect: 'wave',

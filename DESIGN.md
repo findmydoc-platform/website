@@ -474,7 +474,7 @@ The palette is built from a clear medical blue, a deep navy anchor, a mint accen
 - **Muted (#F8F9FA):** The public site canvas, chrome, and structural section background. This keeps clinical content open without pure-white page glare.
 - **Card and popover (#FFFFFF):** Use white for repeated cards, dialogs, floating panels, popovers, and form surfaces on muted backgrounds.
 - **Foreground (#333333):** Default body text. Keep long-form content on foreground or secondary, not muted foreground.
-- **Supporting foreground (#646565):** Use for explanatory copy on the light site canvas and secondary facts such as a result count on white. Keep the numbers in the count in foreground. This gray corresponds to 75% foreground mixed with 25% site canvas in the clinic profile.
+- **Supporting foreground (#646565):** Use for explanatory copy on the light site canvas, secondary facts such as a result count on white, placeholders, and inactive category labels. Keep the numbers in the count in foreground. This gray corresponds to 75% foreground mixed with 25% site canvas in the clinic profile.
 - **Muted foreground (#999999):** Reserve for low-emphasis decoration on light surfaces. Use supporting foreground for readable small text.
 - **Border/input (#E2E8F0):** Subtle separation for cards, inputs, dividers, and low-emphasis panels.
 - **Destructive (#B91C1C):** Error and destructive action color only. White text on this color has a 6.47:1 contrast ratio. The public site and Storybook use the same token for destructive controls and form validation.

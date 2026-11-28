@@ -1,4 +1,5 @@
 import * as React from 'react'
+import germanMessages from '@findmydoc-platform/ui-copy/de.json'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, userEvent, within } from 'storybook/test'
 
@@ -135,7 +136,15 @@ export const BannerGermanCopy: Story = {
   render: () => (
     <CookieConsentBanner
       ready
-      config={{ ...DEFAULT_COOKIE_CONSENT_CONFIG, banner: APPROVED_COOKIE_CONSENT_PROMPT.de }}
+      config={{
+        ...DEFAULT_COOKIE_CONSENT_CONFIG,
+        locale: 'de',
+        banner: APPROVED_COOKIE_CONSENT_PROMPT.de,
+        closeLabel: germanMessages.cookieConsent.close,
+        newTabDescription: germanMessages.cookieConsent.newTab,
+        privacyPolicyLabel: germanMessages.cookieConsent.privacy.label,
+        imprintLink: { href: '/imprint', label: germanMessages.cookieConsent.imprint.label },
+      }}
       onAcceptAll={fn()}
       onCustomize={fn()}
       onRejectAll={fn()}

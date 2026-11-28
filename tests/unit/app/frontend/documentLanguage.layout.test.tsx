@@ -2,7 +2,7 @@ import { readdirSync } from 'node:fs'
 import { relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { uiCopyLocaleFromPath, UI_COPY_LOCALE_HEADER } from '@/i18n/requestLocale'
+import { FRONTEND_PATH_HEADER, UI_COPY_LOCALE_HEADER, uiCopyLocaleFromPath } from '@/i18n/requestLocale'
 
 const mocks = vi.hoisted(() => ({
   headers: vi.fn(),
@@ -21,17 +21,19 @@ vi.mock('@/utilities/content/serverData', () => ({
   getCachedPublicPostRoute: mocks.getCachedPublicPostRoute,
   findPublicPageRoute: mocks.findPublicPageRoute,
 }))
-vi.mock('@/utilities/getGlobals', () => ({ getGlobal: async () => ({}) }))
 vi.mock('@/app/(frontend)/AdminBarClientAdapter.client', () => ({ AdminBarClientAdapter: () => null }))
+vi.mock('@/app/(frontend)/_data/cookieConsent', () => ({
+  getCookieConsentConfigs: async () => ({ de: null, en: null }),
+}))
 vi.mock('@/features/cookieConsent/CookieConsentClientAdapter.client', () => ({
   CookieConsentClientAdapter: () => null,
 }))
 vi.mock('@vercel/toolbar/next', () => ({ VercelToolbar: () => null }))
 
 async function renderLayout(pathname: string) {
-  const requestHeaders = new Headers({ 'x-findmydoc-frontend-path': pathname })
-  const uiCopyLocale = uiCopyLocaleFromPath(pathname)
-  if (uiCopyLocale) requestHeaders.set(UI_COPY_LOCALE_HEADER, uiCopyLocale)
+  const requestHeaders = new Headers({ [FRONTEND_PATH_HEADER]: pathname })
+  const requestLocale = uiCopyLocaleFromPath(pathname)
+  if (requestLocale) requestHeaders.set(UI_COPY_LOCALE_HEADER, requestLocale)
   mocks.headers.mockResolvedValue(requestHeaders)
   const { default: RootLayout } = await import('@/app/(frontend)/layout')
   return RootLayout({ children: null })
@@ -86,22 +88,25 @@ describe('frontend document language', () => {
     ])
   })
 
-  it.each(dedicatedPagePaths)('keeps %s outside the CMS document resolver', async (path) => {
-    await renderLayout(path)
-
-    expect(mocks.findPublicPageRoute).not.toHaveBeenCalled()
-    expect(mocks.getCachedPublicPostRoute).not.toHaveBeenCalled()
-  })
-
   it.each([
+    ['/register/patient', 'de'],
+    ['/en/register/patient', 'en'],
+    ['/en/contact', 'en'],
+    ['/en/logout', 'en'],
     ['/posts', 'de'],
     ['/posts/page/2', 'de'],
     ['/en/posts', 'en'],
     ['/en/posts/page/2', 'en'],
-  ])('sets the server document language for %s', async (path, language) => {
+    ['/auth/invite/complete', 'en'],
+  ])('renders %s in %s', async (path, locale) => {
     const layout = await renderLayout(path)
 
-    expect(layout.props.lang).toBe(language)
+    expect(layout.props.lang).toBe(locale)
+  })
+
+  it.each(dedicatedPagePaths)('does not look up a CMS document for %s', async (path) => {
+    await renderLayout(path)
+
     expect(mocks.findPublicPageRoute).not.toHaveBeenCalled()
     expect(mocks.getCachedPublicPostRoute).not.toHaveBeenCalled()
   })

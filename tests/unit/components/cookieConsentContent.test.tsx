@@ -4,7 +4,13 @@ import '@testing-library/jest-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 
-import { isCookieConsentToolAllowed, normalizeCookieConsentGlobal } from '@/features/cookieConsent'
+import {
+  clearCookieConsentFromDocument,
+  DEFAULT_COOKIE_CONSENT_CONFIG,
+  isCookieConsentToolAllowed,
+  normalizeCookieConsentGlobal,
+  readCookieConsentFromDocument,
+} from '@/features/cookieConsent'
 import { CookieConsentClientAdapter } from '@/features/cookieConsent/CookieConsentClientAdapter.client'
 
 vi.mock('@/posthog/client-api', () => ({
@@ -17,10 +23,15 @@ vi.mock('@/posthog/client-api', () => ({
     reason: 'consent_required',
   }),
 }))
-vi.mock('next/navigation', () => ({ usePathname: () => '/' }))
+const router = vi.hoisted(() => ({ pathname: '/' }))
+vi.mock('next/navigation', () => ({ usePathname: () => router.pathname }))
 
 describe('cookie consent content through the shared adapter', () => {
-  afterEach(cleanup)
+  afterEach(() => {
+    cleanup()
+    clearCookieConsentFromDocument()
+    router.pathname = '/'
+  })
 
   it('lists assigned services and privacy links before consent', () => {
     const config = normalizeCookieConsentGlobal({} as never)
@@ -44,21 +55,56 @@ describe('cookie consent content through the shared adapter', () => {
     )
   })
 
-  it('keeps operator copy and legal links accessible without making a choice', () => {
-    const config = normalizeCookieConsentGlobal({
-      bannerTitle: 'Our own title',
-      bannerDescription: 'Our own explanation',
-      germanPrompt: { bannerTitle: 'Ignored alternate title', bannerDescription: 'Ignored alternate explanation' },
-      customizeLabel: 'Review options',
-      privacyPolicyPage: { slug: 'privacy-policy' },
-    } as never)
+  it.each([
+    ['en', 'Our own title', 'Our own explanation', 'Review options'],
+    ['de', 'Eigener Titel', 'Eigene Erklärung', 'Auswahl bearbeiten'],
+  ] as const)('uses the CMS prompt in %s before a visitor makes a choice', (locale, title, description, options) => {
+    const config = normalizeCookieConsentGlobal(
+      {
+        bannerTitle: 'Our own title',
+        bannerDescription: 'Our own explanation',
+        customizeLabel: 'Review options',
+        germanPrompt: {
+          bannerTitle: 'Eigener Titel',
+          bannerDescription: 'Eigene Erklärung',
+          customizeLabel: 'Auswahl bearbeiten',
+        },
+        privacyPolicyPage: { slug: 'privacy-policy' },
+      } as never,
+      locale,
+    )
     render(<CookieConsentClientAdapter config={config} initialConsent={null} />)
-    expect(screen.getByText('Our own title')).toBeInTheDocument()
-    expect(screen.getByText('Our own explanation')).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Review options' }))
-    expect(screen.getByRole('link', { name: 'Privacy Policy' })).toHaveAttribute('href', '/privacy-policy')
-    expect(screen.getByRole('link', { name: 'Imprint' })).toHaveAttribute('href', '/imprint')
+    const prompt = screen.getByRole('dialog', { name: title })
+    expect(prompt).toHaveAttribute('lang', locale)
+    expect(screen.getByText(description)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: options }))
+    expect(screen.getByRole('dialog')).toHaveAttribute('lang', locale)
     expect(document.cookie).not.toContain('findmydoc_cookie_consent=')
+  })
+
+  it('relabels the launcher after navigation and preserves the visitor’s saved decision', () => {
+    const config = {
+      de: {
+        ...DEFAULT_COOKIE_CONSENT_CONFIG,
+        locale: 'de',
+        banner: { ...DEFAULT_COOKIE_CONSENT_CONFIG.banner, acceptLabel: 'Test-Auswahl bestätigen' },
+        reopenLabel: 'Test-Auswahl öffnen',
+      },
+      en: { ...DEFAULT_COOKIE_CONSENT_CONFIG, reopenLabel: 'Reopen test choice' },
+    } as const
+    const rendered = render(<CookieConsentClientAdapter config={config} initialConsent={null} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Test-Auswahl bestätigen' }))
+    expect(screen.getByRole('button', { name: 'Test-Auswahl öffnen' })).toHaveAttribute('lang', 'de')
+    const saved = readCookieConsentFromDocument(DEFAULT_COOKIE_CONSENT_CONFIG.consentVersion)
+    expect(saved).toMatchObject({ choice: 'accepted', categories: { functional: true, analytics: true } })
+
+    router.pathname = '/en'
+    rendered.rerender(<CookieConsentClientAdapter config={config} initialConsent={null} />)
+    expect(screen.queryByRole('button', { name: 'Test-Auswahl öffnen' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Reopen test choice' }))
+    expect(screen.getByRole('dialog')).toHaveAttribute('lang', 'en')
+    expect(screen.getByRole('checkbox', { name: 'Functional cookies' })).toBeChecked()
+    expect(readCookieConsentFromDocument(DEFAULT_COOKIE_CONSENT_CONFIG.consentVersion)).toEqual(saved)
   })
 
   it.each([

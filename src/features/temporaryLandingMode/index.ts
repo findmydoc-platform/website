@@ -1,4 +1,5 @@
 import { FRONTEND_PATH_HEADER } from '@/i18n/requestLocale'
+import { getManagedLegalPageSlugFromPath } from '@/utilities/legalPages'
 import { temporaryLandingLocaleFromPath } from './i18n'
 
 export const TEMPORARY_LANDING_MODE_REQUEST_HEADER = 'x-temporary-landing-mode'
@@ -15,7 +16,7 @@ export const readPublicSiteModeRequestHeader = (headers: Headers): 'full' | 'hol
   return mode === 'full' || mode === 'holding' ? mode : null
 }
 
-const TEMPORARY_LANDING_PUBLIC_EXEMPT_PATHS = new Set(['/privacy-policy', '/imprint', '/contact'])
+const TEMPORARY_LANDING_PUBLIC_EXEMPT_PATHS = new Set(['/contact'])
 const TEMPORARY_LANDING_PUBLIC_DISCOVERY_PATHS = new Set([
   '/robots.txt',
   '/pages-sitemap.xml',
@@ -51,13 +52,13 @@ export const isTemporaryLandingModeExemptPath = (pathname: string): boolean => {
     }
   }
 
-  return TEMPORARY_LANDING_EXEMPT_PATHS.has(normalizedPath)
+  return TEMPORARY_LANDING_EXEMPT_PATHS.has(normalizedPath) || getManagedLegalPageSlugFromPath(normalizedPath) !== null
 }
 
 export const isTemporaryLandingPublicExemptPath = (pathname: string): boolean => {
   const normalizedPath = normalizePathname(pathname)
 
-  if (TEMPORARY_LANDING_PUBLIC_EXEMPT_PATHS.has(normalizedPath)) {
+  if (TEMPORARY_LANDING_PUBLIC_EXEMPT_PATHS.has(normalizedPath) || getManagedLegalPageSlugFromPath(normalizedPath)) {
     return true
   }
 

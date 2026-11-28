@@ -7,12 +7,22 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CmsLanguageSwitchRoute } from '@/features/languageSwitch/CmsLanguageSwitchRoute.client'
 import { LanguageSwitchRouteProvider } from '@/features/languageSwitch/LanguageSwitchRouteProvider.client'
 import { HOLDING_VIEW_REQUEST_HEADER, PUBLIC_SITE_MODE_REQUEST_HEADER } from '@/features/temporaryLandingMode'
+import { FRONTEND_PATH_HEADER } from '@/i18n/requestLocale'
 
 const mocks = vi.hoisted(() => ({
   headers: vi.fn(),
   extractSupabaseUserData: vi.fn(),
   resolveHoldingMode: vi.fn(),
   pathname: '/',
+}))
+
+vi.mock('@payload-config', () => ({ default: {} }))
+vi.mock('payload', () => ({
+  getPayload: async () => ({
+    find: async ({ locale }: { locale: string }) => ({
+      docs: [{ slug: 'imprint' }, ...(locale === 'de' ? [{ slug: 'privacy-policy' }] : [])],
+    }),
+  }),
 }))
 
 vi.mock('next/headers', () => ({ headers: mocks.headers }))
@@ -119,6 +129,22 @@ describe('platform navigation during Holding mode', () => {
     expect(within(footer).getByRole('link', { name: 'Blog' })).toHaveAttribute('href', '/posts')
     expect(screen.queryByRole('link', { name: 'Compare clinics' })).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Instagram' })).not.toBeInTheDocument()
+  })
+
+  it('links from Holding English article navigation to published legal renditions', async () => {
+    mocks.pathname = '/en/posts/news'
+    mocks.headers.mockResolvedValue(
+      new Headers({ [PUBLIC_SITE_MODE_REQUEST_HEADER]: 'holding', [FRONTEND_PATH_HEADER]: mocks.pathname }),
+    )
+    mocks.extractSupabaseUserData.mockResolvedValue(null)
+
+    await renderTemplate()
+
+    const footer = within(screen.getByRole('contentinfo'))
+    expect(footer.getAllByRole('link').some((link) => link.getAttribute('href') === '/en/imprint')).toBe(true)
+    for (const fallback of footer.getAllByRole('link', { name: /\(DE\)$/ })) {
+      expect(fallback).toHaveAttribute('href', '/privacy-policy')
+    }
   })
 
   it('lets a Holding visitor switch between public versions of the same Post', async () => {

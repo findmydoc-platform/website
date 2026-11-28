@@ -13,6 +13,9 @@ const mocks = vi.hoisted(() => ({
   resolveHoldingModeMock: vi.fn(),
 }))
 
+vi.mock('@payload-config', () => ({ default: {} }))
+vi.mock('payload', () => ({ getPayload: async () => ({ find: async () => ({ docs: [] }) }) }))
+
 vi.mock('next/headers', () => ({
   headers: mocks.headersMock,
 }))

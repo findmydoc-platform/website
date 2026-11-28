@@ -1,5 +1,6 @@
 import type { VerificationBadgeVariant } from '@/components/atoms/verification-badge'
 import { getListingComparisonTranslator } from '@/features/listingComparison/copy'
+import { clinicProfilePath } from '@/i18n/clinicProfilePath'
 import type { UiCopyLocale } from '@/i18n/requestLocale'
 import type { ListingCardData } from '@/components/organisms/Listing'
 import type { Clinic } from '@/payload-types'
@@ -217,7 +218,7 @@ export function mapListingCardResults(
           : undefined,
       actions: {
         details: {
-          href: `/clinics/${encodeURIComponent(slug)}`,
+          href: clinicProfilePath(slug, locale),
           label: t('details'),
           ariaLabel: t('detailsFor', { clinic: clinic.name }),
         },

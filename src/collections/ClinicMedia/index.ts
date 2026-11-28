@@ -87,6 +87,18 @@ export const ClinicMedia: CollectionConfig = {
     buildMediaAltField({ required: false }),
     buildMediaCaptionField(),
     {
+      name: 'localizedAlt',
+      type: 'text',
+      localized: true,
+      admin: { description: 'Image description for screen readers in the selected language' },
+    },
+    {
+      name: 'localizedCaption',
+      type: 'richText',
+      localized: true,
+      admin: { description: 'Optional image caption in the selected language' },
+    },
+    {
       name: 'addToClinicGallery',
       type: 'ui',
       admin: { components: { Field: '@/app/(payload)/components/ClinicMediaGalleryAction#ClinicMediaGalleryAction' } },

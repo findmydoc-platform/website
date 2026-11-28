@@ -1,5 +1,6 @@
 import { blogArchiveLocaleFromPath } from '@/i18n/blogArchivePath'
 import { clinicApplicationLocaleFromPath } from '@/i18n/clinicApplicationPath'
+import { clinicProfileLocaleFromPath } from '@/i18n/clinicProfilePath'
 import { contactLocaleFromPath } from '@/i18n/contactPath'
 import { listingComparisonLocaleFromPath } from '@/i18n/listingComparisonPath'
 import { savedClinicsLocaleFromPath } from '@/i18n/savedClinicsPath'
@@ -73,6 +74,7 @@ export function uiCopyLocaleFromPath(
     blogArchiveLocaleFromPath(pathname) ??
     clinicApplicationLocaleFromPath(pathname) ??
     contactLocaleFromPath(pathname) ??
+    clinicProfileLocaleFromPath(pathname) ??
     listingComparisonLocaleFromPath(pathname) ??
     savedClinicsLocaleFromPath(pathname) ??
     patientAuthLocaleFromPath(pathname, searchParams)

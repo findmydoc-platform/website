@@ -278,11 +278,12 @@ const dispatchClinicMediaChangeAfterCommit = async (
     req,
   })) as RevalidatableDoc
   const galleryIds = Array.isArray(clinic.profileGallery) ? clinic.profileGallery.map(extractRelationId) : []
-  if (!galleryIds.some((id) => id !== null && String(id) === String(mediaId))) return
+  const mainImageChanged = String(extractRelationId(clinic.thumbnail) ?? '') === String(mediaId)
+  if (!mainImageChanged && !galleryIds.some((id) => id !== null && String(id) === String(mediaId))) return
 
   dispatchClinicGalleryChangeRevalidation({
     doc: clinic,
-    mainImageChanged: String(extractRelationId(clinic.thumbnail) ?? '') === String(mediaId),
+    mainImageChanged,
     previousDoc: clinic,
     req,
   })
@@ -303,11 +304,12 @@ export const revalidateClinicMediaChange: CollectionAfterChangeHook = ({ doc, re
       id: clinicId,
       overrideAccess: true,
       req,
-      select: { profileGallery: true },
+      select: { profileGallery: true, thumbnail: true },
     })
     .then((clinic) => {
       const galleryIds = Array.isArray(clinic.profileGallery) ? clinic.profileGallery.map(extractRelationId) : []
-      if (!galleryIds.some((id) => id !== null && String(id) === String(mediaId))) return doc
+      const isThumbnail = String(extractRelationId(clinic.thumbnail) ?? '') === String(mediaId)
+      if (!isThumbnail && !galleryIds.some((id) => id !== null && String(id) === String(mediaId))) return doc
 
       try {
         after(async () => {

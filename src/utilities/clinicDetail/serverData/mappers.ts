@@ -20,7 +20,11 @@ import type {
   ClinicDetailTrust,
   ClinicVerificationTier,
 } from '@/features/clinicDetail/contracts'
-import { CLINICS_BREADCRUMB, HOME_BREADCRUMB } from '@/utilities/breadcrumbs'
+import { getClinicProfileTranslator } from '@/features/clinicDetail/overviewCopy'
+import { clinicProfilePath } from '@/i18n/clinicProfilePath'
+import { CONTACT_PATHS } from '@/i18n/contactPath'
+import { LISTING_COMPARISON_PATHS } from '@/i18n/listingComparisonPath'
+import type { UiCopyLocale } from '@/i18n/requestLocale'
 import { resolveDoctorProfileImage } from '@/utilities/media/doctorProfileImage'
 import type { MediaDescriptor } from '@/utilities/media/relationMedia'
 import { buildFreshnessSignals } from '@/utilities/freshness'
@@ -37,19 +41,29 @@ import {
 } from '@/collections/reviews/publicProjection'
 
 import type { ClinicDetailMappingArgs } from './types'
-const LANGUAGE_LABELS: Record<string, string> = {
-  german: 'German',
-  english: 'English',
-  french: 'French',
-  spanish: 'Spanish',
-  italian: 'Italian',
-  turkish: 'Turkish',
-  russian: 'Russian',
-  arabic: 'Arabic',
-  chinese: 'Chinese',
-  japanese: 'Japanese',
-  korean: 'Korean',
-  portuguese: 'Portuguese',
+const LANGUAGE_CODES: Record<string, string> = {
+  german: 'de',
+  english: 'en',
+  french: 'fr',
+  spanish: 'es',
+  italian: 'it',
+  turkish: 'tr',
+  russian: 'ru',
+  arabic: 'ar',
+  chinese: 'zh',
+  japanese: 'ja',
+  korean: 'ko',
+  portuguese: 'pt',
+}
+
+const locationLabels = {
+  de: new Intl.DisplayNames('de', { type: 'region', fallback: 'none' }),
+  en: new Intl.DisplayNames('en', { type: 'region', fallback: 'none' }),
+}
+
+const languageLabels = {
+  de: new Intl.DisplayNames('de', { type: 'language', fallback: 'none' }),
+  en: new Intl.DisplayNames('en', { type: 'language', fallback: 'none' }),
 }
 
 const DOCTOR_SPECIALTY_PRIORITY: Record<string, number> = {
@@ -107,9 +121,9 @@ function extractLexicalPlainText(content: unknown): string {
   return normalizeWhitespace(walk(content).join(' '))
 }
 
-function toLanguageLabel(value: unknown): string | null {
-  if (typeof value !== 'string') return null
-  return LANGUAGE_LABELS[value] ?? null
+function toLanguageLabel(value: unknown, locale: UiCopyLocale = 'en'): string | null {
+  const code = typeof value === 'string' && Object.hasOwn(LANGUAGE_CODES, value) ? LANGUAGE_CODES[value] : undefined
+  return code ? (languageLabels[locale].of(code) ?? null) : null
 }
 
 function toVerificationTier(value: unknown): ClinicVerificationTier {
@@ -166,7 +180,7 @@ function resolveDoctorName(doctor: Doctor): string {
   return fallbackName.length > 0 ? fallbackName : `Doctor ${doctor.id}`
 }
 
-function buildFullAddress(clinic: Clinic, cityNameById: Map<number, string>): string | undefined {
+function buildFullAddress(clinic: Clinic, cityNameById: Map<number, string>, locale: UiCopyLocale): string | undefined {
   const address = clinic.address
   if (!address) return undefined
 
@@ -174,22 +188,22 @@ function buildFullAddress(clinic: Clinic, cityNameById: Map<number, string>): st
 
   const cityRelation = address.city
   const cityNameFromRelation =
-    cityRelation && typeof cityRelation === 'object' && 'name' in cityRelation && typeof cityRelation.name === 'string'
-      ? cityRelation.name
-      : null
-  const cityNameFromMap = cityNameById.get(extractRelationId(cityRelation) ?? -1) ?? null
-  const cityName = cityNameFromRelation ?? cityNameFromMap
+    cityRelation && typeof cityRelation === 'object' ? cityRelation.displayName?.trim() || cityRelation.name : null
+  const cityName = cityNameFromRelation ?? cityNameById.get(extractRelationId(cityRelation) ?? -1)
 
   const zipCode = typeof address.zipCode === 'string' ? address.zipCode.trim() : ''
   const cityLine = normalizeWhitespace(`${zipCode} ${cityName ?? ''}`)
 
-  const country = getRelationshipName(address.country)
+  const countryRelation = address.country
+  const isoCode = typeof countryRelation === 'object' ? countryRelation?.isoCode?.trim().toUpperCase() : undefined
+  const localizedCountry = isoCode && /^[A-Z]{2}$/.test(isoCode) ? locationLabels[locale].of(isoCode) : undefined
+  const country = localizedCountry ?? getRelationshipName(countryRelation)
 
   const fullAddress = [streetLine, cityLine, country].filter((part) => part.length > 0).join(', ')
   return fullAddress.length > 0 ? fullAddress : undefined
 }
 
-function buildLocation(clinic: Clinic, cityNameById: Map<number, string>): ClinicDetailLocation {
+function buildLocation(clinic: Clinic, cityNameById: Map<number, string>, locale: UiCopyLocale): ClinicDetailLocation {
   const coordinates =
     Array.isArray(clinic.coordinates) && clinic.coordinates.length === 2
       ? {
@@ -203,7 +217,7 @@ function buildLocation(clinic: Clinic, cityNameById: Map<number, string>): Clini
   )
 
   return {
-    fullAddress: buildFullAddress(clinic, cityNameById),
+    fullAddress: buildFullAddress(clinic, cityNameById, locale),
     coordinates: hasValidCoordinates ? coordinates : undefined,
   }
 }
@@ -307,10 +321,12 @@ function resolveClinicRatingValue(clinic: Clinic, clinicReviewCount: number): nu
 
 function mapTrust({
   clinic,
+  locale,
   clinicReviewCount,
   accreditations,
 }: {
   clinic: Clinic
+  locale: UiCopyLocale
   clinicReviewCount: number
   accreditations: Accreditation[]
 }): ClinicDetailTrust {
@@ -331,7 +347,7 @@ function mapTrust({
   const accreditationNames = Array.from(new Set([...accreditationNamesFromClinic, ...accreditationNamesFromLookup]))
 
   const languages = (clinic.supportedLanguages ?? [])
-    .map((value) => toLanguageLabel(value))
+    .map((value) => toLanguageLabel(value, locale))
     .filter((value): value is string => Boolean(value))
 
   return {
@@ -425,15 +441,15 @@ function mapReviews({
   }
 }
 
-function buildContactHref(slug: string): string {
-  return `/contact?clinic=${encodeURIComponent(slug)}&source=clinic-detail`
+function buildContactHref(slug: string, locale: UiCopyLocale): string {
+  return `${CONTACT_PATHS[locale]}?clinic=${encodeURIComponent(slug)}&source=clinic-detail`
 }
 
 function mapCitiesToNameMap(cities: City[]): Map<number, string> {
   return new Map(
     cities
       .filter((item) => typeof item.name === 'string' && item.name.trim().length > 0)
-      .map((item) => [item.id, item.name]),
+      .map((item) => [item.id, item.displayName?.trim() || item.name]),
   )
 }
 
@@ -485,6 +501,7 @@ function mapClinicFreshness({
 
 export function mapClinicToClinicDetailData({
   clinic,
+  locale,
   heroImage,
   galleryImages,
   clinicTreatments,
@@ -498,7 +515,9 @@ export function mapClinicToClinicDetailData({
   accreditations,
   cities,
 }: ClinicDetailMappingArgs): ClinicDetailData {
-  const contactHref = buildContactHref(clinic.slug)
+  const contactHref = buildContactHref(clinic.slug, locale)
+  const t = getClinicProfileTranslator(locale)
+  const description = clinic.localizedDescription ?? (locale === 'en' ? clinic.description : undefined)
   const cityNameById = mapCitiesToNameMap(cities)
 
   return {
@@ -506,15 +525,16 @@ export function mapClinicToClinicDetailData({
     clinicSlug: clinic.slug,
     clinicName: clinic.name,
     breadcrumbs: [
-      HOME_BREADCRUMB,
-      CLINICS_BREADCRUMB,
-      { label: clinic.name, href: `/clinics/${encodeURIComponent(clinic.slug)}` },
+      { label: t('navigation.home'), href: locale === 'en' ? '/en' : '/' },
+      { label: t('navigation.comparison'), href: LISTING_COMPARISON_PATHS[locale] },
+      { label: clinic.name, href: clinicProfilePath(clinic.slug, locale) },
     ],
     heroImage,
     galleryImages,
-    description: extractLexicalPlainText(clinic.description) || 'Clinic profile information currently being updated.',
+    description: extractLexicalPlainText(description) || t('overview.noDescription'),
     trust: mapTrust({
       clinic,
+      locale,
       clinicReviewCount,
       accreditations,
     }),
@@ -532,7 +552,7 @@ export function mapClinicToClinicDetailData({
       doctorMediaByDoctorId,
       contactHref,
     }),
-    location: buildLocation(clinic, cityNameById),
+    location: buildLocation(clinic, cityNameById, locale),
     freshness: mapClinicFreshness({
       clinic,
       clinicTreatments,

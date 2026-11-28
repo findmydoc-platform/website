@@ -39,7 +39,7 @@ async function SavedClinicsContent({
   locale: UiCopyLocale
 }) {
   try {
-    const items = await findPatientFavoriteClinicListItems({ payload, patientId })
+    const items = await findPatientFavoriteClinicListItems({ payload, patientId, locale })
     return <FavoriteClinicsList initialItems={items} locale={locale} />
   } catch {
     payload.logger.error('Could not read saved clinics')

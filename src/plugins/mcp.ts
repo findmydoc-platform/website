@@ -1,6 +1,7 @@
 import { mcpPlugin } from '@payloadcms/plugin-mcp'
 import { APIError, UnauthorizedError, type CollectionSlug, type Payload, type Plugin } from 'payload'
 import { z } from 'zod'
+import { requireCurrentPlatformStaff } from '@/access/requireCurrentPlatformStaff'
 import { isPlatformAdminUser } from '@/access/isPlatformAdmin'
 import { withAuthorizedMcpTrash } from '@/access/mcpTrashAccess'
 import { generatedCollectionAccess } from '@/security/generatedCollectionAccess'
@@ -8,15 +9,21 @@ import {
   appendPlatformClinicGalleryMedia,
   readPlatformClinicGallery,
   readPlatformClinicGalleryImage,
-  requireCurrentPlatformStaff,
   savePlatformClinicGallery,
 } from '@/features/clinicDashboard/gallery/platformGallery'
 import { clinicGallerySaveInputSchema } from '@/features/clinicDashboard/gallery/contracts'
 import { clinicProfileMediaImageMimeTypes, standardMediaImageMimeTypes } from '@/collections/common/mediaCollection'
 import { MEDIA_UPLOAD_MAX_BYTES } from '@/config/mediaUploadPolicy'
 import { relationId } from '@/collections/clinics/profileGallery'
-import type { ClinicMedia, DoctorMedia } from '@/payload-types'
+import type { ClinicMedia, DoctorMedia, PayloadMcpApiKey } from '@/payload-types'
 import { readStoredImage } from '@/features/platformMedia/readStoredImage'
+import { buildMcpApiKeyFields } from '@/features/mcp/apiKeyFields'
+import { clinicOnboardingTools, mapClinicOnboardingGrants } from '@/features/mcp/clinicOnboarding'
+import { readClinicProfile, updateClinicProfile } from '@/features/mcp/clinicProfileTools'
+import { uploadEditorialImageTool } from '@/features/mcp/editorialImageTool'
+import { mapEditorialImageGrants } from '@/features/mcp/editorialImageGrants'
+import { createPostDraft, updatePostDraft } from '@/features/mcp/mcpPostDrafts'
+import { publishPost } from '@/features/mcp/mcpPostPublication'
 
 type McpCollectionConfig = {
   description: string
@@ -30,6 +37,13 @@ type McpCollectionConfig = {
 }
 
 const mcpUserCollection: CollectionSlug = 'platformStaff'
+const collectionGrantAliases = new Set([
+  createPostDraft.name,
+  updatePostDraft.name,
+  publishPost.name,
+  readClinicProfile.name,
+  updateClinicProfile.name,
+])
 
 const mcpGallerySnapshot = (snapshot: Awaited<ReturnType<typeof readPlatformClinicGallery>>) => ({
   ...snapshot,
@@ -315,6 +329,9 @@ export const createMcpPlugin = (): Plugin =>
     userCollection: mcpUserCollection,
     mcp: {
       tools: [
+        ...clinicOnboardingTools,
+        readClinicProfile,
+        updateClinicProfile,
         createTrashTool('clinics', 'trashClinic', 'Clinic'),
         createTrashTool('doctors', 'trashDoctor', 'Doctor'),
         createDeleteLinkTool('clinictreatments', 'deleteClinicTreatment', 'Clinic treatment'),
@@ -329,29 +346,17 @@ export const createMcpPlugin = (): Plugin =>
         createDeleteMediaTool('doctorMedia', 'deleteDoctorImage'),
         readClinicGallery,
         saveClinicGalleryTool,
+        createPostDraft,
+        updatePostDraft,
+        publishPost,
+        uploadEditorialImageTool,
       ],
     },
 
     overrideApiKeyCollection: (collection) => {
       return {
         ...collection,
-        fields: collection.fields.map((field) =>
-          field.type === 'collapsible'
-            ? {
-                ...field,
-                fields: field.fields.map((nested) =>
-                  nested.type === 'group' && 'name' in nested && nested.name === 'payload-mcp-tool'
-                    ? {
-                        ...nested,
-                        fields: nested.fields.map((item) =>
-                          item.type === 'checkbox' ? { ...item, defaultValue: false } : item,
-                        ),
-                      }
-                    : nested,
-                ),
-              }
-            : field,
-        ),
+        fields: buildMcpApiKeyFields(collection.fields, collectionGrantAliases),
         admin: {
           ...collection.admin,
           hidden: ({ user }) => !isPlatformAdminUser(user),
@@ -363,13 +368,26 @@ export const createMcpPlugin = (): Plugin =>
       }
     },
 
-    overrideAuth: async (_req, getDefaultMcpAccessSettings) => {
+    overrideAuth: async (req, getDefaultMcpAccessSettings) => {
       const mcpAccessSettings = await getDefaultMcpAccessSettings()
 
       if (!isPlatformStaffMcpUser(mcpAccessSettings.user as unknown)) {
         throw new UnauthorizedError()
       }
 
-      return mcpAccessSettings
+      const settings = mapEditorialImageGrants(mapClinicOnboardingGrants(req, mcpAccessSettings))
+      const postGrants = settings.posts as PayloadMcpApiKey['posts']
+      const clinicGrants = settings.clinics as PayloadMcpApiKey['clinics']
+      return {
+        ...settings,
+        'payload-mcp-tool': {
+          ...settings['payload-mcp-tool'],
+          [createPostDraft.name]: postGrants?.create === true,
+          [updatePostDraft.name]: postGrants?.update === true,
+          [publishPost.name]: postGrants?.update === true,
+          [readClinicProfile.name]: clinicGrants?.find === true,
+          [updateClinicProfile.name]: clinicGrants?.update === true,
+        },
+      }
     },
   })

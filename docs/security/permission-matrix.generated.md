@@ -73,15 +73,15 @@
 - **Forms**: Public form definitions with platform-only management
 - **Form Submissions**: Public create path with platform-only read and delete access; direct updates are disabled
 - **Redirects**: Public redirect rules with platform-only management
-- **MCP API Keys**: Only current platform administrators manage keys. Existing platform staff-owned keys retain MCP access; owner binding and disabled unlock remain enforced.
+- **MCP API Keys**: Only current platform administrators manage keys. Clinic onboarding grants are individually opt-in and retain the applicable Payload permissions of the key owner. Existing grants, owner binding and disabled unlock remain enforced.
 - **PlatformStaff**: Platform staff review safe identity fields, edit their own profile image using their own media, and manage roles; identity bindings and create/delete remain provisioning-only
-- **ClinicStaff**: Platform staff manage clinic assignment and lifecycle; approved and synced staff with private password evidence read their participation-approved clinic; invitation authorization is private and immutable; identity binding, auth sync, and create/delete remain provisioning-only
+- **ClinicStaff**: Platform staff manage assignment and lifecycle. Approved, synced staff with private password evidence can read their participation-approved clinic. The MCP onboarding workflow owns the pending first account and its identity fields. Invitation authorization is private and immutable. Identity binding, auth sync and create/delete remain provisioning-only.
 - **Patients**: Patients can update own profile; no self-create/delete
 - **Posts**: Public reads require publication in the requested locale. Platform staff can read drafts and versions.
 - **Pages**: Public reads require publication in the requested locale. Platform staff can read drafts and versions.
 - **Doctors**: Platform RWDA, including targetless permanent cleanup of trashed clinicless doctors in an active native transaction; clinic RWA current eligible local/group clinics including inactive doctors; public active doctors; averageRating is computed-only; native deletion dependencies remain enforced
 - **ClinicGroups**: Private group metadata; only persisted platform admin/support roles manage groups. Clinic references block deletion.
-- **Clinics**: Platform admin/support create, platform read/update/delete, clinic RW current eligible assignment, patients/anonymous R approved; averageRating is computed-only
+- **Clinics**: Platform admin/support create. Platform staff manage profiles and ordinary deletion. Clinic staff read and update their current eligible assignment. Public readers see approved clinics. Average ratings are computed. Hooks block trash and hard delete while MCP onboarding is submitted. The workflow owns participation decisions and the first contact. Generic MCP responses omit the internal primary contact while the linked application is submitted. Native reads and generic MCP query predicates keep their existing authorization. Payload Admin owns public status for staged profiles.
 - **DoctorSpecialties**: Platform RWDA, clinic RWA own clinic, patients/anonymous R
 - **DoctorTreatments**: Platform RWDA, clinic RWA own clinic, patients/anonymous R
 - **ClinicTreatments**: Platform RWDA; clinic RWA current eligible local/group clinics including inactive offerings; public active offerings; clinic staff cannot delete records or edit the master catalogue
@@ -102,7 +102,7 @@
 - **Tags**: Supporting data - platform write, everyone read
 - **Categories**: Supporting data - platform write, everyone read
 - **Accreditation**: Supporting data - platform write, everyone read
-- **ClinicApplications**: Public submissions use the controlled API route; platform approval authorizes private clinic participation and the named initial staff member; recoverable provisioning reuses both records without automatic reinvitation
+- **ClinicApplications**: Public submissions use the controlled API route and native review. Hooks protect MCP source, intake, decision and linked records from generic writes or deletion. MCP decisions require the current application revision. Approval of an existing account also requires staff assignment authority.
 - **ClinicProfileDrafts**: Private active clinic profile drafts; generic access is denied for all roles. The tenant-scoped Clinic Dashboard service owns draft operations.
 - **PatientClinicInquiries**: Inquiry aggregate; patient and clinic access uses actor-bound, tenant-checked commands instead of generic collection routes
 - **InquiryConversations**: Private inquiry grouping; all access uses checked inquiry communication commands

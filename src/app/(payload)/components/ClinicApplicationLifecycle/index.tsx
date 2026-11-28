@@ -9,7 +9,7 @@ import {
 } from '@/collections/clinicApplications/provisioningLifecycle'
 import type { ClinicApplication } from '@/payload-types'
 
-export function ClinicApplicationLifecyclePanel() {
+export function ClinicApplicationLifecyclePanel({ usesMcpOnboarding }: { usesMcpOnboarding: boolean }) {
   const { initialData } = useDocumentInfo()
   const formState = useFormFields(([fields]) => ({
     provisioningInputs: clinicApplicationProvisioningInputFields.map((field) => fields[field]?.value),
@@ -26,6 +26,7 @@ export function ClinicApplicationLifecyclePanel() {
   const presentation = getClinicApplicationLifecyclePresentation({
     currentData,
     persistedData,
+    usesMcpOnboarding,
   })
 
   return <LifecycleStatusPanel {...presentation} title="Provisioning lifecycle" />

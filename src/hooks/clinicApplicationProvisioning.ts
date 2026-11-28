@@ -8,6 +8,7 @@ import { getCurrentIsoTimestampString } from '@/utilities/timestamps'
 import { hasClinicApplicationProvisioningInputChanged } from '@/collections/clinicApplications/provisioningLifecycle'
 import type { CollectionAfterChangeHook } from 'payload'
 import { requestInitialClinicInvitation } from '@/auth/actions/clinicInvitationRequests'
+import { isTrustedMcpOnboardingApplicationWrite } from '@/features/clinicOnboarding/stagedWriteGuards'
 
 const updateProvisioningState = async (
   req: Parameters<CollectionAfterChangeHook<ClinicApplication>>[0]['req'],
@@ -30,7 +31,13 @@ export const provisionApprovedClinicApplication: CollectionAfterChangeHook<Clini
   previousDoc,
   req,
 }) => {
-  if (req.context?.skipClinicApplicationProvisioning) return doc
+  if (
+    isTrustedMcpOnboardingApplicationWrite(req, doc.id) ||
+    doc.mcpOnboardingRequestKey ||
+    req.context?.skipClinicApplicationProvisioning
+  ) {
+    return doc
+  }
   if (doc.status !== 'approved') return doc
 
   const provisioningStatus = doc.provisioningStatus ?? 'not_started'

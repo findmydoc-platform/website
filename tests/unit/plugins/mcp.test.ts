@@ -1,7 +1,10 @@
-import type { Config } from 'payload'
+import { flattenTopLevelFields, type Config, type Field } from 'payload'
 import { describe, expect, it } from 'vitest'
 import { createMcpPlugin, isPlatformStaffMcpUser, mcpReadCollectionSlugs } from '@/plugins/mcp'
 import { createMockPayload, createMockReq } from '../helpers/testHelpers'
+
+const namedFields = (fields: Field[]): Field[] =>
+  fields.flatMap((field) => (field.type === 'collapsible' ? namedFields(field.fields) : [field]))
 
 describe('MCP principal authorization', () => {
   it.each([
@@ -100,23 +103,29 @@ describe('MCP principal authorization', () => {
     )
   })
 
-  it.each(['clinics', 'doctors', 'clinictreatments', 'doctortreatments', 'doctorspecialties'])(
+  it('persists one editorial image upload grant, disabled by default', async () => {
+    const config = await createMcpPlugin()({ collections: [] } as unknown as Config)
+    const collection = config.collections?.find(({ slug }) => slug === 'payload-mcp-api-keys')
+    const fields = flattenTopLevelFields(collection?.fields, { moveSubFieldsToTop: true })
+    expect(fields.filter(({ accessor }) => accessor === 'blogMedia.upload')).toEqual([
+      expect.objectContaining({ type: 'checkbox', defaultValue: false }),
+    ])
+    expect(fields.some(({ accessor }) => accessor === 'payload-mcp-tool.uploadEditorialImage')).toBe(false)
+  })
+
+  it.each(['posts', 'clinics', 'doctors', 'clinictreatments', 'doctortreatments', 'doctorspecialties'])(
     'offers %s create and update permissions that are disabled by default for each MCP key',
     async (slug) => {
       const config = await createMcpPlugin()({ collections: [] } as unknown as Config)
       const collection = config.collections?.find(({ slug }) => slug === 'payload-mcp-api-keys')
 
-      expect(collection?.fields).toEqual(
+      expect(namedFields(collection?.fields ?? [])).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
+            name: slug,
             fields: expect.arrayContaining([
-              expect.objectContaining({
-                name: slug,
-                fields: expect.arrayContaining([
-                  expect.objectContaining({ name: 'create', defaultValue: false }),
-                  expect.objectContaining({ name: 'update', defaultValue: false }),
-                ]),
-              }),
+              expect.objectContaining({ name: 'create', defaultValue: false }),
+              expect.objectContaining({ name: 'update', defaultValue: false }),
             ]),
           }),
         ]),

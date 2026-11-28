@@ -11,6 +11,29 @@ an already publicly approved clinic. Newly created clinics receive `pending` unl
 sets `approved`. Explicit participation rejection or disabling takes precedence over public publication. Public reads,
 listing, media visibility, and discovery retain their existing publication filters.
 
+## MCP staging
+
+The clinic onboarding tool creates a submitted application and a pending unpublished clinic in a single Payload
+transaction. The application links the clinic and initial staff record and stores the selected account mode. The unique
+request key is scoped to the platform key owner. The workflow owns those links and source fields.
+
+In new-account mode, staging creates one pending staff principal with a local assignment. The principal has no provider
+identity, activation evidence or invitation. Intake corrections to the first contact flow to the clinic's internal
+contact and to the pending principal. Approval commits the application decision and clinic participation together
+with the first staff approval. Identity preparation then binds the identity to the same principal in a separate
+transaction. The invitation command reads the committed preparation status and uses the principal's durable invitation
+authorization to prevent duplicate invitations.
+
+In existing-account mode, staging and correction record an explicitly selected staff ID through normal staff read
+access. The principal must be approved, synchronized and activated for the bound identity. Its assignment must be
+explicitly unassigned with neither a clinic nor a group. Approval uses the existing staff assignment authority and
+rechecks eligibility under the personal authorization barrier. The native local assignment shares a transaction with
+the application decision and clinic participation. It preserves the principal's existing identity and activation and
+prepares no invitation. A conflict leaves the application open and participation pending.
+
+Rejection records the reason and preserves the staff record in either mode. Both decisions leave publication to the
+existing Admin workflow.
+
 ## Private completion boundary
 
 `clinicStaff.accountCompletion` stores source, Supabase subject, clinic ID, evidence time, observation time, and an optional

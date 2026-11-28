@@ -2779,6 +2779,8 @@ export interface ClinicApplication {
    * Main specialties selected during registration
    */
   medicalSpecialties: (number | MedicalSpecialty)[];
+  mcpOnboardingRequestKey?: string | null;
+  mcpOnboardingStaffMode?: ('new_account' | 'existing_account') | null;
   /**
    * Application review status
    */
@@ -2788,7 +2790,7 @@ export interface ClinicApplication {
    */
   reviewNotes?: string | null;
   /**
-   * Provisioning result; saving a failed approved application retries the process
+   * Result of preparing the first staff account
    */
   provisioningStatus?: ('not_started' | 'failed' | 'completed') | null;
   /**
@@ -2796,7 +2798,7 @@ export interface ClinicApplication {
    */
   provisioningErrorCode?: ('record_failed' | 'auth_failed' | 'binding_failed') | null;
   /**
-   * Clinic and staff records created after approval
+   * Clinic and initial staff records linked to this application
    */
   linkedRecords?: {
     clinic?: (number | null) | Clinic;
@@ -3827,29 +3829,53 @@ export interface PayloadMcpApiKey {
   };
   posts?: {
     /**
-     * Allow clients to find posts.
+     * Find posts and read available drafts.
      */
     find?: boolean | null;
     /**
-     * Allow clients to create posts.
+     * Start a German draft or create a post directly.
      */
     create?: boolean | null;
     /**
-     * Allow clients to update posts.
+     * Revise drafts and publish the selected language.
      */
     update?: boolean | null;
   };
-  clinics?: {
+  blogMedia?: {
     /**
-     * Allow clients to find clinics.
+     * Upload an image with alt text. Limit of 3.1 MB per file.
      */
-    find?: boolean | null;
+    upload?: boolean | null;
+  };
+  clinicOnboarding?: {
     /**
-     * Allow clients to create clinics.
+     * View intake and status. Find eligible existing staff accounts.
+     */
+    read?: boolean | null;
+    /**
+     * Stage an unpublished profile with a website, main specialty and first staff member.
      */
     create?: boolean | null;
     /**
-     * Allow clients to update clinics.
+     * Update intake details or the staff selection before a decision.
+     */
+    correct?: boolean | null;
+    /**
+     * Approve or reject Dashboard access. Approval starts account setup or links existing staff.
+     */
+    decide?: boolean | null;
+  };
+  clinics?: {
+    /**
+     * View profile details and public listing status.
+     */
+    find?: boolean | null;
+    /**
+     * Create a standalone profile. Use Onboarding to include the first staff member.
+     */
+    create?: boolean | null;
+    /**
+     * Change address, opening hours, website and other public details.
      */
     update?: boolean | null;
   };
@@ -5469,6 +5495,8 @@ export interface ClinicApplicationsSelect<T extends boolean = true> {
   contactRole?: T;
   clinicWebsite?: T;
   medicalSpecialties?: T;
+  mcpOnboardingRequestKey?: T;
+  mcpOnboardingStaffMode?: T;
   status?: T;
   reviewNotes?: T;
   provisioningStatus?: T;
@@ -6567,6 +6595,19 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
         find?: T;
         create?: T;
         update?: T;
+      };
+  blogMedia?:
+    | T
+    | {
+        upload?: T;
+      };
+  clinicOnboarding?:
+    | T
+    | {
+        read?: T;
+        create?: T;
+        correct?: T;
+        decide?: T;
       };
   clinics?:
     | T

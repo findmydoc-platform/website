@@ -28,8 +28,11 @@ describe('Clinic lifecycle Admin contract', () => {
     expect(getField(staffFields, 'lifecycleGuidance')?.admin?.components?.Field).toBe(
       '@/app/(payload)/components/ClinicStaffLifecycle#ClinicStaffLifecyclePanel',
     )
+    expect(getField(applicationFields, 'status')?.admin?.components?.Field).toBe(
+      '@/app/(payload)/components/ClinicApplicationLifecycle/fields#ClinicApplicationStatusField',
+    )
     expect(getField(applicationFields, 'lifecycleGuidance')?.admin?.components?.Field).toBe(
-      '@/app/(payload)/components/ClinicApplicationLifecycle#ClinicApplicationLifecyclePanel',
+      '@/app/(payload)/components/ClinicApplicationLifecycle/fields#ClinicApplicationLifecycleField',
     )
   })
 

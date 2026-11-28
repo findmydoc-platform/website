@@ -4,6 +4,8 @@ import { z } from 'zod'
 import { NextRequest, NextResponse } from 'next/server'
 import { applyPrivateAuthHeaders } from '@/auth/utilities/tokenHashCallback'
 import { supabaseEmailTokenHashSchema } from '@/auth/utilities/supabaseEmailTokenHash'
+import { AUTH_CONFIRMATION_PATH, localizedPatientAuthPath, RECOVERY_COMPLETION_PATH } from '@/i18n/patientAuthPath'
+import { patientAuthLocaleSchema } from './patientAuthLocale'
 import { preparationCookie } from '@/features/inquiryPreparations/context'
 import { InvalidWebsiteRecovery, RecoveryPasswordRejected, websiteRecoveryAuthority } from './websiteRecoveryCompletion'
 import {
@@ -16,20 +18,25 @@ import {
 } from './websiteRecoveryContext'
 
 export async function openWebsiteRecovery(request: NextRequest) {
-  const response = NextResponse.redirect(new URL('/auth/confirm?type=recovery', request.nextUrl.origin), {
-    status: 303,
-  })
-  clearWebsiteRecoveryContext(response)
   const params = request.nextUrl.searchParams
+  const locale = patientAuthLocaleSchema.safeParse(params.get('locale'))
+  const confirmUrl = new URL(
+    localizedPatientAuthPath(AUTH_CONFIRMATION_PATH, locale.data ?? 'de'),
+    request.nextUrl.origin,
+  )
+  confirmUrl.searchParams.set('type', 'recovery')
+  const response = NextResponse.redirect(confirmUrl, { status: 303 })
+  clearWebsiteRecoveryContext(response)
   const id = params.get('authActionId') ?? ''
   const token = params.get('token_hash') ?? ''
   if (
     params.get('type') !== 'recovery' ||
-    params.get('next') !== '/auth/password/reset/complete' ||
+    params.get('next') !== RECOVERY_COMPLETION_PATH ||
     !/^[1-9]\d*$/.test(id) ||
     !Number.isSafeInteger(Number(id)) ||
     !supabaseEmailTokenHashSchema.safeParse(token).success ||
-    [...params.keys()].some((key) => !['authActionId', 'token_hash', 'type', 'next'].includes(key)) ||
+    (params.has('locale') && (!locale.success || params.getAll('locale').length !== 1)) ||
+    [...params.keys()].some((key) => !['authActionId', 'token_hash', 'type', 'next', 'locale'].includes(key)) ||
     ['authActionId', 'token_hash', 'type', 'next'].some((key) => params.getAll(key).length !== 1)
   )
     return applyPrivateAuthHeaders(response)
@@ -39,8 +46,10 @@ export async function openWebsiteRecovery(request: NextRequest) {
     let flow: WebsiteRecoveryContext['flow'] = 'patient-recovery'
     try {
       const { action } = await authority.load(Number(id))
-      subject = action.supabaseSubject!
-      flow = action.actionType as WebsiteRecoveryContext['flow']
+      if ((action.locale ?? undefined) === locale.data) {
+        subject = action.supabaseSubject!
+        flow = action.actionType as WebsiteRecoveryContext['flow']
+      }
     } catch {
       /* Decoy context conceals unknown or ineligible actions. */
     }

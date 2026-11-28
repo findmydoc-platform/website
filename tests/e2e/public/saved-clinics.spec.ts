@@ -19,7 +19,7 @@ const languages = [
     alternatePrefix: '/en',
     submit: 'Anmelden',
     emailLabel: 'E-Mail',
-    passwordLabel: 'Passwort',
+    passwordLabel: 'Passwort', // pragma: allowlist secret
     save: (clinic: string) => `${clinic} speichern`,
     remove: (clinic: string) => `${clinic} aus gespeicherten Kliniken entfernen`,
   },
@@ -31,7 +31,7 @@ const languages = [
     alternatePrefix: '',
     submit: 'Sign in',
     emailLabel: 'Email',
-    passwordLabel: 'Password',
+    passwordLabel: 'Password', // pragma: allowlist secret
     save: (clinic: string) => `Save ${clinic} to saved clinics`,
     remove: (clinic: string) => `Remove ${clinic} from saved clinics`,
   },

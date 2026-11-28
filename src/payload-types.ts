@@ -1051,6 +1051,10 @@ export interface Treatment {
    */
   name: string;
   /**
+   * Patient-facing label in the selected language
+   */
+  displayName?: string | null;
+  /**
    * Tags for this treatment
    */
   tags?: (number | Tag)[] | null;
@@ -1117,6 +1121,10 @@ export interface MedicalSpecialty {
    * Specialty name
    */
   name: string;
+  /**
+   * Patient-facing label in the selected language
+   */
+  displayName?: string | null;
   /**
    * Short explanation of this specialty
    */
@@ -2200,6 +2208,10 @@ export interface City {
    * City name
    */
   name: string;
+  /**
+   * Patient-facing label in the selected language
+   */
+  displayName?: string | null;
   /**
    * IATA airport code
    */
@@ -6096,6 +6108,7 @@ export interface AccreditationSelect<T extends boolean = true> {
 export interface MedicalSpecialtiesSelect<T extends boolean = true> {
   stableId?: T;
   name?: T;
+  displayName?: T;
   description?: T;
   iconKey?: T;
   featureImage?: T;
@@ -6120,6 +6133,7 @@ export interface MedicalSpecialtiesSelect<T extends boolean = true> {
 export interface TreatmentsSelect<T extends boolean = true> {
   stableId?: T;
   name?: T;
+  displayName?: T;
   tags?: T;
   description?: T;
   medicalSpecialty?: T;
@@ -6293,6 +6307,7 @@ export interface CountriesSelect<T extends boolean = true> {
 export interface CitiesSelect<T extends boolean = true> {
   stableId?: T;
   name?: T;
+  displayName?: T;
   airportcode?: T;
   coordinates?: T;
   country?: T;

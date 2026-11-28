@@ -3,13 +3,13 @@ import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import { getPayload } from 'payload'
 
+import { getListingComparisonTranslator } from '@/features/listingComparison/copy'
 import { findFavoriteClinicStateRecord, resolveFavoriteClinicAuthContext } from '@/features/favorites/server'
 import { buildIndexingMetadata, resolveListingComparisonIndexing } from '@/features/searchIndexing'
 import { LISTING_COMPARISON_PATHS } from '@/i18n/listingComparisonPath'
 import type { UiCopyLocale } from '@/i18n/requestLocale'
 import { buildFreshnessMetadata } from '@/utilities/freshness'
 import { getCachedListingComparisonServerData } from '@/utilities/listingComparison/serverData'
-import { DISCLAIMER_COPY } from '@/utilities/legal/disclaimers'
 import { JsonLdScript, buildListingComparisonJsonLd } from '@/utilities/structuredData'
 
 import type { ListingComparisonTrust } from './ListingComparisonPage.client'
@@ -24,11 +24,23 @@ export async function listingComparisonMetadata(
   locale: UiCopyLocale,
 ): Promise<Metadata> {
   const searchParams = (await searchParamsPromise) ?? {}
-  const listingData = await getCachedListingComparisonServerData(searchParams)
+  const listingData = await getCachedListingComparisonServerData(searchParams, locale)
   const indexingPolicy = resolveListingComparisonIndexing(searchParams, locale)
 
+  const t = getListingComparisonTranslator(locale)
+  const indexingMetadata = buildIndexingMetadata(indexingPolicy)
   return {
-    ...buildIndexingMetadata(indexingPolicy),
+    ...indexingMetadata,
+    title: t('title'),
+    description: t('subtitle'),
+    ...(indexingPolicy.reason === 'canonical-route'
+      ? {
+          alternates: {
+            ...indexingMetadata.alternates,
+            languages: { ...LISTING_COMPARISON_PATHS, 'x-default': LISTING_COMPARISON_PATHS.de },
+          },
+        }
+      : {}),
     ...buildFreshnessMetadata(listingData.freshness),
   }
 }
@@ -40,7 +52,7 @@ export async function renderListingComparisonPage(
   const searchParams = (await searchParamsPromise) ?? {}
   const requestHeaders = await headers()
   const payload = await getPayload({ config: configPromise })
-  const listingData = await getCachedListingComparisonServerData(searchParams)
+  const listingData = await getCachedListingComparisonServerData(searchParams, locale)
   const indexingPolicy = resolveListingComparisonIndexing(searchParams, locale)
   const favoriteAuthContext = await resolveFavoriteClinicAuthContext({
     payload,
@@ -55,27 +67,19 @@ export async function renderListingComparisonPage(
       })
     : {}
 
-  const breadcrumbs = listingData.specialtyContext.breadcrumbs.map((item) => ({
-    ...item,
-    href:
-      item.href === LISTING_COMPARISON_PATHS.de || item.href.startsWith(`${LISTING_COMPARISON_PATHS.de}?`)
-        ? item.href.replace(LISTING_COMPARISON_PATHS.de, LISTING_COMPARISON_PATHS[locale])
-        : item.href,
-  }))
-  const primarySpecialty = listingData.specialtyContext.selected[0]
+  const t = getListingComparisonTranslator(locale)
+  const { breadcrumbs, selected } = listingData.specialtyContext
+  const primarySpecialty = selected[0]
   const specialtySuffix = primarySpecialty
-    ? `Currently focused on ${primarySpecialty.label}${listingData.specialtyContext.selected.length > 1 ? ' and related specialties' : ''}.`
-    : ''
-  const verifiedClinicLabel = listingData.metrics.verifiedClinics === 1 ? 'verified clinic' : 'verified clinics'
-  const treatmentTypesLabel = listingData.metrics.treatmentTypes === 1 ? 'treatment type' : 'treatment types'
-  const citiesLabel = listingData.metrics.cities === 1 ? 'city' : 'cities'
-  const priceEntriesLabel = listingData.metrics.priceEntries === 1 ? 'price entry' : 'price entries'
+    ? t(selected.length > 1 ? 'specialtyFocusRelated' : 'specialtyFocus', { specialty: primarySpecialty.label })
+    : null
+  const { verifiedClinics, treatmentTypes, cities, priceEntries } = listingData.metrics
   const trustStats = (
     [
-      { value: listingData.metrics.verifiedClinics, label: verifiedClinicLabel, icon: 'hospital' },
-      { value: listingData.metrics.treatmentTypes, label: treatmentTypesLabel, icon: 'badgeCheck' },
-      { value: listingData.metrics.cities, label: citiesLabel, icon: 'mapPin' },
-      { value: listingData.metrics.priceEntries, label: priceEntriesLabel, icon: 'fileText' },
+      { value: verifiedClinics, label: t('verifiedClinics', { count: verifiedClinics }), icon: 'hospital' },
+      { value: treatmentTypes, label: t('treatmentTypes', { count: treatmentTypes }), icon: 'badgeCheck' },
+      { value: cities, label: t('cities', { count: cities }), icon: 'mapPin' },
+      { value: priceEntries, label: t('priceEntries', { count: priceEntries }), icon: 'fileText' },
     ] satisfies ListingComparisonTrust['stats']
   ).filter((stat) => stat.value > 0)
 
@@ -84,6 +88,8 @@ export async function renderListingComparisonPage(
       <JsonLdScript
         data={buildListingComparisonJsonLd({
           breadcrumbs,
+          canonicalPath: indexingPolicy.canonicalPath,
+          listName: t('title'),
           clinics: listingData.results,
           isCanonicalRoute: indexingPolicy.reason === 'canonical-route',
         })}
@@ -91,13 +97,9 @@ export async function renderListingComparisonPage(
       <ListingComparisonPageClient
         locale={locale}
         hero={{
-          title: locale === 'de' ? 'Klinikpreise vergleichen' : 'Compare clinic prices',
-          subtitle: `Transparent pricing for medical treatments near you${specialtySuffix ? `\n${specialtySuffix}` : ''}`,
-          features: [
-            `${listingData.metrics.verifiedClinics} ${verifiedClinicLabel}`,
-            'Reviewed prices',
-            'Free comparison',
-          ],
+          title: t('title'),
+          subtitle: [t('subtitle'), specialtySuffix].filter(Boolean).join('\n'),
+          features: [t('verifiedClinicCount', { count: verifiedClinics }), t('reviewedPrices'), t('freeComparison')],
           bulletStyle: 'circle',
         }}
         filterOptions={listingData.filterOptions}
@@ -111,14 +113,13 @@ export async function renderListingComparisonPage(
           favoriteStateByClinicId,
         }}
         trust={{
-          title: 'A clearer way to compare clinics',
-          subtitle:
-            'We make clinic profiles easier to compare by showing key treatment, location, and price fields in one place.',
+          title: t('trustTitle'),
+          subtitle: t('trustDescription'),
           stats: trustStats,
-          badges: ['Verified clinic profiles', 'Treatment types', 'Locations', 'Price fields where available'],
+          badges: [t('verifiedProfiles'), t('treatmentTypesBadge'), t('locations'), t('availablePrices')],
           disclaimer: {
-            copy: DISCLAIMER_COPY.comparisonPages,
-            routeLabel: 'Comparison pages',
+            copy: t('disclaimer'),
+            accessibleLabel: t('disclaimerRouteLabel'),
             variant: 'inline-note',
             surface: 'muted',
             size: 'compact',

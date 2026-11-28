@@ -478,3 +478,54 @@ describe('getListingComparisonServerData (contract)', () => {
     expect(dynamicCalls.length).toBeGreaterThan(2)
   })
 })
+
+describe('German and English comparison catalog', () => {
+  it('resolves shared filter values and displays the same clinic and taxonomy records in both languages', async () => {
+    const data: MockCollectionData = {
+      ...baseData,
+      cities: baseData.cities.map((record) =>
+        record.id === 11 ? { ...record, displayName: { de: 'München', en: 'Munich' } } : record,
+      ),
+      treatments: baseData.treatments.map((record) =>
+        record.id === 101 ? { ...record, displayName: { de: 'Nasenkorrektur', en: 'Rhinoplasty' } } : record,
+      ),
+      'medical-specialties': baseData['medical-specialties'].map((record) =>
+        record.id === 2 ? { ...record, displayName: { de: 'Gesichtschirurgie', en: 'Facial surgery' } } : record,
+      ),
+      clinics: baseData.clinics.map((record) =>
+        record.id === 202
+          ? {
+              ...record,
+              address: { city: { id: 11, name: 'Munich' }, country: { id: 20, name: 'Germany', isoCode: 'DE' } },
+            }
+          : record,
+      ),
+    }
+    const payload = createMockPayload(data)
+    const filters = { location: 'Munich', service: 'Nose job' }
+
+    const german = await getListingComparisonServerData(payload, filters, 'de')
+    const english = await getListingComparisonServerData(payload, filters, 'en')
+
+    expect(german.queryState).toEqual(english.queryState)
+    expect(german.queryState).toMatchObject({ cities: ['11'], treatments: ['101'] })
+    expect(german.results).toMatchObject([{ id: 202, location: 'München, Deutschland' }])
+    expect(english.results).toMatchObject([{ id: 202, location: 'Munich, Germany' }])
+    expect(german.filterOptions.treatments).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          specialty: expect.objectContaining({ value: '2', label: 'Gesichtschirurgie' }),
+          options: expect.arrayContaining([expect.objectContaining({ value: '101', plainLabel: 'Nasenkorrektur' })]),
+        }),
+      ]),
+    )
+    expect(english.filterOptions.treatments).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          specialty: expect.objectContaining({ value: '2', label: 'Facial surgery' }),
+          options: expect.arrayContaining([expect.objectContaining({ value: '101', plainLabel: 'Rhinoplasty' })]),
+        }),
+      ]),
+    )
+  })
+})

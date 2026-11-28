@@ -13,6 +13,7 @@ import React from 'react'
 
 export type PaginationProps = {
   className?: string
+  copy?: { label: string; next: string; previous: string; nextLabel: string; previousLabel: string }
   page: number
   totalPages: number
   onNavigate?: (path: string) => void
@@ -20,7 +21,7 @@ export type PaginationProps = {
 }
 
 export const Pagination: React.FC<PaginationProps> = (props) => {
-  const { className, page, totalPages, onNavigate, getPathForPage } = props
+  const { className, copy, page, totalPages, onNavigate, getPathForPage } = props
   const hasNextPage = page < totalPages
   const hasPrevPage = page > 1
 
@@ -41,10 +42,12 @@ export const Pagination: React.FC<PaginationProps> = (props) => {
 
   return (
     <div className={cn('my-12', className)}>
-      <PaginationComponent>
+      <PaginationComponent aria-label={copy?.label ?? 'pagination'}>
         <PaginationContent>
           <PaginationItem>
             <PaginationPrevious
+              label={copy?.previous}
+              aria-label={copy?.previousLabel ?? 'Go to previous page'}
               disabled={!hasPrevPage}
               onClick={() => {
                 if (hasPrevPage) {
@@ -103,6 +106,8 @@ export const Pagination: React.FC<PaginationProps> = (props) => {
 
           <PaginationItem>
             <PaginationNext
+              label={copy?.next}
+              aria-label={copy?.nextLabel ?? 'Go to next page'}
               disabled={!hasNextPage}
               onClick={() => {
                 if (hasNextPage) {

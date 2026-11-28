@@ -5,7 +5,7 @@ import { type VariantProps, cva } from 'class-variance-authority'
 import { cn } from '@/utilities/ui'
 
 const verificationBadgeVariants = cva(
-  'inline-flex items-center gap-1 rounded-md px-3 py-1 text-xs font-semibold leading-4 w-20 justify-center',
+  'inline-flex items-center gap-1 rounded-md px-3 py-1 text-xs font-semibold leading-4 w-fit min-w-20 justify-center',
   {
     defaultVariants: {
       variant: 'unverified',

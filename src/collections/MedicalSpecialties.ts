@@ -48,6 +48,14 @@ export const MedicalSpecialties: CollectionConfig = {
       },
     },
     {
+      name: 'displayName',
+      type: 'text',
+      localized: true,
+      admin: {
+        description: 'Patient-facing label in the selected language',
+      },
+    },
+    {
       name: 'description',
       type: 'textarea',
       required: false,

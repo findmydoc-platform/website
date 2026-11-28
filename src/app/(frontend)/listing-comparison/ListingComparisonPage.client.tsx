@@ -9,6 +9,7 @@ import { ListingComparison } from '@/components/templates/ListingComparison/Comp
 import { FavoriteClinicAction } from '@/features/favorites/FavoriteClinicAction.client'
 import { buildPatientLoginHref } from '@/features/favorites/redirects'
 import { useLanguageSwitchRoute } from '@/features/languageSwitch/LanguageSwitchRouteProvider.client'
+import { getListingComparisonTranslator } from '@/features/listingComparison/copy'
 import type { UiCopyLocale } from '@/i18n/requestLocale'
 import { SortControl } from '@/components/molecules/SortControl'
 import { Pagination } from '@/components/molecules/Pagination'
@@ -18,7 +19,7 @@ import {
   LISTING_COMPARISON_PRICE_MIN_DEFAULT,
   type ListingComparisonQueryState,
 } from '@/utilities/listingComparison/queryState'
-import { SORT_OPTIONS } from '@/utilities/listingComparison/sort'
+import { SORT_OPTIONS, type SortOption } from '@/utilities/listingComparison/sort'
 import { normalizePriceBounds, type PriceBounds } from '@/utilities/listingComparison/priceRange'
 import { ListingComparisonFilters } from './ListingComparisonFilters.client'
 import { useListingComparisonUrlState } from './useListingComparisonUrlState'
@@ -54,6 +55,7 @@ type ListingSpecialtyOption = ListingFilterOption & {
 
 type ListingTreatmentOption = ListingFilterOption & {
   plainLabel: string
+  searchLabels?: string[]
 }
 
 type ListingTreatmentGroup = {
@@ -81,7 +83,7 @@ export type ListingComparisonTrust = {
   badges: string[]
   disclaimer?: {
     copy: React.ReactNode
-    routeLabel?: string
+    accessibleLabel?: string
     variant?: 'inline-note' | 'slim-notice-bar' | 'collapsible-disclosure'
     surface?: 'light' | 'muted'
     size?: 'default' | 'compact'
@@ -123,6 +125,14 @@ const iconMap = {
   fileText: FileText,
 } satisfies Record<ListingComparisonTrustStatInput['icon'], React.ComponentType>
 
+const sortLabelKeys = {
+  rank: 'sortRank',
+  'price-asc': 'sortPriceAscending',
+  'price-desc': 'sortPriceDescending',
+  'rating-desc': 'sortHighestRated',
+  'name-asc': 'sortName',
+} as const satisfies Record<SortOption, string>
+
 export function ListingComparisonPageClient({
   locale,
   hero,
@@ -135,6 +145,11 @@ export function ListingComparisonPageClient({
   pagination,
   specialtyContext,
 }: ListingComparisonPageClientProps) {
+  const t = getListingComparisonTranslator(locale)
+  const sortOptions = React.useMemo(
+    () => SORT_OPTIONS.map(({ value }) => ({ value, label: t(sortLabelKeys[value]) })),
+    [t],
+  )
   const pathname = usePathname()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -202,6 +217,15 @@ export function ListingComparisonPageClient({
   return (
     <ListingComparison
       hero={hero}
+      locale={locale}
+      copy={{
+        skipToResults: t('skipToResults'),
+        filtersAndResults: t('filtersAndResults'),
+        filters: t('filters'),
+        results: t('results'),
+        resultCount: t('resultCount', { visible: results.length, total: pagination.totalResults }),
+        jumpToFilters: t('jumpToFilters'),
+      }}
       filters={
         <ListingComparisonFilters
           key={filterResetSignature}
@@ -252,7 +276,9 @@ export function ListingComparisonPageClient({
         )
       }}
       resultsContext={
-        specialtyContext.breadcrumbs.length > 0 ? <Breadcrumb items={specialtyContext.breadcrumbs} /> : null
+        specialtyContext.breadcrumbs.length > 0 ? (
+          <Breadcrumb label={t('breadcrumb')} items={specialtyContext.breadcrumbs} />
+        ) : null
       }
       sortControl={
         <div className="flex flex-wrap items-center justify-end gap-2">
@@ -264,23 +290,30 @@ export function ListingComparisonPageClient({
                 clearSpecialtySelection()
               }}
               className="inline-flex items-center rounded-full border border-border bg-background px-3 py-1 text-xs font-medium text-foreground transition-colors hover:bg-muted"
-              title="Remove active specialty filter"
-              aria-label={`Remove ${specialtyChipLabel} specialty filter`}
+              title={t('removeSpecialtyTitle')}
+              aria-label={t('removeSpecialty', { specialty: specialtyChipLabel })}
             >
-              Specialty: {specialtyChipLabel} ×
+              {t('specialtyChip', { specialty: specialtyChipLabel })} ×
             </button>
           ) : null}
-          <SortControl value={sortSelection} onValueChange={setSortSelection} options={SORT_OPTIONS} />
+          <SortControl label={t('sort')} value={sortSelection} onValueChange={setSortSelection} options={sortOptions} />
         </div>
       }
       emptyState={
         <div className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground">
-          No clinics match these filters.
+          {t('noClinics')}
         </div>
       }
       resultsFooter={
         pagination.totalPages > 1 ? (
           <Pagination
+            copy={{
+              label: t('pagination'),
+              next: t('nextPage'),
+              previous: t('previousPage'),
+              nextLabel: t('nextPageLabel'),
+              previousLabel: t('previousPageLabel'),
+            }}
             page={pagination.page}
             totalPages={pagination.totalPages}
             getPathForPage={buildPageHref}
@@ -292,6 +325,7 @@ export function ListingComparisonPageClient({
         trust && trust.stats.length >= 3
           ? {
               ...trust,
+              numberLocale: locale,
               stats: trust.stats.map((stat) => {
                 const Icon = iconMap[stat.icon]
 

@@ -12,6 +12,7 @@ export type RatingStarsProps = {
   size?: 'sm' | 'lg'
   starClassName?: string
   valueClassName?: string
+  label?: string
 }
 
 export function RatingStars({
@@ -23,6 +24,7 @@ export function RatingStars({
   size = 'sm',
   starClassName,
   valueClassName,
+  label,
 }: RatingStarsProps) {
   const clamped = Math.max(0, Math.min(5, value))
   const filled = Math.round(clamped)
@@ -30,7 +32,7 @@ export function RatingStars({
   return (
     <div
       className={cn('inline-flex items-center gap-1', className)}
-      aria-label={`Rating ${clamped.toFixed(1)} out of 5`}
+      aria-label={label ?? `Rating ${clamped.toFixed(1)} out of 5`}
       role="img"
     >
       {Array.from({ length: 5 }).map((_, idx) => {
@@ -65,9 +67,11 @@ export type RatingSummaryProps = {
   className?: string
   variant?: RatingSummaryVariant
   countFormat?: RatingSummaryCountFormat
+  ratingLabel?: string
+  locale?: string
 }
 
-function formatCount(count: number, format: RatingSummaryCountFormat) {
+function formatCount(count: string, format: RatingSummaryCountFormat) {
   return format === 'reviews' ? `${count} Reviews` : `(${count})`
 }
 
@@ -77,15 +81,19 @@ export function RatingSummary({
   className,
   variant = 'inline',
   countFormat = 'paren',
+  ratingLabel,
+  locale,
 }: RatingSummaryProps) {
-  const valueText = value.toFixed(1)
-  const countText = formatCount(count, countFormat)
+  const valueText = locale
+    ? value.toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+    : value.toFixed(1)
+  const countText = formatCount(locale ? count.toLocaleString(locale) : String(count), countFormat)
 
   if (variant === 'stacked') {
     return (
       <div className={cn('flex flex-col items-end text-right', className)}>
         <div className="flex items-center justify-end gap-2">
-          <RatingStars value={value} className="justify-end gap-1" />
+          <RatingStars value={value} label={ratingLabel} className="justify-end gap-1" />
           <div className="text-xs text-secondary/60">{valueText}/5</div>
         </div>
         <div className="mt-0.5 text-xs text-secondary/60">{countText}</div>
@@ -95,7 +103,7 @@ export function RatingSummary({
 
   return (
     <div className={cn('inline-flex items-center gap-2 text-sm', className)}>
-      <RatingStars value={value} className="gap-1" />
+      <RatingStars value={value} label={ratingLabel} className="gap-1" />
       <span className="text-sm font-medium text-supporting-foreground">
         {valueText} {countText}
       </span>

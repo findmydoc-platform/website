@@ -52,6 +52,7 @@ const useListingFiltersContext = () => {
 type RootProps = {
   children: React.ReactNode
   className?: string
+  heading?: string
   value?: Partial<ListingFiltersValue>
   defaultValue?: Partial<ListingFiltersValue>
   defaultPriceRange?: [number, number]
@@ -66,6 +67,7 @@ type RootProps = {
 const Root = ({
   children,
   className,
+  heading = 'Filter',
   value,
   defaultValue,
   defaultPriceRange = [0, 20000],
@@ -169,7 +171,7 @@ const Root = ({
     >
       <aside className={cn('min-w-0 space-y-8 rounded-2xl bg-background p-5 shadow-sm sm:p-6', className)}>
         <Heading as="h2" align="left" size="content-section" variant="navy">
-          Filter
+          {heading}
         </Heading>
         {children}
       </aside>
@@ -177,7 +179,27 @@ const Root = ({
   )
 }
 
-const Price = ({ className, min, max, step }: { className?: string; min?: number; max?: number; step?: number }) => {
+const Price = ({
+  className,
+  min,
+  max,
+  step,
+  label = 'Price range',
+  minimumLabel = 'Minimum price',
+  maximumLabel = 'Maximum price',
+  formatValue = (value) => `${value.toLocaleString('en-US')} euros`,
+  locale,
+}: {
+  className?: string
+  min?: number
+  max?: number
+  step?: number
+  label?: string
+  minimumLabel?: string
+  maximumLabel?: string
+  formatValue?: (value: number) => string
+  locale?: string
+}) => {
   const { priceRange, setPriceRange, priceBounds, priceStep } = useListingFiltersContext()
   const resolvedMin = typeof min === 'number' && Number.isFinite(min) ? Math.max(min, 0) : priceBounds.min
   const resolvedMaxInput = typeof max === 'number' && Number.isFinite(max) ? max : priceBounds.max
@@ -191,9 +213,14 @@ const Price = ({ className, min, max, step }: { className?: string; min?: number
     setPriceRange(displayedRange)
   }, [displayedRange, priceRange, setPriceRange])
 
+  const currency = locale
+    ? new Intl.NumberFormat(locale, { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
+    : null
+  const formatDisplay = (value: number) => currency?.format(value) ?? `${value.toLocaleString('en-US')}€`
+
   return (
     <section className={cn('space-y-3', className)}>
-      <Label className="text-sm font-semibold">Price range</Label>
+      <Label className="text-sm font-semibold">{label}</Label>
       <Slider
         min={resolvedMin}
         max={resolvedMax}
@@ -206,12 +233,12 @@ const Price = ({ className, min, max, step }: { className?: string; min?: number
             )
           }
         }}
-        thumbLabels={['Minimum price', 'Maximum price']}
-        getThumbValueText={(value) => `${value.toLocaleString('en-US')} euros`}
+        thumbLabels={[minimumLabel, maximumLabel]}
+        getThumbValueText={formatValue}
       />
       <div className="flex items-center justify-between text-sm font-medium text-supporting-foreground">
-        <span>{displayedRange[0].toLocaleString('en-US')}€</span>
-        <span>{displayedRange[1].toLocaleString('en-US')}€</span>
+        <span>{formatDisplay(displayedRange[0])}</span>
+        <span>{formatDisplay(displayedRange[1])}</span>
       </div>
     </section>
   )
@@ -219,12 +246,28 @@ const Price = ({ className, min, max, step }: { className?: string; min?: number
 
 const CheckboxGroup = CheckboxGroupMolecule
 
-const Rating = ({ className }: { className?: string }) => {
+const Rating = ({
+  className,
+  label,
+  allLabel,
+  locale,
+}: {
+  className?: string
+  label?: string
+  allLabel?: string
+  locale?: string
+}) => {
   const { selectedRating, setSelectedRating } = useListingFiltersContext()
 
   return (
     <div className={className}>
-      <RatingFilterMolecule value={selectedRating} onChange={setSelectedRating} />
+      <RatingFilterMolecule
+        value={selectedRating}
+        onChange={setSelectedRating}
+        label={label}
+        allLabel={allLabel}
+        locale={locale}
+      />
     </div>
   )
 }

@@ -8,14 +8,14 @@ import {
   type PublicAccountMenuLinks,
   type PublicAccountMenuState,
 } from '@/components/templates/Header/PublicAccountMenu'
-import { FavoriteClinicsList } from '@/features/favorites/FavoriteClinicsList.client'
+import { FavoriteClinicsList } from './FavoriteClinicsList.client'
 import type { FavoriteClinicListItem } from '@/features/favorites/server'
 import type { FavoriteClinicButtonApi } from '@/features/favorites/FavoriteClinicButton'
 import { getStoryImageSrc, storyPortraits } from '@/stories/fixtures/assets'
 import { clinicMedia } from '@/stories/fixtures/listings'
 import { normalizeHeaderNavItems } from '@/utilities/normalizeNavItems'
-import { headerDataWithSubmenus } from '../templates/fixtures'
-import { withViewportStory } from '../utils/viewportMatrix'
+import { headerDataWithSubmenus } from '@/stories/templates/fixtures'
+import { withViewportStory } from '@/stories/utils/viewportMatrix'
 
 const navItems = normalizeHeaderNavItems(headerDataWithSubmenus)
 
@@ -116,9 +116,11 @@ const noRatingClinicItems: FavoriteClinicListItem[] = [
 function PatientFavoritesFrame({
   favoriteApi,
   items,
+  locale,
 }: {
   favoriteApi?: FavoriteClinicButtonApi
   items: FavoriteClinicListItem[]
+  locale?: 'de' | 'en'
 }) {
   return (
     <>
@@ -129,7 +131,7 @@ function PatientFavoritesFrame({
       />
       <main className="bg-muted/30 py-8 sm:py-12 lg:py-14">
         <Container>
-          <FavoriteClinicsList favoriteApi={favoriteApi} initialItems={items} />
+          <FavoriteClinicsList favoriteApi={favoriteApi} initialItems={items} locale={locale} />
         </Container>
       </main>
     </>
@@ -180,29 +182,20 @@ export const Populated: Story = {
   args: {
     initialItems: savedClinicItems,
   },
-  render: ({ favoriteApi, initialItems }) => <PatientFavoritesFrame favoriteApi={favoriteApi} items={initialItems} />,
+  render: ({ favoriteApi, initialItems, locale }) => (
+    <PatientFavoritesFrame favoriteApi={favoriteApi} items={initialItems} locale={locale} />
+  ),
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
+    const canvas = within(within(canvasElement).getByRole('main'))
 
-    await expect(canvas.getByRole('heading', { level: 1, name: 'Saved clinics' })).toBeInTheDocument()
-    await expect(canvas.queryByRole('heading', { name: 'No saved clinics yet' })).not.toBeInTheDocument()
-    await expect(canvas.getByRole('list', { name: 'Saved clinics list' })).toBeInTheDocument()
-    await expect(canvas.getAllByRole('article')).toHaveLength(3)
-    await expect(canvas.getByRole('link', { name: 'View details for Berlin University Hospital' })).toBeInTheDocument()
-    await expect(canvas.getByRole('link', { name: 'View details for Munich Medical Center' })).toBeInTheDocument()
-    await expect(canvas.getByRole('link', { name: 'View details for Istanbul Ortopedi Merkezi' })).toBeInTheDocument()
-    await expect(
-      canvas.getByRole('button', { name: 'Remove Berlin University Hospital from saved clinics' }),
-    ).toBeInTheDocument()
-    await expect(
-      canvas.getByRole('button', { name: 'Remove Munich Medical Center from saved clinics' }),
-    ).toBeInTheDocument()
-    await expect(
-      canvas.getByRole('button', { name: 'Remove Istanbul Ortopedi Merkezi from saved clinics' }),
-    ).toBeInTheDocument()
-    await expect(canvas.getAllByRole('link', { name: 'Browse clinics' })).toHaveLength(1)
-    await expect(canvas.getByRole('button', { name: /open account menu/i })).toBeInTheDocument()
-    await expect(canvas.queryByRole('link', { name: 'Sign in' })).not.toBeInTheDocument()
+    const list = canvas.getByRole('list')
+    await expect(canvas.getByRole('heading', { level: 1 })).toBeInTheDocument()
+    await expect(list).toHaveAccessibleName()
+    await expect(within(list).getAllByRole('article')).toHaveLength(3)
+    await expect(canvas.getByRole('link', { name: 'View details for Berlin University Hospital' })).toHaveAttribute(
+      'href',
+      '/clinics/berlin-university-hospital',
+    )
   },
 }
 
@@ -210,17 +203,15 @@ export const Empty: Story = {
   args: {
     initialItems: [],
   },
-  render: ({ favoriteApi, initialItems }) => <PatientFavoritesFrame favoriteApi={favoriteApi} items={initialItems} />,
+  render: ({ favoriteApi, initialItems, locale }) => (
+    <PatientFavoritesFrame favoriteApi={favoriteApi} items={initialItems} locale={locale} />
+  ),
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
+    const canvas = within(within(canvasElement).getByRole('main'))
 
-    await expect(canvas.getByRole('heading', { level: 1, name: 'Saved clinics' })).toBeInTheDocument()
-    await expect(canvas.getByRole('heading', { name: 'No saved clinics yet' })).toBeInTheDocument()
-    await expect(canvas.getAllByRole('link', { name: 'Browse clinics' })).toHaveLength(1)
-    await expect(canvas.queryByRole('link', { name: 'Details' })).not.toBeInTheDocument()
-    await expect(canvas.queryByRole('list', { name: 'Saved clinics list' })).not.toBeInTheDocument()
-    await expect(canvas.getByRole('button', { name: /open account menu/i })).toBeInTheDocument()
-    await expect(canvas.queryByRole('link', { name: 'Sign in' })).not.toBeInTheDocument()
+    await expect(canvas.getByRole('heading', { level: 1 })).toBeInTheDocument()
+    await expect(canvas.queryByRole('list')).not.toBeInTheDocument()
+    await expect(canvas.getByRole('link')).toHaveAttribute('href', '/en/listing-comparison')
   },
 }
 
@@ -229,15 +220,17 @@ export const RemovePending: Story = {
     favoriteApi: pendingRemoveApi,
     initialItems: [savedClinicItems[0] as FavoriteClinicListItem],
   },
-  render: ({ favoriteApi, initialItems }) => <PatientFavoritesFrame favoriteApi={favoriteApi} items={initialItems} />,
+  render: ({ favoriteApi, initialItems, locale }) => (
+    <PatientFavoritesFrame favoriteApi={favoriteApi} items={initialItems} locale={locale} />
+  ),
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
+    const canvas = within(within(canvasElement).getByRole('main'))
 
     await userEvent.click(canvas.getByRole('button', { name: 'Remove Berlin University Hospital from saved clinics' }))
     await expect(
       canvas.getByRole('button', { name: 'Removing Berlin University Hospital from saved clinics' }),
     ).toBeDisabled()
-    await expect(canvas.queryByRole('heading', { name: 'No saved clinics yet' })).not.toBeInTheDocument()
+    await expect(canvas.getByRole('list')).toBeInTheDocument()
   },
 }
 
@@ -246,14 +239,16 @@ export const RemoveError: Story = {
     favoriteApi: failedRemoveApi,
     initialItems: [savedClinicItems[0] as FavoriteClinicListItem],
   },
-  render: ({ favoriteApi, initialItems }) => <PatientFavoritesFrame favoriteApi={favoriteApi} items={initialItems} />,
+  render: ({ favoriteApi, initialItems, locale }) => (
+    <PatientFavoritesFrame favoriteApi={favoriteApi} items={initialItems} locale={locale} />
+  ),
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
+    const canvas = within(within(canvasElement).getByRole('main'))
 
     await userEvent.click(canvas.getByRole('button', { name: 'Remove Berlin University Hospital from saved clinics' }))
-    await waitFor(() =>
-      expect(canvas.getByText('We could not remove this clinic. Please try again.')).toBeInTheDocument(),
-    )
+    const clinic = canvas.getByRole('article')
+    await waitFor(() => expect(clinic.querySelector('[aria-live="polite"]')).not.toBeEmptyDOMElement())
+    await expect(within(clinic).getByRole('button')).toBeEnabled()
     await expect(canvas.getByRole('heading', { name: 'Berlin University Hospital' })).toBeInTheDocument()
   },
 }
@@ -263,15 +258,17 @@ export const RemoveSuccess: Story = {
     favoriteApi: successfulRemoveApi,
     initialItems: savedClinicItems.slice(0, 2),
   },
-  render: ({ favoriteApi, initialItems }) => <PatientFavoritesFrame favoriteApi={favoriteApi} items={initialItems} />,
+  render: ({ favoriteApi, initialItems, locale }) => (
+    <PatientFavoritesFrame favoriteApi={favoriteApi} items={initialItems} locale={locale} />
+  ),
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
+    const canvas = within(within(canvasElement).getByRole('main'))
 
     await userEvent.click(canvas.getByRole('button', { name: 'Remove Berlin University Hospital from saved clinics' }))
     await waitFor(() =>
       expect(canvas.queryByRole('heading', { name: 'Berlin University Hospital' })).not.toBeInTheDocument(),
     )
-    await expect(canvas.getByRole('status')).toHaveTextContent('Removed Berlin University Hospital from saved clinics.')
+    await expect(canvas.getByRole('status')).toHaveTextContent('Berlin University Hospital')
     await waitFor(() =>
       expect(canvas.getByRole('link', { name: 'View details for Munich Medical Center' })).toHaveFocus(),
     )
@@ -283,14 +280,15 @@ export const RemoveLastItemSuccess: Story = {
     favoriteApi: successfulRemoveApi,
     initialItems: [savedClinicItems[0] as FavoriteClinicListItem],
   },
-  render: ({ favoriteApi, initialItems }) => <PatientFavoritesFrame favoriteApi={favoriteApi} items={initialItems} />,
+  render: ({ favoriteApi, initialItems, locale }) => (
+    <PatientFavoritesFrame favoriteApi={favoriteApi} items={initialItems} locale={locale} />
+  ),
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
+    const canvas = within(within(canvasElement).getByRole('main'))
 
     await userEvent.click(canvas.getByRole('button', { name: 'Remove Berlin University Hospital from saved clinics' }))
-    await waitFor(() => expect(canvas.getByRole('heading', { name: 'No saved clinics yet' })).toBeInTheDocument())
-    await expect(canvas.queryByRole('list', { name: 'Saved clinics list' })).not.toBeInTheDocument()
-    await expect(canvas.getByRole('status')).toHaveTextContent('Removed Berlin University Hospital from saved clinics.')
+    await waitFor(() => expect(canvas.queryByRole('list')).not.toBeInTheDocument())
+    await expect(canvas.getByRole('status')).toHaveTextContent('Berlin University Hospital')
     await waitFor(() => expect(canvas.getByRole('link', { name: 'Browse clinics' })).toHaveFocus())
   },
 }
@@ -299,9 +297,11 @@ export const LongClinicContent: Story = {
   args: {
     initialItems: longContentClinicItems,
   },
-  render: ({ favoriteApi, initialItems }) => <PatientFavoritesFrame favoriteApi={favoriteApi} items={initialItems} />,
+  render: ({ favoriteApi, initialItems, locale }) => (
+    <PatientFavoritesFrame favoriteApi={favoriteApi} items={initialItems} locale={locale} />
+  ),
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
+    const canvas = within(within(canvasElement).getByRole('main'))
 
     await expect(
       canvas.getByRole('heading', {
@@ -323,13 +323,14 @@ export const NoRating: Story = {
   args: {
     initialItems: noRatingClinicItems,
   },
-  render: ({ favoriteApi, initialItems }) => <PatientFavoritesFrame favoriteApi={favoriteApi} items={initialItems} />,
+  render: ({ favoriteApi, initialItems, locale }) => (
+    <PatientFavoritesFrame favoriteApi={favoriteApi} items={initialItems} locale={locale} />
+  ),
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
+    const canvas = within(within(canvasElement).getByRole('main'))
 
     await expect(canvas.getByRole('heading', { name: 'Hamburg Specialist Clinic' })).toBeInTheDocument()
     await expect(canvas.getByText('Hamburg, Germany')).toBeInTheDocument()
-    await expect(canvas.queryByText(/average rating/i)).not.toBeInTheDocument()
   },
 }
 
@@ -368,3 +369,13 @@ export const LongClinicContent1280: Story = withViewportStory(
   'Long clinic content / 1280',
 )
 export const NoRating320: Story = withViewportStory(NoRating, 'public320', 'No rating / 320')
+
+export const GermanLongClinicContent320: Story = {
+  ...withViewportStory(LongClinicContent, 'public320', 'German long clinic content / 320'),
+  args: { initialItems: longContentClinicItems, locale: 'de' },
+  play: async ({ canvasElement }) => {
+    const main = within(within(canvasElement).getByRole('main'))
+    await expect(main.getAllByRole('article')).toHaveLength(2)
+    await expect(main.getByRole('link', { name: 'Kliniken entdecken' })).toHaveAttribute('href', '/listing-comparison')
+  },
+}

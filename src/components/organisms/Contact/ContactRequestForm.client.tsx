@@ -66,7 +66,7 @@ export function ContactRequestForm({
   const formValidation = usePublicFormValidation({
     messages: {
       email: {
-        typeMismatch: 'Enter a valid email address.',
+        typeMismatch: copy.emailInvalidMessage ?? DEFAULT_CONTACT_FORM_LABELS.emailInvalidMessage,
         valueMissing: copy.emailRequiredMessage,
       },
       message: { valueMissing: copy.messageRequiredMessage },

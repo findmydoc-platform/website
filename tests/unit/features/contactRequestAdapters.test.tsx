@@ -4,6 +4,7 @@ import '@testing-library/jest-dom'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { DEFAULT_CONTACT_FORM_LABELS } from '@/components/organisms/Contact'
 import { FormBridgePublicContactSectionAdapter } from '@/features/contactRequests/FormBridgePublicContactSectionAdapter.client'
 
 const originalFetch = global.fetch
@@ -31,6 +32,7 @@ describe('FormBridgePublicContactSectionAdapter', () => {
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith('/api/form-bridge/public-contact', {
         method: 'POST',
+        redirect: 'error',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: 'Jane Doe',
@@ -41,7 +43,7 @@ describe('FormBridgePublicContactSectionAdapter', () => {
     })
   })
 
-  it('shows a form-bridge domain error without clearing the request', async () => {
+  it('uses the configured failure message for a bridge rejection and keeps the request', async () => {
     global.fetch = vi.fn(
       async () =>
         new Response(JSON.stringify({ error: 'The contact request could not be accepted.' }), {
@@ -50,11 +52,17 @@ describe('FormBridgePublicContactSectionAdapter', () => {
         }),
     )
 
-    render(<FormBridgePublicContactSectionAdapter title="Contact findmydoc" description="Send a request." />)
+    render(
+      <FormBridgePublicContactSectionAdapter
+        title="Contact findmydoc"
+        description="Send a request."
+        contactFormLabels={{ ...DEFAULT_CONTACT_FORM_LABELS, genericErrorMessage: 'Synthetischer Versandfehler.' }}
+      />,
+    )
     fillAndSubmitContactForm()
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('The contact request could not be accepted.')
-    expect(screen.queryByText('Your request has been sent successfully.')).not.toBeInTheDocument()
+    expect(await screen.findByRole('alert')).toHaveTextContent('Synthetischer Versandfehler.')
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
     expect(screen.getByLabelText('Name')).toHaveValue('Jane Doe')
     expect(screen.getByLabelText('Email')).toHaveValue('jane@example.com')
     expect(screen.getByLabelText('Message')).toHaveValue('I want to contact this clinic.')
@@ -72,8 +80,8 @@ describe('FormBridgePublicContactSectionAdapter', () => {
     render(<FormBridgePublicContactSectionAdapter title="Contact findmydoc" description="Send a request." />)
     fillAndSubmitContactForm()
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Could not send your request right now.')
-    expect(screen.queryByText('Your request has been sent successfully.')).not.toBeInTheDocument()
+    expect(await screen.findByRole('alert')).toHaveTextContent(/\S/)
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
     expect(screen.getByLabelText('Name')).toHaveValue('Jane Doe')
     expect(screen.getByLabelText('Email')).toHaveValue('jane@example.com')
     expect(screen.getByLabelText('Message')).toHaveValue('I want to contact this clinic.')

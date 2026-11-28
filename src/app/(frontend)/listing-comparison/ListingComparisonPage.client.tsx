@@ -6,7 +6,7 @@ import { BadgeCheck, FileText, Hospital, MapPin } from 'lucide-react'
 
 import type { ListingCardData } from '@/components/organisms/Listing'
 import { ListingComparison } from '@/components/templates/ListingComparison/Component'
-import { FavoriteClinicButton } from '@/features/favorites/FavoriteClinicButton'
+import { FavoriteClinicAction } from '@/features/favorites/FavoriteClinicAction.client'
 import { buildPatientLoginHref } from '@/features/favorites/redirects'
 import { useLanguageSwitchRoute } from '@/features/languageSwitch/LanguageSwitchRouteProvider.client'
 import type { UiCopyLocale } from '@/i18n/requestLocale'
@@ -142,7 +142,7 @@ export function ListingComparisonPageClient({
     const query = searchParams.toString()
     return `${pathname}${query ? `?${query}` : ''}`
   }, [pathname, searchParams])
-  const loginHref = React.useMemo(() => buildPatientLoginHref(currentPath), [currentPath])
+  const loginHref = React.useMemo(() => buildPatientLoginHref(currentPath, locale), [currentPath, locale])
   const normalizedPriceBounds = React.useMemo(
     () =>
       normalizePriceBounds(priceBounds, {
@@ -240,15 +240,14 @@ export function ListingComparisonPageClient({
         if (!Number.isFinite(clinicId)) return null
 
         return (
-          <FavoriteClinicButton
+          <FavoriteClinicAction
             clinicId={clinicId}
+            clinicName={data.name}
+            locale={locale}
             initialFavoriteId={favorites.favoriteStateByClinicId[String(clinicId)] ?? null}
             isPatient={favorites.isPatient}
             loginHref={loginHref}
             variant="icon"
-            savedAriaLabel={`Remove ${data.name} from saved clinics`}
-            unsavedAriaLabel={`Save ${data.name} to saved clinics`}
-            pendingAriaLabel={`Updating saved status for ${data.name}`}
           />
         )
       }}

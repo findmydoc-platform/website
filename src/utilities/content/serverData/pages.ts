@@ -162,6 +162,17 @@ export async function findPublicPageRoute(
   return { page, locale, canonicalPath, languagePaths: { de, en, 'x-default': de } }
 }
 
+export async function findPublishedPageSlugs(payload: Payload, slugs: string[], locale: ContentLocale) {
+  const { docs } = await queryPages<PageSlugDoc>(payload, {
+    contentLocale: { locale },
+    limit: slugs.length,
+    pagination: false,
+    select: PAGE_SLUG_SELECT,
+    where: { slug: { in: slugs } },
+  })
+  return docs.flatMap(({ slug }) => (slug ? [slug] : []))
+}
+
 export async function findPageSitemapDocs(payload: Payload, locale: ContentLocale = 'de'): Promise<PageSitemapDoc[]> {
   const result = await queryPages<PageSitemapDoc>(payload, {
     contentLocale: { locale, fallbackLocale: false },

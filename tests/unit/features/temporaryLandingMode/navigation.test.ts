@@ -5,6 +5,7 @@ import {
   projectHoldingFooterLinks,
   projectHoldingFooterGroups,
   projectHoldingHeaderNavItems,
+  resolveHoldingLegalLinks,
 } from '@/features/temporaryLandingMode/navigation'
 
 const origin = 'https://findmydoc.eu'
@@ -17,7 +18,9 @@ describe('Holding public navigation policy', () => {
     ['/posts/a-published-post?ref=nav', 'blog-article'],
     ['/contact#form', 'contact'],
     ['/privacy-policy/', 'privacy'],
+    ['/en/privacy-policy', 'privacy'],
     ['/imprint?from=footer', 'imprint'],
+    ['/en/imprint', 'imprint'],
   ] as const)('classifies permitted destination %s', (href, expected) => {
     expect(classifyHoldingPublicDestination(href, origin)).toBe(expected)
   })
@@ -112,6 +115,38 @@ describe('Holding public navigation policy', () => {
         title: 'Information',
         items: [{ href: '/imprint', label: 'Legal', newTab: false, appearance: 'inline' }],
       },
+    ])
+  })
+
+  it.each([
+    ['de', ['imprint', 'privacy-policy'], ['imprint'], '/imprint', '/privacy-policy', false],
+    ['en', ['imprint', 'privacy-policy'], ['imprint'], '/en/imprint', '/privacy-policy', true],
+  ] as const)(
+    'uses only published legal destinations for Holding navigation in %s',
+    (locale, german, english, imprint, privacy, fallback) => {
+      const copy = [
+        { href: '/imprint', label: 'Test provider details' },
+        { href: '/privacy-policy', label: 'Test data policy' },
+      ]
+      const destinations = resolveHoldingLegalLinks(copy, locale, german, english)
+      const links = projectHoldingFooterLinks(copy, origin, destinations)
+
+      expect(links).toEqual([
+        { href: imprint, label: 'Test provider details' },
+        { href: privacy, label: fallback ? 'Test data policy (DE)' : 'Test data policy' },
+      ])
+    },
+  )
+
+  it('marks the English fallback and removes links without any published rendition', () => {
+    const copy = [
+      { href: '/imprint', label: 'Test provider details' },
+      { href: '/privacy-policy', label: 'Test data policy' },
+    ]
+    const destinations = resolveHoldingLegalLinks(copy, 'de', [], ['privacy-policy'])
+
+    expect(projectHoldingFooterLinks(copy, origin, destinations)).toEqual([
+      { href: '/en/privacy-policy', label: 'Test data policy (EN)' },
     ])
   })
 

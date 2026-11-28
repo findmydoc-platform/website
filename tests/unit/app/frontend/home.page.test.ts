@@ -145,7 +145,7 @@ describe('frontend home page route', () => {
     const pageModule = await import('@/app/(frontend)/page')
     const result = await pageModule.default({})
 
-    expect(mocks.getPayloadMock).not.toHaveBeenCalled()
+    expect(mocks.payloadFindGlobalMock).not.toHaveBeenCalled()
     expect(mocks.getCachedLatestPostsMock).toHaveBeenCalledWith(3, { locale: 'de', fallbackLocale: 'en' })
     expect(result.type).toBe(mocks.temporaryLandingPageComponent)
     expect(result.props.locale).toBe('de')

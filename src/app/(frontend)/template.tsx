@@ -1,5 +1,6 @@
 import React from 'react'
 
+import { getHoldingLegalLinks } from '@/app/(frontend)/_data/holdingLegalLinks'
 import { FrontendChrome } from '@/app/(frontend)/FrontendChrome.client'
 import { extractSupabaseUserData } from '@/auth/utilities/jwtValidation'
 import type { AuthData } from '@/auth/types/authTypes'
@@ -14,7 +15,11 @@ import { PreviewDataNotice } from '@/components/templates/PreviewDataNotice/Comp
 import { languageSwitcherCopy } from '@/features/languageSwitch/copy'
 import { HeaderLanguageSwitcher } from '@/features/languageSwitch/HeaderLanguageSwitcher.client'
 import { isNonProductionRuntime } from '@/features/runtimePolicy'
-import { projectHoldingFooterGroups, projectHoldingHeaderNavItems } from '@/features/temporaryLandingMode/navigation'
+import {
+  getHoldingLegalLinkLocale,
+  projectHoldingFooterGroups,
+  projectHoldingHeaderNavItems,
+} from '@/features/temporaryLandingMode/navigation'
 import { readHoldingViewRequestHeader, readPublicSiteModeRequestHeader } from '@/features/temporaryLandingMode'
 import { resolveHoldingMode } from '@/features/temporaryLandingMode/resolver'
 import { PATIENT_LOGIN_PATH, PATIENT_LOGOUT_PATH, localizedPatientAuthPath } from '@/i18n/patientAuthPath'
@@ -81,11 +86,15 @@ export default async function FrontendTemplate({ children }: { children: React.R
   const normalizedHeaderNavItems = showSiteChrome
     ? normalizeHeaderNavItems((await getCachedGlobal('header', 1)()) as HeaderType)
     : []
+  const legalLinks =
+    isHoldingPublicView && showSiteChrome
+      ? await getHoldingLegalLinks(getHoldingLegalLinkLocale(requestHeaders.get(FRONTEND_PATH_HEADER) ?? '/'))
+      : undefined
   const footerGroups = isHoldingPublicView
-    ? projectHoldingFooterGroups(normalizedFooterGroups, siteOrigin)
+    ? projectHoldingFooterGroups(normalizedFooterGroups, siteOrigin, legalLinks)
     : normalizedFooterGroups
   const headerNavItems = isHoldingPublicView
-    ? projectHoldingHeaderNavItems(normalizedHeaderNavItems, siteOrigin)
+    ? projectHoldingHeaderNavItems(normalizedHeaderNavItems, siteOrigin, legalLinks)
     : normalizedHeaderNavItems
   const accountMenuState =
     showSiteChrome && !isHoldingPublicView ? resolvePublicAccountMenuState(authData) : DEFAULT_ACCOUNT_MENU_STATE

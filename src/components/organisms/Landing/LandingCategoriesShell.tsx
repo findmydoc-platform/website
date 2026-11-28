@@ -27,6 +27,7 @@ type LandingCategoriesShellItem = {
 
 type LandingCategoriesShellProps = {
   baseHref: string
+  copy?: LandingCategoriesProps['copy']
   categories: LandingCategory[]
   defaultActiveFilter?: string
   featuredIds?: string[]
@@ -36,6 +37,7 @@ type LandingCategoriesShellProps = {
 
 export function LandingCategoriesShell({
   baseHref,
+  copy,
   categories,
   defaultActiveFilter,
   featuredIds,
@@ -43,8 +45,8 @@ export function LandingCategoriesShell({
   moreCategoriesLink,
 }: LandingCategoriesShellProps) {
   const categoryTabs = useMemo(() => {
-    return buildCategoryTabs(categories)
-  }, [categories])
+    return buildCategoryTabs(categories, copy?.all)
+  }, [categories, copy?.all])
 
   const categoryFilters = useMemo(() => {
     return new Set(categoryTabs.map((category) => category.value))
@@ -141,7 +143,9 @@ export function LandingCategoriesShell({
   const activeLabel = categoryLabelMap.get(resolvedFilter)
   const ctaLabel =
     moreCategoriesLink?.label ??
-    (resolvedFilter === ALL_CATEGORY_VALUE ? 'View all clinics' : `More clinics in ${activeLabel ?? 'specialty'}`)
+    (resolvedFilter === ALL_CATEGORY_VALUE
+      ? (copy?.viewAll ?? 'View all clinics')
+      : (copy?.moreByCategory[resolvedFilter] ?? `More clinics in ${activeLabel ?? 'specialty'}`))
   const ctaHref = withSpecialtyQuery(baseHref, resolvedFilter === ALL_CATEGORY_VALUE ? null : resolvedFilter)
 
   const slots = [SLOT_LARGE_LEFT, SLOT_TOP_RIGHT_HALF, SLOT_BOTTOM_RIGHT_LEFT_QUARTER, SLOT_BOTTOM_RIGHT_RIGHT_QUARTER]
@@ -150,10 +154,10 @@ export function LandingCategoriesShell({
     <React.Fragment>
       <nav
         role="tablist"
-        aria-label="Category filters"
+        aria-label={copy?.filters ?? 'Category filters'}
         className="mb-10 flex flex-wrap justify-center gap-x-4 gap-y-3 sm:mb-12 sm:gap-x-8"
       >
-        {categoryTabs.map((category) => {
+        {categoryTabs.map((category, index) => {
           const isActive = resolvedFilter === category.value
           const tabId = `landing-categories-tab-${category.value}`
 
@@ -163,9 +167,22 @@ export function LandingCategoriesShell({
               id={tabId}
               type="button"
               onClick={() => setActiveFilter(category.value)}
+              onKeyDown={(event) => {
+                const count = categoryTabs.length
+                const focusIndex = {
+                  ArrowLeft: (index - 1 + count) % count,
+                  ArrowRight: (index + 1) % count,
+                  Home: 0,
+                  End: count - 1,
+                }[event.key]
+                if (focusIndex === undefined) return
+                event.preventDefault()
+                setActiveFilter(categoryTabs[focusIndex]!.value)
+                const tabs = event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]')
+                tabs?.[focusIndex]?.focus()
+              }}
               role="tab"
               aria-selected={isActive}
-              aria-pressed={isActive}
               aria-controls={panelId}
               tabIndex={isActive ? 0 : -1}
               className={cn(
@@ -187,46 +204,44 @@ export function LandingCategoriesShell({
         })}
       </nav>
 
-      <div className="mb-10 grid gap-4 lg:hidden">
-        {visibleItems.map((item) => (
-          <div
-            key={`mobile-${item.id}`}
-            className="relative aspect-[16/11] overflow-hidden rounded-2xl border border-border/60 bg-muted/40 shadow-sm"
-          >
-            {item.card}
-          </div>
-        ))}
-      </div>
-
-      <div
-        id={panelId}
-        role="tabpanel"
-        aria-labelledby={activeTabId}
-        className="relative mb-12 hidden h-140 w-full overflow-hidden lg:block"
-      >
-        {scopedItems.map((item) => {
-          const slotIndex = slotMap.get(item.id)
-          const hasSlot = slotIndex !== undefined && slotIndex >= 0 && slotIndex < slots.length
-          const isVisible = hasSlot
-          const slotClass = hasSlot ? slots[slotIndex] : (parkingSlotMap.get(item.id) ?? SLOT_HIDDEN)
-
-          return (
+      <div id={panelId} role="tabpanel" aria-labelledby={activeTabId}>
+        <div className="mb-10 grid gap-4 lg:hidden">
+          {visibleItems.map((item) => (
             <div
-              key={item.id}
-              aria-hidden={!isVisible}
-              className={cn(
-                'absolute p-3 transition-all duration-700 ease-in-out',
-                slotClass,
-                isVisible ? 'pointer-events-auto scale-100 opacity-100' : 'pointer-events-none scale-90 opacity-0',
-                isVisible ? 'z-10' : 'z-0',
-              )}
+              key={`mobile-${item.id}`}
+              className="relative aspect-[16/11] overflow-hidden rounded-2xl border border-border/60 bg-muted/40 shadow-sm"
             >
-              <div className="relative h-full w-full overflow-hidden rounded-2xl border border-border/60 bg-muted/40 shadow-sm">
-                {item.card}
-              </div>
+              {item.card}
             </div>
-          )
-        })}
+          ))}
+        </div>
+
+        <div className="relative mb-12 hidden h-140 w-full overflow-hidden lg:block">
+          {scopedItems.map((item) => {
+            const slotIndex = slotMap.get(item.id)
+            const hasSlot = slotIndex !== undefined && slotIndex >= 0 && slotIndex < slots.length
+            const isVisible = hasSlot
+            const slotClass = hasSlot ? slots[slotIndex] : (parkingSlotMap.get(item.id) ?? SLOT_HIDDEN)
+
+            return (
+              <div
+                key={item.id}
+                aria-hidden={!isVisible}
+                inert={!isVisible}
+                className={cn(
+                  'absolute p-3 transition-all duration-700 ease-in-out',
+                  slotClass,
+                  isVisible ? 'pointer-events-auto scale-100 opacity-100' : 'pointer-events-none scale-90 opacity-0',
+                  isVisible ? 'z-10' : 'z-0',
+                )}
+              >
+                <div className="relative h-full w-full overflow-hidden rounded-2xl border border-border/60 bg-muted/40 shadow-sm">
+                  {item.card}
+                </div>
+              </div>
+            )
+          })}
+        </div>
       </div>
 
       <div className="mt-10 flex justify-center">

@@ -14,6 +14,7 @@ export type LandingCategoryItem = {
   categories: string[]
   href?: string
   newTab?: boolean
+  linkLabel?: string
   image: {
     src: ImageProps['src']
     alt: string
@@ -32,6 +33,12 @@ export type LandingCategoriesProps = {
   items: LandingCategoryItem[]
   featuredIds?: string[]
   defaultActiveFilter?: string
+  copy?: {
+    all: string
+    filters: string
+    viewAll: string
+    moreByCategory: Record<string, string>
+  }
   moreCategoriesLink?: {
     href: string
     label?: string | null
@@ -105,9 +112,9 @@ export function createParkingSlotOrder(seedText: string): string[] {
   return slots
 }
 
-export function buildCategoryTabs(categories: LandingCategory[]): LandingCategory[] {
+export function buildCategoryTabs(categories: LandingCategory[], allLabel = ALL_CATEGORY_LABEL): LandingCategory[] {
   const specialtyTabs = categories.filter((category) => category.value !== ALL_CATEGORY_VALUE)
-  return [{ label: ALL_CATEGORY_LABEL, value: ALL_CATEGORY_VALUE }, ...specialtyTabs]
+  return [{ label: allLabel, value: ALL_CATEGORY_VALUE }, ...specialtyTabs]
 }
 
 export function withSpecialtyQuery(href: string, specialtyId: string | null) {

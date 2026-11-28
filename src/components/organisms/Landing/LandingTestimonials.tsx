@@ -4,7 +4,7 @@ import { Container } from '@/components/molecules/Container'
 import { SectionHeading } from '@/components/molecules/SectionHeading'
 import { cn } from '@/utilities/ui'
 
-import { LandingTestimonialsCarouselClient } from './LandingTestimonialsCarousel'
+import { LandingTestimonialsCarouselClient, type TestimonialCarouselCopy } from './LandingTestimonialsCarousel'
 import type { LandingTestimonial } from './LandingTestimonials.types'
 
 type LandingTestimonialsProps = {
@@ -12,12 +12,14 @@ type LandingTestimonialsProps = {
   title: string
   description: string
   className?: string
+  copy?: TestimonialCarouselCopy
 }
 export const LandingTestimonials: React.FC<LandingTestimonialsProps> = ({
   testimonials,
   title,
   description,
   className,
+  copy,
 }) => {
   return (
     <section className={cn('bg-site-canvas py-16 sm:py-20', className)}>
@@ -33,7 +35,11 @@ export const LandingTestimonials: React.FC<LandingTestimonialsProps> = ({
           tone="brand"
         />
 
-        <LandingTestimonialsCarouselClient testimonials={testimonials} labelledById="landing-testimonials" />
+        <LandingTestimonialsCarouselClient
+          testimonials={testimonials}
+          copy={copy}
+          labelledById="landing-testimonials"
+        />
       </Container>
     </section>
   )

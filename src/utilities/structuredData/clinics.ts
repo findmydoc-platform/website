@@ -1,3 +1,5 @@
+import { clinicProfilePath } from '@/i18n/clinicProfilePath'
+import type { UiCopyLocale } from '@/i18n/requestLocale'
 import type { BreadcrumbItem } from '@/components/molecules/Breadcrumb'
 
 import { buildBreadcrumbListJsonLd } from './breadcrumbs'
@@ -27,8 +29,11 @@ export type ClinicDetailPageJsonLdInput = {
   }>
 }
 
-export function buildClinicDetailPageJsonLd(data: ClinicDetailPageJsonLdInput): JsonLdNode[] {
-  const path = `/clinics/${encodeURIComponent(data.clinicSlug)}`
+export function buildClinicDetailPageJsonLd(
+  data: ClinicDetailPageJsonLdInput,
+  locale: UiCopyLocale = 'de',
+): JsonLdNode[] {
+  const path = clinicProfilePath(data.clinicSlug, locale)
 
   return cleanJsonLdNodes([
     buildBreadcrumbListJsonLd(data.breadcrumbs),

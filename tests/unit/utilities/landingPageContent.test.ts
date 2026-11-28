@@ -37,14 +37,14 @@ const attachRequiredMedia = (landingPages: LandingPage): LandingPage => {
     testimonial.image = buildMedia(`/platform-media/${testimonial.author}.webp`, testimonial.author)
   })
   landingPages.home.process.steps.forEach((step) => {
-    step.image = buildMedia(`/platform-media/home-process-${step.step}.webp`, step.title)
+    step.image = buildMedia(`/platform-media/home-process-${step.step}.webp`, step.title ?? undefined)
   })
   landingPages.clinicPartners.hero.image = buildMedia(
     '/platform-media/clinic-partner-hero-large.webp',
     'Clinic partner hero image',
   )
   landingPages.clinicPartners.process.steps.forEach((step) => {
-    step.image = buildMedia(`/platform-media/partner-process-${step.step}.webp`, step.title)
+    step.image = buildMedia(`/platform-media/partner-process-${step.step}.webp`, step.title ?? undefined)
   })
   landingPages.clinicPartners.team.forEach((member) => {
     member.image = buildMedia(`/platform-media/${member.name}.webp`, member.name)
@@ -69,6 +69,7 @@ const attachRequiredMedia = (landingPages: LandingPage): LandingPage => {
 describe('landingPageContent normalizers', () => {
   it('maps CMS media, icon keys, and FAQ row IDs for the home landing page', () => {
     const landingPages = attachRequiredMedia(cloneBaselineLandingPages())
+    landingPages.home.hero.imageAlt = 'Fixture for the home hero alternative text'
     const firstFeature = landingPages.home.features.items[0]
     if (!firstFeature) throw new Error('Expected baseline home feature fixture')
     firstFeature.icon = 'target'
@@ -82,7 +83,8 @@ describe('landingPageContent normalizers', () => {
 
     expect(content.hero.image).toMatchObject({
       src: '/platform-media/home-hero-large.webp',
-      sizes: '(max-width: 1024px) 100vw, 50vw',
+      sizes: '100vw',
+      alt: 'Fixture for the home hero alternative text',
       quality: 85,
     })
     expect(content.features.items[0]?.icon).toBe(Target)

@@ -178,6 +178,7 @@ export class ClinicContactRequestError extends Error {
 
 export type ClinicDetailConceptProps = {
   data: ClinicDetailData
+  locale?: UiCopyLocale
   className?: string
   favorite?: {
     isPatient: boolean

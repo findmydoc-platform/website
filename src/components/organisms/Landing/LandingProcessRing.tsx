@@ -17,6 +17,7 @@ export type LandingProcessRingStep = {
 
 export type LandingProcessRingProps = {
   title?: string
+  description?: string
   size?: number
   preset?: LandingProcessRingPreset
   palette?: LandingProcessRingPalette
@@ -37,6 +38,7 @@ export type LandingProcessRingProps = {
   logoAlt?: string
   logoScale?: number
   steps?: ReadonlyArray<LandingProcessRingStep>
+  stepsLabel?: string
   className?: string
   haloSaturation?: number
   haloLightness?: number
@@ -1122,6 +1124,7 @@ function ResponsiveOrbitScene({
   startAngle,
   endAngle,
   steps,
+  stepsLabel,
   bulletColor,
   ringProps,
   motionActive,
@@ -1131,6 +1134,7 @@ function ResponsiveOrbitScene({
   startAngle: number
   endAngle: number
   steps: ReadonlyArray<LandingProcessRingStep>
+  stepsLabel: string
   bulletColor: string
   ringProps: Omit<ProcessRingGraphicProps, 'size'>
   motionActive: boolean
@@ -1201,7 +1205,7 @@ function ResponsiveOrbitScene({
 
             <ol
               className="mt-8 space-y-4 lg:absolute lg:inset-0 lg:mt-0 lg:space-y-0"
-              aria-label="Patient onboarding steps"
+              aria-label={stepsLabel}
               data-testid="landing-process-ring-steps"
             >
               {stepLayouts.map((step) => (
@@ -1217,6 +1221,7 @@ function ResponsiveOrbitScene({
 
 export const LandingProcessRing: React.FC<LandingProcessRingProps> = ({
   title,
+  description,
   size = DEFAULT_SIZE,
   preset = 'balanced',
   palette = 'brand',
@@ -1241,6 +1246,7 @@ export const LandingProcessRing: React.FC<LandingProcessRingProps> = ({
   logoAlt = 'findmydoc',
   logoScale = 1.7,
   steps = landingProcessRingDefaultSteps,
+  stepsLabel = 'Patient onboarding steps',
   className,
 }) => {
   const sectionTitleId = useId().replace(/:/g, '')
@@ -1304,12 +1310,14 @@ export const LandingProcessRing: React.FC<LandingProcessRingProps> = ({
             {title}
           </Heading>
         ) : null}
+        {description && <p className="mx-auto mb-8 max-w-2xl text-center text-supporting-foreground">{description}</p>}
         <ResponsiveOrbitScene
           ringSize={size}
           orbitMargin={orbitMargin}
           startAngle={startAngle}
           endAngle={endAngle}
           steps={safeSteps}
+          stepsLabel={stepsLabel}
           bulletColor={resolvedColors.bullet}
           ringProps={sharedRingProps}
           motionActive={motionActive}

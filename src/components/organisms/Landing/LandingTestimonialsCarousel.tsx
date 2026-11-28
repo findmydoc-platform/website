@@ -10,8 +10,16 @@ import { cn } from '@/utilities/ui'
 
 import type { LandingTestimonial } from './LandingTestimonials.types'
 
+export type TestimonialCarouselCopy = {
+  carousel: string
+  slide: string
+  positions: string[]
+  navigation: string[]
+}
+
 type LandingTestimonialsCarouselRootProps = {
   testimonials: LandingTestimonial[]
+  copy?: TestimonialCarouselCopy
   className?: string
   /** Accessible label for the carousel region. */
   ariaLabel?: string
@@ -22,6 +30,7 @@ type LandingTestimonialsCarouselRootProps = {
 
 type LandingTestimonialsCarouselClientProps = {
   testimonials: LandingTestimonial[]
+  copy?: TestimonialCarouselCopy
   className?: string
   /** Accessible label for the carousel region. */
   ariaLabel?: string
@@ -98,6 +107,7 @@ const useCarouselContext = (): CarouselContextValue => {
 
 const Root: React.FC<LandingTestimonialsCarouselRootProps> = ({
   testimonials,
+  copy,
   className,
   ariaLabel = 'Testimonials carousel',
   labelledById,
@@ -321,7 +331,7 @@ const Root: React.FC<LandingTestimonialsCarouselRootProps> = ({
           className,
         )}
         role="region"
-        aria-roledescription="carousel"
+        aria-roledescription={copy?.carousel ?? 'carousel'}
         aria-label={labelledById ? undefined : ariaLabel}
         aria-labelledby={labelledById}
         tabIndex={0}
@@ -334,10 +344,11 @@ const Root: React.FC<LandingTestimonialsCarouselRootProps> = ({
 }
 
 type TrackProps = {
+  copy?: TestimonialCarouselCopy
   className?: string
 }
 
-const Track: React.FC<TrackProps> = ({ className }) => {
+const Track: React.FC<TrackProps> = ({ className, copy }) => {
   const { activeSnapIndex, isTransitioning, length, slides, viewportRef } = useCarouselContext()
 
   return (
@@ -363,8 +374,8 @@ const Track: React.FC<TrackProps> = ({ className }) => {
                 key={`${snapIndex}-${index}`}
                 className="min-w-0 shrink-0 grow-0 basis-full lg:basis-80 xl:basis-96"
                 role="group"
-                aria-roledescription="slide"
-                aria-label={`Slide ${index + 1} of ${length}`}
+                aria-roledescription={copy?.slide ?? 'slide'}
+                aria-label={copy?.positions[index] ?? `Slide ${index + 1} of ${length}`}
                 aria-hidden={!isSelected}
               >
                 <article
@@ -426,10 +437,11 @@ const Track: React.FC<TrackProps> = ({ className }) => {
 }
 
 type DotsProps = {
+  copy?: TestimonialCarouselCopy
   className?: string
 }
 
-const Dots: React.FC<DotsProps> = ({ className }) => {
+const Dots: React.FC<DotsProps> = ({ className, copy }) => {
   const { testimonials, activeIndex, canNavigate, goToIndex } = useCarouselContext()
 
   if (!canNavigate) return null
@@ -448,7 +460,7 @@ const Dots: React.FC<DotsProps> = ({ className }) => {
               'flex h-11 w-11 cursor-pointer items-center justify-center rounded-full transition-colors duration-300 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none',
               isActive ? 'text-primary' : 'text-border hover:text-primary/50',
             )}
-            aria-label={`Go to slide ${index + 1} of ${testimonials.length}`}
+            aria-label={copy?.navigation[index] ?? `Go to slide ${index + 1} of ${testimonials.length}`}
             aria-current={isActive ? 'true' : undefined}
           >
             <span
@@ -467,14 +479,21 @@ const Dots: React.FC<DotsProps> = ({ className }) => {
 
 export const LandingTestimonialsCarouselClient: React.FC<LandingTestimonialsCarouselClientProps> = ({
   testimonials,
+  copy,
   className,
   ariaLabel,
   labelledById,
 }) => {
   return (
-    <Root testimonials={testimonials} className={className} ariaLabel={ariaLabel} labelledById={labelledById}>
-      <Track />
-      <Dots />
+    <Root
+      testimonials={testimonials}
+      copy={copy}
+      className={className}
+      ariaLabel={ariaLabel}
+      labelledById={labelledById}
+    >
+      <Track copy={copy} />
+      <Dots copy={copy} />
     </Root>
   )
 }

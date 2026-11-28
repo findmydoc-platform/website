@@ -434,21 +434,52 @@ describe('getClinicDetailServerData (contract)', () => {
     ])
   })
 
+  it('serves the German editorial overview and picture text without reading unpublished images', async () => {
+    const profileData: MockData = {
+      ...mockData,
+      clinics: [{ ...mockData.clinics[0], localizedDescription: lexicalText('Kinderkardiologie für Familien') }],
+      clinicMedia: [
+        {
+          ...mockData.clinicMedia[0],
+          localizedAlt: 'Eingang zur Ambulanz',
+          localizedCaption: lexicalText('Zugang zum Hof'),
+        },
+        ...mockData.clinicMedia.slice(1),
+      ],
+    }
+    const result = await getClinicDetailServerData(createMockPayload(profileData), 'berlin-health-clinic', {
+      draft: false,
+      locale: 'de',
+    })
+
+    expect(result?.description).toBe('Kinderkardiologie für Familien')
+    expect(result?.galleryImages).toEqual([
+      {
+        id: '100',
+        src: '/api/clinicMedia/file/clinic-hero.jpg',
+        alt: 'Eingang zur Ambulanz',
+        caption: 'Zugang zum Hof',
+      },
+    ])
+    expect(result?.trust.languages).toEqual(expect.arrayContaining(['Englisch', 'Deutsch', 'Türkisch']))
+  })
+
   it('maps approved clinic data without loading the disabled gallery', async () => {
     const findCalls: FindCall[] = []
     const payload = createMockPayload(mockData, findCalls)
 
     const result = await getClinicDetailServerData(payload, 'berlin-health-clinic', {
       draft: false,
+      locale: 'en',
     })
 
     expect(result).not.toBeNull()
     expect(result?.clinicName).toBe('Berlin Health Clinic')
-    expect(result?.contactHref).toBe('/contact?clinic=berlin-health-clinic&source=clinic-detail')
+    expect(result?.contactHref).toBe('/en/contact?clinic=berlin-health-clinic&source=clinic-detail')
     expect(result?.breadcrumbs).toEqual([
-      { label: 'Home', href: '/' },
-      { label: 'Clinics', href: '/listing-comparison' },
-      { label: 'Berlin Health Clinic', href: '/clinics/berlin-health-clinic' },
+      expect.objectContaining({ href: '/en' }),
+      expect.objectContaining({ href: '/en/listing-comparison' }),
+      { label: 'Berlin Health Clinic', href: '/en/clinics/berlin-health-clinic' },
     ])
     expect(result?.heroImage).toEqual({
       src: '/api/clinicMedia/file/clinic-hero.jpg',
@@ -624,6 +655,7 @@ describe('getClinicDetailServerData (contract)', () => {
 
     const result = await getClinicDetailServerData(createMockPayload(moderatedData), 'berlin-health-clinic', {
       draft: false,
+      locale: 'en',
     })
 
     expect(result?.reviews.totalCount).toBe(4)
@@ -672,6 +704,7 @@ describe('getClinicDetailServerData (contract)', () => {
     await expect(
       getClinicDetailServerData(payload, 'berlin-health-clinic', {
         draft: false,
+        locale: 'en',
       }),
     ).rejects.toThrow('Clinic 1 has approved reviews but no average rating.')
   })
@@ -681,6 +714,7 @@ describe('getClinicDetailServerData (contract)', () => {
 
     const result = await getClinicDetailServerData(payload, 'hidden-draft-clinic', {
       draft: false,
+      locale: 'en',
     })
 
     expect(result).toBeNull()
@@ -691,6 +725,7 @@ describe('getClinicDetailServerData (contract)', () => {
 
     const result = await getClinicDetailServerData(payload, 'hidden-draft-clinic', {
       draft: true,
+      locale: 'en',
     })
 
     expect(result).not.toBeNull()

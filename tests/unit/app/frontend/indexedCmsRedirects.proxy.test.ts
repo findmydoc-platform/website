@@ -116,13 +116,16 @@ describe('permanent CMS redirects', () => {
     expect(payload.findByID).not.toHaveBeenCalled()
   })
 
-  it.each(['/about', '/en/patient/favorites'])('leaves dedicated route %s out of CMS redirects', async (path) => {
-    const response = await proxy(new NextRequest(`${origin}${path}`))
+  it.each(['/about', '/en/patient/favorites', '/clinics/berlin-health', '/en/clinics/berlin-health'])(
+    'leaves dedicated route %s out of CMS redirects',
+    async (path) => {
+      const response = await proxy(new NextRequest(`${origin}${path}`))
 
-    expect(response.status).toBe(200)
-    expect(payload.find).not.toHaveBeenCalled()
-    expect(payload.findByID).not.toHaveBeenCalled()
-  })
+      expect(response.status).toBe(200)
+      expect(payload.find).not.toHaveBeenCalled()
+      expect(payload.findByID).not.toHaveBeenCalled()
+    },
+  )
 
   it('shows a noindex response at a previously public English path after withdrawal', async () => {
     payload.findByID.mockImplementation(async ({ locale }) =>

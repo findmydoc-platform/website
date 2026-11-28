@@ -757,6 +757,24 @@ export interface Clinic {
     [k: string]: unknown;
   } | null;
   /**
+   * Patient-facing overview in the selected language
+   */
+  localizedDescription?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
    * Tags for this clinic
    */
   tags?: (number | Tag)[] | null;
@@ -1879,6 +1897,28 @@ export interface ClinicMedia {
    * Optional caption for the media
    */
   caption?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * Image description for screen readers in the selected language
+   */
+  localizedAlt?: string | null;
+  /**
+   * Optional image caption in the selected language
+   */
+  localizedCaption?: {
     root: {
       type: string;
       children: {
@@ -4876,6 +4916,8 @@ export interface ClinicMediaSelect<T extends boolean = true> {
   stableId?: T;
   alt?: T;
   caption?: T;
+  localizedAlt?: T;
+  localizedCaption?: T;
   status?: T;
   clinic?: T;
   createdBy?: T;
@@ -5967,6 +6009,7 @@ export interface ClinicsSelect<T extends boolean = true> {
   name?: T;
   averageRating?: T;
   description?: T;
+  localizedDescription?: T;
   tags?: T;
   treatments?: T;
   thumbnail?: T;
@@ -7034,72 +7077,76 @@ export interface CookieConsent {
 export interface LandingPage {
   id: number;
   home: {
-    seo: {
+    seo?: {
       /**
        * Browser and search title for this landing route.
        */
-      title: string;
+      title?: string | null;
       /**
        * Search description for this landing route.
        */
-      description: string;
+      description?: string | null;
     };
     hero: {
       /**
        * Main hero headline.
        */
-      title: string;
+      title?: string | null;
       /**
        * Hero supporting text.
        */
-      description: string;
+      description?: string | null;
       /**
        * Hero image shown on this landing route.
        */
       image: number | PlatformContentMedia;
+      /**
+       * Describe the hero image for screen readers. Leave empty if decorative.
+       */
+      imageAlt?: string | null;
     };
     /**
      * Testimonials shown in the carousel.
      */
     testimonials: {
-      quote: string;
+      quote?: string | null;
       author: string;
-      role: string;
+      role?: string | null;
       /**
        * Portrait shown for this testimonial.
        */
       image: number | PlatformContentMedia;
       id?: string | null;
     }[];
-    testimonialsIntro: {
+    testimonialsIntro?: {
       /**
        * Section headline.
        */
-      title: string;
+      title?: string | null;
       /**
        * Section supporting text.
        */
-      description: string;
+      description?: string | null;
     };
-    categoriesIntro: {
+    categoriesIntro?: {
       /**
        * Section headline.
        */
-      title: string;
+      title?: string | null;
       /**
        * Section supporting text.
        */
-      description: string;
+      description?: string | null;
     };
     features: {
       /**
        * Section headline.
        */
-      title: string;
+      title?: string | null;
       /**
        * Section supporting text.
        */
-      description: string;
+      description?: string | null;
       /**
        * Feature-section background image.
        */
@@ -7108,9 +7155,9 @@ export interface LandingPage {
        * Feature items shown in the landing feature section.
        */
       items: {
-        title: string;
+        title?: string | null;
         subtitle?: string | null;
-        description: string;
+        description?: string | null;
         /**
          * Icon shown next to this feature.
          */
@@ -7119,15 +7166,15 @@ export interface LandingPage {
       }[];
     };
     process: {
-      title: string;
-      subtitle: string;
+      title?: string | null;
+      subtitle?: string | null;
       /**
        * Process timeline steps.
        */
       steps: {
         step: number;
-        title: string;
-        description: string;
+        title?: string | null;
+        description?: string | null;
         /**
          * Image shown for this process step.
          */
@@ -7139,39 +7186,39 @@ export interface LandingPage {
       /**
        * Section headline.
        */
-      title: string;
+      title?: string | null;
       /**
        * Section supporting text.
        */
-      description: string;
+      description?: string | null;
       /**
        * FAQ questions and answers.
        */
       items: {
-        question: string;
-        answer: string;
+        question?: string | null;
+        answer?: string | null;
         id?: string | null;
       }[];
     };
-    blogTeaser: {
+    blogTeaser?: {
       /**
        * Section headline.
        */
-      title: string;
+      title?: string | null;
       /**
        * Section supporting text.
        */
-      description: string;
+      description?: string | null;
     };
-    contact: {
+    contact?: {
       /**
        * Section headline.
        */
-      title: string;
+      title?: string | null;
       /**
        * Section supporting text.
        */
-      description: string;
+      description?: string | null;
     };
   };
   clinicPartners: {
@@ -7643,6 +7690,7 @@ export interface LandingPagesSelect<T extends boolean = true> {
               title?: T;
               description?: T;
               image?: T;
+              imageAlt?: T;
             };
         testimonials?:
           | T

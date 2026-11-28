@@ -20,7 +20,8 @@ import { FavoriteClinicAction } from '@/features/favorites/FavoriteClinicAction.
 import type { ClinicDetailConceptProps } from '@/features/clinicDetail/contracts'
 import { buildOpenStreetMapHref, formatEur, sortTreatmentsByPrice } from '@/features/clinicDetail/presentation'
 import type { PatientInquiryCreationContext } from '@/features/patientInquiries/creationContext'
-import { DISCLAIMER_COPY } from '@/utilities/legal/disclaimers'
+import { getClinicProfileTranslator } from '@/features/clinicDetail/overviewCopy'
+import { clinicProfilePath } from '@/i18n/clinicProfilePath'
 import { cn } from '@/utilities/ui'
 
 import { useClinicDetailInteractionState } from './hooks/useClinicDetailInteractionState'
@@ -69,6 +70,7 @@ function buildTreatmentDescription({ category, priceFrom }: { category?: string;
 
 export function ClinicDetail({
   data,
+  locale: routeLocale,
   className,
   favorite,
   inquiryCreation = GUEST_INQUIRY_CREATION,
@@ -77,6 +79,8 @@ export function ClinicDetail({
   cookieConsentConfig = null,
   cookieConsentInitialConsent = null,
 }: ClinicDetailConceptProps) {
+  const locale = routeLocale ?? 'en'
+  const t = getClinicProfileTranslator(locale)
   const heroDoctors = React.useMemo(() => data.doctors.slice(0, HERO_DOCTOR_PREVIEW_COUNT), [data.doctors])
   const sortedTreatments = React.useMemo(() => sortTreatmentsByPrice(data.treatments), [data.treatments])
   const curatedTreatments = React.useMemo(() => sortedTreatments.slice(0, CURATED_TREATMENT_COUNT), [sortedTreatments])
@@ -97,7 +101,7 @@ export function ClinicDetail({
   const appointmentImage = CONTACT_SECTION_IMAGE
   const clinicId = String(data.clinicId)
   const contactFormInitialFields = React.useMemo(() => contactFormFieldsFor(inquiryCreation), [inquiryCreation])
-  const pagePath = React.useMemo(() => `/clinics/${encodeURIComponent(data.clinicSlug)}`, [data.clinicSlug])
+  const pagePath = clinicProfilePath(data.clinicSlug, routeLocale ?? 'de')
   const trackedProfileViewKeyRef = React.useRef<string | null>(null)
 
   const interaction = useClinicDetailInteractionState({
@@ -227,6 +231,7 @@ export function ClinicDetail({
       <Container className="pt-8 pb-14 lg:pt-8 lg:pb-24 xl:pb-32">
         <HeroOverviewSection
           clinicName={data.clinicName}
+          locale={locale}
           description={data.description}
           galleryImages={data.galleryImages}
           heroImage={data.heroImage}
@@ -253,8 +258,8 @@ export function ClinicDetail({
 
       <Container className="pb-10 lg:pb-14">
         <DisclaimerNotice
-          routeLabel="Clinic profiles"
-          copy={DISCLAIMER_COPY.clinicProfiles}
+          routeLabel={t('overview.disclaimerLabel')}
+          copy={t('overview.disclaimer')}
           variant="inline-note"
           size="compact"
           showVariantLabel={false}
@@ -270,6 +275,7 @@ export function ClinicDetail({
         <Container className={CONTENT_SECTION_SPACING}>
           <ClinicLocationSection
             clinicName={data.clinicName}
+            locale={locale}
             location={data.location}
             mapHref={openStreetMapHref}
             isOpenStreetMapAllowed={isOpenStreetMapAllowed}

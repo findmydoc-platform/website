@@ -1,116 +1,15 @@
-import type { Metadata } from 'next'
-import { cookies, draftMode, headers } from 'next/headers'
-import { notFound } from 'next/navigation'
-import configPromise from '@payload-config'
-import { getPayload } from 'payload'
-
-import { COOKIE_CONSENT_COOKIE_NAME, resolveCookieConsentContext } from '@/features/cookieConsent'
-import { buildPatientLoginHref } from '@/features/favorites/redirects'
-import { findFavoriteClinicStateRecord, resolveFavoriteClinicAuthContext } from '@/features/favorites/server'
-import { hasSupabaseAuthenticationAttempt } from '@/features/patientInquiries/creationContext'
-import { getCachedPublicClinicDetailServerData, getClinicDetailServerData } from '@/utilities/clinicDetail/serverData'
-import { createSiteMetadata } from '@/utilities/generateMeta'
-import { getGlobal } from '@/utilities/getGlobals'
-import { JsonLdScript, buildClinicDetailPageJsonLd } from '@/utilities/structuredData'
-import type { CookieConsent as CookieConsentType } from '@/payload-types'
-
-import { ClinicDetailClientAdapter } from './ClinicDetailClientAdapter.client'
-
-type ClinicDetailPageArgs = {
-  params: Promise<{
-    slug: string
-  }>
-}
+import {
+  generateClinicProfileMetadata,
+  renderClinicProfile,
+  type ClinicDetailPageArgs,
+} from '@/app/(frontend)/clinics/[slug]/clinicProfile'
 
 export const dynamic = 'force-dynamic'
 
-export default async function ClinicDetailPage({ params: paramsPromise }: ClinicDetailPageArgs) {
-  const { slug } = await paramsPromise
-  const { isEnabled: draft } = await draftMode()
-  const payload = await getPayload({ config: configPromise })
-  const requestHeaders = await headers()
-  const requestCookies = await cookies()
-
-  const clinicDetailData = draft
-    ? await getClinicDetailServerData(payload, slug, { draft })
-    : await getCachedPublicClinicDetailServerData(slug)
-  const cookieConsentContext = resolveCookieConsentContext(
-    (await getGlobal('cookieConsent', 1)) as CookieConsentType,
-    requestCookies.get(COOKIE_CONSENT_COOKIE_NAME)?.value ?? null,
-  )
-
-  if (!clinicDetailData) {
-    notFound()
-  }
-
-  const favoriteAuthContext = await resolveFavoriteClinicAuthContext({
-    payload,
-    headers: requestHeaders,
-  })
-  const favoriteStateByClinicId = favoriteAuthContext.patient
-    ? await findFavoriteClinicStateRecord({
-        payload,
-        patientId: favoriteAuthContext.patient.id,
-        clinicIds: [clinicDetailData.clinicId],
-      })
-    : {}
-  const clinicPath = `/clinics/${encodeURIComponent(slug)}`
-  const loginHref = buildPatientLoginHref(clinicPath)
-  const inquiryCreation = favoriteAuthContext.patient
-    ? {
-        account: {
-          email: favoriteAuthContext.patient.email,
-          firstName: favoriteAuthContext.patient.firstName,
-          lastName: favoriteAuthContext.patient.lastName,
-          phoneNumber: favoriteAuthContext.patient.phoneNumber ?? '',
-        },
-        kind: 'authenticated' as const,
-        loginHref,
-      }
-    : hasSupabaseAuthenticationAttempt({
-          cookieNames: requestCookies.getAll().map(({ name }) => name),
-          headers: requestHeaders,
-        })
-      ? { kind: 'reauthentication-required' as const, loginHref }
-      : { kind: 'guest' as const }
-
-  return (
-    <>
-      <JsonLdScript data={draft ? null : buildClinicDetailPageJsonLd(clinicDetailData)} />
-      <ClinicDetailClientAdapter
-        data={clinicDetailData}
-        favorite={{
-          isPatient: favoriteAuthContext.isPatient,
-          favoriteId: favoriteStateByClinicId[String(clinicDetailData.clinicId)] ?? null,
-          loginHref,
-          locale: 'de',
-        }}
-        inquiryCreation={inquiryCreation}
-        cookieConsentConfig={cookieConsentContext.config}
-        cookieConsentInitialConsent={cookieConsentContext.initialConsent}
-      />
-    </>
-  )
+export default function ClinicProfilePage(args: ClinicDetailPageArgs) {
+  return renderClinicProfile(args, 'de')
 }
 
-export async function generateMetadata({ params: paramsPromise }: ClinicDetailPageArgs): Promise<Metadata> {
-  const { slug } = await paramsPromise
-  const { isEnabled: draft } = await draftMode()
-  const clinicDetailData = draft
-    ? await getClinicDetailServerData(await getPayload({ config: configPromise }), slug, { draft })
-    : await getCachedPublicClinicDetailServerData(slug)
-
-  if (!clinicDetailData) {
-    return createSiteMetadata({
-      title: 'Clinic Profile',
-      path: `/clinics/${slug}`,
-    })
-  }
-
-  return createSiteMetadata({
-    title: clinicDetailData.clinicName,
-    description: clinicDetailData.description,
-    path: `/clinics/${slug}`,
-    freshness: clinicDetailData.freshness,
-  })
+export function generateMetadata(args: ClinicDetailPageArgs) {
+  return generateClinicProfileMetadata(args, 'de')
 }

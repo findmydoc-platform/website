@@ -9,12 +9,11 @@ const routeMocks = vi.hoisted(() => ({
   findFavoriteClinicStateRecord: vi.fn(),
   getCachedPublicClinicDetailServerData: vi.fn(),
   getClinicDetailServerData: vi.fn(),
-  getGlobal: vi.fn(),
+  getCookieConsentConfigs: vi.fn(),
   getPayload: vi.fn(),
   headers: vi.fn(),
   jsonLdScriptComponent: vi.fn(() => null),
   notFound: vi.fn(),
-  resolveCookieConsentContext: vi.fn(),
   resolveFavoriteClinicAuthContext: vi.fn(),
 }))
 
@@ -46,7 +45,7 @@ vi.mock('@/app/(frontend)/clinics/[slug]/ClinicDetailClientAdapter.client', () =
 
 vi.mock('@/features/cookieConsent', () => ({
   COOKIE_CONSENT_COOKIE_NAME: 'cookie-consent',
-  resolveCookieConsentContext: routeMocks.resolveCookieConsentContext,
+  parseCookieConsentState: vi.fn(),
 }))
 
 vi.mock('@/features/favorites/server', () => ({
@@ -59,8 +58,8 @@ vi.mock('@/utilities/clinicDetail/serverData', () => ({
   getClinicDetailServerData: routeMocks.getClinicDetailServerData,
 }))
 
-vi.mock('@/utilities/getGlobals', () => ({
-  getGlobal: routeMocks.getGlobal,
+vi.mock('@/app/(frontend)/_data/cookieConsent', () => ({
+  getCookieConsentConfigs: routeMocks.getCookieConsentConfigs,
 }))
 
 vi.mock('@/utilities/structuredData', () => ({
@@ -135,13 +134,9 @@ describe('frontend clinic detail route', () => {
     routeMocks.draftMode.mockResolvedValue({ isEnabled: false })
     routeMocks.getCachedPublicClinicDetailServerData.mockResolvedValue(clinicDetailData)
     routeMocks.getClinicDetailServerData.mockResolvedValue(clinicDetailData)
-    routeMocks.getGlobal.mockResolvedValue(null)
+    routeMocks.getCookieConsentConfigs.mockResolvedValue({ de: null, en: null })
     routeMocks.getPayload.mockResolvedValue({})
     routeMocks.headers.mockResolvedValue(new Headers())
-    routeMocks.resolveCookieConsentContext.mockReturnValue({
-      config: null,
-      initialConsent: null,
-    })
     routeMocks.resolveFavoriteClinicAuthContext.mockResolvedValue({
       isPatient: false,
       patient: null,
@@ -154,8 +149,8 @@ describe('frontend clinic detail route', () => {
       params: Promise.resolve({ slug: 'berlin-health' }),
     })
 
-    expect(routeMocks.buildClinicDetailPageJsonLd).toHaveBeenCalledWith(clinicDetailData)
-    expect(routeMocks.getCachedPublicClinicDetailServerData).toHaveBeenCalledWith('berlin-health')
+    expect(routeMocks.buildClinicDetailPageJsonLd).toHaveBeenCalledWith(clinicDetailData, 'de')
+    expect(routeMocks.getCachedPublicClinicDetailServerData).toHaveBeenCalledWith('berlin-health', 'de')
     expect(routeMocks.getClinicDetailServerData).not.toHaveBeenCalled()
     const jsonLdElement = findElementByType(result, routeMocks.jsonLdScriptComponent) as React.ReactElement<{
       data: unknown
@@ -168,6 +163,20 @@ describe('frontend clinic detail route', () => {
     expect(clinicDetailElement?.props.data).toBe(clinicDetailData)
   })
 
+  it('gives opt-in English search traffic its own canonical and links back to the same German clinic', async () => {
+    const { generateMetadata } = await import('@/app/(frontend)/en/clinics/[slug]/page')
+    const metadata = await generateMetadata({ params: Promise.resolve({ slug: 'berlin-health' }) })
+
+    expect(metadata.alternates).toEqual({
+      canonical: '/en/clinics/berlin-health',
+      languages: {
+        de: '/clinics/berlin-health',
+        en: '/en/clinics/berlin-health',
+        'x-default': '/clinics/berlin-health',
+      },
+    })
+  })
+
   it('keeps draft clinic detail reads live', async () => {
     routeMocks.draftMode.mockResolvedValue({ isEnabled: true })
     const pageModule = await import('@/app/(frontend)/clinics/[slug]/page')
@@ -176,7 +185,10 @@ describe('frontend clinic detail route', () => {
       params: Promise.resolve({ slug: 'berlin-health' }),
     })
 
-    expect(routeMocks.getClinicDetailServerData).toHaveBeenCalledWith({}, 'berlin-health', { draft: true })
+    expect(routeMocks.getClinicDetailServerData).toHaveBeenCalledWith({}, 'berlin-health', {
+      draft: true,
+      locale: 'de',
+    })
     expect(routeMocks.getCachedPublicClinicDetailServerData).not.toHaveBeenCalled()
   })
 

@@ -68,6 +68,7 @@ export type RatingSummaryProps = {
   variant?: RatingSummaryVariant
   countFormat?: RatingSummaryCountFormat
   ratingLabel?: string
+  countLabel?: string
   locale?: string
 }
 
@@ -82,12 +83,13 @@ export function RatingSummary({
   variant = 'inline',
   countFormat = 'paren',
   ratingLabel,
+  countLabel,
   locale,
 }: RatingSummaryProps) {
   const valueText = locale
     ? value.toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 })
     : value.toFixed(1)
-  const countText = formatCount(locale ? count.toLocaleString(locale) : String(count), countFormat)
+  const countText = countLabel ?? formatCount(locale ? count.toLocaleString(locale) : String(count), countFormat)
 
   if (variant === 'stacked') {
     return (

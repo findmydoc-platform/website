@@ -1,4 +1,5 @@
 import { ABOUT_PATHS, CLINIC_PARTNER_PATHS } from '@/i18n/editorialLandingPaths'
+import { clinicProfileLocaleFromPath } from '@/i18n/clinicProfilePath'
 import { PUBLIC_DISCOVERY_SURFACE_PATHS } from '@/features/publicDiscovery/site'
 import { CLINIC_APPLICATION_PATHS } from '@/i18n/clinicApplicationPath'
 import { buildPagePath, buildPostPath } from '@/utilities/cachePolicy'
@@ -42,7 +43,7 @@ const DEDICATED_PAGE_PATHS = new Set([
 ])
 
 const RESERVED_PAGE_NAMESPACE = /^\/(?:admin|api|_next)(?:\/|$)/
-const DEDICATED_DYNAMIC_PAGE = /^\/(?:clinics\/[^/]+|patient\/inquiries\/[^/]+|posts\/[^/]+|posts\/page\/[^/]+)$/
+const DEDICATED_DYNAMIC_PAGE = /^\/(?:patient\/inquiries\/[^/]+|posts\/[^/]+|posts\/page\/[^/]+)$/
 
 export function buildCmsRedirectPath(
   collection: CmsRedirectCollection,
@@ -57,6 +58,7 @@ export function buildCmsRedirectPath(
     if (
       collection === 'pages' &&
       (DEDICATED_PAGE_PATHS.has(path) ||
+        clinicProfileLocaleFromPath(path) ||
         RESERVED_PAGE_NAMESPACE.test(path) ||
         DEDICATED_DYNAMIC_PAGE.test(path) ||
         isPublicStaticAssetPath(path))

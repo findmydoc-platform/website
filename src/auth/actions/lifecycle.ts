@@ -901,6 +901,7 @@ export function bindAuthActions(
       email: string
       context: RecoveryContext | null
       actionType?: 'clinic-recovery'
+      locale?: PatientAuthLocale
     }): Promise<AuthAction | null> {
       const email = normalizeEmail(input.email)
       if (!isValidEmail(email) || email.length > 254) throw new AuthActionError('invalid-command')
@@ -999,6 +1000,7 @@ export function bindAuthActions(
           scope,
           {
             actionType: principal.actionType,
+            locale: principal.actionType === 'patient-recovery' ? input.locale : undefined,
             principal: { relationTo: principal.collection, value: principal.document.id },
           },
           { correlationDigest: correlation.digest, correlationKeyVersion: correlation.keyVersion },

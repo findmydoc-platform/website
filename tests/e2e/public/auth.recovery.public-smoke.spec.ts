@@ -84,7 +84,10 @@ for (const { locale, prefix, emailLabel } of [
     await expect(emailField).toBeDisabled()
     await expect(submit).toBeDisabled()
     await expect(emailField).toHaveValue('')
-    expect(requests).toEqual([{ email }, { email }])
+    expect(requests).toEqual([
+      { email, locale },
+      { email, locale },
+    ])
 
     for (const width of viewports) {
       await page.setViewportSize({ width, height: 800 })
@@ -114,14 +117,14 @@ test('protected recovery screens keep an invalid link safe and offer a new reque
   const protectedScreens = [
     {
       name: 'confirmation-de',
-      path: '/auth/confirm?type=recovery',
+      path: '/auth/callback?type=recovery&locale=de',
       locale: 'de',
       canonicalPath: '/auth/confirm',
       requestPath: recoveryRoute,
     },
     {
       name: 'confirmation-en',
-      path: '/auth/en/confirm?type=recovery',
+      path: '/auth/callback?type=recovery&locale=en',
       locale: 'en',
       canonicalPath: '/auth/en/confirm',
       requestPath: `/en${recoveryRoute}`,

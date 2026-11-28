@@ -129,12 +129,14 @@ export function createPasswordRecoveryCatalogEntry(dependencies: Dependencies): 
           current.principal.document.id !== source.principal.document.id
         )
           throw new TransactionalEmailError('source-missing')
+        const locale =
+          current.action.actionType === 'patient-recovery' ? (current.action.locale ?? undefined) : undefined
         const callback =
           current.policy.callbackDestination === 'clinic-dashboard-auth-callback'
             ? new URL('/auth/callback', (dependencies.dashboardOrigin ?? getClinicDashboardOrigin)())
-            : patientVerificationCallback(dependencies.environment, current.action.id)
-        callback.searchParams.set('authActionId', String(current.action.id))
-        if (current.action.actionType === 'clinic-recovery')
+            : patientVerificationCallback(dependencies.environment, current.action.id, locale)
+        if (current.action.actionType === 'clinic-recovery') {
+          callback.searchParams.set('authActionId', String(current.action.id))
           callback.searchParams.set(
             'actionRef',
             createConfiguredActionReference(
@@ -143,6 +145,7 @@ export function createPasswordRecoveryCatalogEntry(dependencies: Dependencies): 
               dependencies.actionReferenceKeys,
             ),
           )
+        }
         callback.searchParams.set('next', current.action.completionRoute)
         const generated = await current.admin.generateLink({
           type: 'recovery',
@@ -158,7 +161,7 @@ export function createPasswordRecoveryCatalogEntry(dependencies: Dependencies): 
           throw new TransactionalEmailError('source-missing')
         callback.searchParams.set('token_hash', generated.data.properties.hashed_token)
         callback.searchParams.set('type', 'recovery')
-        return renderPasswordRecovery(current.principal.userType, current.email, callback.toString())
+        return renderPasswordRecovery(current.principal.userType, current.email, callback.toString(), locale)
       },
     }
   }

@@ -98,10 +98,16 @@ export async function findClinicBySlug(
   return clinic
 }
 
-export async function findClinicTreatmentsByClinicId(payload: Payload, clinicId: number): Promise<Clinictreatment[]> {
+export async function findClinicTreatmentsByClinicId(
+  payload: Payload,
+  clinicId: number,
+  locale: UiCopyLocale,
+): Promise<Clinictreatment[]> {
   return collectAllPages<Clinictreatment>(async (page) => {
     const result = await payload.find({
       collection: 'clinictreatments',
+      locale,
+      fallbackLocale: false,
       depth: 2,
       page,
       limit: QUERY_PAGE_SIZE,
@@ -138,11 +144,17 @@ export async function findClinicTreatmentsByClinicId(payload: Payload, clinicId:
   })
 }
 
-export async function findDoctorsByClinicId(payload: Payload, clinicId: number): Promise<Doctor[]> {
+export async function findDoctorsByClinicId(
+  payload: Payload,
+  clinicId: number,
+  locale: UiCopyLocale,
+): Promise<Doctor[]> {
   return collectAllPages<Doctor>(async (page) => {
     const result = await payload.find({
       collection: 'doctors',
-      depth: 1,
+      locale,
+      fallbackLocale: false,
+      depth: 0,
       page,
       limit: QUERY_PAGE_SIZE,
       pagination: true,
@@ -165,11 +177,13 @@ export async function findDoctorsByClinicId(payload: Payload, clinicId: number):
         id: true,
         active: true,
         fullName: true,
+        title: true,
         firstName: true,
         lastName: true,
         gender: true,
         averageRating: true,
         biography: true,
+        localizedBiography: true,
         profileImage: true,
         clinic: true,
         qualifications: true,
@@ -189,6 +203,7 @@ export async function findDoctorsByClinicId(payload: Payload, clinicId: number):
 export async function findDoctorSpecialtiesByDoctorIds(
   payload: Payload,
   doctorIds: number[],
+  locale: UiCopyLocale,
 ): Promise<Doctorspecialty[]> {
   if (doctorIds.length === 0) return []
 
@@ -199,6 +214,8 @@ export async function findDoctorSpecialtiesByDoctorIds(
     const chunkDocs = await collectAllPages<Doctorspecialty>(async (page) => {
       const result = await payload.find({
         collection: 'doctorspecialties',
+        locale,
+        fallbackLocale: false,
         depth: 2,
         page,
         limit: QUERY_PAGE_SIZE,

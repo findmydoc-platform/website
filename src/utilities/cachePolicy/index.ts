@@ -520,7 +520,7 @@ export const CACHE_POLICY_CATALOG = [
     pathRelationship: 'tag-first',
     pathFamilies: ['fixed-public-path'],
     collections: ['treatments', 'medical-specialties', 'cities', 'countries', 'tags'],
-    surfaces: ['listing-comparison', 'home', 'partners-clinics'],
+    surfaces: ['listing-comparison', 'home', 'partners-clinics', 'clinic-detail'],
   },
   {
     id: 'collection:categories',

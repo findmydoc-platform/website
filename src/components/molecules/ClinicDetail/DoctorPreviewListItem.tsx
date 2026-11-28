@@ -7,17 +7,24 @@ import type { ClinicDetailDoctor } from '@/features/clinicDetail/contracts'
 
 type DoctorPreviewListItemProps = {
   doctor: ClinicDetailDoctor
+  selectLabel: string
   selected: boolean
   ratingText: string
   onSelect: () => void
 }
 
-export function DoctorPreviewListItem({ doctor, selected, ratingText, onSelect }: DoctorPreviewListItemProps) {
+export function DoctorPreviewListItem({
+  doctor,
+  selectLabel,
+  selected,
+  ratingText,
+  onSelect,
+}: DoctorPreviewListItemProps) {
   return (
     <button
       type="button"
       onClick={onSelect}
-      aria-label={`Select ${doctor.name}`}
+      aria-label={selectLabel}
       aria-pressed={selected}
       className={cn(
         'grid w-full cursor-pointer grid-cols-[56px_1fr] items-center gap-3 rounded-xl px-2 py-2 text-left transition-colors',
@@ -37,7 +44,7 @@ export function DoctorPreviewListItem({ doctor, selected, ratingText, onSelect }
 
       <div className="min-w-0">
         <p className="truncate text-base font-semibold text-secondary">{doctor.name}</p>
-        <p className="truncate text-xs text-secondary/60">{doctor.specialty}</p>
+        {doctor.specialty ? <p className="truncate text-xs text-secondary/60">{doctor.specialty}</p> : null}
         <p className="truncate text-[11px] text-secondary/45">{ratingText}</p>
       </div>
     </button>

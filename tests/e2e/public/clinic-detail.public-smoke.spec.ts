@@ -229,6 +229,104 @@ test.describe('published clinic overview languages', () => {
     }
   })
 
+  test('selects localized treatment and doctor details with shared inquiry references @smoke', async ({
+    page,
+    context,
+  }, testInfo) => {
+    test.setTimeout(120_000)
+    await setCookieConsent(context)
+    const issues = createBrowserIssueCollector(page)
+    const slug = fixtureSlugs.get('complete')
+    const languages = {
+      de: {
+        pathname: `/clinics/${slug}`,
+        treatment: 'Testbehandlung Zahnaufhellung',
+        specialty: 'Testfachgebiet Zahnmedizin',
+        biography: 'Profiltest Ärztin für Zahnmedizin.',
+        portrait: 'Profiltest Ärztin im Flur',
+        price: /1\.234,56\s*€/,
+        curated: 'Ausgewählte Behandlungen',
+        choose: 'Behandlung auswählen',
+        comparison: 'Kliniken für Testbehandlung Zahnaufhellung vergleichen',
+        comparisonPath: '/listing-comparison',
+        doctorSelect: 'Dr. Ada Example auswählen',
+        doctorContact: 'Arztkontakt anfragen',
+        additional: 'Weitere Behandlungen',
+      },
+      en: {
+        pathname: `/en/clinics/${slug}`,
+        treatment: 'Teeth Whitening Test Treatment',
+        specialty: 'Dental Care Test Specialty',
+        biography: 'Dental specialist for the profile test.',
+        portrait: 'Profile test doctor in the hallway',
+        price: /€1,234\.56/,
+        curated: 'Selected Treatments',
+        choose: 'Choose Treatment',
+        comparison: 'Compare clinics for Teeth Whitening Test Treatment',
+        comparisonPath: '/en/listing-comparison',
+        doctorSelect: 'Select Dr. Ada Example',
+        doctorContact: 'Contact Doctor',
+        additional: 'Further Treatments',
+      },
+    }
+    const selections: Array<{ doctor: string; treatment: string }> = []
+
+    for (const locale of ['de', 'en'] as const) {
+      const labels = languages[locale]
+      await page.goto(labels.pathname)
+      for (const width of [320, 375, 640, 768, 1024, 1280]) {
+        await page.setViewportSize({ width, height: width === 640 ? 390 : 760 })
+        expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width)
+        const treatmentList = page.getByRole('region', { name: labels.curated })
+        await expect(treatmentList.getByRole('heading', { name: labels.treatment })).toBeVisible()
+        await expect(treatmentList.getByText(labels.price)).toBeVisible()
+        const compare = treatmentList.getByRole('link', { name: labels.comparison })
+        const comparisonHref = new URL((await compare.getAttribute('href'))!, page.url())
+        expect(comparisonHref.pathname).toBe(labels.comparisonPath)
+
+        const choose = treatmentList.getByRole('button', { name: labels.choose })
+        await choose.focus()
+        await page.keyboard.press('Enter')
+        const treatment = await page.locator('select[name="treatment"]').inputValue()
+        expect(treatment).toBeTruthy()
+        expect(comparisonHref.searchParams.get('treatment')).toBe(treatment)
+        await expect(page.locator('select[name="treatment"] option:checked')).toHaveText(labels.treatment)
+
+        const selectDoctor = page.getByRole('button', { name: labels.doctorSelect })
+        await selectDoctor.focus()
+        await page.keyboard.press('Enter')
+        await expect(selectDoctor).toHaveAttribute('aria-pressed', 'true')
+        await expect(page.getByText(labels.biography)).toBeVisible()
+        await expect(page.getByText(labels.specialty, { exact: true }).first()).toBeVisible()
+        await expect(page.getByText('E2E Medical Board Certificate')).toBeVisible()
+        await expect(page.getByRole('img', { name: labels.portrait }).first()).toBeVisible()
+
+        await page.getByRole('link', { name: labels.doctorContact }).click()
+        const doctor = await page.locator('select[name="doctor"]').inputValue()
+        expect(doctor).toBeTruthy()
+        await expect(page.locator('select[name="doctor"] option:checked')).toHaveText('Dr. Ada Example')
+        await page.getByRole('heading', { name: labels.additional }).scrollIntoViewIfNeeded()
+        await expect(page.getByRole('region', { name: labels.additional }).getByRole('status')).toBeVisible()
+
+        if (width === 640 || width === 1280) {
+          const suffix = `${locale}-${width}`
+          await treatmentList.screenshot({ path: testInfo.outputPath(`clinic-treatments-${suffix}.png`) })
+          await page
+            .getByRole('link', { name: labels.doctorContact })
+            .locator('xpath=ancestor::article')
+            .screenshot({ path: testInfo.outputPath(`clinic-doctor-${suffix}.png`) })
+        }
+        // Deselect this preview so the next run exercises the same selection cycle.
+        await selectDoctor.click()
+        await expect(selectDoctor).toHaveAttribute('aria-pressed', 'false')
+        selections.push({ doctor, treatment })
+      }
+    }
+
+    expect(new Set(selections.map(({ doctor, treatment }) => `${doctor}:${treatment}`)).size).toBe(1)
+    await expectNoBrowserIssues(issues)
+  })
+
   test('keeps locale, clinic facts and gallery navigation across both overview languages @smoke', async ({
     page,
     context,

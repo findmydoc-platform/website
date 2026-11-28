@@ -138,11 +138,7 @@ function resolveMedicalSpecialtyName(value: unknown): string | null {
   if (!value || typeof value !== 'object') return null
 
   const specialty = value as Partial<MedicalSpecialty>
-  if (typeof specialty.name === 'string' && specialty.name.trim().length > 0) {
-    return specialty.name
-  }
-
-  return null
+  return specialty.displayName?.trim() || specialty.name?.trim() || null
 }
 
 function resolveTreatmentCategory(value: unknown): string | undefined {
@@ -155,29 +151,47 @@ function resolveTreatmentCategory(value: unknown): string | undefined {
 function buildTreatmentComparisonLink(
   treatmentId: number,
   treatmentName: string,
+  locale: UiCopyLocale,
 ): NonNullable<ClinicDetailTreatment['comparisonLink']> {
   return {
-    href: buildListingComparisonHref({
-      page: 1,
-      sort: 'rank',
-      cities: [],
-      treatments: [String(treatmentId)],
-      specialties: [],
-      ratingMin: null,
-      priceMin: LISTING_COMPARISON_PRICE_MIN_DEFAULT,
-      priceMax: LISTING_COMPARISON_PRICE_MAX_DEFAULT,
-    }),
-    label: `Compare clinics for ${treatmentName}`,
+    href: buildListingComparisonHref(
+      {
+        page: 1,
+        sort: 'rank',
+        cities: [],
+        treatments: [String(treatmentId)],
+        specialties: [],
+        ratingMin: null,
+        priceMin: LISTING_COMPARISON_PRICE_MIN_DEFAULT,
+        priceMax: LISTING_COMPARISON_PRICE_MAX_DEFAULT,
+      },
+      { locale },
+    ),
+    label: getClinicProfileTranslator(locale)('treatments.compare', { treatment: treatmentName }),
   }
 }
 
-function resolveDoctorName(doctor: Doctor): string {
-  if (typeof doctor.fullName === 'string' && doctor.fullName.trim().length > 0) {
-    return doctor.fullName
+const doctorTitleKeys = {
+  dr: 'doctors.titleDr',
+  specialist: 'doctors.titleSpecialist',
+  surgeon: 'doctors.titleSurgeon',
+  assoc_prof: 'doctors.titleAssocProf',
+  prof_dr: 'doctors.titleProfDr',
+} as const
+
+function resolveDoctorName(doctor: Doctor, locale: UiCopyLocale): string {
+  const t = getClinicProfileTranslator(locale)
+  const baseName = normalizeWhitespace([doctor.firstName, doctor.lastName].filter(Boolean).join(' '))
+  if (!baseName) return doctor.fullName?.trim() || t('doctors.unnamed', { id: String(doctor.id) })
+  if (!doctor.title) return doctor.fullName?.trim() || baseName
+
+  if (doctor.title === 'specialist' || doctor.title === 'surgeon') {
+    const genderSuffix = doctor.gender === 'female' ? 'Female' : doctor.gender === 'male' ? 'Male' : ''
+    const title = t(`${doctorTitleKeys[doctor.title]}${genderSuffix}`)
+    return `${title} ${baseName}`
   }
 
-  const fallbackName = normalizeWhitespace(`${doctor.firstName} ${doctor.lastName}`)
-  return fallbackName.length > 0 ? fallbackName : `Doctor ${doctor.id}`
+  return `${t(doctorTitleKeys[doctor.title])} ${baseName}`
 }
 
 function buildFullAddress(clinic: Clinic, cityNameById: Map<number, string>, locale: UiCopyLocale): string | undefined {
@@ -222,16 +236,16 @@ function buildLocation(clinic: Clinic, cityNameById: Map<number, string>, locale
   }
 }
 
-function mapTreatments(treatments: Clinictreatment[]): ClinicDetailTreatment[] {
+function mapTreatments(treatments: Clinictreatment[], locale: UiCopyLocale): ClinicDetailTreatment[] {
+  const t = getClinicProfileTranslator(locale)
   return treatments.map((entry) => {
     const treatment = entry.treatment as number | Treatment
     const treatmentRelationId = extractRelationId(treatment)
     const treatmentId = treatmentRelationId ?? entry.id
 
     const treatmentName =
-      treatment && typeof treatment === 'object' && 'name' in treatment && typeof treatment.name === 'string'
-        ? treatment.name
-        : `Treatment ${treatmentId}`
+      (typeof treatment === 'object' && (treatment?.displayName?.trim() || treatment?.name?.trim())) ||
+      t('treatments.unnamed', { id: String(treatmentId) })
 
     return {
       id: String(treatmentId),
@@ -240,7 +254,7 @@ function mapTreatments(treatments: Clinictreatment[]): ClinicDetailTreatment[] {
       category: resolveTreatmentCategory(treatment),
       comparisonLink:
         typeof treatmentRelationId === 'number'
-          ? buildTreatmentComparisonLink(treatmentRelationId, treatmentName)
+          ? buildTreatmentComparisonLink(treatmentRelationId, treatmentName, locale)
           : undefined,
     }
   })
@@ -269,40 +283,45 @@ function buildDoctorSpecialtyMap(doctorSpecialties: Doctorspecialty[]): Map<numb
 
 function mapDoctors({
   doctors,
+  locale,
   doctorSpecialties,
   doctorReviewCounts,
   contactHref,
   doctorMediaByDoctorId,
 }: {
   doctors: Doctor[]
+  locale: UiCopyLocale
   doctorSpecialties: Doctorspecialty[]
   doctorReviewCounts: Map<number, number>
   contactHref: string
   doctorMediaByDoctorId?: ReadonlyMap<number, MediaDescriptor>
 }): ClinicDetailDoctor[] {
+  const t = getClinicProfileTranslator(locale)
   const specialtyByDoctorId = buildDoctorSpecialtyMap(doctorSpecialties)
 
   return doctors.map((doctor) => {
     const doctorId = String(doctor.id)
+    const name = resolveDoctorName(doctor, locale)
     const reviewCount = doctorReviewCounts.get(doctor.id)
 
     const languages = doctor.languages
-      .map((value) => toLanguageLabel(value))
+      .map((value) => toLanguageLabel(value, locale))
       .filter((value): value is string => Boolean(value))
 
     return {
       id: doctorId,
-      name: resolveDoctorName(doctor),
-      specialty: specialtyByDoctorId.get(doctor.id) ?? 'General Practice',
+      name,
+      specialty: specialtyByDoctorId.get(doctor.id),
       ratingValue: typeof doctor.averageRating === 'number' ? doctor.averageRating : undefined,
       reviewCount: typeof reviewCount === 'number' ? reviewCount : undefined,
       qualifications: doctor.qualifications,
       yearsExperience: typeof doctor.experienceYears === 'number' ? doctor.experienceYears : undefined,
       languages,
-      description: doctor.biography ?? undefined,
+      description: doctor.localizedBiography?.trim() || (locale === 'en' ? doctor.biography?.trim() : undefined),
       image: resolveDoctorProfileImage({
         doctor,
         descriptorsByDoctorId: doctorMediaByDoctorId,
+        fallbackAlt: t('doctors.portrait', { doctor: name }),
       }),
       contactHref,
     }
@@ -544,9 +563,10 @@ export function mapClinicToClinicDetailData({
       reviewResponses,
       clinicName: clinic.name,
     }),
-    treatments: mapTreatments(clinicTreatments),
+    treatments: mapTreatments(clinicTreatments, locale),
     doctors: mapDoctors({
       doctors,
+      locale,
       doctorSpecialties,
       doctorReviewCounts,
       doctorMediaByDoctorId,

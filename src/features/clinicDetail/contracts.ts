@@ -20,7 +20,7 @@ export type ClinicDetailDoctorSocialLink = {
 export type ClinicDetailDoctor = {
   id: string
   name: string
-  specialty: string
+  specialty?: string
   ratingValue?: number
   reviewCount?: number
   qualifications?: string[]

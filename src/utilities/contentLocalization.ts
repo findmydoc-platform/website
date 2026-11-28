@@ -78,7 +78,8 @@ export function isReservedPageSlug(slug: string, locale: string | undefined): bo
   while (end > start && trimmedSlug[end - 1] === '/') end--
 
   const path = trimmedSlug.slice(start, end)
-  if (path === SAVED_CLINICS_SLUG) return locale === 'de' || locale === 'en'
+  if (path === 'about' || path === 'partners/clinics' || path === SAVED_CLINICS_SLUG)
+    return locale === 'de' || locale === 'en'
   if (locale === 'de') return path === TURKISH_CLINIC_LANDING_SLUG || /^en(?:\/|$)/.test(path)
   if (locale === 'en') return /^posts\/(?:[^/]+|page\/[^/]+)$/.test(path) || reservedEnglishPageSlugs.has(path)
   return false

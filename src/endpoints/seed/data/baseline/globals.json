@@ -291,85 +291,198 @@
       },
       "clinicPartners": {
         "seo": {
-          "title": "For Partner Clinics | findmydoc",
-          "description": "Increase your clinic’s international reach and connect with qualified patients worldwide. Our comparison platform helps clinics, medical networks, and international patient departments gain visibility, trust, and high-intent inquiries - globally and sustainably."
+          "title": {
+            "de": "Für Partnerkliniken | findmydoc",
+            "en": "For Partner Clinics | findmydoc"
+          },
+          "description": {
+            "de": "Machen Sie Ihre Klinik für internationale Patientinnen und Patienten sichtbar. findmydoc unterstützt Kliniken, Klinikgruppen und internationale Patientenbüros mit geprüften Profilen und direkten Anfragen.",
+            "en": "Increase your clinic’s international reach and connect with qualified patients worldwide. Our comparison platform helps clinics, medical networks, and international patient departments gain visibility, trust, and high-intent inquiries - globally and sustainably."
+          }
         },
         "hero": {
-          "title": "Gain International Patients Through a Trusted Global Clinic Platform",
-          "description": "Increase your clinic’s international reach and connect with qualified patients worldwide. Our comparison platform helps clinics, medical networks, and international patient departments gain visibility, trust, and high-intent inquiries - globally and sustainably.",
-          "imageStableId": "landing-clinic-partner-hero-turkey-tablet"
+          "title": {
+            "de": "Internationale Patientinnen und Patienten erreichen",
+            "en": "Gain International Patients Through a Trusted Global Clinic Platform"
+          },
+          "description": {
+            "de": "Machen Sie Ihre Klinik für internationale Patientinnen und Patienten sichtbar. Über findmydoc können sie geprüfte Klinikprofile vergleichen und Ihrer Klinik direkt eine Anfrage senden.",
+            "en": "Increase your clinic’s international reach and connect with qualified patients worldwide. Our comparison platform helps clinics, medical networks, and international patient departments gain visibility, trust, and high-intent inquiries - globally and sustainably."
+          },
+          "imageStableId": "landing-clinic-partner-hero-turkey-tablet",
+          "imageAlt": {
+            "de": "Ein Arzt zeigt einem Patienten das geprüfte Profil seiner Klinik auf einem Tablet",
+            "en": "Turkish doctor showing a verified clinic profile to an international patient"
+          }
         },
         "features": {
-          "title": "Features",
-          "description": "Increase your clinic’s visibility, attract qualified patients, and grow internationally through transparent, verified profiles.",
+          "title": {
+            "de": "Vorteile für Ihre Klinik",
+            "en": "Features"
+          },
+          "description": {
+            "de": "Machen Sie Ihre Klinik mit einem geprüften Profil sichtbar und erhalten Sie direkte Anfragen aus dem Ausland.",
+            "en": "Increase your clinic’s visibility, attract qualified patients, and grow internationally through transparent, verified profiles."
+          },
           "items": [
             {
-              "title": "Qualified Leads",
-              "subtitle": "Easy & Robust",
-              "description": "Receive patient inquiries from users actively comparing clinics and treatments. Only relevant and treatment focused leads.",
+              "title": {
+                "de": "Passende Anfragen",
+                "en": "Qualified Leads"
+              },
+              "subtitle": {
+                "de": "Direkter Patientenkontakt",
+                "en": "Easy & Robust"
+              },
+              "description": {
+                "de": "Erhalten Sie Anfragen von Menschen, die bereits Kliniken und Behandlungen vergleichen.",
+                "en": "Receive patient inquiries from users actively comparing clinics and treatments. Only relevant and treatment focused leads."
+              },
               "icon": "target"
             },
             {
-              "title": "Reputation Boost",
-              "subtitle": "Huge Collection",
-              "description": "Strengthen your clinic’s credibility through verified qualifications and transparent profiles that build trust with international patients.",
+              "title": {
+                "de": "Nachvollziehbare Qualifikationen",
+                "en": "Reputation Boost"
+              },
+              "subtitle": {
+                "de": "Geprüfte Klinikprofile",
+                "en": "Huge Collection"
+              },
+              "description": {
+                "de": "Zeigen Sie Ihre geprüften Qualifikationen in einem transparenten Profil und geben Sie internationalen Patientinnen und Patienten eine verlässliche Grundlage für den Vergleich.",
+                "en": "Strengthen your clinic’s credibility through verified qualifications and transparent profiles that build trust with international patients."
+              },
               "icon": "trendingUp"
             },
             {
-              "title": "Visibility Increase",
-              "subtitle": "Responsive & Retina",
-              "description": "Increase your clinic’s visibility where international patients search, compare and decide across the DACH region.",
+              "title": {
+                "de": "Mehr Sichtbarkeit",
+                "en": "Visibility Increase"
+              },
+              "subtitle": {
+                "de": "Im deutschsprachigen Raum",
+                "en": "Responsive & Retina"
+              },
+              "description": {
+                "de": "Erreichen Sie Patientinnen und Patienten, die in Deutschland, Österreich und der Schweiz nach passenden Kliniken suchen.",
+                "en": "Increase your clinic’s visibility where international patients search, compare and decide across the DACH region."
+              },
               "icon": "eye"
             }
           ]
         },
         "process": {
-          "title": "Our Process",
-          "subtitle": "A transparent onboarding flow from profile setup to verified visibility and direct patient inquiries.",
+          "title": {
+            "de": "So läuft die Aufnahme ab",
+            "en": "Our Process"
+          },
+          "subtitle": {
+            "de": "Vom Anlegen des Profils über die Prüfung bis zur ersten direkten Patientenanfrage.",
+            "en": "A transparent onboarding flow from profile setup to verified visibility and direct patient inquiries."
+          },
           "steps": [
             {
               "step": 1,
-              "title": "Reach Out",
-              "description": "You contact us and receive a clear overview of how the platform works, including visibility options, regions, and patient demand.",
-              "imageStableId": "landing-partner-process-reach-out"
+              "title": {
+                "de": "Kontakt aufnehmen",
+                "en": "Reach Out"
+              },
+              "description": {
+                "de": "Wir erklären Ihnen, wie die Plattform funktioniert, wo Ihr Klinikprofil sichtbar wird und welche Anfragen für Ihre Klinik relevant sein können.",
+                "en": "You contact us and receive a clear overview of how the platform works, including visibility options, regions, and patient demand."
+              },
+              "imageStableId": "landing-partner-process-reach-out",
+              "imageAlt": {
+                "de": "Zwei Personen besprechen die Aufnahme einer Klinik in die Plattform",
+                "en": "Clinic partner onboarding discussion at a clinic office"
+              }
             },
             {
               "step": 2,
-              "title": "Finalize Profile",
-              "description": "Clinics create and manage their own profiles. This ensures full control over medical information, treatments offered, languages, expertise, and international patient services presented clearly for patient comparison.",
-              "imageStableId": "landing-process-create-profile"
+              "title": {
+                "de": "Klinikprofil vervollständigen",
+                "en": "Finalize Profile"
+              },
+              "description": {
+                "de": "Sie erstellen und pflegen Ihr Klinikprofil. Sie bestimmen, welche Angaben zu Behandlungen, Sprachen, Fachkenntnissen und Angeboten für internationale Patientinnen und Patienten im Vergleich erscheinen.",
+                "en": "Clinics create and manage their own profiles. This ensures full control over medical information, treatments offered, languages, expertise, and international patient services presented clearly for patient comparison."
+              },
+              "imageStableId": "landing-process-create-profile",
+              "imageAlt": {
+                "de": "Klinikregistrierung auf einem Smartphone",
+                "en": "Clinic registration form shown on a mobile phone"
+              }
             },
             {
               "step": 3,
-              "title": "Verification & Quality Check",
-              "description": "Clinics are required to provide relevant qualifications and certifications according to their medical services. This verification process ensures credibility, transparency, and a high-quality environment for international patients.",
-              "imageStableId": "landing-partner-process-verification"
+              "title": {
+                "de": "Qualifikationen prüfen lassen",
+                "en": "Verification & Quality Check"
+              },
+              "description": {
+                "de": "Reichen Sie die Qualifikationen und Zertifikate ein, die zu Ihren medizinischen Leistungen gehören. Wir prüfen die Nachweise für Ihr Klinikprofil.",
+                "en": "Clinics are required to provide relevant qualifications and certifications according to their medical services. This verification process ensures credibility, transparency, and a high-quality environment for international patients."
+              },
+              "imageStableId": "landing-partner-process-verification",
+              "imageAlt": {
+                "de": "Prüfung der Qualifikationsnachweise einer Klinik",
+                "en": "Clinic partner quality document review"
+              }
             },
             {
               "step": 4,
-              "title": "Connect with Patients",
-              "description": "Qualified international patients contact your clinic directly through the platform, ready to discuss treatments, and next steps.",
-              "imageStableId": "landing-partner-process-connect-patients"
+              "title": {
+                "de": "Patientenanfragen erhalten",
+                "en": "Connect with Patients"
+              },
+              "description": {
+                "de": "Internationale Patientinnen und Patienten kontaktieren Ihre Klinik direkt über die Plattform, um Behandlungen und nächste Schritte zu besprechen.",
+                "en": "Qualified international patients contact your clinic directly through the platform, ready to discuss treatments, and next steps."
+              },
+              "imageStableId": "landing-partner-process-connect-patients",
+              "imageAlt": {
+                "de": "Persönliches Gespräch nach einer Patientenanfrage",
+                "en": "Clinic partner consultation handshake after patient inquiry"
+              }
             }
           ]
         },
         "categoriesIntro": {
-          "title": "Our Categories",
-          "description": "Showcase your clinic under the categories patients search most."
+          "title": {
+            "de": "Fachbereiche",
+            "en": "Our Categories"
+          },
+          "description": {
+            "de": "Zeigen Sie Ihre Klinik in den Fachbereichen, nach denen Patientinnen und Patienten suchen.",
+            "en": "Showcase your clinic under the categories patients search most."
+          }
         },
         "cta": {
-          "title": "Let’s work together",
-          "buttonText": "Contact us",
+          "title": {
+            "de": "Werden Sie Partnerklinik",
+            "en": "Let’s work together"
+          },
+          "buttonText": {
+            "de": "Klinikbewerbung starten",
+            "en": "Contact us"
+          },
           "link": {
             "type": "custom",
             "newTab": false,
-            "url": "/contact"
+            "url": {
+              "de": "/contact",
+              "en": "/en/contact"
+            }
           }
         },
         "team": [
           {
             "name": "Volkan Kablan",
-            "role": "CEO",
+            "role": {
+              "de": "CEO",
+              "en": "CEO"
+            },
             "isPhoto": true,
             "photoDisplay": "original",
             "socials": {
@@ -383,7 +496,10 @@
           },
           {
             "name": "Youssef Adlah",
-            "role": "CMO",
+            "role": {
+              "de": "CMO",
+              "en": "CMO"
+            },
             "isPhoto": true,
             "photoDisplay": "original",
             "socials": {
@@ -397,7 +513,10 @@
           },
           {
             "name": "Anil Gökduman",
-            "role": "CPO",
+            "role": {
+              "de": "CPO",
+              "en": "CPO"
+            },
             "isPhoto": true,
             "socials": {
               "meta": "#",
@@ -410,7 +529,10 @@
           },
           {
             "name": "Özen Günes",
-            "role": "CLO",
+            "role": {
+              "de": "CLO",
+              "en": "CLO"
+            },
             "isPhoto": true,
             "socials": {
               "meta": "#",
@@ -423,7 +545,10 @@
           },
           {
             "name": "Sebastian Schütze",
-            "role": "CTO",
+            "role": {
+              "de": "CTO",
+              "en": "CTO"
+            },
             "isPhoto": true,
             "socials": {
               "meta": "#",
@@ -436,146 +561,306 @@
           }
         ],
         "teamIntro": {
-          "title": "Our Team",
-          "description": "We are a multidisciplinary team with backgrounds in healthcare, international patient management, medical marketing, and platform technology. Our focus is simple: helping clinics gain international patients in a sustainable, ethical, and measurable way."
+          "title": {
+            "de": "Unser Team",
+            "en": "Our Team"
+          },
+          "description": {
+            "de": "Wir bringen Erfahrung im Gesundheitswesen, in der Betreuung internationaler Patientinnen und Patienten, im Medizinmarketing und in der Plattformentwicklung mit. Wir helfen Kliniken, internationale Patientinnen und Patienten auf verantwortungsvolle und nachvollziehbare Weise zu erreichen.",
+            "en": "We are a multidisciplinary team with backgrounds in healthcare, international patient management, medical marketing, and platform technology. Our focus is simple: helping clinics gain international patients in a sustainable, ethical, and measurable way."
+          }
         },
         "teamCta": {
-          "buttonText": "About us",
+          "buttonText": {
+            "de": "Über uns",
+            "en": "About us"
+          },
           "link": {
             "type": "custom",
-            "url": "/about"
+            "url": {
+              "de": "/about",
+              "en": "/en/about"
+            }
           }
         },
         "testimonials": [
           {
-            "quote": "The clinic onboarding model is well structured and sets clear expectations for profile quality and international visibility.",
+            "quote": {
+              "de": "Die Aufnahme von Kliniken ist klar aufgebaut. Der Ablauf zeigt, welche Anforderungen gelten und wie Profile international sichtbar werden.",
+              "en": "The clinic onboarding model is well structured and sets clear expectations for profile quality and international visibility."
+            },
             "author": "Alex Morgan",
-            "role": "Clinic Growth Advisor",
+            "role": {
+              "de": "Berater für Klinikentwicklung",
+              "en": "Clinic Growth Advisor"
+            },
             "imageStableId": "landing-testimonial-partners-alex-morgan"
           },
           {
-            "quote": "I like that the positioning is not lead-reselling but direct patient contact supported by transparent clinic information.",
+            "quote": {
+              "de": "Mir gefällt, dass Patientinnen und Patienten Kliniken direkt kontaktieren. Transparente Klinikangaben schaffen dafür die Grundlage.",
+              "en": "I like that the positioning is not lead-reselling but direct patient contact supported by transparent clinic information."
+            },
             "author": "Nina Feld",
-            "role": "International Patient Services Consultant",
+            "role": {
+              "de": "Beraterin für internationale Patientenservices",
+              "en": "International Patient Services Consultant"
+            },
             "imageStableId": "landing-testimonial-partners-nina-feld"
           },
           {
-            "quote": "From an operations perspective, the process is practical: present verified strengths, compare clearly, and move into qualified conversations.",
+            "quote": {
+              "de": "Aus betrieblicher Sicht ist der Ablauf praktikabel. Kliniken weisen ihre Stärken nach, Patientinnen und Patienten können sie vergleichen, und daraus entstehen passende Gespräche.",
+              "en": "From an operations perspective, the process is practical: present verified strengths, compare clearly, and move into qualified conversations."
+            },
             "author": "Robert Hayes",
-            "role": "Healthcare Operations Reviewer",
+            "role": {
+              "de": "Fachprüfer für Abläufe im Gesundheitswesen",
+              "en": "Healthcare Operations Reviewer"
+            },
             "imageStableId": "landing-testimonial-partners-robert-hayes"
           }
         ],
         "testimonialsIntro": {
-          "title": "Testimonials",
-          "description": "Feedback from healthcare and clinic growth experts who reviewed the partner onboarding and visibility model."
+          "title": {
+            "de": "Stimmen aus dem Gesundheitswesen",
+            "en": "Testimonials"
+          },
+          "description": {
+            "de": "Fachleute aus dem Gesundheitswesen und der Klinikentwicklung haben geprüft, wie Kliniken aufgenommen und sichtbar werden.",
+            "en": "Feedback from healthcare and clinic growth experts who reviewed the partner onboarding and visibility model."
+          }
         },
         "faq": {
-          "title": "FAQ",
-          "description": "This section answers the most common questions clinics and medical networks have about gaining international patients through our comparison platform. It provides clarity on regions, qualifications, visibility and how clinics connect with international patients across the DACH region and Europe.",
+          "title": {
+            "de": "Häufige Fragen",
+            "en": "FAQ"
+          },
+          "description": {
+            "de": "Antworten zu Regionen, Qualifikationsnachweisen, Sichtbarkeit und direktem Kontakt mit Patientinnen und Patienten.",
+            "en": "This section answers the most common questions clinics and medical networks have about gaining international patients through our comparison platform. It provides clarity on regions, qualifications, visibility and how clinics connect with international patients across the DACH region and Europe."
+          },
           "items": [
             {
-              "question": "How does this platform help clinics gain international patients?",
-              "answer": "By combining global visibility, patient guidance, and quality-focused clinic presentation in one trusted comparison environment."
+              "question": {
+                "de": "Wie hilft findmydoc Kliniken, internationale Patientinnen und Patienten zu erreichen?",
+                "en": "How does this platform help clinics gain international patients?"
+              },
+              "answer": {
+                "de": "findmydoc macht Klinikprofile international sichtbar und hilft Patientinnen und Patienten, Kliniken anhand nachvollziehbarer Angaben zu vergleichen.",
+                "en": "By combining global visibility, patient guidance, and quality-focused clinic presentation in one trusted comparison environment."
+              }
             },
             {
-              "question": "Are the patient inquiries exclusive?",
-              "answer": "Patients contact clinics directly. There are no resold or recycled leads."
+              "question": {
+                "de": "Erhält meine Klinik die Anfragen direkt?",
+                "en": "Are the patient inquiries exclusive?"
+              },
+              "answer": {
+                "de": "Patientinnen und Patienten kontaktieren Ihre Klinik direkt. Wir verkaufen Anfragen nicht weiter.",
+                "en": "Patients contact clinics directly. There are no resold or recycled leads."
+              }
             },
             {
-              "question": "Which countries and regions are covered?",
-              "answer": "Our primary focus is the DACH region (Germany, Austria, Switzerland), while also supporting international patient acquisition across Europe."
+              "question": {
+                "de": "Welche Länder und Regionen deckt findmydoc ab?",
+                "en": "Which countries and regions are covered?"
+              },
+              "answer": {
+                "de": "Unser Schwerpunkt liegt auf Deutschland, Österreich und der Schweiz. Wir unterstützen Kliniken auch dabei, Patientinnen und Patienten in weiteren europäischen Ländern zu erreichen.",
+                "en": "Our primary focus is the DACH region (Germany, Austria, Switzerland), while also supporting international patient acquisition across Europe."
+              }
             },
             {
-              "question": "Is this platform suitable for clinic groups and networks?",
-              "answer": "Yes. We support single clinics, clinic groups, and medical networks with scalable visibility options."
+              "question": {
+                "de": "Eignet sich findmydoc für Klinikgruppen und medizinische Netzwerke?",
+                "en": "Is this platform suitable for clinic groups and networks?"
+              },
+              "answer": {
+                "de": "Ja. Einzelne Kliniken, Klinikgruppen und medizinische Netzwerke können ihre Standorte über findmydoc sichtbar machen.",
+                "en": "Yes. We support single clinics, clinic groups, and medical networks with scalable visibility options."
+              }
             },
             {
-              "question": "Are patient inquiries focused on Europe?",
-              "answer": "Most inquiries originate from patients seeking treatment within Europe, with a strong focus on the DACH region."
+              "question": {
+                "de": "Aus welchen Regionen kommen die Anfragen?",
+                "en": "Are patient inquiries focused on Europe?"
+              },
+              "answer": {
+                "de": "Die meisten Anfragen kommen von Menschen, die eine Behandlung in Europa suchen. Der Schwerpunkt liegt auf Deutschland, Österreich und der Schweiz.",
+                "en": "Most inquiries originate from patients seeking treatment within Europe, with a strong focus on the DACH region."
+              }
             }
           ]
         },
         "blogTeaser": {
-          "title": "From our blog",
-          "description": "Explore practical insights, expert perspectives, and the latest topics across health and medicine."
+          "title": {
+            "de": "Aus unserem Blog",
+            "en": "From our blog"
+          },
+          "description": {
+            "de": "Lesen Sie praktische Hinweise, Beiträge von Fachleuten und aktuelle Artikel zu Gesundheit und Medizin.",
+            "en": "Explore practical insights, expert perspectives, and the latest topics across health and medicine."
+          }
         },
         "registrationIntro": {
-          "title": "Ready for verified visibility?",
-          "description": "Share the key details. We review your request personally and follow up with the next steps."
+          "title": {
+            "de": "Bewerbung als Partnerklinik",
+            "en": "Ready for verified visibility?"
+          },
+          "description": {
+            "de": "Senden Sie uns die wichtigsten Angaben zu Ihrer Klinik. Wir prüfen Ihre Bewerbung persönlich und melden uns mit den nächsten Schritten.",
+            "en": "Share the key details. We review your request personally and follow up with the next steps."
+          }
         },
         "contact": {
-          "title": "Kontakt",
-          "description": "Interested in gaining international patients and increasing your clinic’s global reach? Contact us to explore how your clinic can benefit from our international comparison platform."
+          "title": {
+            "de": "Kontakt",
+            "en": "Contact"
+          },
+          "description": {
+            "de": "Möchten Sie mit Ihrer Klinik internationale Patientinnen und Patienten erreichen? Sprechen Sie uns auf die Möglichkeiten bei findmydoc an.",
+            "en": "Interested in gaining international patients and increasing your clinic’s global reach? Contact us to explore how your clinic can benefit from our international comparison platform."
+          }
         }
       },
       "about": {
         "seo": {
-          "title": "About findmydoc | Trust system and team accountability",
-          "description": "Learn how findmydoc frames clinic signals around trust, transparency, and the team accountability behind the platform."
+          "title": {
+            "de": "Über findmydoc | Vertrauen und Verantwortung",
+            "en": "About findmydoc | Trust system and team accountability"
+          },
+          "description": {
+            "de": "Erfahren Sie, wie findmydoc Klinikangaben verständlich macht und wer im Team für die Plattform verantwortlich ist.",
+            "en": "Learn how findmydoc frames clinic signals around trust, transparency, and the team accountability behind the platform."
+          }
         },
         "hero": {
-          "title": "About findmydoc",
-          "description": "We build findmydoc so patients can compare clinic information with more context, and clinics can present their services responsibly.",
-          "imageStableId": "landing-about-hero-startup-team"
+          "title": {
+            "de": "Über findmydoc",
+            "en": "About findmydoc"
+          },
+          "description": {
+            "de": "Mit findmydoc können Patientinnen und Patienten Klinikangaben besser vergleichen. Kliniken können ihre Leistungen nachvollziehbar darstellen.",
+            "en": "We build findmydoc so patients can compare clinic information with more context, and clinics can present their services responsibly."
+          },
+          "imageStableId": "landing-about-hero-startup-team",
+          "imageAlt": {
+            "de": "Das Team von findmydoc im Büro",
+            "en": "findmydoc startup team in a calm office with space for about page copy"
+          }
         },
         "why": {
-          "title": "Why findmydoc exists",
+          "title": {
+            "de": "Warum es findmydoc gibt",
+            "en": "Why findmydoc exists"
+          },
           "items": [
             {
-              "text": "Profile claims, qualifications, reviews, prices, and contact options often arrive as separate signals."
+              "text": {
+                "de": "Klinikangaben, Qualifikationen, Bewertungen, Preise und Kontaktmöglichkeiten stehen oft an verschiedenen Stellen.",
+                "en": "Profile claims, qualifications, reviews, prices, and contact options often arrive as separate signals."
+              }
             },
             {
-              "text": "findmydoc gives those signals a shared comparison surface before a patient starts a clinic conversation."
+              "text": {
+                "de": "findmydoc führt diese Angaben zusammen. So können Patientinnen und Patienten Kliniken vergleichen, bevor sie Kontakt aufnehmen.",
+                "en": "findmydoc gives those signals a shared comparison surface before a patient starts a clinic conversation."
+              }
             },
             {
-              "text": "The comparison stays outside medical advice and keeps the decision boundary visible."
+              "text": {
+                "de": "Der Vergleich ersetzt keine medizinische Beratung. Die Entscheidung über eine Behandlung bleibt bei Ihnen und Ihrem Behandlungsteam.",
+                "en": "The comparison stays outside medical advice and keeps the decision boundary visible."
+              }
             }
           ]
         },
         "team": [
           {
             "name": "Volkan Kablan",
-            "role": "CEO",
-            "whatWeDo": "Sets partner standards so commercial decisions stay transparent and aligned with responsible clinic relationships.",
+            "role": {
+              "de": "CEO",
+              "en": "CEO"
+            },
+            "whatWeDo": {
+              "de": "Legt Standards für Klinikpartnerschaften fest und macht geschäftliche Entscheidungen nachvollziehbar.",
+              "en": "Sets partner standards so commercial decisions stay transparent and aligned with responsible clinic relationships."
+            },
             "imageStableId": "landing-team-volkan-kablan"
           },
           {
             "name": "Youssef Adlah",
-            "role": "CMO",
-            "whatWeDo": "Keeps clinic communication grounded in clear service claims instead of overstated promises.",
+            "role": {
+              "de": "CMO",
+              "en": "CMO"
+            },
+            "whatWeDo": {
+              "de": "Achtet darauf, dass Kliniken ihre Leistungen klar darstellen und ihre Aussagen belegen können.",
+              "en": "Keeps clinic communication grounded in clear service claims instead of overstated promises."
+            },
             "imageStableId": "landing-team-youssef-adlah"
           },
           {
             "name": "Anil Gökduman",
-            "role": "CPO",
-            "whatWeDo": "Shapes comparison flows around patient questions, so profile signals become easier to evaluate.",
+            "role": {
+              "de": "CPO",
+              "en": "CPO"
+            },
+            "whatWeDo": {
+              "de": "Richtet den Klinikvergleich an den Fragen der Patientinnen und Patienten aus, damit diese Klinikangaben besser beurteilen können.",
+              "en": "Shapes comparison flows around patient questions, so profile signals become easier to evaluate."
+            },
             "imageStableId": "landing-team-anil-goekduman"
           },
           {
             "name": "Özen Günes",
-            "role": "CLO",
-            "whatWeDo": "Keeps privacy, legal, and consent expectations visible in patient and clinic interactions.",
+            "role": {
+              "de": "CLO",
+              "en": "CLO"
+            },
+            "whatWeDo": {
+              "de": "Achtet darauf, dass Datenschutz, rechtliche Anforderungen und Einwilligungen im Kontakt zwischen Patientinnen, Patienten und Kliniken klar geregelt sind.",
+              "en": "Keeps privacy, legal, and consent expectations visible in patient and clinic interactions."
+            },
             "imageStableId": "landing-team-oezen-guenes"
           },
           {
             "name": "Sebastian Schütze",
-            "role": "CTO",
-            "whatWeDo": "Maintains the platform architecture that keeps profile signals structured, reliable, and accessible.",
+            "role": {
+              "de": "CTO",
+              "en": "CTO"
+            },
+            "whatWeDo": {
+              "de": "Verantwortet die technische Architektur, damit Klinikangaben strukturiert, verlässlich und zugänglich bleiben.",
+              "en": "Maintains the platform architecture that keeps profile signals structured, reliable, and accessible."
+            },
             "imageStableId": "landing-team-sebastian-schuetze"
           }
         ],
         "transparency": {
-          "title": "What stays transparent",
+          "title": {
+            "de": "Was transparent bleibt",
+            "en": "What stays transparent"
+          },
           "items": [
             {
-              "text": "Clinics remain accountable for the information shown on their profiles."
+              "text": {
+                "de": "Kliniken sind für die Angaben in ihren Profilen verantwortlich.",
+                "en": "Clinics remain accountable for the information shown on their profiles."
+              }
             },
             {
-              "text": "Qualification and evidence signals are reviewed before they are presented as trust context."
+              "text": {
+                "de": "Wir prüfen Qualifikationen und Nachweise, bevor wir sie im Klinikvergleich als geprüft ausweisen.",
+                "en": "Qualification and evidence signals are reviewed before they are presented as trust context."
+              }
             },
             {
-              "text": "Comparison context stays separate from medical advice, and patients contact clinics directly."
+              "text": {
+                "de": "Der Klinikvergleich ersetzt keine medizinische Beratung. Patientinnen und Patienten nehmen direkt mit Kliniken Kontakt auf.",
+                "en": "Comparison context stays separate from medical advice, and patients contact clinics directly."
+              }
             }
           ]
         }

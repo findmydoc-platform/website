@@ -77,7 +77,7 @@ describe('global revalidation hooks', () => {
       'surface:partners-clinics',
       'surface:sitemap:pages',
     ])
-    expect(getPathCalls()).toEqual(['/', '/about', '/partners/clinics'])
+    expect(getPathCalls()).toEqual(['/', '/about', '/en/about', '/partners/clinics', '/en/partners/clinics'])
   })
 
   it('skips planning and execution when disabled through context', async () => {

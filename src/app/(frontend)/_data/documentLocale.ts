@@ -1,3 +1,4 @@
+import { ABOUT_PATHS, CLINIC_PARTNER_PATHS } from '@/i18n/editorialLandingPaths'
 import { cache } from 'react'
 import { CLINIC_APPLICATION_PATHS } from '@/i18n/clinicApplicationPath'
 
@@ -11,7 +12,8 @@ import type { ContentLocale } from '@/utilities/contentLocalization'
 // Dedicated Next routes take precedence over the CMS Page catch-all.
 const DEDICATED_PATHS = new Set([
   '/',
-  '/about',
+  ...Object.values(ABOUT_PATHS),
+  ...Object.values(CLINIC_PARTNER_PATHS),
   '/auth/confirm',
   '/auth/en/confirm',
   '/auth/invite/complete',
@@ -26,7 +28,6 @@ const DEDICATED_PATHS = new Set([
   '/listing-comparison',
   '/login/patient',
   '/logout',
-  '/partners/clinics',
   ...Object.values(SAVED_CLINICS_PATHS),
   '/patient/inquiries',
   '/posts',

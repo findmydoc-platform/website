@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const routeMocks = vi.hoisted(() => ({
   findPageSitemapDocs: vi.fn(),
+  findGlobal: vi.fn(),
   findPostSitemapDocs: vi.fn(),
   getListingComparisonServerData: vi.fn(),
   getPayload: vi.fn(),
@@ -61,7 +62,11 @@ describe('frontend sitemap routes', () => {
     }
 
     vi.clearAllMocks()
-    routeMocks.getPayload.mockResolvedValue({})
+    routeMocks.getPayload.mockResolvedValue({ findGlobal: routeMocks.findGlobal })
+    routeMocks.findGlobal.mockResolvedValue({
+      clinicPartners: { hero: { title: 'Partner fixture' } },
+      about: { hero: { title: 'About fixture' } },
+    })
     routeMocks.getListingComparisonServerData.mockResolvedValue({
       freshness: {
         updatedAt: '2026-01-06T00:00:00.000Z',
@@ -146,6 +151,9 @@ describe('frontend sitemap routes', () => {
         'https://findmydoc.eu/contact',
         'https://findmydoc.eu/en/contact',
         'https://findmydoc.eu/about',
+        'https://findmydoc.eu/en/about',
+        'https://findmydoc.eu/partners/clinics',
+        'https://findmydoc.eu/en/partners/clinics',
         'https://findmydoc.eu/listing-comparison',
         'https://findmydoc.eu/en/listing-comparison',
       ]),
@@ -158,7 +166,7 @@ describe('frontend sitemap routes', () => {
     })
     expect(routeMocks.unstableCache).toHaveBeenCalledWith(
       expect.any(Function),
-      ['pages-sitemap', 'localized-archives'],
+      ['pages-sitemap', 'localized-editorial-landings'],
       {
         tags: ['surface:sitemap:pages'],
       },
@@ -188,7 +196,8 @@ describe('frontend sitemap routes', () => {
     const locs = getEntryLocations(body.entries)
 
     expect(locs.filter((loc: string) => loc === 'https://findmydoc.eu/')).toHaveLength(1)
-    expect(locs.filter((loc: string) => loc.endsWith('/about'))).toHaveLength(1)
+    expect(locs.filter((loc: string) => loc === 'https://findmydoc.eu/about')).toHaveLength(1)
+    expect(locs.filter((loc: string) => loc === 'https://findmydoc.eu/en/about')).toHaveLength(1)
     expect(locs.filter((loc: string) => loc.endsWith('/search'))).toHaveLength(0)
     expect(locs.filter((loc: string) => loc.endsWith('/custom-page'))).toHaveLength(1)
     expect(locs).toEqual(
@@ -197,9 +206,24 @@ describe('frontend sitemap routes', () => {
     expect(body.entries.find((entry: { loc: string }) => entry.loc === 'https://findmydoc.eu/')).toMatchObject({
       lastmod: '2026-01-01T00:00:00.000Z',
     })
-    expect(body.entries.find((entry: { loc: string }) => entry.loc.endsWith('/about'))).toMatchObject({
-      lastmod: '2026-01-01T00:00:00.000Z',
-    })
+    // A CMS catch-all document cannot supply freshness for the dedicated About route.
+    expect(
+      body.entries.find((entry: { loc: string }) => entry.loc === 'https://findmydoc.eu/about'),
+    ).not.toHaveProperty('lastmod')
+  })
+
+  it('excludes an unpopulated fixed rendition from search even if its slug exists as a CMS page', async () => {
+    routeMocks.findGlobal
+      .mockResolvedValueOnce({ about: { hero: { title: 'German fixture' } } })
+      .mockResolvedValueOnce({})
+    routeMocks.findPageSitemapDocs.mockImplementation(async (_payload, locale) =>
+      locale === 'en' ? [{ slug: 'about' }] : [],
+    )
+    const { GET } = await import('@/app/(frontend)/(sitemaps)/pages-sitemap.xml/route')
+    const response = await GET(new Request('https://findmydoc.eu/pages-sitemap.xml'))
+    const locs = getEntryLocations((await readSitemap(response)).entries)
+    expect(locs).toContain('https://findmydoc.eu/about')
+    expect(locs).not.toContain('https://findmydoc.eu/en/about')
   })
 
   it('adds the English page canonical after publication and removes it independently of German', async () => {

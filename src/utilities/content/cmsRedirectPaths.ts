@@ -1,3 +1,4 @@
+import { ABOUT_PATHS, CLINIC_PARTNER_PATHS } from '@/i18n/editorialLandingPaths'
 import { PUBLIC_DISCOVERY_SURFACE_PATHS } from '@/features/publicDiscovery/site'
 import { CLINIC_APPLICATION_PATHS } from '@/i18n/clinicApplicationPath'
 import { buildPagePath, buildPostPath } from '@/utilities/cachePolicy'
@@ -16,7 +17,8 @@ export type CmsRedirectSource = {
 // These routes take precedence over the CMS Page catch-all.
 const DEDICATED_PAGE_PATHS = new Set([
   '/',
-  '/about',
+  ...Object.values(ABOUT_PATHS),
+  ...Object.values(CLINIC_PARTNER_PATHS),
   '/auth/callback',
   '/auth/confirm',
   '/auth/en/confirm',
@@ -31,7 +33,6 @@ const DEDICATED_PAGE_PATHS = new Set([
   '/logout',
   '/next/exit-preview',
   '/next/preview',
-  '/partners/clinics',
   '/patient/favorites',
   '/patient/inquiries',
   '/posts',

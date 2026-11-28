@@ -4,10 +4,14 @@ import { Heading } from '@/components/atoms/Heading'
 import { TrustAtom } from '@/components/atoms/TrustAtom'
 import { Container } from '@/components/molecules/Container'
 
+import type { AboutPageCopy } from '@/features/uiCopy/aboutPage'
 import type { AboutTextSection } from './types'
-import { getAtomMotion, getSignalItem } from './aboutPageUtils'
+import { getAtomMotion } from './aboutPageUtils'
 
-export const SignalContextSection: React.FC<{ section: AboutTextSection }> = ({ section }) => {
+export const SignalContextSection: React.FC<{ section: AboutTextSection; copy: AboutPageCopy['signal'] }> = ({
+  section,
+  copy,
+}) => {
   return (
     <section
       className="relative overflow-hidden pt-14 pb-8 sm:pt-18 sm:pb-10 lg:pt-20 lg:pb-8"
@@ -16,14 +20,14 @@ export const SignalContextSection: React.FC<{ section: AboutTextSection }> = ({ 
       <Container>
         <div className="grid gap-10 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.5fr)] lg:items-start lg:gap-16">
           <div className="max-w-sm" data-about-signal-reveal="">
-            <p className="text-sm font-semibold tracking-[0.18em] text-primary uppercase">Before trust</p>
+            <p className="text-sm font-semibold tracking-[0.18em] text-primary uppercase">{copy.intro}</p>
             <Heading id="about-signal-context-heading" as="h2" align="left" size="h4" className="mt-3 text-secondary">
               {section.title}
             </Heading>
           </div>
           <div className="grid gap-4 sm:grid-cols-3">
             {section.items.map((item, index) => {
-              const signal = getSignalItem(index)
+              const signal = copy.items[index] ?? copy.items[0]
               const motion = getAtomMotion(index)
 
               return (

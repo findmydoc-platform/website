@@ -6,6 +6,8 @@ import type { FAQItem } from '@/components/organisms/FAQ'
 import type { LandingTestimonial } from '@/components/organisms/Landing/LandingTestimonials.types'
 import { resolveHrefFromCMSLink } from '@/blocks/_shared/utils'
 import type { LandingPage, PlatformContentMedia } from '@/payload-types'
+import { publicNavigationPaths } from '@/i18n/publicNavigationPath'
+import type { ContentLocale } from '@/utilities/contentLocalization'
 import { getCachedGlobal } from '@/utilities/getGlobals'
 import { resolveMediaImage, type MediaImageUsage, type ResolvedMediaImage } from '@/utilities/media/resolveMediaImage'
 import { landingSocialHosts, normalizeSafeLandingHref } from './safeLandingHref'
@@ -245,17 +247,25 @@ const normalizeFaq = (faq: LandingPage['home']['faq'], fieldPath: string): Landi
   })),
 })
 
-const normalizeProcess = (process: LandingPage['home']['process'], fieldPath: string): LandingProcessContent => ({
-  title: process.title,
-  subtitle: process.subtitle,
+type Process = LandingPage['home']['process'] | LandingPage['clinicPartners']['process']
+
+const normalizeProcess = (process: Process, fieldPath: string, localizedImages = false): LandingProcessContent => ({
+  title: process.title ?? '',
+  subtitle: process.subtitle ?? '',
   steps: requireLandingArray(process.steps, `${fieldPath}.steps`).map((step) => ({
     step: step.step,
-    title: step.title,
-    description: step.description,
+    title: step.title ?? '',
+    description: step.description ?? '',
   })),
-  stepImages: requireLandingArray(process.steps, `${fieldPath}.steps`).map((step, index) =>
-    resolveRequiredLandingImage(step.image, `${fieldPath}.steps.${index}.image`, step.title),
-  ),
+  stepImages: requireLandingArray(process.steps, `${fieldPath}.steps`).map((step, index) => {
+    const image = resolveRequiredLandingImage(step.image, `${fieldPath}.steps.${index}.image`, step.title ?? '')
+    return localizedImages ? withLandingImageAlt(image, 'imageAlt' in step ? step.imageAlt : undefined) : image
+  }),
+})
+
+const withLandingImageAlt = (image: ResolvedMediaImage, alt: string | null | undefined) => ({
+  ...image,
+  alt: alt?.trim() ?? '',
 })
 
 const normalizeTeam = (
@@ -267,8 +277,8 @@ const normalizeTeam = (
 
     return {
       name: member.name,
-      role: member.role,
-      image,
+      role: member.role ?? '',
+      image: withLandingImageAlt(image, member.imageAlt),
       ...(image.objectPosition ? { imageObjectPosition: image.objectPosition } : {}),
       isPhoto: member.isPhoto ?? true,
       photoDisplay: member.photoDisplay ?? 'grayscale',
@@ -315,10 +325,12 @@ const normalizeAboutTeam = (
 
   return requireLandingArray(team, 'about.team').map((member, index) => ({
     name: member.name,
-    role: member.role,
-    whatWeDo: member.whatWeDo,
-    image: resolveRequiredLandingImage(member.image, `about.team.${index}.image`, member.name, 'teamPortrait'),
-    profileLinks: [{ href: '/contact', label: 'Contact' }],
+    role: member.role ?? '',
+    whatWeDo: member.whatWeDo ?? '',
+    image: withLandingImageAlt(
+      resolveRequiredLandingImage(member.image, `about.team.${index}.image`, member.name, 'teamPortrait'),
+      member.imageAlt ?? member.name,
+    ),
     socials: socialSourceByName.get(member.name.trim().toLowerCase()),
   }))
 }
@@ -329,8 +341,8 @@ const normalizeAboutTeamForLanding = (team: AboutGlobal['team'], fieldPath = 'ab
 
     return {
       name: member.name,
-      role: member.role,
-      image,
+      role: member.role ?? '',
+      image: withLandingImageAlt(image, member.imageAlt),
       ...(image.objectPosition ? { imageObjectPosition: image.objectPosition } : {}),
       isPhoto: true,
       photoDisplay: 'original',
@@ -344,17 +356,20 @@ const normalizeAboutTextSection = (
   const requiredSection = requireLandingSection(section, fieldPath)
 
   return {
-    title: requiredSection.title,
-    items: requireLandingArray(requiredSection.items, `${fieldPath}.items`).map((item) => ({ text: item.text })),
+    title: requiredSection.title ?? '',
+    items: requireLandingArray(requiredSection.items, `${fieldPath}.items`).flatMap((item) =>
+      item.text?.trim() ? [{ text: item.text }] : [],
+    ),
   }
 }
 
 const normalizeLandingCtaButtonLink = (
   linkValue: LandingPage['clinicPartners']['cta']['link'],
   fieldPath: string,
+  locale: ContentLocale,
 ): string | undefined => {
   const isReference = linkValue.type === 'reference'
-  const href = resolveHrefFromCMSLink(linkValue, isReference ? { locale: 'de', fallbackLocale: false } : undefined)
+  const href = resolveHrefFromCMSLink(linkValue, isReference ? { locale, fallbackLocale: false } : undefined)
   const safeHref = normalizeSafeLandingHref(href, { allowInternalPath: true })
 
   // Unpublished and trashed targets can appear as unresolved references in public reads.
@@ -364,7 +379,16 @@ const normalizeLandingCtaButtonLink = (
     throw new Error(`Landing CTA link ${fieldPath} is missing or unsafe`)
   }
 
-  return safeHref
+  if (isReference) return safeHref
+
+  const suffixStart = safeHref.search(/[?#]/)
+  const path = suffixStart < 0 ? safeHref : safeHref.slice(0, suffixStart)
+  const suffix = suffixStart < 0 ? '' : safeHref.slice(suffixStart)
+  const fixed = Object.entries(publicNavigationPaths).find(([de, paths]) => path === de || path === paths.en)
+  if (!fixed) return safeHref
+
+  const [de, { en }] = fixed
+  return (locale === 'en' ? (en ?? de) : de) + suffix
 }
 
 const normalizeLandingCtaButtonText = (value: string | null | undefined, fieldPath: string): string => {
@@ -426,13 +450,16 @@ export const normalizeAboutLandingContent = (landingPages: LandingPage) => {
 
   return {
     metadata: {
-      title: seo.title,
-      description: seo.description,
+      title: optionalText(seo.title) ?? hero.title,
+      description: optionalText(seo.description) ?? hero.description,
     },
     hero: {
-      title: hero.title,
-      description: hero.description,
-      image: resolveRequiredLandingImage(hero.image, 'about.hero.image', hero.title, 'hero'),
+      title: hero.title ?? '',
+      description: hero.description ?? '',
+      image: withLandingImageAlt(
+        resolveRequiredLandingImage(hero.image, 'about.hero.image', '', 'hero'),
+        hero.imageAlt,
+      ),
     },
     why: normalizeAboutTextSection(about.why, 'about.why'),
     team: normalizeAboutTeam(about.team, landingPages.clinicPartners?.team),
@@ -440,7 +467,12 @@ export const normalizeAboutLandingContent = (landingPages: LandingPage) => {
   } satisfies AboutLandingContent
 }
 
-export const normalizeClinicPartnerLandingContent = (landingPages: LandingPage) => {
+const normalizeSectionIntro = (intro: { title?: string | null; description?: string | null }): SectionIntro => ({
+  title: intro.title ?? '',
+  description: intro.description ?? '',
+})
+
+export const normalizeClinicPartnerLandingContent = (landingPages: LandingPage, locale: ContentLocale = 'de') => {
   const clinicPartners = requireLandingSection(landingPages.clinicPartners, 'clinicPartners')
   const seo = requireLandingSection(clinicPartners.seo, 'clinicPartners.seo')
   const hero = requireLandingSection(clinicPartners.hero, 'clinicPartners.hero')
@@ -459,40 +491,43 @@ export const normalizeClinicPartnerLandingContent = (landingPages: LandingPage) 
 
   return {
     metadata: {
-      title: seo.title,
-      description: seo.description,
+      title: optionalText(seo.title) ?? hero.title,
+      description: optionalText(seo.description) ?? hero.description,
     },
     hero: {
-      title: hero.title,
-      description: hero.description,
-      image: resolveRequiredLandingImage(hero.image, 'clinicPartners.hero.image', hero.title),
+      ...normalizeSectionIntro(hero),
+      image: withLandingImageAlt(
+        resolveRequiredLandingImage(hero.image, 'clinicPartners.hero.image', ''),
+        hero.imageAlt,
+      ),
     },
     features: {
-      title: features.title,
-      description: features.description,
+      ...normalizeSectionIntro(features),
       items: normalizeFeatures(features.items, 'clinicPartners.features.items'),
     },
-    process: normalizeProcess(process, 'clinicPartners.process'),
-    categoriesIntro,
+    process: normalizeProcess(process, 'clinicPartners.process', true),
+    categoriesIntro: normalizeSectionIntro(categoriesIntro),
     cta: {
-      title: cta.title,
+      title: cta.title ?? '',
       buttonText: normalizeLandingCtaButtonText(cta.buttonText, 'clinicPartners.cta.buttonText'),
-      buttonLink: normalizeLandingCtaButtonLink(cta.link, 'clinicPartners.cta.link'),
+      buttonLink: normalizeLandingCtaButtonLink(cta.link, 'clinicPartners.cta.link', locale),
     },
     team: aboutTeam
       ? normalizeAboutTeamForLanding(aboutTeam)
       : normalizeTeam(clinicPartners.team, 'clinicPartners.team'),
-    teamIntro,
+    teamIntro: normalizeSectionIntro(teamIntro),
     teamCta: {
       buttonText: normalizeLandingCtaButtonText(teamCta.buttonText, 'clinicPartners.teamCta.buttonText'),
-      buttonLink: normalizeLandingCtaButtonLink(teamCta.link, 'clinicPartners.teamCta.link'),
+      buttonLink: normalizeLandingCtaButtonLink(teamCta.link, 'clinicPartners.teamCta.link', locale),
     },
-    testimonials: normalizeTestimonials(clinicPartners.testimonials, 'clinicPartners.testimonials'),
-    testimonialsIntro,
+    testimonials: normalizeTestimonials(clinicPartners.testimonials, 'clinicPartners.testimonials').map(
+      (testimonial) => ({ ...testimonial, image: withLandingImageAlt(testimonial.image, '') }),
+    ),
+    testimonialsIntro: normalizeSectionIntro(testimonialsIntro),
     faq: normalizeFaq(faq, 'clinicPartners.faq'),
-    blogTeaser,
-    registrationIntro,
-    contact,
+    blogTeaser: normalizeSectionIntro(blogTeaser),
+    registrationIntro: normalizeSectionIntro(registrationIntro),
+    contact: normalizeSectionIntro(contact),
   } satisfies ClinicPartnerLandingContent
 }
 
@@ -502,14 +537,14 @@ export const getHomeLandingContent = async (): Promise<HomeLandingContent> => {
   return normalizeHomeLandingContent(requireLandingPagesGlobal(landingPages))
 }
 
-export const getAboutLandingContent = async (): Promise<AboutLandingContent> => {
-  const landingPages = (await getCachedGlobal('landingPages', 2)()) as LandingPage | null | undefined
+export const getAboutLandingContent = async (locale: ContentLocale): Promise<AboutLandingContent> => {
+  const landingPages = (await getCachedGlobal('landingPages', 2, locale)()) as LandingPage | null | undefined
 
   return normalizeAboutLandingContent(requireLandingPagesGlobal(landingPages))
 }
 
-export const getClinicPartnerLandingContent = async (): Promise<ClinicPartnerLandingContent> => {
-  const landingPages = (await getCachedGlobal('landingPages', 2)()) as LandingPage | null | undefined
+export const getClinicPartnerLandingContent = async (locale: ContentLocale): Promise<ClinicPartnerLandingContent> => {
+  const landingPages = (await getCachedGlobal('landingPages', 2, locale)()) as LandingPage | null | undefined
 
-  return normalizeClinicPartnerLandingContent(requireLandingPagesGlobal(landingPages))
+  return normalizeClinicPartnerLandingContent(requireLandingPagesGlobal(landingPages), locale)
 }

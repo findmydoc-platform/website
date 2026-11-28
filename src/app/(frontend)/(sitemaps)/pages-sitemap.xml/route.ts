@@ -1,3 +1,4 @@
+import { ABOUT_PATHS, CLINIC_PARTNER_PATHS } from '@/i18n/editorialLandingPaths'
 import { BLOG_ARCHIVE_PATHS } from '@/i18n/blogArchivePath'
 import { LISTING_COMPARISON_PATHS, listingComparisonLocaleFromPath } from '@/i18n/listingComparisonPath'
 import { CONTACT_PATHS } from '@/i18n/contactPath'
@@ -12,13 +13,13 @@ import { getListingComparisonServerData } from '@/utilities/listingComparison/se
 import { buildPagePath, buildSitemapTag } from '@/utilities/cachePolicy'
 import type { ContentLocale } from '@/utilities/contentLocalization'
 import { TEMPORARY_LANDING_PATHS } from '@/features/temporaryLandingMode/i18n'
+import { hasEditorialLanding } from '@/utilities/landing/editorialLandingAvailability'
 import { getServerSideURL } from '@/utilities/getURL'
 
 const fixedPublicPaths = [
   '/',
   ...Object.values(BLOG_ARCHIVE_PATHS),
   ...Object.values(CONTACT_PATHS),
-  '/about',
   ...Object.values(LISTING_COMPARISON_PATHS),
 ] as const
 const excludedPublicPaths = new Set(['/search'])
@@ -40,6 +41,7 @@ const normalizePageSitemapPath = (slug: string | null | undefined, locale: Conte
   try {
     const normalizedSlug = slug.trim().replace(/^\/+|\/+$/g, '')
     const unprefixedPath = buildPagePath(normalizedSlug)
+    if (unprefixedPath === ABOUT_PATHS.de || unprefixedPath === CLINIC_PARTNER_PATHS.de) return null
     return excludedPublicPaths.has(unprefixedPath) ? null : buildPagePath(normalizedSlug, locale)
   } catch {
     return null
@@ -52,15 +54,39 @@ const getPagesSitemap = unstable_cache(
     const SITE_URL =
       process.env.NEXT_PUBLIC_SERVER_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL || 'https://example.com'
 
-    const [germanPages, englishPages, listingComparisonData] = await Promise.all([
+    const [germanPages, englishPages, listingComparisonData, germanLandings, englishLandings] = await Promise.all([
       findPageSitemapDocs(payload, 'de'),
       findPageSitemapDocs(payload, 'en'),
       getListingComparisonServerData(payload),
+      payload.findGlobal({
+        slug: 'landingPages',
+        locale: 'de',
+        fallbackLocale: false,
+        overrideAccess: false,
+        depth: 0,
+      }),
+      payload.findGlobal({
+        slug: 'landingPages',
+        locale: 'en',
+        fallbackLocale: false,
+        overrideAccess: false,
+        depth: 0,
+      }),
     ])
 
     const sitemapByPath = new Map<string, SitemapEntry>()
 
-    for (const path of fixedPublicPaths) {
+    const editorialPaths = (
+      [
+        ['de', germanLandings],
+        ['en', englishLandings],
+      ] as const
+    ).flatMap(([locale, landings]) => [
+      ...(hasEditorialLanding(landings, 'about') ? [ABOUT_PATHS[locale]] : []),
+      ...(hasEditorialLanding(landings, 'clinicPartners') ? [CLINIC_PARTNER_PATHS[locale]] : []),
+    ])
+
+    for (const path of [...fixedPublicPaths, ...editorialPaths]) {
       sitemapByPath.set(path, {
         loc: buildSitemapLocation(SITE_URL, path),
         ...(listingComparisonLocaleFromPath(path) && listingComparisonData.freshness.updatedAt
@@ -93,7 +119,7 @@ const getPagesSitemap = unstable_cache(
 
     return Array.from(sitemapByPath.values())
   },
-  ['pages-sitemap', 'localized-archives'],
+  ['pages-sitemap', 'localized-editorial-landings'],
   {
     tags: [buildSitemapTag('pages')],
   },

@@ -1,3 +1,4 @@
+import { getAboutPageCopy } from '@/features/uiCopy/aboutPage'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, waitFor, within } from 'storybook/test'
 
@@ -7,6 +8,7 @@ import { withViewportStory } from '@/stories/utils/viewportMatrix'
 const meta = {
   title: 'Domain/Landing/Organisms/AboutTrustSystemStory',
   component: AboutTrustSystemStory,
+  args: { copy: getAboutPageCopy('en').story },
   parameters: {
     layout: 'fullscreen',
     docs: {
@@ -32,7 +34,7 @@ export const Default: Story = {
     const story = canvas.getByTestId('about-trust-system-story')
     const firstCard = story.querySelector<HTMLElement>('[data-card="0"]')
 
-    await expect(canvas.getByRole('region', { name: /findmydoc trust system scroll story/i })).toBeInTheDocument()
+    await expect(story).toHaveAccessibleName(/\S/)
     const summaryHeadings = canvas.getAllByRole('heading', { level: 3 })
     expect(summaryHeadings).toHaveLength(3)
     for (const heading of summaryHeadings) {

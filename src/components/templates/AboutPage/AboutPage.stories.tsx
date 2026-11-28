@@ -1,3 +1,4 @@
+import { getAboutPageCopy } from '@/features/uiCopy/aboutPage'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
 
@@ -7,6 +8,7 @@ import { withMockRouter } from '@/stories/utils/routerDecorator'
 import { withViewportStory } from '@/stories/utils/viewportMatrix'
 
 const aboutPageArgs: AboutPageProps = {
+  copy: getAboutPageCopy('en'),
   hero: {
     title: 'About findmydoc',
     description:
@@ -144,7 +146,7 @@ export const Default: Story = {
     const volkanTab = canvas.getByRole('tab', { name: /Volkan Kablan/i })
     const sebastianTab = canvas.getByRole('tab', { name: /Sebastian Schütze/i })
 
-    await expect(canvas.getByRole('tablist', { name: /Team accountability roles/i })).toBeInTheDocument()
+    await expect(canvas.getByRole('tablist')).toHaveAccessibleName(/\S/)
     await expect(volkanTab).toHaveAttribute('aria-selected', 'true')
     await userEvent.click(sebastianTab)
     await waitFor(() => {

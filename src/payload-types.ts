@@ -7198,6 +7198,10 @@ export interface LandingPage {
        * Hero image shown on this landing route.
        */
       image: number | PlatformContentMedia;
+      /**
+       * Optional alternative text for this image on this page.
+       */
+      imageAlt?: string | null;
     };
     features: {
       /**
@@ -7236,6 +7240,10 @@ export interface LandingPage {
          * Image shown for this process step.
          */
         image: number | PlatformContentMedia;
+        /**
+         * Optional alternative text for this image on this page.
+         */
+        imageAlt?: string | null;
         id?: string | null;
       }[];
     };
@@ -7277,6 +7285,10 @@ export interface LandingPage {
        * Portrait shown for this team member.
        */
       image: number | PlatformContentMedia;
+      /**
+       * Optional alternative text for this image on this page.
+       */
+      imageAlt?: string | null;
       isPhoto?: boolean | null;
       photoDisplay?: ('original' | 'grayscale') | null;
       socials?: {
@@ -7326,6 +7338,10 @@ export interface LandingPage {
        * Portrait shown for this testimonial.
        */
       image: number | PlatformContentMedia;
+      /**
+       * Optional alternative text for this image on this page.
+       */
+      imageAlt?: string | null;
       id?: string | null;
     }[];
     testimonialsIntro: {
@@ -7411,6 +7427,10 @@ export interface LandingPage {
        * Hero image shown on this landing route.
        */
       image: number | PlatformContentMedia;
+      /**
+       * Optional alternative text for this image on this page.
+       */
+      imageAlt?: string | null;
     };
     why: {
       title: string;
@@ -7432,6 +7452,10 @@ export interface LandingPage {
        * Portrait shown for this team member.
        */
       image: number | PlatformContentMedia;
+      /**
+       * Optional alternative text for this image on this page.
+       */
+      imageAlt?: string | null;
       /**
        * One concise responsibility line for this team member.
        */
@@ -7713,6 +7737,7 @@ export interface LandingPagesSelect<T extends boolean = true> {
               title?: T;
               description?: T;
               image?: T;
+              imageAlt?: T;
             };
         features?:
           | T
@@ -7741,6 +7766,7 @@ export interface LandingPagesSelect<T extends boolean = true> {
                     title?: T;
                     description?: T;
                     image?: T;
+                    imageAlt?: T;
                     id?: T;
                   };
             };
@@ -7770,6 +7796,7 @@ export interface LandingPagesSelect<T extends boolean = true> {
               name?: T;
               role?: T;
               image?: T;
+              imageAlt?: T;
               isPhoto?: T;
               photoDisplay?: T;
               socials?:
@@ -7809,6 +7836,7 @@ export interface LandingPagesSelect<T extends boolean = true> {
               author?: T;
               role?: T;
               image?: T;
+              imageAlt?: T;
               id?: T;
             };
         testimonialsIntro?:
@@ -7864,6 +7892,7 @@ export interface LandingPagesSelect<T extends boolean = true> {
               title?: T;
               description?: T;
               image?: T;
+              imageAlt?: T;
             };
         why?:
           | T
@@ -7882,6 +7911,7 @@ export interface LandingPagesSelect<T extends boolean = true> {
               name?: T;
               role?: T;
               image?: T;
+              imageAlt?: T;
               whatWeDo?: T;
               id?: T;
             };

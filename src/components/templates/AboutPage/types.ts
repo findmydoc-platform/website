@@ -1,3 +1,4 @@
+import type { AboutPageCopy } from '@/features/uiCopy/aboutPage'
 import type { SocialPlatform } from '@/components/molecules/SocialLink'
 
 export type AboutImage = {
@@ -33,6 +34,7 @@ export type AboutTeamMember = {
 }
 
 export type AboutPageProps = {
+  copy: AboutPageCopy
   hero: {
     title: string
     description: string

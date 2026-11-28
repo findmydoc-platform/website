@@ -421,6 +421,44 @@ const aboutTeamField: Field = {
   ],
 }
 
+const localizedLandingTextFields = new Set([
+  'title',
+  'description',
+  'subtitle',
+  'quote',
+  'role',
+  'question',
+  'answer',
+  'text',
+  'whatWeDo',
+  'buttonText',
+  'url',
+])
+
+const localizeEditorialLandingFields = (fields: Field[]): Field[] =>
+  fields.flatMap((field): Field[] => {
+    if (field.type === 'array' || field.type === 'group' || field.type === 'row')
+      return [{ ...field, fields: localizeEditorialLandingFields(field.fields) }]
+
+    if (field.type === 'relationship' && field.name === 'image') {
+      return [
+        field,
+        {
+          name: 'imageAlt',
+          type: 'text',
+          localized: true,
+          admin: { description: 'Optional alternative text for this image on this page.' },
+        },
+      ]
+    }
+
+    if ((field.type === 'text' || field.type === 'textarea') && localizedLandingTextFields.has(field.name)) {
+      return [{ ...field, localized: true }]
+    }
+
+    return [field]
+  })
+
 export const LandingPages: GlobalConfig = {
   slug: 'landingPages',
   access: {
@@ -502,7 +540,7 @@ export const LandingPages: GlobalConfig = {
         {
           name: 'clinicPartners',
           label: 'Clinic partner landing',
-          fields: [
+          fields: localizeEditorialLandingFields([
             {
               name: 'seo',
               type: 'group',
@@ -571,12 +609,12 @@ export const LandingPages: GlobalConfig = {
               type: 'group',
               fields: sectionIntroFields,
             },
-          ],
+          ]),
         },
         {
           name: 'about',
           label: 'About page',
-          fields: [
+          fields: localizeEditorialLandingFields([
             {
               name: 'seo',
               type: 'group',
@@ -612,7 +650,7 @@ export const LandingPages: GlobalConfig = {
                 compactTextItemsField('Transparency points shown near the end of the about page.'),
               ],
             },
-          ],
+          ]),
         },
       ],
     },

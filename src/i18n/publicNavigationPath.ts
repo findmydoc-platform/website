@@ -1,3 +1,4 @@
+import { ABOUT_PATHS, CLINIC_PARTNER_PATHS } from './editorialLandingPaths'
 import { BLOG_ARCHIVE_PATHS } from './blogArchivePath'
 import { CLINIC_APPLICATION_PATHS } from './clinicApplicationPath'
 import { CONTACT_PATHS } from './contactPath'
@@ -8,10 +9,10 @@ import { uiCopyLocaleFromPath, type UiCopyLocale } from './requestLocale'
 
 /** Fixed navigation targets. CMS Pages and Posts resolve from their published locale instead. */
 export const publicNavigationPaths: Record<string, { en?: string }> = {
-  '/about': {},
+  [ABOUT_PATHS.de]: { en: ABOUT_PATHS.en },
   [CONTACT_PATHS.de]: { en: CONTACT_PATHS.en },
   '/listing-comparison': { en: LISTING_COMPARISON_PATHS.en },
-  '/partners/clinics': {},
+  [CLINIC_PARTNER_PATHS.de]: { en: CLINIC_PARTNER_PATHS.en },
   [CLINIC_APPLICATION_PATHS.de]: { en: CLINIC_APPLICATION_PATHS.en },
   '/admin/login': {},
   [BLOG_ARCHIVE_PATHS.de]: { en: BLOG_ARCHIVE_PATHS.en },

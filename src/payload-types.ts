@@ -6972,7 +6972,7 @@ export interface CookieConsent {
   rejectLabel: string;
   customizeLabel: string;
   /**
-   * German translation stored independently. The public consent prompt uses the English fields above.
+   * The public consent prompt uses these fields for German pages and the fields above for English pages.
    */
   germanPrompt?: {
     bannerTitle?: string | null;
@@ -6994,7 +6994,7 @@ export interface CookieConsent {
   essentialLabel: string;
   essentialDescription: string;
   /**
-   * Official optional cookie categories shown in the consent dialog. Categories are fixed; only labels, enabled state, and tool assignments can be edited.
+   * Optional cookie categories are fixed. Enabled state and tool assignments apply in both languages. Custom labels apply to the English dialog.
    */
   optionalCategorySettings: {
     functional: {

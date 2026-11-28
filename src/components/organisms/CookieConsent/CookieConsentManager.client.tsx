@@ -54,6 +54,7 @@ export function CookieConsentManager({
         buttonRef={launcherRef}
         ready={controller.isReady}
         label={config.reopenLabel}
+        locale={config.locale}
         onOpenSettings={() => {
           openedFromLauncher.current = true
           controller.openSettings()

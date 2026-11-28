@@ -1,3 +1,4 @@
+import type { UiCopyLocale } from '@/i18n/requestLocale'
 import type { CookieConsentCategoryKey, CookieConsentCategorySettings } from './categories'
 import type { CookieConsentToolKey } from './toolConsent'
 
@@ -10,7 +11,7 @@ export type CookieConsentCategoryConfig = {
   label: string
   description: string
   tools: CookieConsentToolKey[]
-  services?: { name: string; description: string; privacyHref: string }[]
+  services?: { name: string; description: string; privacyHref: string; privacyLabel: string }[]
 }
 
 export type CookieConsentCategoryMap = Partial<Record<CookieConsentCategoryKey, boolean>>
@@ -40,11 +41,16 @@ export type CookieConsentSettingsContent = {
 }
 
 export type CookieConsentConfig = {
+  locale: UiCopyLocale
   enabled: boolean
   consentVersion: number
   banner: CookieConsentBannerContent
   settings: CookieConsentSettingsContent
   categories: CookieConsentCategoryConfig[]
+  serviceScope: string
+  newTabDescription: string
+  closeLabel: string
+  privacyPolicyDescription: string
   privacyPolicyLabel: string
   privacyPolicyHref: string | null
   reopenLabel: string

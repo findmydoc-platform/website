@@ -121,7 +121,7 @@ export const CookieConsent: GlobalConfig = {
               label: 'German prompt copy',
               admin: {
                 description:
-                  'German translation stored independently. The public consent prompt uses the English fields above.',
+                  'The public consent prompt uses these fields for German pages and the fields above for English pages.',
               },
               fields: [
                 {
@@ -161,6 +161,8 @@ export const CookieConsent: GlobalConfig = {
               label: 'Secondary actions',
               admin: {
                 initCollapsed: true,
+                description:
+                  'Custom wording applies to the English dialog. Shared UI copy supplies the standard labels.',
               },
               fields: [
                 {
@@ -250,6 +252,7 @@ export const CookieConsent: GlobalConfig = {
               label: 'Settings copy',
               admin: {
                 initCollapsed: false,
+                description: 'Custom wording applies to the English dialog. Shared UI copy supplies the standard text.',
               },
               fields: [
                 {
@@ -301,7 +304,7 @@ export const CookieConsent: GlobalConfig = {
               defaultValue: DEFAULT_COOKIE_CONSENT_CATEGORY_SETTINGS,
               admin: {
                 description:
-                  'Official optional cookie categories shown in the consent dialog. Categories are fixed; only labels, enabled state, and tool assignments can be edited.',
+                  'Optional cookie categories are fixed. Enabled state and tool assignments apply in both languages. Custom labels apply to the English dialog.',
               },
               fields: [
                 {

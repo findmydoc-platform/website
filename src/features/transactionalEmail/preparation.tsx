@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import {
   CLINIC_PASSWORD_RECOVERY_SUBJECT,
-  PATIENT_PASSWORD_RECOVERY_SUBJECT,
+  PATIENT_PASSWORD_RECOVERY_SUBJECTS,
   PLATFORM_PASSWORD_RECOVERY_SUBJECT,
   ClinicPasswordRecoveryEmail,
   PatientPasswordRecoveryEmail,
@@ -79,9 +79,13 @@ export async function renderPasswordRecovery(
   principal: 'patient' | 'clinic' | 'platform',
   recipientAddress: string,
   actionUrl: string,
+  locale: 'de' | 'en' = 'en',
 ): Promise<PreparedMessage> {
+  if (principal === 'patient') {
+    const html = await render(<PatientPasswordRecoveryEmail actionUrl={actionUrl} locale={locale} />)
+    return { recipientAddress, subject: PATIENT_PASSWORD_RECOVERY_SUBJECTS[locale], html, text: toPlainText(html) }
+  }
   const templates = {
-    patient: { Email: PatientPasswordRecoveryEmail, subject: PATIENT_PASSWORD_RECOVERY_SUBJECT },
     clinic: { Email: ClinicPasswordRecoveryEmail, subject: CLINIC_PASSWORD_RECOVERY_SUBJECT },
     platform: { Email: PlatformPasswordRecoveryEmail, subject: PLATFORM_PASSWORD_RECOVERY_SUBJECT },
   } as const

@@ -15,6 +15,7 @@ import {
   bindInquiryPreparationAccountAction,
   replaceInquiryPreparationAction,
 } from '@/features/inquiryCommunication/service'
+import type { PatientAuthLocale } from './patientAuthLocale'
 import type { RecoveryContext } from './recoveryContext'
 
 async function acceptRecovery(
@@ -43,7 +44,7 @@ async function acceptRecovery(
 /** The public adapter catches all admission/acceptance outcomes into the same neutral response. */
 export async function requestPasswordRecovery(
   req: PayloadRequest,
-  input: { email: string; context: RecoveryContext | null; actionType?: 'clinic-recovery' },
+  input: { email: string; context: RecoveryContext | null; actionType?: 'clinic-recovery'; locale?: PatientAuthLocale },
 ) {
   const email = normalizeEmail(input.email)
   if (!isValidEmail(email) || email.length > 254) throw new Error('Invalid recovery request.')
@@ -55,6 +56,7 @@ export async function requestPasswordRecovery(
   const action = await bindAuthActions(sourceReq, { environment, recoveryKeys }).reserveRecovery({
     email,
     context: input.context,
+    locale: input.locale,
     ...(input.actionType ? { actionType: input.actionType } : {}),
   })
   if (action) {

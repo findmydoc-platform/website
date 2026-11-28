@@ -43,7 +43,7 @@ async function stageHomePage() {
         collection: 'pages',
         locale: 'de',
         fallbackLocale: false,
-        publishSpecificLocale: 'de',
+        publishAllLocales: false,
         data: { ...localizedPage('German homepage CMS fixture'), _status: 'published' },
         context: { disableRevalidate: true },
       }))

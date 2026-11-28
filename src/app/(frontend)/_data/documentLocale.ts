@@ -3,6 +3,7 @@ import { cache } from 'react'
 import { loadPageRoute } from './loadPageRoute'
 import { resolvePost } from './resolvePost'
 import { FRONTEND_PATH_HEADER, FRONTEND_PREVIEW_LOCALE_HEADER, UI_COPY_LOCALE_HEADER } from '@/i18n/requestLocale'
+import { SAVED_CLINICS_PATHS } from '@/i18n/savedClinicsPath'
 import { PUBLIC_DISCOVERY_SURFACE_PATHS } from '@/features/publicDiscovery/site'
 import type { ContentLocale } from '@/utilities/contentLocalization'
 
@@ -25,7 +26,7 @@ const DEDICATED_PATHS = new Set([
   '/login/patient',
   '/logout',
   '/partners/clinics',
-  '/patient/favorites',
+  ...Object.values(SAVED_CLINICS_PATHS),
   '/patient/inquiries',
   '/posts',
   '/register/clinic',

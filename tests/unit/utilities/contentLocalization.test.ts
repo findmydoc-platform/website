@@ -31,6 +31,8 @@ describe('isReservedPageSlug', () => {
     ['en', 'posts/page/2', false],
     ['en', 'listing-comparison', true],
     ['en', 'login/patient', true],
+    ['de', 'patient/favorites', true],
+    ['en', 'patient/favorites', true],
     ['en', 'register/patient', true],
     ['en', 'auth/password/reset', true],
     ['en', 'auth/password/help', false],

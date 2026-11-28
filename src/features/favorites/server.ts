@@ -10,10 +10,7 @@ import { getRelationshipName } from '@/utilities/relationships'
 import { slugify } from '@/utilities/slugify'
 
 const FAVORITES_PAGE_LIMIT = 100
-const PLACEHOLDER_MEDIA = {
-  src: '/images/placeholders/clinic-placeholder.webp',
-  alt: 'Clinic placeholder image',
-}
+const PLACEHOLDER_MEDIA_SRC = '/images/placeholders/clinic-placeholder.webp'
 
 export type FavoriteClinicStateRecord = Record<string, number>
 
@@ -27,7 +24,7 @@ export type FavoriteClinicListItem = {
   clinicId: number
   name: string
   href: string
-  location: string
+  location: string | null
   media: {
     src: string
     alt: string
@@ -65,7 +62,7 @@ function normalizeVerification(value: unknown): VerificationBadgeVariant {
   return 'unverified'
 }
 
-function resolveClinicLocation(clinic: Clinic): string {
+function resolveClinicLocation(clinic: Clinic): string | null {
   const cityRelation = clinic.address?.city
   const cityName =
     cityRelation && typeof cityRelation === 'object' && 'name' in cityRelation
@@ -73,7 +70,7 @@ function resolveClinicLocation(clinic: Clinic): string {
       : ''
   const country = getRelationshipName(clinic.address?.country)
 
-  return [cityName, country].filter((item) => item.length > 0).join(', ') || 'Location not listed'
+  return [cityName, country].filter((item) => item.length > 0).join(', ') || null
 }
 
 function mapFavoriteToListItem(
@@ -94,11 +91,8 @@ function mapFavoriteToListItem(
     href: `/clinics/${encodeURIComponent(slug)}`,
     location: resolveClinicLocation(clinic),
     media: {
-      src: resolvedMedia?.url ?? PLACEHOLDER_MEDIA.src,
-      alt:
-        typeof resolvedMedia?.alt === 'string' && resolvedMedia.alt.trim().length > 0
-          ? resolvedMedia.alt
-          : `${clinic.name} image`,
+      src: resolvedMedia?.url ?? PLACEHOLDER_MEDIA_SRC,
+      alt: resolvedMedia?.alt?.trim() ?? '',
     },
     verification: {
       variant: normalizeVerification(clinic.verification),

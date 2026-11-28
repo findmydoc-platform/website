@@ -59,7 +59,9 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
               ? isCurrent
                 ? '!text-white hover:!text-white'
                 : '!text-white/60 hover:!text-white/85'
-              : 'text-inherit hover:text-foreground'
+              : isCurrent
+                ? 'text-inherit'
+                : 'text-link'
 
           return (
             <li

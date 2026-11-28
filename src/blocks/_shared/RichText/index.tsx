@@ -39,6 +39,7 @@ const createJsxConverters =
       const newTab = node.fields.newTab
       return (
         <a
+          className="text-link"
           href={href ?? undefined}
           rel={newTab ? 'noopener noreferrer' : undefined}
           target={newTab ? '_blank' : undefined}

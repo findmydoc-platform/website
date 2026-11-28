@@ -205,6 +205,10 @@ components:
     rounded: '{rounded.full}'
   content-inline-link:
     textColor: '{colors.primary}'
+  accent-inline-link:
+    textColor: '{colors.accent-foreground}'
+  inverse-inline-link:
+    textColor: '{colors.secondary-foreground}'
   content-section-title:
     textColor: '{colors.secondary}'
     typography: '{typography.content-section}'
@@ -460,7 +464,7 @@ The palette is built from a clear medical blue, a deep navy anchor, a mint accen
 - **Supporting foreground (#646565):** Use for explanatory copy on the light site canvas and secondary facts such as a result count on white. Keep the numbers in the count in foreground. This gray corresponds to 75% foreground mixed with 25% site canvas in the clinic profile.
 - **Muted foreground (#999999):** Reserve for low-emphasis decoration on light surfaces. Use supporting foreground for readable small text.
 - **Border/input (#E2E8F0):** Subtle separation for cards, inputs, dividers, and low-emphasis panels.
-- **Destructive (#B91C1C):** Error and destructive action color only. This is intentionally darker than Tailwind red-500 so white text passes WCAG AA.
+- **Destructive (#B91C1C):** Error and destructive action color only. White text on this color has a 6.47:1 contrast ratio. The public site and Storybook use the same token for destructive controls and form validation.
 - **Accent 2 (#E0E0E0):** Neutral secondary accent surface for legacy or low-emphasis UI states. Use it only when muted is too quiet and mint would imply action or success.
 - **Status surfaces:** Success, warning, and error are soft surfaces for inline status panels, validation summaries, and contextual chips. Pair them with secondary or foreground text; do not use them as the only status cue.
 - **Backdrop (#000000):** Scrim base for dialogs, drawers, overlays, and image-lightbox states. Runtime opacity controls intensity; the token stays black for predictable contrast.
@@ -473,7 +477,7 @@ The palette is built from a clear medical blue, a deep navy anchor, a mint accen
 
 ## Typography
 
-Use DM Sans as the brand typeface for all public UI. It is chosen for a neutral medical platform voice: human enough for patient decisions, precise enough for comparison workflows, and calm enough for high-stakes healthcare context. System sans fallbacks are acceptable only as runtime fallback, not as a separate design direction. Use the Heading atom for headings in implementation.
+Use DM Sans as the brand typeface for all public UI. The public site and Storybook load the same regular (400) and bold (700) files through the shared frontend stylesheet. It is chosen for a neutral medical platform voice: human enough for patient decisions, precise enough for comparison workflows, and calm enough for high-stakes healthcare context. System sans fallbacks are acceptable only as runtime fallback, not as a separate design direction. Use the Heading atom for headings in implementation.
 
 - **H1-H4:** Bold, compact, centered by default in the base layer. Override alignment only when the layout needs scanning, comparison, or form completion.
 - **Landing-editorial type:** Prefer centered headings, larger display moments, short explanatory paragraphs, and generous line spacing. Landing copy should invite understanding, not enumerate every fact.
@@ -592,7 +596,7 @@ Components should consume the YAML tokens through Tailwind theme variables and s
 - **Inputs:** Inputs use white background, foreground text, input border, 40px height, 16px mobile text, and a visible primary focus ring.
 - **Cards:** Cards use white background, foreground text, border, `rounded-lg`, `shadow-xs`, and 24px padding by default.
 - **Popovers and dropdowns:** Use white popover surfaces, foreground text, `rounded-md`, subtle border, and compact spacing.
-- **Links:** Readable inline links on light content surfaces use primary with an underline, primary-hover on hover, and a visible focus outline. Treatment comparison links use this rule. Use the appropriate contrast variant on dark surfaces. Mint is a brand accent.
+- **Links:** Readable inline links on light content surfaces use primary with an underline, primary-hover on hover, and a visible focus outline. Use the shared text link style for CMS text, treatment comparison links, and light breadcrumbs. On mint use navy for links and focus. On dark surfaces use white for links and focus, with mint on hover. Navigation and calls to action use their own component styles.
 - **VerificationBadge:** Preserve the bronze/silver/gold token mapping exactly; generated mockups must not redefine badge shapes, colors, or icon treatment.
 - **Trust surfaces:** Verification, accreditation, reviews, prices, location, treatment availability, and contact actions must be visibly labeled and easy to compare. Prefer explicit empty or unavailable states over hiding missing information.
 - **Transparency cues:** Use supporting metadata, captions, timestamps, source labels, and explanatory helper text when a user could reasonably ask "why should I trust this?" or "what happens next?" Do not bury these cues behind hover-only interactions.

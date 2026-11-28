@@ -16,7 +16,7 @@ export function PublicAuthRouteShell({ children, className }: PublicAuthRouteShe
       <section
         className={cn(
           'bg-site-canvas px-5 pt-6 pb-4 sm:px-6 md:px-8 md:pt-8',
-          '[--destructive:#b91c1c] [&_.text-muted-foreground]:text-foreground [&_label]:text-start',
+          '[&_.text-muted-foreground]:text-foreground [&_label]:text-start',
           '[&_input:not(:disabled):not([aria-invalid=true])]:border-[color-mix(in_srgb,var(--foreground)_60%,var(--background))]',
           '[&_[data-invalid=true]_[role=alert]]:text-destructive [&_input[aria-invalid=true]]:border-destructive',
           '[&_input]:placeholder:text-foreground/75 [&_input[aria-invalid=true]:focus-visible]:ring-destructive',

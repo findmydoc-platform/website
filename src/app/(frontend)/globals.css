@@ -1,4 +1,6 @@
 @import 'tailwindcss';
+@import '@fontsource/dm-sans/400.css';
+@import '@fontsource/dm-sans/700.css';
 
 @source '../../../../src/**/*.{ts,tsx,js,jsx,mdx}';
 @source '../../../../tests/**/*.{ts,tsx,js,jsx,mdx}';
@@ -48,7 +50,7 @@
   --site-section: var(--muted);
   --site-divider: var(--border);
 
-  --destructive: #ef4444;
+  --destructive: #b91c1c;
   --destructive-foreground: #ffffff;
 
   --radius: 0.5rem;
@@ -317,8 +319,27 @@
     display: flex;
     flex-direction: column;
   }
+  :root,
+  [data-link-tone='default'] {
+    --link-foreground: var(--primary);
+    --link-interaction: var(--primary-hover);
+    --link-focus: var(--ring);
+  }
+
+  [data-link-tone='accent'] {
+    --link-foreground: var(--accent-foreground);
+    --link-interaction: var(--accent-foreground);
+    --link-focus: var(--accent-foreground);
+  }
+
+  [data-link-tone='inverse'] {
+    --link-foreground: var(--secondary-foreground);
+    --link-interaction: var(--accent);
+    --link-focus: var(--secondary-foreground);
+  }
+
   a {
-    color: var(--color-accent);
+    color: var(--link-foreground);
     transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     transition-duration: 150ms;
@@ -326,11 +347,21 @@
 
   a:hover,
   a:active {
-    color: var(--color-primary);
+    color: var(--link-interaction);
   }
 
   a[aria-current='page'] {
-    color: var(--color-primary);
+    color: var(--link-foreground);
+  }
+
+  a[href]:where(:not([class])) {
+    text-decoration: underline;
+    text-underline-offset: 0.25em;
+  }
+
+  a[href]:where(:not([class])):focus-visible {
+    outline: 2px solid var(--link-focus);
+    outline-offset: 2px;
   }
 }
 
@@ -339,6 +370,23 @@
   Custom utility classes and layout helpers.
 */
 @layer utilities {
+  .text-link {
+    color: var(--link-foreground);
+    text-decoration: underline;
+    text-underline-offset: 0.25em;
+
+    &:hover,
+    &:active {
+      color: var(--link-interaction);
+      text-decoration-thickness: 2px;
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--link-focus);
+      outline-offset: 2px;
+    }
+  }
+
   html {
     opacity: initial;
   }

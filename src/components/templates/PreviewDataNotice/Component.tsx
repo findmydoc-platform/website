@@ -8,20 +8,26 @@ export const PREVIEW_DATA_NOTICE_COPY =
 
 type PreviewDataNoticeProps = {
   className?: string
+  label?: string
+  description?: string
+  lang?: string
 }
 
-export function PreviewDataNotice({ className }: PreviewDataNoticeProps) {
+export function PreviewDataNotice({
+  className,
+  label = 'Preview data notice',
+  description = PREVIEW_DATA_NOTICE_COPY,
+  lang = 'en',
+}: PreviewDataNoticeProps) {
   return (
     <aside
-      aria-label="Preview data notice"
+      aria-label={label}
       role="note"
-      lang="en"
+      lang={lang}
       className={cn('border-y border-[#FF2D2D]/30 bg-[#5A000A] text-white', className)}
     >
       <Container className="py-2">
-        <p className="text-center text-xs leading-5 font-semibold text-balance sm:text-sm">
-          {PREVIEW_DATA_NOTICE_COPY}
-        </p>
+        <p className="text-center text-xs leading-5 font-semibold text-balance sm:text-sm">{description}</p>
       </Container>
     </aside>
   )

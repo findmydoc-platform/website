@@ -12,11 +12,14 @@ import {
 } from '@/components/atoms/carousel'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/atoms/dialog'
 import { Media } from '@/components/molecules/Media'
+import { getClinicProfileTranslator } from '@/features/clinicDetail/overviewCopy'
+import type { UiCopyLocale } from '@/i18n/requestLocale'
 
 import type { ClinicDetailGalleryImage } from '@/features/clinicDetail/contracts'
 
 type ClinicGalleryLightboxProps = {
   clinicName: string
+  locale: UiCopyLocale
   galleryImages: ClinicDetailGalleryImage[]
   onOpenChange: (open: boolean) => void
   open: boolean
@@ -25,11 +28,13 @@ type ClinicGalleryLightboxProps = {
 
 export function ClinicGalleryLightbox({
   clinicName,
+  locale,
   galleryImages,
   onOpenChange,
   open,
   triggerRef,
 }: ClinicGalleryLightboxProps) {
+  const t = getClinicProfileTranslator(locale)
   const descriptionId = React.useId()
   const [carouselApi, setCarouselApi] = React.useState<CarouselApi>()
   const [currentIndex, setCurrentIndex] = React.useState(0)
@@ -53,6 +58,7 @@ export function ClinicGalleryLightbox({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
+        closeLabel={t('gallery.close')}
         aria-describedby={descriptionId}
         className="h-dvh max-h-none min-h-svh w-screen max-w-none min-w-0 gap-0 overflow-hidden border-0 bg-[rgba(11,13,16,0.91)] p-0 text-white shadow-none backdrop-blur-sm sm:rounded-none [&>button]:top-[calc(1rem+env(safe-area-inset-top))] [&>button]:right-[calc(1rem+env(safe-area-inset-right))] [&>button]:z-20 [&>button]:size-11 [&>button]:rounded-full [&>button]:bg-transparent [&>button]:text-white/85 [&>button]:opacity-100 [&>button]:shadow-none [&>button]:hover:bg-white/10 [&>button]:hover:text-white [&>button]:focus-visible:bg-white/10 [&>button]:focus-visible:ring-1 [&>button]:focus-visible:ring-white/60 [&>button]:focus-visible:ring-offset-0 sm:[&>button]:top-[calc(1.5rem+env(safe-area-inset-top))] sm:[&>button]:right-[calc(1.5rem+env(safe-area-inset-right))] [&>button>svg]:drop-shadow-[0_1px_2px_rgba(0,0,0,0.75)]"
         overlayClassName="bg-black/10"
@@ -67,15 +73,14 @@ export function ClinicGalleryLightbox({
           window.requestAnimationFrame(() => carouselRef.current?.focus())
         }}
       >
-        <DialogTitle className="sr-only">{clinicName} photo gallery</DialogTitle>
+        <DialogTitle className="sr-only">{t('gallery.title', { clinic: clinicName })}</DialogTitle>
         <DialogDescription id={descriptionId} className="sr-only">
-          Browse {imageCount} clinic {imageCount === 1 ? 'photo' : 'photos'}. Use the arrow keys or swipe to move
-          between photos.
+          {t('gallery.description')}
         </DialogDescription>
 
         <div className="flex h-full min-h-0 w-full min-w-0 flex-col px-[max(0.5rem,env(safe-area-inset-left))] pt-[calc(4rem+env(safe-area-inset-top))] pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:px-[max(2rem,env(safe-area-inset-left))] sm:pt-[calc(5rem+env(safe-area-inset-top))] sm:pb-[calc(2rem+env(safe-area-inset-bottom))]">
           <p className="mb-2 shrink-0 text-center text-sm font-medium text-white/80" aria-live="polite">
-            Photo {currentIndex + 1} of {imageCount}
+            {t('gallery.position', { current: currentIndex + 1, count: imageCount })}
           </p>
 
           <Carousel
@@ -83,7 +88,8 @@ export function ClinicGalleryLightbox({
             opts={{ align: 'center', loop: imageCount > 1 }}
             setApi={setCarouselApi}
             className="mx-auto min-h-0 w-full max-w-7xl min-w-0 flex-1 focus-visible:ring-1 focus-visible:ring-white/50 focus-visible:outline-hidden focus-visible:ring-inset"
-            aria-label={`${clinicName} photos`}
+            aria-label={t('gallery.title', { clinic: clinicName })}
+            aria-roledescription={undefined}
           >
             <CarouselContent className="ml-0 w-full">
               {galleryImages.map((image, index) => {
@@ -94,7 +100,8 @@ export function ClinicGalleryLightbox({
                     key={image.id}
                     className="pl-0"
                     aria-hidden={!isActive}
-                    aria-label={`Photo ${index + 1} of ${imageCount}`}
+                    aria-label={t('gallery.position', { current: index + 1, count: imageCount })}
+                    aria-roledescription={undefined}
                   >
                     <figure className="flex h-[calc(100dvh-7.75rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] min-h-0 flex-col items-center justify-center gap-3 sm:h-[calc(100dvh-9.5rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] sm:gap-4">
                       <div className="relative aspect-[4/3] min-h-0 w-full shrink sm:aspect-auto sm:flex-1">
@@ -123,8 +130,14 @@ export function ClinicGalleryLightbox({
 
             {imageCount > 1 ? (
               <>
-                <CarouselPrevious className="left-1 size-11 border-white/30 bg-black/45 text-white hover:bg-black/65 hover:text-white sm:left-3" />
-                <CarouselNext className="right-1 size-11 border-white/30 bg-black/45 text-white hover:bg-black/65 hover:text-white sm:right-3" />
+                <CarouselPrevious
+                  aria-label={t('gallery.previous')}
+                  className="left-1 size-11 border-white/30 bg-black/45 text-white hover:bg-black/65 hover:text-white sm:left-3"
+                />
+                <CarouselNext
+                  aria-label={t('gallery.next')}
+                  className="right-1 size-11 border-white/30 bg-black/45 text-white hover:bg-black/65 hover:text-white sm:right-3"
+                />
               </>
             ) : null}
           </Carousel>

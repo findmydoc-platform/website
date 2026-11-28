@@ -5,8 +5,10 @@ import type { BreadcrumbItem } from '@/components/molecules/Breadcrumb'
 import { BlogHero } from '@/components/organisms/Blog/BlogHero'
 import { CmsLanguageSwitchRoute } from '@/features/languageSwitch/CmsLanguageSwitchRoute.client'
 import { CmsDocumentLanguage } from '@/features/uiCopy/DocumentLanguage.client'
+import { getPublicErrorCopy } from '@/features/uiCopy/publicErrors'
 
-export const cmsTranslationNoticeTitle = 'This page is currently available in German.'
+const copy = getPublicErrorCopy('en')
+export const cmsTranslationNoticeTitle = copy.germanAvailable
 
 export function CmsTranslationUnavailable({
   germanPath,
@@ -25,8 +27,8 @@ export function CmsTranslationUnavailable({
         breadcrumbs={breadcrumbs}
         action={
           <Button asChild size="lg" className="hover:bg-primary-hover">
-            <Link href={germanPath} hrefLang="de" lang="de" prefetch={false}>
-              Auf Deutsch lesen
+            <Link href={germanPath} hrefLang="de" prefetch={false}>
+              {copy.readGerman}
             </Link>
           </Button>
         }

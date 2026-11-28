@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import {
   CLINIC_PASSWORD_RECOVERY_SUBJECT,
-  PATIENT_PASSWORD_RECOVERY_SUBJECT,
+  PATIENT_PASSWORD_RECOVERY_SUBJECTS,
   PLATFORM_PASSWORD_RECOVERY_SUBJECT,
   ClinicPasswordRecoveryEmail,
   PatientPasswordRecoveryEmail,
@@ -11,7 +11,7 @@ import {
   ClinicStaffInvitationEmail,
   ClinicRegistrationReceiptEmail,
   type ClinicRegistrationReceiptEmailProps,
-  PATIENT_EMAIL_VERIFICATION_SUBJECT,
+  PATIENT_EMAIL_VERIFICATION_SUBJECTS,
   PatientEmailVerificationEmail,
 } from '@findmydoc-platform/email-templates'
 import { Body, Html, Link, Text } from '@react-email/components'
@@ -61,9 +61,10 @@ export async function renderClinicRegistrationReceipt(
 export async function renderPatientEmailVerification(
   recipientAddress: string,
   actionUrl: string,
+  locale: 'de' | 'en' = 'en',
 ): Promise<PreparedMessage> {
-  const html = await render(<PatientEmailVerificationEmail actionUrl={actionUrl} />)
-  return { recipientAddress, subject: PATIENT_EMAIL_VERIFICATION_SUBJECT, html, text: toPlainText(html) }
+  const html = await render(<PatientEmailVerificationEmail actionUrl={actionUrl} locale={locale} />)
+  return { recipientAddress, subject: PATIENT_EMAIL_VERIFICATION_SUBJECTS[locale], html, text: toPlainText(html) }
 }
 
 export async function renderClinicStaffInvitation(
@@ -78,9 +79,13 @@ export async function renderPasswordRecovery(
   principal: 'patient' | 'clinic' | 'platform',
   recipientAddress: string,
   actionUrl: string,
+  locale: 'de' | 'en' = 'en',
 ): Promise<PreparedMessage> {
+  if (principal === 'patient') {
+    const html = await render(<PatientPasswordRecoveryEmail actionUrl={actionUrl} locale={locale} />)
+    return { recipientAddress, subject: PATIENT_PASSWORD_RECOVERY_SUBJECTS[locale], html, text: toPlainText(html) }
+  }
   const templates = {
-    patient: { Email: PatientPasswordRecoveryEmail, subject: PATIENT_PASSWORD_RECOVERY_SUBJECT },
     clinic: { Email: ClinicPasswordRecoveryEmail, subject: CLINIC_PASSWORD_RECOVERY_SUBJECT },
     platform: { Email: PlatformPasswordRecoveryEmail, subject: PLATFORM_PASSWORD_RECOVERY_SUBJECT },
   } as const

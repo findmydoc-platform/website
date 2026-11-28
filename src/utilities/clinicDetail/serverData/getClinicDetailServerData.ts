@@ -3,7 +3,9 @@ import type { Payload } from 'payload'
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 import { unstable_cache } from 'next/cache'
-import type { Accreditation, City, ClinicMedia } from '@/payload-types'
+import type { Accreditation, City, Clinic } from '@/payload-types'
+import type { UiCopyLocale } from '@/i18n/requestLocale'
+import { getClinicProfileTranslator } from '@/features/clinicDetail/overviewCopy'
 
 import {
   buildCollectionTag,
@@ -12,10 +14,7 @@ import {
   buildSurfaceInstanceTag,
   buildSurfaceTag,
 } from '@/utilities/cachePolicy'
-import {
-  buildClinicThumbnailDescriptorsByClinicId,
-  resolveClinicThumbnailImage,
-} from '@/utilities/media/clinicThumbnail'
+import { CLINIC_THUMBNAIL_PLACEHOLDER } from '@/utilities/media/clinicThumbnail'
 import { buildDoctorProfileDescriptorsByDoctorId } from '@/utilities/media/doctorProfileImage'
 import { resolveMediaDescriptorFromLoadedRelation } from '@/utilities/media/relationMedia'
 import { richTextToPlainText } from '@/features/clinicDashboard/profile/richText'
@@ -43,6 +42,8 @@ const CLINIC_DETAIL_RELATED_COLLECTION_TAGS = [
   buildCollectionTag('clinictreatments'),
   buildCollectionTag('doctors'),
   buildCollectionTag('doctorspecialties'),
+  buildCollectionTag('treatments'),
+  buildCollectionTag('medical-specialties'),
   buildCollectionTag('reviews'),
   buildCollectionTag('reviewResponses'),
   buildCollectionTag('accreditation'),
@@ -118,24 +119,27 @@ const getCachedPublicClinicIdentity = (slug: string) =>
     },
   )
 
-const getCachedPublicClinicDetailServerDataByIdentity = ({ id, slug }: PublicClinicIdentity) =>
+const getCachedPublicClinicDetailServerDataByIdentity = ({ id, slug }: PublicClinicIdentity, locale: UiCopyLocale) =>
   unstable_cache(
     async () => {
       const payload = await getPayload({ config: configPromise })
 
-      return getClinicDetailServerData(payload, slug, { draft: false })
+      return getClinicDetailServerData(payload, slug, { draft: false, locale })
     },
-    ['clinic-detail-server-data', String(id), slug],
+    ['clinic-detail-server-data', String(id), slug, locale],
     {
       tags: buildClinicDetailDataCacheTags({ id, slug }),
     },
   )
 
-export async function getCachedPublicClinicDetailServerData(slug: string): Promise<ClinicDetailServerDataResult> {
+export async function getCachedPublicClinicDetailServerData(
+  slug: string,
+  locale: UiCopyLocale,
+): Promise<ClinicDetailServerDataResult> {
   const identity = await getCachedPublicClinicIdentity(slug)()
   if (!identity) return null
 
-  return getCachedPublicClinicDetailServerDataByIdentity(identity)()
+  return getCachedPublicClinicDetailServerDataByIdentity(identity, locale)()
 }
 
 function extractRelationId(value: unknown): number | null {
@@ -183,31 +187,53 @@ function collectCityLookupIds(cityRelation: unknown): number[] {
   return typeof cityId === 'number' ? [cityId] : []
 }
 
-async function buildPublicGalleryImages(payload: Payload, clinic: Awaited<ReturnType<typeof findClinicBySlug>>) {
-  if (!clinic || !Array.isArray(clinic.profileGallery) || clinic.profileGallery.length === 0) return []
-  const ids = clinic.profileGallery.map(extractRelationId).filter((id): id is number => id !== null)
-  if (ids.length === 0) return []
+async function buildPublicProfileImages(payload: Payload, clinic: Clinic, locale: UiCopyLocale) {
+  const galleryIds = (clinic.profileGallery ?? []).map(extractRelationId).filter((id) => id !== null)
+  const thumbnailId = extractRelationId(clinic.thumbnail)
+  const ids = [...new Set(thumbnailId === null ? galleryIds : [...galleryIds, thumbnailId])]
+  const placeholder = { src: CLINIC_THUMBNAIL_PLACEHOLDER, alt: '' }
+  if (ids.length === 0) return { galleryImages: [], heroImage: placeholder }
 
   const result = await payload.find({
     collection: 'clinicMedia',
     depth: 0,
     limit: ids.length,
     pagination: false,
+    // Gallery files are publicly readable, but their REST documents remain staff-scoped.
     overrideAccess: true,
+    locale,
+    fallbackLocale: false,
+    select: {
+      filename: true,
+      url: true,
+      updatedAt: true,
+      alt: true,
+      caption: true,
+      localizedAlt: true,
+      localizedCaption: true,
+    },
     where: {
       and: [{ id: { in: ids } }, { clinic: { equals: clinic.id } }, { status: { equals: 'published' } }],
     },
   })
-  const byId = new Map(result.docs.map((media) => [media.id, media as ClinicMedia]))
+  const fallbackAlt = getClinicProfileTranslator(locale)('overview.mediaAlt', { clinic: clinic.name })
+  const byId = new Map(
+    result.docs.flatMap((media) => {
+      const descriptor = resolveMediaDescriptorFromLoadedRelation(media, 'clinicMedia')
+      if (!descriptor?.url) return []
+      const alt = media.localizedAlt?.trim() || (locale === 'en' ? descriptor.alt?.trim() : undefined) || fallbackAlt
+      const caption = richTextToPlainText(media.localizedCaption ?? (locale === 'en' ? media.caption : undefined))
+      return [[media.id, { id: String(media.id), src: descriptor.url, alt, ...(caption ? { caption } : {}) }]] as const
+    }),
+  )
 
-  return ids.flatMap((id) => {
-    const media = byId.get(id)
-    if (!media) return []
-    const descriptor = resolveMediaDescriptorFromLoadedRelation(media, 'clinicMedia')
-    if (!descriptor?.url || !descriptor.alt?.trim()) return []
-    const caption = richTextToPlainText(media.caption)
-    return [{ id: String(media.id), src: descriptor.url, alt: descriptor.alt, ...(caption ? { caption } : {}) }]
+  const galleryImages = galleryIds.flatMap((id) => {
+    const image = byId.get(id)
+    return image ? [image] : []
   })
+  const thumbnail = thumbnailId === null ? undefined : byId.get(thumbnailId)
+  const heroImage = thumbnail ? { src: thumbnail.src, alt: thumbnail.alt } : placeholder
+  return { galleryImages, heroImage }
 }
 
 export async function getClinicDetailServerData(
@@ -215,13 +241,14 @@ export async function getClinicDetailServerData(
   slug: string,
   options: ClinicDetailServerDataOptions,
 ): Promise<ClinicDetailServerDataResult> {
-  const clinic = await findClinicBySlug(payload, slug, options.draft)
+  const { draft, locale } = options
+  const clinic = await findClinicBySlug(payload, slug, draft, locale)
   if (!clinic) return null
-  const galleryImagesPromise = buildPublicGalleryImages(payload, clinic)
+  const profileImages = buildPublicProfileImages(payload, clinic, locale)
 
   const [clinicTreatments, doctors, clinicReviewCount, approvedClinicReviews] = await Promise.all([
-    findClinicTreatmentsByClinicId(payload, clinic.id),
-    findDoctorsByClinicId(payload, clinic.id),
+    findClinicTreatmentsByClinicId(payload, clinic.id, locale),
+    findDoctorsByClinicId(payload, clinic.id, locale),
     countApprovedClinicReviews(payload, clinic.id),
     findApprovedClinicReviewsByClinicId(payload, clinic.id),
   ])
@@ -230,11 +257,12 @@ export async function getClinicDetailServerData(
   const reviewIds = approvedClinicReviews.map((review) => review.id)
 
   const [doctorSpecialties, doctorReviewCounts, doctorMediaByDoctorId, reviewResponses] = await Promise.all([
-    findDoctorSpecialtiesByDoctorIds(payload, doctorIds),
+    findDoctorSpecialtiesByDoctorIds(payload, doctorIds, locale),
     countApprovedDoctorReviews(payload, doctorIds),
     buildDoctorProfileDescriptorsByDoctorId({
       payload,
       doctors,
+      locale,
     }),
     findPublicReviewResponsesByReviewIds(payload, reviewIds),
   ])
@@ -244,20 +272,15 @@ export async function getClinicDetailServerData(
 
   const [accreditationDocs, cityDocs] = await Promise.all([
     findAccreditationsByIds(payload, accreditationLookupIds),
-    findCitiesByIds(payload, cityLookupIds),
+    findCitiesByIds(payload, cityLookupIds, locale),
   ])
 
-  const [clinicThumbnailDescriptorsByClinicId, galleryImages] = await Promise.all([
-    buildClinicThumbnailDescriptorsByClinicId({ payload, clinics: [clinic] }),
-    galleryImagesPromise,
-  ])
+  const { galleryImages, heroImage } = await profileImages
 
   return mapClinicToClinicDetailData({
     clinic,
-    heroImage: resolveClinicThumbnailImage({
-      clinic,
-      descriptorsByClinicId: clinicThumbnailDescriptorsByClinicId,
-    }),
+    locale,
+    heroImage,
     galleryImages,
     clinicTreatments,
     doctors,

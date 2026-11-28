@@ -56,6 +56,7 @@ export async function importGlobals(payload: Payload): Promise<{
         slug,
         data,
         ...(slug === 'cookieConsent' ? { locale: 'en', fallbackLocale: false } : {}),
+        ...(slug === 'landingPages' ? { locale: 'all', fallbackLocale: false } : {}),
         overrideAccess: true,
         context: { disableRevalidate: true },
       })

@@ -1,6 +1,10 @@
+import { cache } from 'react'
+import { CLINIC_APPLICATION_PATHS } from '@/i18n/clinicApplicationPath'
+
 import { loadPageRoute } from './loadPageRoute'
 import { resolvePost } from './resolvePost'
 import { FRONTEND_PATH_HEADER, FRONTEND_PREVIEW_LOCALE_HEADER, UI_COPY_LOCALE_HEADER } from '@/i18n/requestLocale'
+import { SAVED_CLINICS_PATHS } from '@/i18n/savedClinicsPath'
 import { PUBLIC_DISCOVERY_SURFACE_PATHS } from '@/features/publicDiscovery/site'
 import type { ContentLocale } from '@/utilities/contentLocalization'
 
@@ -23,17 +27,19 @@ const DEDICATED_PATHS = new Set([
   '/login/patient',
   '/logout',
   '/partners/clinics',
-  '/patient/favorites',
+  ...Object.values(SAVED_CLINICS_PATHS),
   '/patient/inquiries',
   '/posts',
-  '/register/clinic',
+  '/en/posts',
+  ...Object.values(CLINIC_APPLICATION_PATHS),
   '/register/patient',
   ...PUBLIC_DISCOVERY_SURFACE_PATHS,
 ])
 
-const DEDICATED_PATH_FAMILIES = /^\/(?:admin(?:\/|$)|(?:clinics|patient\/inquiries|posts\/page)\/[^/]+$)/
+const DEDICATED_PATH_FAMILIES =
+  /^\/(?:admin(?:\/|$)|(?:(?:en\/)?clinics|patient\/inquiries|(?:en\/)?posts\/page)\/[^/]+$)/
 
-export async function resolveCmsDocumentLocale(requestHeaders: Headers): Promise<ContentLocale | undefined> {
+export const resolveCmsDocumentLocale = cache(async (requestHeaders: Headers): Promise<ContentLocale | undefined> => {
   if (requestHeaders.has(UI_COPY_LOCALE_HEADER)) return undefined
   const pathname = requestHeaders.get(FRONTEND_PATH_HEADER)?.replace(/\/$/, '') || '/'
   if (DEDICATED_PATHS.has(pathname) || DEDICATED_PATH_FAMILIES.test(pathname)) return undefined
@@ -59,4 +65,4 @@ export async function resolveCmsDocumentLocale(requestHeaders: Headers): Promise
 
   const { route } = await loadPageRoute(segments, previewLocale)
   return route?.locale
-}
+})

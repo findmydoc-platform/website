@@ -7,6 +7,7 @@ import { readWebsiteRecoveryContext } from '@/auth/actions/websiteRecoveryContex
 import { requestPasswordRecovery } from '@/auth/actions/passwordRecoveryRequests'
 import { dashboardRecoveryContext } from '@/auth/actions/recoveryContext'
 import { bindAuthActions } from '@/auth/actions/lifecycle'
+import type { PatientAuthLocale } from '@/auth/actions/patientAuthLocale'
 import { createHash, createHmac, randomUUID } from 'node:crypto'
 import { EventEmitter } from 'node:events'
 import { POST as completePassword } from '@/app/auth/password/complete/route'
@@ -79,7 +80,7 @@ describe('Website recovery at the callback HTTP boundary', () => {
     vi.useRealTimers()
     vi.unstubAllEnvs()
   })
-  async function recovery(collection: 'patients' | 'platformStaff') {
+  async function recovery(collection: 'patients' | 'platformStaff', locale?: PatientAuthLocale) {
     const email = 'principal@example.test'
     storage.rows[collection]!.set(61, {
       id: 61,
@@ -108,7 +109,7 @@ describe('Website recovery at the callback HTTP boundary', () => {
       { method: 'POST', operation: 'requestRecovery', timestamp, requestId, body, keyVersion: key.version, signature },
       { environment: 'test', keys: [key] },
     )
-    await requestPasswordRecovery(storage.req, { email, context })
+    await requestPasswordRecovery(storage.req, { email, context, locale })
     const user = {
       id: subject,
       email,
@@ -154,6 +155,33 @@ describe('Website recovery at the callback HTTP boundary', () => {
       expect(boundary.verify).not.toHaveBeenCalled()
     },
   )
+  test.each([
+    ['de', '/auth/confirm'],
+    ['en', '/auth/en/confirm'],
+  ] as const)('opens the %s patient recovery email in the requested language', async (locale, confirmationPath) => {
+    const { url } = await recovery('patients', locale)
+    expect(url.searchParams.get('locale')).toBe(locale)
+    const response = await GET(new NextRequest(url))
+    expect(response.headers.get('location')).toBe(`${origin}${confirmationPath}?type=recovery`)
+    expect(response.headers.get('cache-control')).toBe('private, no-store')
+    const cookie = response.cookies.get('findmydoc_website_recovery')!
+    const context = readWebsiteRecoveryContext(cookie.value, 'test', [key])!
+    const confirmation = await submit({ cookie: `${cookie.name}=${cookie.value}`, csrf: context.csrf })
+    expect(confirmation.status).toBe(200)
+  })
+
+  test('handles a changed recovery link locale as an invalid link without claiming its token', async () => {
+    const { url } = await recovery('patients', 'de')
+    url.searchParams.set('locale', 'en')
+    const response = await GET(new NextRequest(url))
+    expect(response.headers.get('location')).toBe(`${origin}/auth/en/confirm?type=recovery`)
+    const cookie = response.cookies.get('findmydoc_website_recovery')!
+    const context = readWebsiteRecoveryContext(cookie.value, 'test', [key])!
+    const confirmation = await submit({ cookie: `${cookie.name}=${cookie.value}`, csrf: context.csrf })
+    expect(await confirmation.json()).toEqual({ code: 'INVALID_OR_EXPIRED_LINK' })
+    expect(boundary.verify).not.toHaveBeenCalled()
+  })
+
   async function staged(collection: 'patients' | 'platformStaff' = 'patients') {
     const { id, url } = await recovery(collection)
     const response = await GET(new NextRequest(url))

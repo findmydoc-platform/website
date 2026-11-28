@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createLocalReq, getPayload } from 'payload'
 import { normalizeEmail } from '@/auth/utilities/emailNormalization'
+import { patientAuthLocaleSchema } from '@/auth/actions/patientAuthLocale'
 import { requestPatientVerification } from '@/auth/actions/patientVerificationRequests'
 import configPromise from '@/payload.config'
 import { hashLogValue } from '@/utilities/logging/shared'
@@ -13,6 +14,7 @@ const bodySchema = z
     password: z.string().min(6).max(4096),
     firstName: z.string().trim().min(1).max(200),
     lastName: z.string().trim().min(1).max(200),
+    locale: patientAuthLocaleSchema.optional(),
   })
   .strict()
 

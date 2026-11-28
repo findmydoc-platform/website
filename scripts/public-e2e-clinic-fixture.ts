@@ -1,8 +1,14 @@
 import payload from 'payload'
 
 import config from '../src/payload.config'
+import type { Clinic } from '../src/payload-types'
+import { fallbackMedicalSpecialtyIconKey } from '../src/utilities/medicalSpecialties/iconKeys'
+import { canonicalizeDescriptionText } from '../src/features/clinicDashboard/profile/richText'
+import { createTinyPngFile } from '../tests/fixtures/mediaFile'
 import { cleanupTestEntities } from '../tests/fixtures/cleanupTestEntities'
 import { createClinicFixture } from '../tests/fixtures/createClinicFixture'
+
+type OverviewFixture = 'complete' | 'sparse' | 'unpublished'
 
 function parseArgs(argv: string[]) {
   const [command, ...rest] = argv
@@ -13,6 +19,7 @@ function parseArgs(argv: string[]) {
 
   let prefix = ''
   let email = ''
+  let overview: OverviewFixture | undefined
 
   for (let index = 0; index < rest.length; index += 1) {
     const arg = rest[index]
@@ -25,6 +32,16 @@ function parseArgs(argv: string[]) {
 
     if (arg?.startsWith('--prefix=')) {
       prefix = arg.slice('--prefix='.length)
+      continue
+    }
+
+    if (arg === '--overview') {
+      const variant = rest[index + 1]
+      if (variant !== 'complete' && variant !== 'sparse' && variant !== 'unpublished') {
+        throw new Error('Expected --overview to be complete, sparse, or unpublished.')
+      }
+      overview = variant
+      index += 1
       continue
     }
 
@@ -49,6 +66,7 @@ function parseArgs(argv: string[]) {
   return {
     command,
     email,
+    overview,
     prefix,
   }
 }
@@ -91,7 +109,7 @@ async function ensureCountryId(prefix: string) {
   return country.id
 }
 
-async function createFixture(prefix: string) {
+async function createFixture(prefix: string, overview?: OverviewFixture) {
   const countryId = await ensureCountryId(prefix)
 
   const city = await payload.create({
@@ -106,7 +124,7 @@ async function createFixture(prefix: string) {
     depth: 0,
   })
 
-  const { clinic } = await createClinicFixture(payload, city.id, {
+  const { clinic, doctor } = await createClinicFixture(payload, city.id, {
     slugPrefix: prefix,
   })
 
@@ -114,12 +132,134 @@ async function createFixture(prefix: string) {
     collection: 'clinics',
     id: clinic.id,
     data: {
-      status: 'approved',
+      status: overview === 'unpublished' ? 'pending' : 'approved',
+      ...(overview ? { description: null } : {}),
       coordinates: [13.405, 52.52],
     },
     overrideAccess: true,
     depth: 0,
   })
+
+  if (overview === 'complete') {
+    const editorialOptions = { overrideAccess: true, context: { disableRevalidate: true } } as const
+    const lexical = (text: string) => canonicalizeDescriptionText(text) as NonNullable<Clinic['description']>
+    const specialty = await payload.create({
+      collection: 'medical-specialties',
+      data: { name: `${prefix}-specialty`, iconKey: fallbackMedicalSpecialtyIconKey },
+      ...editorialOptions,
+    })
+    const treatment = await payload.create({
+      collection: 'treatments',
+      data: {
+        name: `${prefix}-treatment`,
+        description: lexical('Fixture treatment description'),
+        medicalSpecialty: specialty.id,
+      },
+      ...editorialOptions,
+    })
+    await payload.create({
+      collection: 'clinictreatments',
+      data: { clinic: clinic.id, treatment: treatment.id, active: true, price: 1234.56 },
+      ...editorialOptions,
+    })
+    await payload.create({
+      collection: 'doctorspecialties',
+      data: { doctor: doctor.id, medicalSpecialty: specialty.id, specializationLevel: 'expert' },
+      ...editorialOptions,
+    })
+    const portrait = await payload.create({
+      collection: 'doctorMedia',
+      file: createTinyPngFile(`${prefix}-portrait.png`),
+      data: { doctor: doctor.id, clinic: clinic.id, alt: 'Fixture original portrait', storagePath: '' },
+      ...editorialOptions,
+    })
+    await payload.update({
+      collection: 'doctors',
+      id: doctor.id,
+      data: {
+        firstName: 'Ada',
+        lastName: 'Example',
+        title: 'dr',
+        qualifications: ['E2E Medical Board Certificate'],
+        experienceYears: 12,
+        languages: ['english', 'german'],
+        profileImage: portrait.id,
+      },
+      ...editorialOptions,
+    })
+    const image = await payload.create({
+      collection: 'clinicMedia',
+      file: createTinyPngFile(`${prefix}-gallery.png`),
+      data: { clinic: clinic.id, alt: 'Profile test original image', status: 'published', storagePath: '' },
+      overrideAccess: true,
+      context: { disableRevalidate: true },
+    })
+    for (const locale of ['de', 'en'] as const) {
+      await payload.update({
+        collection: 'medical-specialties',
+        id: specialty.id,
+        locale,
+        data: { displayName: locale === 'de' ? 'Testfachgebiet Zahnmedizin' : 'Dental Care Test Specialty' },
+        ...editorialOptions,
+      })
+      await payload.update({
+        collection: 'treatments',
+        id: treatment.id,
+        locale,
+        data: { displayName: locale === 'de' ? 'Testbehandlung Zahnaufhellung' : 'Teeth Whitening Test Treatment' },
+        ...editorialOptions,
+      })
+      await payload.update({
+        collection: 'doctors',
+        id: doctor.id,
+        locale,
+        data: {
+          localizedBiography:
+            locale === 'de' ? 'Profiltest Ärztin für Zahnmedizin.' : 'Dental specialist for the profile test.',
+        },
+        ...editorialOptions,
+      })
+      await payload.update({
+        collection: 'doctorMedia',
+        id: portrait.id,
+        locale,
+        data: { localizedAlt: locale === 'de' ? 'Profiltest Ärztin im Flur' : 'Profile test doctor in the hallway' },
+        ...editorialOptions,
+      })
+      await payload.update({
+        collection: 'cities',
+        id: city.id,
+        locale,
+        data: { displayName: locale === 'de' ? 'Profilteststadt' : 'Profile Test City' },
+        overrideAccess: true,
+        context: { disableRevalidate: true },
+      })
+      await payload.update({
+        collection: 'clinicMedia',
+        id: image.id,
+        locale,
+        data: {
+          localizedAlt: locale === 'de' ? 'Eingang zur Profiltestklinik' : 'Entrance to the profile test clinic',
+          localizedCaption: lexical(locale === 'de' ? 'Profiltest Bildtitel' : 'Profile test caption'),
+        },
+        overrideAccess: true,
+        context: { disableRevalidate: true },
+      })
+      await payload.update({
+        collection: 'clinics',
+        id: clinic.id,
+        locale,
+        data: {
+          profileGallery: [image.id],
+          localizedDescription: lexical(
+            locale === 'de' ? 'Profiltest Klinikbeschreibung' : 'Profile test clinic description',
+          ),
+        },
+        overrideAccess: true,
+        context: { disableRevalidate: true },
+      })
+    }
+  }
 
   process.stdout.write(
     `${JSON.stringify({ id: updatedClinic.id, slug: updatedClinic.slug, status: updatedClinic.status })}\n`,
@@ -128,7 +268,56 @@ async function createFixture(prefix: string) {
 
 async function cleanupFixture(prefix: string) {
   await cleanupTestEntities(payload, 'patientClinicInquiries', prefix)
+  await cleanupTestEntities(payload, 'clinictreatments', prefix)
+  const doctors = await payload.find({
+    collection: 'doctors',
+    depth: 0,
+    overrideAccess: true,
+    where: { slug: { like: `${prefix}%` } },
+  })
+  for (const doctor of doctors.docs) {
+    await payload.delete({
+      collection: 'doctorspecialties',
+      where: { doctor: { equals: doctor.id } },
+      overrideAccess: true,
+    })
+    if (!doctor.profileImage) continue
+    const imageId = extractRelationId(doctor.profileImage)
+    await payload.update({
+      collection: 'doctors',
+      id: doctor.id,
+      data: { profileImage: null },
+      overrideAccess: true,
+    })
+    if (imageId !== null) await payload.delete({ collection: 'doctorMedia', id: imageId, overrideAccess: true })
+  }
   await cleanupTestEntities(payload, 'doctors', prefix)
+  await cleanupTestEntities(payload, 'treatments', prefix)
+  await payload.delete({
+    collection: 'medical-specialties',
+    where: { name: { like: `${prefix}%` } },
+    overrideAccess: true,
+  })
+  const clinics = await payload.find({
+    collection: 'clinics',
+    depth: 0,
+    overrideAccess: true,
+    where: { slug: { like: `${prefix}%` } },
+  })
+  for (const clinic of clinics.docs) {
+    if (!clinic.profileGallery?.length) continue
+    await payload.update({
+      collection: 'clinics',
+      id: clinic.id,
+      data: { profileGallery: [] },
+      overrideAccess: true,
+      context: { disableRevalidate: true },
+    })
+    for (const mediaId of clinic.profileGallery) {
+      const id = extractRelationId(mediaId)
+      if (id !== null) await payload.delete({ collection: 'clinicMedia', id, overrideAccess: true })
+    }
+  }
   await cleanupTestEntities(payload, 'clinics', prefix)
   await cleanupTestEntities(payload, 'cities', prefix)
   await cleanupTestEntities(payload, 'countries', prefix)
@@ -190,12 +379,12 @@ async function readInquiry(prefix: string, email: string) {
 }
 
 async function main() {
-  const { command, email, prefix } = parseArgs(process.argv.slice(2))
+  const { command, email, overview, prefix } = parseArgs(process.argv.slice(2))
 
   await payload.init({ config })
 
   if (command === 'create') {
-    await createFixture(prefix)
+    await createFixture(prefix, overview)
     return
   }
 

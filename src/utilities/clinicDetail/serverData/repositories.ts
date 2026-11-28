@@ -1,4 +1,5 @@
 import type { Payload } from 'payload'
+import type { UiCopyLocale } from '@/i18n/requestLocale'
 
 import type {
   Accreditation,
@@ -62,13 +63,20 @@ async function collectAllPages<T>(fetchPage: (page: number) => Promise<PagedDocs
   return docs
 }
 
-export async function findClinicBySlug(payload: Payload, slug: string, draft: boolean): Promise<Clinic | null> {
+export async function findClinicBySlug(
+  payload: Payload,
+  slug: string,
+  draft: boolean,
+  locale: UiCopyLocale,
+): Promise<Clinic | null> {
   const result = await payload.find({
     collection: 'clinics',
     depth: 2,
     limit: 1,
     pagination: false,
     overrideAccess: draft,
+    locale,
+    fallbackLocale: false,
     where: {
       slug: {
         equals: slug,
@@ -90,10 +98,16 @@ export async function findClinicBySlug(payload: Payload, slug: string, draft: bo
   return clinic
 }
 
-export async function findClinicTreatmentsByClinicId(payload: Payload, clinicId: number): Promise<Clinictreatment[]> {
+export async function findClinicTreatmentsByClinicId(
+  payload: Payload,
+  clinicId: number,
+  locale: UiCopyLocale,
+): Promise<Clinictreatment[]> {
   return collectAllPages<Clinictreatment>(async (page) => {
     const result = await payload.find({
       collection: 'clinictreatments',
+      locale,
+      fallbackLocale: false,
       depth: 2,
       page,
       limit: QUERY_PAGE_SIZE,
@@ -130,11 +144,17 @@ export async function findClinicTreatmentsByClinicId(payload: Payload, clinicId:
   })
 }
 
-export async function findDoctorsByClinicId(payload: Payload, clinicId: number): Promise<Doctor[]> {
+export async function findDoctorsByClinicId(
+  payload: Payload,
+  clinicId: number,
+  locale: UiCopyLocale,
+): Promise<Doctor[]> {
   return collectAllPages<Doctor>(async (page) => {
     const result = await payload.find({
       collection: 'doctors',
-      depth: 1,
+      locale,
+      fallbackLocale: false,
+      depth: 0,
       page,
       limit: QUERY_PAGE_SIZE,
       pagination: true,
@@ -157,11 +177,13 @@ export async function findDoctorsByClinicId(payload: Payload, clinicId: number):
         id: true,
         active: true,
         fullName: true,
+        title: true,
         firstName: true,
         lastName: true,
         gender: true,
         averageRating: true,
         biography: true,
+        localizedBiography: true,
         profileImage: true,
         clinic: true,
         qualifications: true,
@@ -181,6 +203,7 @@ export async function findDoctorsByClinicId(payload: Payload, clinicId: number):
 export async function findDoctorSpecialtiesByDoctorIds(
   payload: Payload,
   doctorIds: number[],
+  locale: UiCopyLocale,
 ): Promise<Doctorspecialty[]> {
   if (doctorIds.length === 0) return []
 
@@ -191,6 +214,8 @@ export async function findDoctorSpecialtiesByDoctorIds(
     const chunkDocs = await collectAllPages<Doctorspecialty>(async (page) => {
       const result = await payload.find({
         collection: 'doctorspecialties',
+        locale,
+        fallbackLocale: false,
         depth: 2,
         page,
         limit: QUERY_PAGE_SIZE,
@@ -407,7 +432,7 @@ export async function findAccreditationsByIds(payload: Payload, accreditationIds
   return allDocs
 }
 
-export async function findCitiesByIds(payload: Payload, cityIds: number[]): Promise<City[]> {
+export async function findCitiesByIds(payload: Payload, cityIds: number[], locale: UiCopyLocale): Promise<City[]> {
   if (cityIds.length === 0) return []
 
   const allDocs: City[] = []
@@ -422,6 +447,8 @@ export async function findCitiesByIds(payload: Payload, cityIds: number[]): Prom
         limit: QUERY_PAGE_SIZE,
         pagination: true,
         overrideAccess: false,
+        locale,
+        fallbackLocale: false,
         where: {
           id: {
             in: cityChunk,
@@ -430,6 +457,7 @@ export async function findCitiesByIds(payload: Payload, cityIds: number[]): Prom
         select: {
           id: true,
           name: true,
+          displayName: true,
           updatedAt: true,
         },
       })

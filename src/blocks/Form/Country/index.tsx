@@ -7,34 +7,34 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import React from 'react'
 import { Controller } from 'react-hook-form'
 
+import { defaultFormCopy, type FormCopy } from '@/components/organisms/Form/copy'
+
 import { Error } from '../Error'
+import { RequiredCue } from '../RequiredCue'
 import { Width } from '../Width'
 import { countryOptions } from './options'
 
 export const Country: React.FC<
   CountryField & {
     control: Control
+    locale?: 'de' | 'en'
+    copy?: FormCopy
     errors: Partial<FieldErrorsImpl>
   }
-> = ({ name, control, errors, label, required, width }) => {
+> = ({ name, control, copy = defaultFormCopy, errors, label, locale = 'en', required, width }) => {
+  const displayNames = React.useMemo(() => new Intl.DisplayNames(locale, { type: 'region' }), [locale])
   const errorIdPrefix = React.useId()
   const error = errors[name]
+  const fieldId = `${errorIdPrefix}-${name}`
   const errorId = `${errorIdPrefix}-${name}-field-error`
 
   return (
     <Width width={width}>
       <Field data-invalid={error ? true : undefined}>
-        <Label className="" htmlFor={name}>
+        <Label className="" htmlFor={fieldId}>
           {label}
 
-          {required && (
-            <span className="required">
-              *{' '}
-              <span className="sr-only" lang="en">
-                (required)
-              </span>
-            </span>
-          )}
+          {required && <RequiredCue label={copy.requiredCue} />}
         </Label>
         <Controller
           control={control}
@@ -48,8 +48,9 @@ export const Country: React.FC<
                 <SelectTrigger
                   aria-describedby={error ? errorId : undefined}
                   aria-invalid={error ? true : undefined}
+                  aria-required={required || undefined}
                   className="w-full"
-                  id={name}
+                  id={fieldId}
                   onBlur={field.onBlur}
                   ref={field.ref}
                 >
@@ -59,7 +60,7 @@ export const Country: React.FC<
                   {countryOptions.map(({ label, value }) => {
                     return (
                       <SelectItem key={value} value={value}>
-                        {label}
+                        {locale === 'en' ? label : (displayNames.of(value) ?? label)}
                       </SelectItem>
                     )
                   })}
@@ -67,7 +68,7 @@ export const Country: React.FC<
               </Select>
             )
           }}
-          rules={{ required: required ? 'This field is required.' : false }}
+          rules={{ required: required ? copy.required : false }}
         />
         {error && <Error error={error} id={errorId} />}
       </Field>

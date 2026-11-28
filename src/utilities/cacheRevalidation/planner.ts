@@ -256,7 +256,7 @@ const buildCollectionPlan = (event: CollectionRevalidationEvent): RevalidationPl
       buildSurfaceTag('home'),
       buildSurfaceTag('partners-clinics'),
     )
-    paths.push(buildPostsIndexPath())
+    paths.push(buildPostsIndexPath(), buildPostsIndexPath('en'))
     surfaceIds.push('post-detail', 'posts-list', 'home', 'partners-clinics', 'surface:sitemap:posts')
   }
 
@@ -352,13 +352,13 @@ const buildClinicDocumentPlan = (event: ClinicSurfaceRevalidationEvent): Revalid
 
   if (publicNow) {
     tags.push(buildSlugTag('clinics', slug))
-    paths.push(buildClinicPath(slug))
+    paths.push(buildClinicPath(slug), buildClinicPath(slug, 'en'))
   }
 
   if (publicBefore) {
     const staleSlug = previousSlug ?? slug
     tags.push(buildSlugTag('clinics', staleSlug))
-    paths.push(buildClinicPath(staleSlug))
+    paths.push(buildClinicPath(staleSlug), buildClinicPath(staleSlug, 'en'))
   }
 
   return createPlan({
@@ -453,7 +453,7 @@ const buildClinicSurfacePlan = (event: ClinicSurfaceRevalidationEvent): Revalida
 
     for (const clinicSlug of allClinicSlugs) {
       tags.push(buildSlugTag('clinics', clinicSlug))
-      paths.push(buildClinicPath(clinicSlug))
+      paths.push(buildClinicPath(clinicSlug), buildClinicPath(clinicSlug, 'en'))
     }
   }
 
@@ -617,7 +617,7 @@ const buildPostsListPlan = (event: PostsListRevalidationEvent): RevalidationPlan
       buildSurfaceTag('partners-clinics'),
       buildSitemapTag('posts'),
     ],
-    paths: [buildPostsIndexPath()],
+    paths: [buildPostsIndexPath(), buildPostsIndexPath('en')],
   })
 }
 
@@ -663,7 +663,7 @@ const buildSeedFinalFlushPlan = (event: SeedFinalFlushRevalidationEvent): Revali
   const paths = [
     ...surfaces.flatMap((surface) => {
       if (surface === 'posts-list') {
-        return [buildPostsIndexPath()]
+        return [buildPostsIndexPath(), buildPostsIndexPath('en')]
       }
 
       try {

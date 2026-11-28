@@ -1,3 +1,4 @@
+import { patientAuthLocaleSchema, type PatientAuthLocale } from './patientAuthLocale'
 import {
   APIError,
   createLocalReq,
@@ -268,6 +269,7 @@ export const guardRecoveryEventDelete: CollectionBeforeDeleteHook = async ({ id,
 const storedFields = new Set<string>([
   ...authActionDiagnosticFields,
   'supabaseTokenType',
+  'locale',
   'principal',
   'principalBoundAt',
   'supabaseSubject',
@@ -283,6 +285,7 @@ const immutableFields = [
   'actionType',
   'environment',
   'supabaseTokenType',
+  'locale',
   'callbackDestination',
   'completionRoute',
   'finalDestination',
@@ -297,6 +300,11 @@ function validatePolicy(doc: Record<string, unknown>, scope: Scope) {
   const state = parsed(z.enum(authActionStates), doc.state)
   const policy = authActionPolicies[actionType]
   const createdAt = Date.parse(String(doc.createdAt))
+  if (doc.locale != null) {
+    if (actionType !== 'patient-verification' && actionType !== 'patient-recovery')
+      throw new AuthActionError('invalid-command')
+    parsed(patientAuthLocaleSchema, doc.locale)
+  }
   if (doc.correlationDigest != null || doc.correlationKeyVersion != null) {
     if (
       (actionType !== 'patient-verification' && !recoveryActionTypes.includes(actionType as never)) ||
@@ -635,7 +643,7 @@ export function bindAuthActions(
   async function createPending(
     internalReq: PayloadRequest,
     scope: Scope,
-    command: CreateInput,
+    command: CreateInput & { locale?: PatientAuthLocale },
     correlation?: { correlationDigest: string; correlationKeyVersion: string },
     boundSubject?: string,
     invitationRenewal = false,
@@ -644,6 +652,7 @@ export function bindAuthActions(
     const policy = authActionPolicies[command.actionType]
     const data = {
       actionType: command.actionType,
+      ...(command.locale ? { locale: command.locale } : {}),
       environment,
       state: 'pending' as const,
       principal: command.principal ?? null,
@@ -892,6 +901,7 @@ export function bindAuthActions(
       email: string
       context: RecoveryContext | null
       actionType?: 'clinic-recovery'
+      locale?: PatientAuthLocale
     }): Promise<AuthAction | null> {
       const email = normalizeEmail(input.email)
       if (!isValidEmail(email) || email.length > 254) throw new AuthActionError('invalid-command')
@@ -990,6 +1000,7 @@ export function bindAuthActions(
           scope,
           {
             actionType: principal.actionType,
+            locale: principal.actionType === 'patient-recovery' ? input.locale : undefined,
             principal: { relationTo: principal.collection, value: principal.document.id },
           },
           { correlationDigest: correlation.digest, correlationKeyVersion: correlation.keyVersion },
@@ -1029,10 +1040,15 @@ export function bindAuthActions(
       })
     },
     async reservePatientVerification(
-      input: { email: string; resendOf?: number },
+      input: { email: string; resendOf?: number; locale?: PatientAuthLocale },
       onCreated?: (action: AuthAction) => void,
     ) {
-      const command = parsed(z.object({ email: z.string(), resendOf: idSchema.optional() }).strict(), input)
+      const command = parsed(
+        z
+          .object({ email: z.string(), resendOf: idSchema.optional(), locale: patientAuthLocaleSchema.optional() })
+          .strict(),
+        input,
+      )
       let correlations: ReturnType<typeof verificationCorrelations>
       try {
         correlations = verificationCorrelations(command.email, environment, options.verificationKeys ?? [])
@@ -1112,8 +1128,14 @@ export function bindAuthActions(
             await transition(internalReq, scope, { id: action.id, to: 'expired' })
         }
         if (current) await transition(internalReq, scope, { id: current.id, to: 'superseded' })
+        const locale = current ? current.locale : (command.locale ?? matches.docs[0]?.locale)
         return {
-          action: await createPending(internalReq, scope, { actionType: 'patient-verification' }, correlations[0]),
+          action: await createPending(
+            internalReq,
+            scope,
+            { actionType: 'patient-verification', locale: locale ?? undefined },
+            correlations[0],
+          ),
           created: true,
         }
       })

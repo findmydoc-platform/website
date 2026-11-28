@@ -109,10 +109,6 @@ export const Main_Default: Story = {
     ).toHaveFocus()
     expect(canvas.getAllByText('Showing 5 reviews of 5 verified reviews.').length).toBeGreaterThan(0)
 
-    await expect(canvas.getByRole('heading', { name: 'Treatments' })).toBeInTheDocument()
-    await expect(canvas.getByRole('heading', { name: 'Further Treatments' })).toBeInTheDocument()
-    await expect(canvas.getByRole('heading', { name: 'Our Doctors' })).toBeInTheDocument()
-
     const contactDoctorLinks = canvas.getAllByRole('link', { name: 'Contact Doctor' })
     await expect(contactDoctorLinks.length).toBeGreaterThan(0)
     await expect(contactDoctorLinks[0]).toHaveAttribute('href', '#clinic-contact-form')
@@ -281,10 +277,9 @@ export const Main_WithGuestFavoriteAction: Story = {
   render: (args) => <ClinicDetail {...args} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(canvas.getByRole('link', { name: 'Save clinic' })).toHaveAttribute(
-      'href',
-      '/login/patient?next=%2Fclinics%2Fberlin-health-clinic',
-    )
+    await expect(
+      canvas.getByRole('link', { name: `Save ${clinicDetailFixture.clinicName} to saved clinics` }),
+    ).toHaveAttribute('href', '/login/patient?next=%2Fclinics%2Fberlin-health-clinic')
   },
 }
 

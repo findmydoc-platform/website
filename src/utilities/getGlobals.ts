@@ -4,6 +4,7 @@ import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 import { unstable_cache } from 'next/cache'
 import { buildCollectionTag, buildGlobalTag } from '@/utilities/cachePolicy'
+import type { ContentLocale } from '@/utilities/contentLocalization'
 
 type Global = keyof Config['globals']
 
@@ -22,14 +23,13 @@ const hasPageReferences = (slug: Global) => hasPostReferences(slug) || slug === 
  * @param depth - Relationship population depth (default: 0)
  * @returns Global document data
  */
-export async function getGlobal(slug: Global, depth = 0) {
+export async function getGlobal(slug: Global, depth = 0, locale?: ContentLocale) {
   const payload = await getPayload({ config: configPromise })
   const global = await payload.findGlobal({
     slug,
     depth,
     overrideAccess: false,
-    // Shared chrome still uses its existing English CMS references during the Page pilot.
-    ...(hasEnglishChromeReferences(slug) ? { locale: 'en', fallbackLocale: false } : {}),
+    ...(locale || hasEnglishChromeReferences(slug) ? { locale: locale ?? 'en', fallbackLocale: false } : {}),
   })
 
   return global
@@ -47,12 +47,12 @@ export async function getGlobal(slug: Global, depth = 0) {
  * const getCachedSettings = getCachedGlobal('settings')
  * const settings = await getCachedSettings()
  */
-export const getCachedGlobal = (slug: Global, depth = 0) => {
+export const getCachedGlobal = (slug: Global, depth = 0, locale?: ContentLocale) => {
   const tags = [buildGlobalTag(slug)]
   if (depth > 0 && hasPageReferences(slug)) tags.push(buildCollectionTag('pages'))
   if (depth > 0 && hasPostReferences(slug)) tags.push(buildCollectionTag('posts'))
 
-  return unstable_cache(async () => getGlobal(slug, depth), [GLOBAL_CACHE_NAMESPACE_VERSION, slug, String(depth)], {
-    tags,
-  })
+  const keys = [GLOBAL_CACHE_NAMESPACE_VERSION, slug, String(depth)]
+  if (locale) keys.push(locale)
+  return unstable_cache(async () => getGlobal(slug, depth, locale), keys, { tags })
 }

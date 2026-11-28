@@ -98,7 +98,7 @@ describe('cache revalidation planner', () => {
       'surface:home',
       'surface:partners-clinics',
     ])
-    expect(plan.paths).toEqual(['/posts/clinic-checklist', '/posts'])
+    expect(plan.paths).toEqual(['/posts/clinic-checklist', '/posts', '/en/posts'])
     expect(plan.surfaceIds).toEqual(['post-detail', 'posts-list', 'home', 'partners-clinics', 'surface:sitemap:posts'])
   })
 
@@ -119,7 +119,7 @@ describe('cache revalidation planner', () => {
         'surface:partners-clinics',
         'surface:sitemap:posts',
       ],
-      paths: ['/posts'],
+      paths: ['/posts', '/en/posts'],
     })
 
     expect(
@@ -190,6 +190,7 @@ describe('cache revalidation planner', () => {
     ])
     expect(plan.paths).toEqual([
       '/posts',
+      '/en/posts',
       '/',
       '/listing-comparison',
       '/posts-sitemap.xml',
@@ -205,7 +206,7 @@ describe('cache revalidation planner', () => {
       subjectKind: 'seed-final-flush',
       subjectId: 'seed-run-1',
       tagCount: 8,
-      pathCount: 8,
+      pathCount: 9,
     })
   })
 
@@ -385,7 +386,12 @@ describe('cache revalidation planner', () => {
       'slug:clinics:new-clinic',
       'slug:clinics:old-clinic',
     ])
-    expect(plan.paths).toEqual(['/clinics/new-clinic', '/clinics/old-clinic'])
+    expect(plan.paths).toEqual([
+      '/clinics/new-clinic',
+      '/en/clinics/new-clinic',
+      '/clinics/old-clinic',
+      '/en/clinics/old-clinic',
+    ])
     expect(plan.surfaceIds).toEqual(['clinic-detail', 'listing-comparison', 'surface:sitemap:pages'])
   })
 
@@ -407,7 +413,7 @@ describe('cache revalidation planner', () => {
 
     expect(plan.tags).toEqual(['entity:clinics:12', 'surface:clinic-detail:12', 'slug:clinics:clinic'])
     expect(plan.surfaceIds).toEqual(['clinic-detail'])
-    expect(plan.paths).toEqual(['/clinics/clinic'])
+    expect(plan.paths).toEqual(['/clinics/clinic', '/en/clinics/clinic'])
   })
 
   it('keeps main-image gallery changes targeted while invalidating listing surfaces', () => {
@@ -434,7 +440,7 @@ describe('cache revalidation planner', () => {
       'surface:sitemap:pages',
       'slug:clinics:clinic',
     ])
-    expect(plan.paths).toEqual(['/clinics/clinic'])
+    expect(plan.paths).toEqual(['/clinics/clinic', '/en/clinics/clinic'])
   })
 
   it('maps related clinic collection changes without listing query path matrices', () => {
@@ -461,7 +467,7 @@ describe('cache revalidation planner', () => {
       'surface:listing-comparison',
       'surface:sitemap:pages',
     ])
-    expect(plan.paths).toEqual(['/clinics/berlin-health'])
+    expect(plan.paths).toEqual(['/clinics/berlin-health', '/en/clinics/berlin-health'])
     expect(plan.paths).not.toContain('/listing-comparison')
     expect(plan.paths.some((path) => path.startsWith('/listing-comparison?'))).toBe(false)
   })

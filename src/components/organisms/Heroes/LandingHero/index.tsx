@@ -2,6 +2,7 @@ import React from 'react'
 import Image, { type StaticImageData } from 'next/image'
 
 import type { ComboboxOption } from '@/components/atoms/combobox'
+import type { ClinicSearchBarCopy } from '@/components/molecules/ClinicSearchBar'
 import { Container } from '@/components/molecules/Container'
 import { UiLink, type UiLinkProps } from '@/components/molecules/Link'
 import { SectionHeading } from '@/components/molecules/SectionHeading'
@@ -35,6 +36,8 @@ export type LandingHeroProps = {
     label: string
     icon: React.ReactNode
   }[]
+  searchCopy?: ClinicSearchBarCopy
+  searchDestination?: string
   searchOptions?: {
     service: ComboboxOption[]
     location: ComboboxOption[]
@@ -49,6 +52,8 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
   actions,
   socialLinks,
   searchOptions,
+  searchCopy,
+  searchDestination,
 }) => {
   const isHomepage = variant === 'homepage'
   const isClinicLanding = variant === 'clinic-landing'
@@ -127,7 +132,9 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
     <section
       className={cn(
         'relative flex items-center justify-center bg-site-canvas py-14 sm:py-20',
-        isClinicLanding ? 'min-h-[34rem] overflow-hidden sm:min-h-[48rem]' : 'min-h-[32rem] md:min-h-[39rem] md:pb-28',
+        isClinicLanding
+          ? 'min-h-[34rem] overflow-hidden sm:min-h-[48rem]'
+          : 'min-h-[32rem] flex-col py-9 sm:py-16 md:min-h-[39rem] lg:py-20 lg:pb-28',
       )}
     >
       {imageSrc ? (
@@ -154,16 +161,9 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
           size="hero"
           align="center"
           headingAs="h1"
-          titleClassName="font-semibold"
+          spacing={isHomepage ? 'editorial' : undefined}
+          titleClassName={cn('font-semibold', isHomepage && 'text-3xl md:text-6xl lg:text-7xl')}
         />
-
-        {isHomepage ? (
-          <LandingHeroSearchBarClient
-            className="mx-auto w-full md:hidden"
-            serviceOptions={searchOptions?.service}
-            locationOptions={searchOptions?.location}
-          />
-        ) : null}
 
         {isClinicLanding && Array.isArray(socialLinks) && socialLinks.length > 0 && (
           <div className="flex space-x-6">
@@ -202,9 +202,11 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
       </Container>
 
       {isHomepage && (
-        <div className="absolute right-0 bottom-0 left-0 z-20 hidden w-full translate-y-1/2 px-4 md:block">
+        <div className="relative z-20 mt-8 w-full px-4 lg:absolute lg:inset-x-0 lg:bottom-0 lg:mt-0 lg:translate-y-1/2">
           <LandingHeroSearchBarClient
             className="mx-auto"
+            copy={searchCopy}
+            destination={searchDestination}
             serviceOptions={searchOptions?.service}
             locationOptions={searchOptions?.location}
           />

@@ -13,34 +13,44 @@ import {
 import React from 'react'
 import { Controller } from 'react-hook-form'
 
+import { defaultFormCopy, type FormCopy } from '@/components/organisms/Form/copy'
+
 import { Error } from '../Error'
+import { RequiredCue } from '../RequiredCue'
 import { Width } from '../Width'
 import { cn } from '@/utilities/ui'
 
 export const Select: React.FC<
   SelectField & {
     control: Control<FieldValues>
+    copy?: FormCopy
     errors: FieldErrors<FieldValues>
     textColorClass?: string
   }
-> = ({ name, control, errors, label, options, required, width, defaultValue, textColorClass = 'text-accent' }) => {
+> = ({
+  name,
+  control,
+  copy = defaultFormCopy,
+  errors,
+  label,
+  options,
+  placeholder,
+  required,
+  width,
+  defaultValue,
+  textColorClass = 'text-accent',
+}) => {
   const errorIdPrefix = React.useId()
   const error = errors?.[name]
+  const fieldId = `${errorIdPrefix}-${name}`
   const errorId = `${errorIdPrefix}-${name}-field-error`
 
   return (
     <Width width={width}>
       <Field data-invalid={error ? true : undefined}>
-        <Label htmlFor={name}>
+        <Label htmlFor={fieldId}>
           {label}
-          {required && (
-            <span className="required">
-              *{' '}
-              <span className="sr-only" lang="en">
-                (required)
-              </span>
-            </span>
-          )}
+          {required && <RequiredCue label={copy.requiredCue} />}
         </Label>
         <Controller
           control={control}
@@ -48,19 +58,20 @@ export const Select: React.FC<
           name={name}
           render={({ field }) => {
             const opts = Array.isArray(options) ? options : []
-            const selectedValue = typeof field.value === 'string' ? field.value : undefined
+            const selectedValue = typeof field.value === 'string' ? field.value : ''
 
             return (
               <SelectComponent name={field.name} onValueChange={field.onChange} value={selectedValue}>
                 <SelectTrigger
                   aria-describedby={error ? errorId : undefined}
                   aria-invalid={error ? true : undefined}
+                  aria-required={required || undefined}
                   className={cn('w-full border border-border', textColorClass)}
-                  id={name}
+                  id={fieldId}
                   onBlur={field.onBlur}
                   ref={field.ref}
                 >
-                  <SelectValue placeholder={label} />
+                  <SelectValue placeholder={placeholder || label} />
                 </SelectTrigger>
                 <SelectContent>
                   {opts.map(({ label, value }) => (
@@ -72,7 +83,7 @@ export const Select: React.FC<
               </SelectComponent>
             )
           }}
-          rules={{ required: required ? 'This field is required.' : false }}
+          rules={{ required: required ? copy.required : false }}
         />
         {error && <Error error={error} id={errorId} />}
       </Field>

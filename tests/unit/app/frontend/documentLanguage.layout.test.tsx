@@ -2,6 +2,7 @@ import { readdirSync } from 'node:fs'
 import { relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { FRONTEND_PATH_HEADER, UI_COPY_LOCALE_HEADER, uiCopyLocaleFromPath } from '@/i18n/requestLocale'
 
 const mocks = vi.hoisted(() => ({
   headers: vi.fn(),
@@ -20,15 +21,20 @@ vi.mock('@/utilities/content/serverData', () => ({
   getCachedPublicPostRoute: mocks.getCachedPublicPostRoute,
   findPublicPageRoute: mocks.findPublicPageRoute,
 }))
-vi.mock('@/utilities/getGlobals', () => ({ getGlobal: async () => ({}) }))
 vi.mock('@/app/(frontend)/AdminBarClientAdapter.client', () => ({ AdminBarClientAdapter: () => null }))
+vi.mock('@/app/(frontend)/_data/cookieConsent', () => ({
+  getCookieConsentConfigs: async () => ({ de: null, en: null }),
+}))
 vi.mock('@/features/cookieConsent/CookieConsentClientAdapter.client', () => ({
   CookieConsentClientAdapter: () => null,
 }))
 vi.mock('@vercel/toolbar/next', () => ({ VercelToolbar: () => null }))
 
 async function renderLayout(pathname: string) {
-  mocks.headers.mockResolvedValue(new Headers({ 'x-findmydoc-frontend-path': pathname }))
+  const requestHeaders = new Headers({ [FRONTEND_PATH_HEADER]: pathname })
+  const requestLocale = uiCopyLocaleFromPath(pathname)
+  if (requestLocale) requestHeaders.set(UI_COPY_LOCALE_HEADER, requestLocale)
+  mocks.headers.mockResolvedValue(requestHeaders)
   const { default: RootLayout } = await import('@/app/(frontend)/layout')
   return RootLayout({ children: null })
 }
@@ -82,10 +88,25 @@ describe('frontend document language', () => {
     ])
   })
 
-  it.each(dedicatedPagePaths)('keeps %s English without looking for a CMS document', async (path) => {
+  it.each([
+    ['/register/patient', 'de'],
+    ['/en/register/patient', 'en'],
+    ['/en/contact', 'en'],
+    ['/en/logout', 'en'],
+    ['/posts', 'de'],
+    ['/posts/page/2', 'de'],
+    ['/en/posts', 'en'],
+    ['/en/posts/page/2', 'en'],
+    ['/auth/invite/complete', 'en'],
+  ])('renders %s in %s', async (path, locale) => {
     const layout = await renderLayout(path)
 
-    expect(layout.props.lang).toBe('en')
+    expect(layout.props.lang).toBe(locale)
+  })
+
+  it.each(dedicatedPagePaths)('does not look up a CMS document for %s', async (path) => {
+    await renderLayout(path)
+
     expect(mocks.findPublicPageRoute).not.toHaveBeenCalled()
     expect(mocks.getCachedPublicPostRoute).not.toHaveBeenCalled()
   })

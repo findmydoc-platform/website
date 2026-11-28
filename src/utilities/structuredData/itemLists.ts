@@ -8,6 +8,7 @@ type ItemListEntryType = 'Article' | 'MedicalClinic' | 'Thing'
 
 type ItemListEntry = {
   imageUrl?: string | null
+  inLanguage?: string
   name: string
   type?: ItemListEntryType
   url: string
@@ -21,8 +22,10 @@ type BuildItemListJsonLdInput = {
 
 export type PostsIndexJsonLdInput = {
   breadcrumbs: BreadcrumbItem[]
+  listName?: string
   posts: Array<{
     href: string
+    locale?: string
     image?: {
       src?: string | null
     }
@@ -32,6 +35,8 @@ export type PostsIndexJsonLdInput = {
 
 export type ListingComparisonJsonLdInput = {
   breadcrumbs: BreadcrumbItem[]
+  canonicalPath?: string
+  listName?: string
   clinics: Array<{
     actions: {
       details: {
@@ -66,6 +71,7 @@ const buildItemListJsonLd = ({ idPath, items, name }: BuildItemListJsonLdInput):
       item: {
         '@type': item.type ?? 'Thing',
         image: item.imageUrl ? absoluteUrl(item.imageUrl) : undefined,
+        inLanguage: item.inLanguage,
         name: item.name,
         url: absoluteUrl(item.url),
       },
@@ -77,7 +83,11 @@ const buildItemListJsonLd = ({ idPath, items, name }: BuildItemListJsonLdInput):
   }
 }
 
-export function buildPostsIndexJsonLd({ breadcrumbs, posts }: PostsIndexJsonLdInput): JsonLdNode[] {
+export function buildPostsIndexJsonLd({
+  breadcrumbs,
+  posts,
+  listName = 'findmydoc articles',
+}: PostsIndexJsonLdInput): JsonLdNode[] {
   const path = breadcrumbs.at(-1)?.href ?? '/posts'
 
   return cleanJsonLdNodes([
@@ -86,17 +96,20 @@ export function buildPostsIndexJsonLd({ breadcrumbs, posts }: PostsIndexJsonLdIn
       idPath: path,
       items: posts.map((post) => ({
         imageUrl: post.image?.src,
+        inLanguage: post.locale,
         name: post.title,
         type: 'Article',
         url: post.href,
       })),
-      name: 'findmydoc articles',
+      name: listName,
     }),
   ])
 }
 
 export function buildListingComparisonJsonLd({
   breadcrumbs,
+  canonicalPath = '/listing-comparison',
+  listName = 'findmydoc clinic comparison',
   clinics,
   isCanonicalRoute,
 }: ListingComparisonJsonLdInput): JsonLdNode[] {
@@ -104,14 +117,14 @@ export function buildListingComparisonJsonLd({
     buildBreadcrumbListJsonLd(breadcrumbs),
     isCanonicalRoute
       ? buildItemListJsonLd({
-          idPath: '/listing-comparison',
+          idPath: canonicalPath,
           items: clinics.map((clinic) => ({
             imageUrl: clinic.media.src,
             name: clinic.name,
             type: 'MedicalClinic',
             url: clinic.actions.details.href,
           })),
-          name: 'findmydoc clinic comparison',
+          name: listName,
         })
       : null,
   ])

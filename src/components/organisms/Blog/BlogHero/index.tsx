@@ -9,6 +9,7 @@ export type BlogHeroProps = {
   subtitle?: string | null
   action?: React.ReactNode
   breadcrumbs?: BreadcrumbItem[]
+  breadcrumbLabel?: string
   className?: string
 }
 
@@ -27,6 +28,7 @@ export const BlogHero: React.FC<BlogHeroProps> = ({
   title = 'Our Blog',
   subtitle = 'Expert insights, practical guidance, and the latest updates in health and medicine.',
   breadcrumbs,
+  breadcrumbLabel,
   action,
   className,
 }) => {
@@ -37,6 +39,7 @@ export const BlogHero: React.FC<BlogHeroProps> = ({
           <Container className="py-4 sm:py-5">
             <Breadcrumb
               items={breadcrumbs}
+              label={breadcrumbLabel}
               className={cn(
                 'text-xs sm:text-sm [&_ol]:justify-center lg:[&_ol]:justify-start',
                 action && 'text-foreground',

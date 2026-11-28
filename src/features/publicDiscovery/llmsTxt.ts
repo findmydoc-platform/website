@@ -40,9 +40,14 @@ const keyUrlLinks = [
     label: 'Clinic comparison',
   },
   {
-    description: 'Approved public clinic detail pages use readable clinic slugs.',
+    description: 'German pages for approved public clinics.',
     href: toPublicCanonicalUrl('/clinics/{clinic-slug}'),
-    label: 'Clinic profile pattern',
+    label: 'German clinic profile pattern',
+  },
+  {
+    description: 'English pages for the same approved public clinics.',
+    href: toPublicCanonicalUrl('/en/clinics/{clinic-slug}'),
+    label: 'English clinic profile pattern',
   },
   {
     description: 'Public article index.',

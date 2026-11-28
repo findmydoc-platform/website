@@ -118,6 +118,11 @@ import * as migration_20261126_134943_localize_category_titles from './20261126_
 import * as migration_20261127_130352_stage_mcp_clinic_onboarding from './20261127_130352_stage_mcp_clinic_onboarding'
 import * as migration_20261127_132120_blog_editorial_upload from './20261127_132120_blog_editorial_upload'
 import * as migration_20261127_132530_clinic_onboarding_decision_grant from './20261127_132530_clinic_onboarding_decision_grant'
+import * as migration_20261128_143007_patient_auth_action_locale from './20261128_143007_patient_auth_action_locale'
+import * as migration_20261128_145222_localized_comparison_labels from './20261128_145222_localized_comparison_labels'
+import * as migration_20261128_154949_localized_clinic_profile_overview from './20261128_154949_localized_clinic_profile_overview'
+import * as migration_20261128_160635_localized_full_home_content from './20261128_160635_localized_full_home_content'
+import * as migration_20261128_161951_localized_clinic_team_profiles from './20261128_161951_localized_clinic_team_profiles'
 
 export const migrations = [
   {
@@ -719,5 +724,30 @@ export const migrations = [
     up: migration_20261127_132530_clinic_onboarding_decision_grant.up,
     down: migration_20261127_132530_clinic_onboarding_decision_grant.down,
     name: '20261127_132530_clinic_onboarding_decision_grant',
+  },
+  {
+    up: migration_20261128_143007_patient_auth_action_locale.up,
+    down: migration_20261128_143007_patient_auth_action_locale.down,
+    name: '20261128_143007_patient_auth_action_locale',
+  },
+  {
+    up: migration_20261128_145222_localized_comparison_labels.up,
+    down: migration_20261128_145222_localized_comparison_labels.down,
+    name: '20261128_145222_localized_comparison_labels',
+  },
+  {
+    up: migration_20261128_154949_localized_clinic_profile_overview.up,
+    down: migration_20261128_154949_localized_clinic_profile_overview.down,
+    name: '20261128_154949_localized_clinic_profile_overview',
+  },
+  {
+    up: migration_20261128_160635_localized_full_home_content.up,
+    down: migration_20261128_160635_localized_full_home_content.down,
+    name: '20261128_160635_localized_full_home_content',
+  },
+  {
+    up: migration_20261128_161951_localized_clinic_team_profiles.up,
+    down: migration_20261128_161951_localized_clinic_team_profiles.down,
+    name: '20261128_161951_localized_clinic_team_profiles',
   },
 ]

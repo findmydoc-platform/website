@@ -7,33 +7,31 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import React from 'react'
 import { Controller } from 'react-hook-form'
 
+import { defaultFormCopy, type FormCopy } from '@/components/organisms/Form/copy'
+
 import { Error } from '../Error'
+import { RequiredCue } from '../RequiredCue'
 import { Width } from '../Width'
 import { stateOptions } from './options'
 
 export const State: React.FC<
   StateField & {
     control: Control
+    copy?: FormCopy
     errors: Partial<FieldErrorsImpl>
   }
-> = ({ name, control, errors, label, required, width }) => {
+> = ({ name, control, copy = defaultFormCopy, errors, label, required, width }) => {
   const errorIdPrefix = React.useId()
   const error = errors[name]
+  const fieldId = `${errorIdPrefix}-${name}`
   const errorId = `${errorIdPrefix}-${name}-field-error`
 
   return (
     <Width width={width}>
       <Field data-invalid={error ? true : undefined}>
-        <Label htmlFor={name}>
+        <Label htmlFor={fieldId}>
           {label}
-          {required && (
-            <span className="required">
-              *{' '}
-              <span className="sr-only" lang="en">
-                (required)
-              </span>
-            </span>
-          )}
+          {required && <RequiredCue label={copy.requiredCue} />}
         </Label>
         <Controller
           control={control}
@@ -47,8 +45,9 @@ export const State: React.FC<
                 <SelectTrigger
                   aria-describedby={error ? errorId : undefined}
                   aria-invalid={error ? true : undefined}
+                  aria-required={required || undefined}
                   className="w-full"
-                  id={name}
+                  id={fieldId}
                   onBlur={field.onBlur}
                   ref={field.ref}
                 >
@@ -66,7 +65,7 @@ export const State: React.FC<
               </Select>
             )
           }}
-          rules={{ required: required ? 'This field is required.' : false }}
+          rules={{ required: required ? copy.required : false }}
         />
         {error && <Error error={error} id={errorId} />}
       </Field>

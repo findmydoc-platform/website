@@ -16,11 +16,16 @@ import {
 import { RelatedDoctorSection, type RelatedDoctorItem } from '@/components/organisms/Doctors'
 import { TreatmentsStrip, type TreatmentsStripItem } from '@/components/organisms/TreatmentsStrip'
 import { useCookieConsentToolAllowed } from '@/features/cookieConsent/useCookieConsentToolAllowed'
-import { FavoriteClinicButton } from '@/features/favorites/FavoriteClinicButton'
+import { FavoriteClinicAction } from '@/features/favorites/FavoriteClinicAction.client'
 import type { ClinicDetailConceptProps } from '@/features/clinicDetail/contracts'
-import { buildOpenStreetMapHref, formatEur, sortTreatmentsByPrice } from '@/features/clinicDetail/presentation'
+import {
+  buildOpenStreetMapHref,
+  formatTreatmentPrice,
+  sortTreatmentsByPrice,
+} from '@/features/clinicDetail/presentation'
 import type { PatientInquiryCreationContext } from '@/features/patientInquiries/creationContext'
-import { DISCLAIMER_COPY } from '@/utilities/legal/disclaimers'
+import { getClinicProfileTranslator } from '@/features/clinicDetail/overviewCopy'
+import { clinicProfilePath } from '@/i18n/clinicProfilePath'
 import { cn } from '@/utilities/ui'
 
 import { useClinicDetailInteractionState } from './hooks/useClinicDetailInteractionState'
@@ -61,14 +66,9 @@ const contactFormFieldsFor = (context: PatientInquiryCreationContext): ContactFo
     : {}),
 })
 
-function buildTreatmentDescription({ category, priceFrom }: { category?: string; priceFrom?: number }): string {
-  const priceText = typeof priceFrom === 'number' ? `From ${formatEur(priceFrom)}` : 'Price on request'
-  const categoryText = category ? `${category}. ` : ''
-  return `${categoryText}${priceText}.`
-}
-
 export function ClinicDetail({
   data,
+  locale: routeLocale,
   className,
   favorite,
   inquiryCreation = GUEST_INQUIRY_CREATION,
@@ -77,8 +77,13 @@ export function ClinicDetail({
   cookieConsentConfig = null,
   cookieConsentInitialConsent = null,
 }: ClinicDetailConceptProps) {
+  const locale = routeLocale ?? 'en'
+  const t = getClinicProfileTranslator(locale)
   const heroDoctors = React.useMemo(() => data.doctors.slice(0, HERO_DOCTOR_PREVIEW_COUNT), [data.doctors])
-  const sortedTreatments = React.useMemo(() => sortTreatmentsByPrice(data.treatments), [data.treatments])
+  const sortedTreatments = React.useMemo(
+    () => sortTreatmentsByPrice(data.treatments, locale),
+    [data.treatments, locale],
+  )
   const curatedTreatments = React.useMemo(() => sortedTreatments.slice(0, CURATED_TREATMENT_COUNT), [sortedTreatments])
   const curatedTreatmentIds = React.useMemo(
     () => new Set(curatedTreatments.map((treatment) => treatment.id)),
@@ -97,7 +102,7 @@ export function ClinicDetail({
   const appointmentImage = CONTACT_SECTION_IMAGE
   const clinicId = String(data.clinicId)
   const contactFormInitialFields = React.useMemo(() => contactFormFieldsFor(inquiryCreation), [inquiryCreation])
-  const pagePath = React.useMemo(() => `/clinics/${encodeURIComponent(data.clinicSlug)}`, [data.clinicSlug])
+  const pagePath = clinicProfilePath(data.clinicSlug, routeLocale ?? 'de')
   const trackedProfileViewKeyRef = React.useRef<string | null>(null)
 
   const interaction = useClinicDetailInteractionState({
@@ -170,21 +175,19 @@ export function ClinicDetail({
     () =>
       curatedTreatments.map((treatment, index) => {
         const Icon = TREATMENT_ICONS[index % TREATMENT_ICONS.length] ?? Activity
+        const price = formatTreatmentPrice(treatment.priceFrom, locale)
         return {
           title: treatment.name,
-          description: buildTreatmentDescription({
-            category: treatment.category,
-            priceFrom: treatment.priceFrom,
-          }),
+          description: treatment.category ? `${treatment.category}. ${price}` : price,
           icon: <Icon className="size-7" aria-hidden={true} />,
           comparisonLink: treatment.comparisonLink,
           cta: {
-            label: 'Choose Treatment',
+            label: t('treatments.choose'),
             onClick: () => chooseTreatmentAndScroll(treatment.id),
           },
         }
       }),
-    [curatedTreatments, chooseTreatmentAndScroll],
+    [curatedTreatments, chooseTreatmentAndScroll, locale, t],
   )
 
   const relatedDoctors = React.useMemo<RelatedDoctorItem[]>(() => {
@@ -212,7 +215,7 @@ export function ClinicDetail({
         actions: {
           booking: {
             href: `#${CONTACT_FORM_ID}`,
-            label: 'Contact Doctor',
+            label: t('doctors.contact'),
             onClick: () => {
               handleContactDoctor(doctor.id)
             },
@@ -220,13 +223,14 @@ export function ClinicDetail({
         },
       },
     }))
-  }, [data.doctors, handleContactDoctor])
+  }, [data.doctors, handleContactDoctor, t])
 
   return (
     <main className={cn('overflow-x-clip bg-site-canvas text-foreground', className)}>
       <Container className="pt-8 pb-14 lg:pt-8 lg:pb-24 xl:pb-32">
         <HeroOverviewSection
           clinicName={data.clinicName}
+          locale={locale}
           description={data.description}
           galleryImages={data.galleryImages}
           heroImage={data.heroImage}
@@ -237,13 +241,14 @@ export function ClinicDetail({
           onDoctorSelect={interaction.toggleDoctorSelection}
           favoriteAction={
             favorite ? (
-              <FavoriteClinicButton
+              <FavoriteClinicAction
                 clinicId={data.clinicId}
+                clinicName={data.clinicName}
+                locale={favorite.locale ?? 'en'}
                 initialFavoriteId={favorite.favoriteId ?? null}
                 isPatient={favorite.isPatient}
                 loginHref={favorite.loginHref}
                 variant="hero"
-                unsavedLabel="Save clinic"
               />
             ) : undefined
           }
@@ -252,8 +257,8 @@ export function ClinicDetail({
 
       <Container className="pb-10 lg:pb-14">
         <DisclaimerNotice
-          routeLabel="Clinic profiles"
-          copy={DISCLAIMER_COPY.clinicProfiles}
+          routeLabel={t('overview.disclaimerLabel')}
+          copy={t('overview.disclaimer')}
           variant="inline-note"
           size="compact"
           showVariantLabel={false}
@@ -269,6 +274,7 @@ export function ClinicDetail({
         <Container className={CONTENT_SECTION_SPACING}>
           <ClinicLocationSection
             clinicName={data.clinicName}
+            locale={locale}
             location={data.location}
             mapHref={openStreetMapHref}
             isOpenStreetMapAllowed={isOpenStreetMapAllowed}
@@ -279,8 +285,8 @@ export function ClinicDetail({
 
       {curatedTreatments.length ? (
         <TreatmentsStrip
-          eyebrow="CURATED"
-          heading="Treatments"
+          eyebrow={null}
+          heading={t('treatments.curated')}
           items={curatedTreatmentItems}
           activeIndex={Math.min(interaction.activeCuratedIndex, Math.max(0, curatedTreatmentItems.length - 1))}
           onActiveIndexChange={interaction.setActiveCuratedIndex}
@@ -289,6 +295,7 @@ export function ClinicDetail({
 
       <Container className={CONTENT_SECTION_SPACING}>
         <FurtherTreatmentsSection
+          locale={locale}
           treatments={furtherTreatments}
           visibleCount={interaction.visibleFurtherTreatmentCount}
           onShowMore={interaction.showMoreFurtherTreatments}
@@ -300,7 +307,8 @@ export function ClinicDetail({
         <section ref={interaction.ourDoctorsRef}>
           <Container className="py-8 lg:py-14">
             <RelatedDoctorSection
-              title="Our Doctors"
+              locale={locale}
+              title={t('doctors.heading')}
               doctors={relatedDoctors}
               initialIndex={0}
               activeIndex={interaction.relatedActiveIndex}

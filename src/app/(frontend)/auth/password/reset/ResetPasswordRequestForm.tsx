@@ -33,11 +33,11 @@ type ParsedData = z.infer<typeof formSchema>
 
 export type ResetPasswordReason = 'expired'
 
-async function submitRequest(data: ParsedData): Promise<RecoveryRequestFailure | void> {
+async function submitRequest(data: ParsedData, locale?: UiCopyLocale): Promise<RecoveryRequestFailure | void> {
   const response = await fetch('/api/auth/password/reset', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
+    body: JSON.stringify({ ...data, locale }),
   })
 
   if (!response.ok) return response.status === 400 ? 'invalid-email' : 'retry'
@@ -46,7 +46,7 @@ async function submitRequest(data: ParsedData): Promise<RecoveryRequestFailure |
 export function ResetPasswordRequestForm({
   copy,
   reason,
-  onRequest = submitRequest,
+  onRequest,
   initialEmail,
   preparationNotice,
   languageSwitch,
@@ -114,7 +114,7 @@ export function ResetPasswordRequestForm({
     }
 
     try {
-      const failure = await onRequest(result.data)
+      const failure = await (onRequest ? onRequest(result.data) : submitRequest(result.data, languageSwitch?.locale))
       if (failure) {
         setFormState({ status: 'failed', failure })
         return

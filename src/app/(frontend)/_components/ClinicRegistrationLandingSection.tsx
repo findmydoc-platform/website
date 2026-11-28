@@ -1,29 +1,35 @@
-import { ClinicRegistrationFunnel } from '@/components/templates/ClinicRegistrationFunnel'
+import { ClinicApplicationForm } from './ClinicApplicationForm.client'
 import type { ClinicRegistrationTreatmentCategory } from '@/components/templates/ClinicRegistrationFunnel'
 import { Container } from '@/components/molecules/Container'
 import { SectionHeading } from '@/components/molecules/SectionHeading'
+import type { ClinicApplicationCopy } from '@/features/uiCopy/clinicApplication'
+import type { UiCopyLocale } from '@/i18n/requestLocale'
 import { cn } from '@/utilities/ui'
 
 type ClinicRegistrationLandingSectionProps = {
   ariaLabel?: string
   className?: string
+  copy: ClinicApplicationCopy
   description: string
   id?: string
+  locale: UiCopyLocale
   title: string
   treatmentCategories?: ClinicRegistrationTreatmentCategory[]
 }
 
 export function ClinicRegistrationLandingSection({
-  ariaLabel = 'Start partner inquiry',
+  ariaLabel,
   className,
+  copy,
   description,
   id = 'clinic-registration',
+  locale,
   title,
   treatmentCategories,
 }: ClinicRegistrationLandingSectionProps) {
   return (
     <section
-      aria-label={ariaLabel}
+      aria-label={ariaLabel ?? copy.title}
       className={cn(
         'scroll-mt-[calc(var(--site-header-height)+1rem)] bg-site-canvas py-12 sm:py-16 md:py-20',
         className,
@@ -41,7 +47,12 @@ export function ClinicRegistrationLandingSection({
               titleClassName="font-semibold"
             />
           </div>
-          <ClinicRegistrationFunnel treatmentCategories={treatmentCategories} variant="landing" />
+          <ClinicApplicationForm
+            copy={copy}
+            locale={locale}
+            treatmentCategories={treatmentCategories}
+            variant="landing"
+          />
         </div>
       </Container>
     </section>

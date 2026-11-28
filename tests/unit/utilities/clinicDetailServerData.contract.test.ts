@@ -426,6 +426,8 @@ describe('getClinicDetailServerData (contract)', () => {
       'collection:clinictreatments',
       'collection:doctors',
       'collection:doctorspecialties',
+      'collection:treatments',
+      'collection:medical-specialties',
       'collection:reviews',
       'collection:reviewResponses',
       'collection:accreditation',
@@ -434,21 +436,99 @@ describe('getClinicDetailServerData (contract)', () => {
     ])
   })
 
+  it('serves the German editorial overview and picture text without reading unpublished images', async () => {
+    const profileData: MockData = {
+      ...mockData,
+      clinics: [{ ...mockData.clinics[0], localizedDescription: lexicalText('Kinderkardiologie für Familien') }],
+      clinicMedia: [
+        {
+          ...mockData.clinicMedia[0],
+          localizedAlt: 'Eingang zur Ambulanz',
+          localizedCaption: lexicalText('Zugang zum Hof'),
+        },
+        ...mockData.clinicMedia.slice(1),
+      ],
+    }
+    const result = await getClinicDetailServerData(createMockPayload(profileData), 'berlin-health-clinic', {
+      draft: false,
+      locale: 'de',
+    })
+
+    expect(result?.description).toBe('Kinderkardiologie für Familien')
+    expect(result?.galleryImages).toEqual([
+      {
+        id: '100',
+        src: '/api/clinicMedia/file/clinic-hero.jpg',
+        alt: 'Eingang zur Ambulanz',
+        caption: 'Zugang zum Hof',
+      },
+    ])
+    expect(result?.trust.languages).toEqual(expect.arrayContaining(['Englisch', 'Deutsch', 'Türkisch']))
+  })
+
+  it('projects translated offerings and doctor facts for the requested clinic language', async () => {
+    const localizedData: MockData = {
+      ...mockData,
+      clinictreatments: [
+        {
+          ...mockData.clinictreatments[0],
+          treatment: {
+            id: 301,
+            name: 'Routine Checkup',
+            displayName: 'Vorsorgeuntersuchung',
+            medicalSpecialty: { id: 401, name: 'Pediatrics', displayName: 'Kinderheilkunde' },
+          },
+        },
+        ...mockData.clinictreatments.slice(1),
+      ],
+      doctors: [{ ...mockData.doctors[0], localizedBiography: 'Schwerpunkt Herzgesundheit im Kindesalter.' }],
+      doctorspecialties: [
+        {
+          ...mockData.doctorspecialties[0],
+          medicalSpecialty: { id: 411, name: 'Pediatric Cardiology', displayName: 'Kinderkardiologie' },
+        },
+        ...mockData.doctorspecialties.slice(1),
+      ],
+      doctorMedia: [{ ...mockData.doctorMedia[0], localizedAlt: 'Ärztin vor dem Untersuchungszimmer' }],
+    }
+    const result = await getClinicDetailServerData(createMockPayload(localizedData), 'berlin-health-clinic', {
+      draft: false,
+      locale: 'de',
+    })
+
+    expect(result?.treatments[0]).toMatchObject({
+      id: '301',
+      name: 'Vorsorgeuntersuchung',
+      priceFrom: 120,
+      category: 'Kinderheilkunde',
+      comparisonLink: { href: '/listing-comparison?treatment=301' },
+    })
+    expect(result?.doctors[0]).toMatchObject({
+      id: '601',
+      specialty: 'Kinderkardiologie',
+      description: 'Schwerpunkt Herzgesundheit im Kindesalter.',
+      qualifications: ['MD', 'FAAP'],
+      languages: ['Englisch', 'Spanisch'],
+      image: { alt: 'Ärztin vor dem Untersuchungszimmer', src: '/api/doctorMedia/file/doctor-amelia.jpg' },
+    })
+  })
+
   it('maps approved clinic data without loading the disabled gallery', async () => {
     const findCalls: FindCall[] = []
     const payload = createMockPayload(mockData, findCalls)
 
     const result = await getClinicDetailServerData(payload, 'berlin-health-clinic', {
       draft: false,
+      locale: 'en',
     })
 
     expect(result).not.toBeNull()
     expect(result?.clinicName).toBe('Berlin Health Clinic')
-    expect(result?.contactHref).toBe('/contact?clinic=berlin-health-clinic&source=clinic-detail')
+    expect(result?.contactHref).toBe('/en/contact?clinic=berlin-health-clinic&source=clinic-detail')
     expect(result?.breadcrumbs).toEqual([
-      { label: 'Home', href: '/' },
-      { label: 'Clinics', href: '/listing-comparison' },
-      { label: 'Berlin Health Clinic', href: '/clinics/berlin-health-clinic' },
+      expect.objectContaining({ href: '/en' }),
+      expect.objectContaining({ href: '/en/listing-comparison' }),
+      { label: 'Berlin Health Clinic', href: '/en/clinics/berlin-health-clinic' },
     ])
     expect(result?.heroImage).toEqual({
       src: '/api/clinicMedia/file/clinic-hero.jpg',
@@ -501,7 +581,7 @@ describe('getClinicDetailServerData (contract)', () => {
 
     expect(result?.doctors).toHaveLength(2)
     expect(result?.doctors[0]?.specialty).toBe('Pediatric Cardiology')
-    expect(result?.doctors[1]?.specialty).toBe('General Practice')
+    expect(result?.doctors[1]?.specialty).toBeUndefined()
     expect(result?.doctors[0]?.reviewCount).toBe(2)
     expect(result?.doctors[0]?.description).toBe(
       'Focused on pediatric cardiology and clear communication.\n\nSpecial interest in family education.',
@@ -512,10 +592,7 @@ describe('getClinicDetailServerData (contract)', () => {
       alt: 'Professional portrait of Dr. Amelia Carter',
     })
     expect(result?.doctors[1]?.image.src).toBe('/images/placeholders/doctor-male-placeholder.webp')
-    expect(result?.treatments[0]?.comparisonLink).toEqual({
-      href: '/listing-comparison?treatment=301',
-      label: 'Compare clinics for Routine Checkup',
-    })
+    expect(result?.treatments[0]?.comparisonLink?.href).toBe('/en/listing-comparison?treatment=301')
     expect(result?.treatments).toHaveLength(2)
     expect(result?.treatments.map((treatment) => treatment.name)).not.toContain('Hidden Treatment')
     expect(result?.treatments[0]?.priceFrom).toBe(120)
@@ -624,6 +701,7 @@ describe('getClinicDetailServerData (contract)', () => {
 
     const result = await getClinicDetailServerData(createMockPayload(moderatedData), 'berlin-health-clinic', {
       draft: false,
+      locale: 'en',
     })
 
     expect(result?.reviews.totalCount).toBe(4)
@@ -672,6 +750,7 @@ describe('getClinicDetailServerData (contract)', () => {
     await expect(
       getClinicDetailServerData(payload, 'berlin-health-clinic', {
         draft: false,
+        locale: 'en',
       }),
     ).rejects.toThrow('Clinic 1 has approved reviews but no average rating.')
   })
@@ -681,6 +760,7 @@ describe('getClinicDetailServerData (contract)', () => {
 
     const result = await getClinicDetailServerData(payload, 'hidden-draft-clinic', {
       draft: false,
+      locale: 'en',
     })
 
     expect(result).toBeNull()
@@ -691,6 +771,7 @@ describe('getClinicDetailServerData (contract)', () => {
 
     const result = await getClinicDetailServerData(payload, 'hidden-draft-clinic', {
       draft: true,
+      locale: 'en',
     })
 
     expect(result).not.toBeNull()

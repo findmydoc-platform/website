@@ -142,9 +142,12 @@ describe('frontend sitemap routes', () => {
       expect.arrayContaining([
         'https://findmydoc.eu/',
         'https://findmydoc.eu/posts',
+        'https://findmydoc.eu/en/posts',
         'https://findmydoc.eu/contact',
+        'https://findmydoc.eu/en/contact',
         'https://findmydoc.eu/about',
         'https://findmydoc.eu/listing-comparison',
+        'https://findmydoc.eu/en/listing-comparison',
       ]),
     )
     expect(locs).not.toContain('https://findmydoc.eu/search')
@@ -153,9 +156,13 @@ describe('frontend sitemap routes', () => {
     expect(body.entries.find((entry: { loc: string }) => entry.loc.endsWith('/listing-comparison'))).toMatchObject({
       lastmod: '2026-01-06T00:00:00.000Z',
     })
-    expect(routeMocks.unstableCache).toHaveBeenCalledWith(expect.any(Function), ['pages-sitemap', 'localized'], {
-      tags: ['surface:sitemap:pages'],
-    })
+    expect(routeMocks.unstableCache).toHaveBeenCalledWith(
+      expect.any(Function),
+      ['pages-sitemap', 'localized-archives'],
+      {
+        tags: ['surface:sitemap:pages'],
+      },
+    )
   })
 
   it('normalizes and deduplicates CMS pages in the pages sitemap', async () => {

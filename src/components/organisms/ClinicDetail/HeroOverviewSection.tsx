@@ -5,13 +5,15 @@ import { Heading } from '@/components/atoms/Heading'
 import { Card, CardContent } from '@/components/atoms/card'
 import { Breadcrumb, type BreadcrumbItem } from '@/components/molecules/Breadcrumb'
 import { DoctorPreviewListItem, HeroQualitySummary } from '@/components/molecules/ClinicDetail'
-import { formatRatingSummary } from '@/features/clinicDetail/presentation'
+import { getClinicProfileTranslator } from '@/features/clinicDetail/overviewCopy'
+import type { UiCopyLocale } from '@/i18n/requestLocale'
 import { ClinicGallery } from './ClinicGallery'
 
 import type { ClinicDetailDoctor, ClinicDetailGalleryImage, ClinicDetailTrust } from '@/features/clinicDetail/contracts'
 
 type HeroOverviewSectionProps = {
   clinicName: string
+  locale?: UiCopyLocale
   description: string
   galleryImages: ClinicDetailGalleryImage[]
   heroImage: { src: string; alt: string }
@@ -25,6 +27,7 @@ type HeroOverviewSectionProps = {
 
 export function HeroOverviewSection({
   clinicName,
+  locale = 'en',
   description,
   galleryImages,
   heroImage,
@@ -36,16 +39,21 @@ export function HeroOverviewSection({
   favoriteAction,
 }: HeroOverviewSectionProps) {
   const hasDoctors = doctors.length > 0
-  const specialistLabel = doctors.length === 1 ? 'listed specialist' : 'listed specialists'
+  const t = getClinicProfileTranslator(locale)
+  const formatRating = new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 })
 
   return (
     <section className="mx-auto max-w-[1080px] space-y-4 sm:space-y-5">
       <div className="space-y-3 sm:space-y-4">
         <div className="space-y-2">
           {breadcrumbs?.length ? (
-            <Breadcrumb items={breadcrumbs} className="text-xs sm:text-sm [&_li]:gap-2 [&_ol]:gap-2" />
+            <Breadcrumb
+              items={breadcrumbs}
+              label={t('navigation.breadcrumb')}
+              className="text-xs sm:text-sm [&_li]:gap-2 [&_ol]:gap-2"
+            />
           ) : null}
-          <p className="text-xl leading-[1.15] font-semibold text-primary sm:text-2xl">CLINIC OVERVIEW</p>
+          <p className="text-xl leading-[1.15] font-semibold text-primary sm:text-2xl">{t('overview.label')}</p>
           <Heading
             as="h1"
             align="left"
@@ -61,20 +69,18 @@ export function HeroOverviewSection({
         {favoriteAction ? <div className="max-w-[594px]">{favoriteAction}</div> : null}
       </div>
 
-      <ClinicGallery clinicName={clinicName} galleryImages={galleryImages} heroImage={heroImage} />
+      <ClinicGallery clinicName={clinicName} galleryImages={galleryImages} heroImage={heroImage} locale={locale} />
 
       <div className="grid items-stretch gap-6 lg:grid-cols-2">
-        <HeroQualitySummary trust={trust} className="h-full" />
+        <HeroQualitySummary trust={trust} className="h-full" locale={locale} />
 
         <Card className="h-full w-full rounded-[24px] border-0 shadow-brand-soft">
           <CardContent className="space-y-4 p-6">
             <div>
               <Heading as="h2" align="left" size="h5" className="text-secondary">
-                Available Doctors
+                {t('overview.doctors')}
               </Heading>
-              <p className="text-sm text-secondary/60">
-                {doctors.length} {specialistLabel}
-              </p>
+              <p className="text-sm text-secondary/60">{t('overview.specialistCount', { count: doctors.length })}</p>
             </div>
 
             {hasDoctors ? (
@@ -83,8 +89,13 @@ export function HeroOverviewSection({
                   <DoctorPreviewListItem
                     key={doctor.id}
                     doctor={doctor}
+                    selectLabel={t('doctors.select', { doctor: doctor.name })}
                     selected={activeDoctorId === doctor.id}
-                    ratingText={formatRatingSummary(doctor.ratingValue, doctor.reviewCount)}
+                    ratingText={
+                      typeof doctor.ratingValue === 'number' && doctor.reviewCount
+                        ? `${formatRating.format(doctor.ratingValue)} (${t('trust.reviewCount', { count: doctor.reviewCount })})`
+                        : t('trust.noReviews')
+                    }
                     onSelect={() => onDoctorSelect(doctor.id)}
                   />
                 ))}
@@ -95,10 +106,7 @@ export function HeroOverviewSection({
                   <span className="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/12">
                     <Stethoscope className="size-4 text-primary" aria-hidden={true} />
                   </span>
-                  <p className="text-sm leading-6 text-secondary/70">
-                    No doctors are currently listed for this clinic. Use the contact form below to request guidance and
-                    we will connect you with a suitable specialist.
-                  </p>
+                  <p className="text-sm leading-6 text-secondary/70">{t('overview.noDoctors')}</p>
                 </div>
               </div>
             )}

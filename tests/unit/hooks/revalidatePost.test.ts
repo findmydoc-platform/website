@@ -40,14 +40,21 @@ describe('Posts revalidation hooks', () => {
   it('invalidates both locale paths when English is withdrawn and German stays published', async () => {
     await savePost(buildReq(), { en: 'about', de: 'ueber-uns' }, { de: 'ueber-uns' })
 
-    expect(getPathCalls()).toEqual(['/en/posts/about', '/posts', '/posts/ueber-uns', '/posts'])
+    expect(getPathCalls()).toEqual([
+      '/en/posts/about',
+      '/posts',
+      '/en/posts',
+      '/posts/ueber-uns',
+      '/posts',
+      '/en/posts',
+    ])
     expect(getTagCalls()).toContain('surface:sitemap:posts')
   })
 
   it('revalidates old and new paths when a published English slug changes', async () => {
     await savePost(buildReq(), { en: 'old-about' }, { en: 'about' })
 
-    expect(getPathCalls()).toEqual(['/en/posts/about', '/en/posts/old-about', '/posts'])
+    expect(getPathCalls()).toEqual(['/en/posts/about', '/en/posts/old-about', '/posts', '/en/posts'])
     expect(getTagCalls()).toEqual([
       'entity:posts:1',
       'collection:posts',
@@ -63,7 +70,14 @@ describe('Posts revalidation hooks', () => {
   it('invalidates both canonical paths for all-locale publication', async () => {
     await savePost(buildReq(), {}, { en: 'about', de: 'ueber-uns' })
 
-    expect(getPathCalls()).toEqual(['/en/posts/about', '/posts', '/posts/ueber-uns', '/posts'])
+    expect(getPathCalls()).toEqual([
+      '/en/posts/about',
+      '/posts',
+      '/en/posts',
+      '/posts/ueber-uns',
+      '/posts',
+      '/en/posts',
+    ])
     expect(getTagCalls()).toContain('surface:sitemap:posts')
   })
 
@@ -96,7 +110,7 @@ describe('Posts revalidation hooks', () => {
     await capturePostBeforeDelete(args)
     expect(await revalidateDelete({ ...args, doc: post })).toBe(post)
 
-    expect(getPathCalls()).toEqual(['/en/posts/about', '/posts', '/posts/home', '/posts'])
+    expect(getPathCalls()).toEqual(['/en/posts/about', '/posts', '/en/posts', '/posts/home', '/posts', '/en/posts'])
     expect(getTagCalls()).toContain('surface:sitemap:posts')
   })
 })

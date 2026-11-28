@@ -1,4 +1,8 @@
+import { blogArchiveLocaleFromPath } from '@/i18n/blogArchivePath'
+import { CLINIC_APPLICATION_PATHS } from '@/i18n/clinicApplicationPath'
+import { CONTACT_PATHS } from '@/i18n/contactPath'
 import { FRONTEND_PATH_HEADER } from '@/i18n/requestLocale'
+import { getManagedLegalPageSlugFromPath } from '@/utilities/legalPages'
 import { temporaryLandingLocaleFromPath } from './i18n'
 
 export const TEMPORARY_LANDING_MODE_REQUEST_HEADER = 'x-temporary-landing-mode'
@@ -15,7 +19,7 @@ export const readPublicSiteModeRequestHeader = (headers: Headers): 'full' | 'hol
   return mode === 'full' || mode === 'holding' ? mode : null
 }
 
-const TEMPORARY_LANDING_PUBLIC_EXEMPT_PATHS = new Set(['/privacy-policy', '/imprint', '/contact'])
+const TEMPORARY_LANDING_PUBLIC_EXEMPT_PATHS = new Set<string>(Object.values(CONTACT_PATHS))
 const TEMPORARY_LANDING_PUBLIC_DISCOVERY_PATHS = new Set([
   '/robots.txt',
   '/pages-sitemap.xml',
@@ -23,7 +27,11 @@ const TEMPORARY_LANDING_PUBLIC_DISCOVERY_PATHS = new Set([
   '/llms.txt',
   '/.well-known/llms.txt',
 ])
-const TEMPORARY_LANDING_EXEMPT_PATHS = new Set(['/admin', ...TEMPORARY_LANDING_PUBLIC_EXEMPT_PATHS])
+const TEMPORARY_LANDING_EXEMPT_PATHS = new Set([
+  '/admin',
+  CLINIC_APPLICATION_PATHS.en,
+  ...TEMPORARY_LANDING_PUBLIC_EXEMPT_PATHS,
+])
 const TEMPORARY_LANDING_EXEMPT_PREFIXES = new Set(['/admin', '/auth', '/login', '/logout', '/register'])
 
 const normalizePathname = (pathname: string): string => {
@@ -51,13 +59,13 @@ export const isTemporaryLandingModeExemptPath = (pathname: string): boolean => {
     }
   }
 
-  return TEMPORARY_LANDING_EXEMPT_PATHS.has(normalizedPath)
+  return TEMPORARY_LANDING_EXEMPT_PATHS.has(normalizedPath) || getManagedLegalPageSlugFromPath(normalizedPath) !== null
 }
 
 export const isTemporaryLandingPublicExemptPath = (pathname: string): boolean => {
   const normalizedPath = normalizePathname(pathname)
 
-  if (TEMPORARY_LANDING_PUBLIC_EXEMPT_PATHS.has(normalizedPath)) {
+  if (TEMPORARY_LANDING_PUBLIC_EXEMPT_PATHS.has(normalizedPath) || getManagedLegalPageSlugFromPath(normalizedPath)) {
     return true
   }
 
@@ -65,11 +73,7 @@ export const isTemporaryLandingPublicExemptPath = (pathname: string): boolean =>
     return true
   }
 
-  if (normalizedPath === '/posts') {
-    return true
-  }
-
-  if (/^\/posts\/page\/[1-9]\d*$/.test(normalizedPath)) {
+  if (blogArchiveLocaleFromPath(normalizedPath)) {
     return true
   }
 
@@ -85,8 +89,7 @@ export const isTemporaryLandingIndexablePath = (pathname: string): boolean => {
 
   return (
     temporaryLandingLocaleFromPath(normalizedPath) !== null ||
-    normalizedPath === '/posts' ||
-    /^\/posts\/page\/[1-9]\d*$/.test(normalizedPath) ||
+    blogArchiveLocaleFromPath(normalizedPath) === 'de' ||
     /^(?:\/en)?\/posts\/[^/]+$/.test(normalizedPath)
   )
 }

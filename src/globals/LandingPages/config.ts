@@ -421,6 +421,18 @@ const aboutTeamField: Field = {
   ],
 }
 
+function localizeHomeText(fields: Field[]): Field[] {
+  return fields.map((field) => {
+    if (field.type === 'array' || field.type === 'group') {
+      return { ...field, fields: localizeHomeText(field.fields) }
+    }
+    if ((field.type === 'text' || field.type === 'textarea') && field.name !== 'author') {
+      return { ...field, localized: true, required: false }
+    }
+    return field
+  })
+}
+
 export const LandingPages: GlobalConfig = {
   slug: 'landingPages',
   access: {
@@ -438,7 +450,7 @@ export const LandingPages: GlobalConfig = {
         {
           name: 'home',
           label: 'Home landing',
-          fields: [
+          fields: localizeHomeText([
             {
               name: 'seo',
               type: 'group',
@@ -447,7 +459,14 @@ export const LandingPages: GlobalConfig = {
             {
               name: 'hero',
               type: 'group',
-              fields: heroFields,
+              fields: [
+                ...heroFields,
+                {
+                  name: 'imageAlt',
+                  type: 'text',
+                  admin: { description: 'Describe the hero image for screen readers. Leave empty if decorative.' },
+                },
+              ],
             },
             testimonialsField,
             {
@@ -497,7 +516,7 @@ export const LandingPages: GlobalConfig = {
               type: 'group',
               fields: sectionIntroFields,
             },
-          ],
+          ]),
         },
         {
           name: 'clinicPartners',

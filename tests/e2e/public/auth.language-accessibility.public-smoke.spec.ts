@@ -7,10 +7,7 @@ async function expectLanguage(target: Locator, language: 'de' | 'en') {
   await expect.poll(() => target.evaluate((element) => element.closest('[lang]')?.getAttribute('lang'))).toBe(language)
 }
 
-test('German patient sign-in gives English site controls and dialogs their own language @smoke', async ({
-  context,
-  page,
-}) => {
+test('German patient sign-in keeps shared navigation in German @smoke', async ({ context, page }) => {
   await setCookieConsent(context)
   await page.setViewportSize({ width: 375, height: 400 })
   await page.goto('/login/patient', { waitUntil: 'domcontentloaded' })
@@ -19,23 +16,23 @@ test('German patient sign-in gives English site controls and dialogs their own l
   const footer = page.getByRole('contentinfo')
   const heading = page.getByRole('main').getByRole('heading', { level: 1 })
   await expectLanguage(heading, 'de')
-  await expectLanguage(header, 'en')
-  await expectLanguage(footer, 'en')
-  const previewNotice = page.getByRole('note', { name: 'Preview data notice' })
-  if (await previewNotice.isVisible()) await expectLanguage(previewNotice, 'en')
+  await expectLanguage(header, 'de')
+  await expectLanguage(footer, 'de')
+  const previewNotice = page.getByRole('note', { name: 'Hinweis zur Vorschau' })
+  if (await previewNotice.isVisible()) await expectLanguage(previewNotice, 'de')
 
-  await header.getByRole('button', { name: 'Open menu' }).click()
-  await expectLanguage(header.getByRole('navigation', { name: 'Mobile navigation' }), 'en')
-  await header.getByRole('button', { name: 'Close menu' }).click()
-  await expect(header.getByRole('navigation', { name: 'Mobile navigation' })).toHaveCount(0)
+  await header.getByRole('button', { name: 'Menü öffnen', exact: true }).click()
+  await expectLanguage(header.getByRole('navigation', { name: 'Mobile Navigation' }), 'de')
+  await header.getByRole('button', { name: 'Menü schließen' }).click()
+  await expect(header.getByRole('navigation', { name: 'Mobile Navigation' })).toHaveCount(0)
 
-  await header.getByRole('button', { name: 'Sign in, open account menu' }).click()
-  await expectLanguage(page.getByRole('menu'), 'en')
+  await header.getByRole('button', { name: 'Anmelden, Kontomenü öffnen' }).click()
+  await expectLanguage(page.getByRole('menu'), 'de')
   await page.keyboard.press('Escape')
   await expect(page.getByRole('menu')).toHaveCount(0)
 
-  const cookieSettings = page.getByRole('button', { name: 'Cookie settings' })
-  await expectLanguage(cookieSettings, 'en')
+  const cookieSettings = page.getByRole('button', { name: 'Cookie-Einstellungen' })
+  await expectLanguage(cookieSettings, 'de')
   const form = page.getByRole('main').getByRole('heading', { level: 1 }).locator('xpath=ancestor::section')
   await cookieSettings.scrollIntoViewIfNeeded()
   const [formBox, settingsBox] = await Promise.all([form.boundingBox(), cookieSettings.boundingBox()])
@@ -43,25 +40,29 @@ test('German patient sign-in gives English site controls and dialogs their own l
   expect(settingsBox).not.toBeNull()
   expect(settingsBox!.y - (formBox!.y + formBox!.height)).toBeGreaterThanOrEqual(27)
   await cookieSettings.click()
-  await expectLanguage(page.getByRole('dialog'), 'en')
+  await expectLanguage(page.getByRole('dialog'), 'de')
   await page.screenshot({ path: test.info().outputPath('patient-login-cookie-settings-375.png'), fullPage: true })
   await page.keyboard.press('Escape')
   await expect(page.getByRole('dialog')).toHaveCount(0)
   await expect(cookieSettings).toBeFocused()
   await expectLanguage(heading, 'de')
-  await footer.getByRole('link', { name: 'Privacy Policy' }).click()
+  const privacy = footer.getByRole('link', { name: /^Datenschutzerklärung/ })
+  const privacyPath = await privacy.getAttribute('href')
+  await privacy.click()
   await expect(page).toHaveURL(/\/privacy-policy$/)
-  await expect(cookieSettings).toHaveCount(1)
-  await cookieSettings.click()
+  const privacySettings = page.getByRole('button', {
+    name: privacyPath?.startsWith('/en/') ? 'Cookie settings' : 'Cookie-Einstellungen',
+  })
+  await privacySettings.click()
   await expect(page.getByRole('dialog')).toBeVisible()
 })
 
-test('the English consent prompt is marked on German patient registration @smoke', async ({ page }) => {
+test('the German consent prompt keeps focus on German patient registration @smoke', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 400 })
   await page.goto('/register/patient', { waitUntil: 'domcontentloaded' })
   const prompt = page.getByRole('dialog')
-  await expectLanguage(prompt, 'en')
-  await prompt.getByRole('button', { name: 'Reject all' }).click()
+  await expectLanguage(prompt, 'de')
+  await prompt.getByRole('button', { name: 'Alle ablehnen' }).click()
   await expect(prompt).toHaveCount(0)
   const heading = page.getByRole('main').getByRole('heading', { level: 1 })
   await expectLanguage(heading, 'de')

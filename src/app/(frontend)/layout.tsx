@@ -2,17 +2,17 @@ import type { Metadata } from 'next'
 
 import React from 'react'
 
+import { getCookieConsentConfigs } from './_data/cookieConsent'
 import { resolveCmsDocumentLocale } from './_data/documentLocale'
 import { AdminBarClientAdapter } from '@/app/(frontend)/AdminBarClientAdapter.client'
 import { TreatmentSearchHandoffProvider } from '@/app/(frontend)/listing-comparison/TreatmentSearchHandoff.client'
 import { SupabaseAuthHashUrlScrubber } from '@/app/(frontend)/_components/SupabaseAuthHashUrlScrubber.client'
 import { createSiteMetadata } from '@/utilities/generateMeta'
-import { getGlobal } from '@/utilities/getGlobals'
 import { getServerSideURL } from '@/utilities/getURL'
 import { cookies, draftMode, headers } from 'next/headers'
 
 import './globals.css'
-import { COOKIE_CONSENT_COOKIE_NAME, resolveCookieConsentContext } from '@/features/cookieConsent'
+import { COOKIE_CONSENT_COOKIE_NAME, parseCookieConsentState } from '@/features/cookieConsent'
 import { CookieConsentLauncherSlotProvider } from '@/features/cookieConsent/CookieConsentLauncherSlot.client'
 import { CookieConsentClientAdapter } from '@/features/cookieConsent/CookieConsentClientAdapter.client'
 import {
@@ -21,7 +21,6 @@ import {
   shouldBlockSearchIndexingForRequest,
 } from '@/features/searchIndexing'
 import { JsonLdScript, buildSiteBaseJsonLd } from '@/utilities/structuredData'
-import type { CookieConsent as CookieConsentType } from '@/payload-types'
 import { isPreviewRuntime } from '@/features/runtimePolicy'
 import {
   getTemporaryLandingBlogCopy,
@@ -32,8 +31,21 @@ import {
 import { LanguageSwitchRouteProvider } from '@/features/languageSwitch/LanguageSwitchRouteProvider.client'
 import { PatientAuthFormHandoffProvider } from '@/features/languageSwitch/PatientAuthFormHandoff.client'
 import { DocumentLanguage } from '@/features/uiCopy/DocumentLanguage.client'
-import { uiCopyLocaleFromHeaders } from '@/i18n/requestLocale'
+import { FRONTEND_PATH_HEADER, UI_COPY_LOCALE_HEADER } from '@/i18n/requestLocale'
+import { publicPageLocaleFromPath } from '@/i18n/publicNavigationPath'
+import { getPublicErrorCopy } from '@/features/uiCopy/publicErrors'
+import { PublicErrorCopyProvider } from './_components/PublicErrorCopyProvider.client'
 import { VercelToolbar } from '@vercel/toolbar/next'
+
+const errorCopy = {
+  de: getBoundaryCopy('de'),
+  en: getBoundaryCopy('en'),
+}
+
+function getBoundaryCopy(locale: 'de' | 'en') {
+  const { unexpected, retry } = getPublicErrorCopy(locale)
+  return { unexpected, retry }
+}
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const requestHeaders = await headers()
@@ -45,16 +57,24 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const [{ isEnabled }, requestCookies, cookieConsent, cmsLocale] = await Promise.all([
     draftMode(),
     cookies(),
-    getGlobal('cookieConsent', 1),
+    getCookieConsentConfigs(),
     holdingLocale ? undefined : resolveCmsDocumentLocale(requestHeaders),
   ])
-  const cookieConsentContext = resolveCookieConsentContext(
-    cookieConsent as CookieConsentType,
-    requestCookies.get(COOKIE_CONSENT_COOKIE_NAME)?.value ?? null,
-  )
+  const consentVersion = cookieConsent.en?.consentVersion
+  const initialConsent =
+    consentVersion === undefined
+      ? null
+      : parseCookieConsentState(requestCookies.get(COOKIE_CONSENT_COOKIE_NAME)?.value ?? null, consentVersion)
+
+  const path = requestHeaders.get(FRONTEND_PATH_HEADER) ?? '/'
+  const explicitLocale = requestHeaders.get(UI_COPY_LOCALE_HEADER)
+  const documentLanguage =
+    holdingLocale ??
+    cmsLocale ??
+    (explicitLocale === 'de' || explicitLocale === 'en' ? explicitLocale : publicPageLocaleFromPath(path))
 
   return (
-    <html lang={holdingLocale ?? cmsLocale ?? uiCopyLocaleFromHeaders(requestHeaders)} suppressHydrationWarning>
+    <html lang={documentLanguage} suppressHydrationWarning>
       <head>
         <link href="/favicon.ico" rel="icon" sizes="32x32" />
         <link href="/favicon.svg" rel="icon" type="image/svg+xml" />
@@ -74,15 +94,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <LanguageSwitchRouteProvider>
               <PatientAuthFormHandoffProvider>
                 <TreatmentSearchHandoffProvider>
-                  <DocumentLanguage initialLocale={holdingLocale ?? cmsLocale}>{children}</DocumentLanguage>
+                  <DocumentLanguage initialLocale={holdingLocale ?? cmsLocale}>
+                    <PublicErrorCopyProvider copy={errorCopy}>{children}</PublicErrorCopyProvider>
+                  </DocumentLanguage>
                 </TreatmentSearchHandoffProvider>
               </PatientAuthFormHandoffProvider>
             </LanguageSwitchRouteProvider>
           </div>
-          <CookieConsentClientAdapter
-            config={cookieConsentContext.config}
-            initialConsent={cookieConsentContext.initialConsent}
-          />
+          <CookieConsentClientAdapter config={cookieConsent} initialConsent={initialConsent} />
         </CookieConsentLauncherSlotProvider>
         {isPreviewRuntime(process.env) ? <VercelToolbar /> : null}
       </body>

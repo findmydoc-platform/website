@@ -757,6 +757,24 @@ export interface Clinic {
     [k: string]: unknown;
   } | null;
   /**
+   * Patient-facing overview in the selected language
+   */
+  localizedDescription?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
    * Tags for this clinic
    */
   tags?: (number | Tag)[] | null;
@@ -1051,6 +1069,10 @@ export interface Treatment {
    */
   name: string;
   /**
+   * Patient-facing label in the selected language
+   */
+  displayName?: string | null;
+  /**
    * Tags for this treatment
    */
   tags?: (number | Tag)[] | null;
@@ -1117,6 +1139,10 @@ export interface MedicalSpecialty {
    * Specialty name
    */
   name: string;
+  /**
+   * Patient-facing label in the selected language
+   */
+  displayName?: string | null;
   /**
    * Short explanation of this specialty
    */
@@ -1638,6 +1664,10 @@ export interface Doctor {
    */
   biography?: string | null;
   /**
+   * Public biography in the selected language
+   */
+  localizedBiography?: string | null;
+  /**
    * Save the doctor first, then select an image owned by this doctor and clinic.
    */
   profileImage?: (number | null) | DoctorMedia;
@@ -1726,6 +1756,10 @@ export interface DoctorMedia {
     };
     [k: string]: unknown;
   } | null;
+  /**
+   * Image description for screen readers in the selected language
+   */
+  localizedAlt?: string | null;
   /**
    * Doctor that owns this media
    */
@@ -1871,6 +1905,28 @@ export interface ClinicMedia {
    * Optional caption for the media
    */
   caption?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * Image description for screen readers in the selected language
+   */
+  localizedAlt?: string | null;
+  /**
+   * Optional image caption in the selected language
+   */
+  localizedCaption?: {
     root: {
       type: string;
       children: {
@@ -2200,6 +2256,10 @@ export interface City {
    * City name
    */
   name: string;
+  /**
+   * Patient-facing label in the selected language
+   */
+  displayName?: string | null;
   /**
    * IATA airport code
    */
@@ -3303,6 +3363,7 @@ export interface AuthAction {
         value: number | PlatformStaff;
       } | null);
   principalBoundAt?: string | null;
+  locale?: ('de' | 'en') | null;
   supabaseSubject?: string | null;
   subjectBoundAt?: string | null;
   correlationDigest?: string | null;
@@ -4863,6 +4924,8 @@ export interface ClinicMediaSelect<T extends boolean = true> {
   stableId?: T;
   alt?: T;
   caption?: T;
+  localizedAlt?: T;
+  localizedCaption?: T;
   status?: T;
   clinic?: T;
   createdBy?: T;
@@ -5084,6 +5147,7 @@ export interface DoctorMediaSelect<T extends boolean = true> {
   stableId?: T;
   alt?: T;
   caption?: T;
+  localizedAlt?: T;
   doctor?: T;
   clinic?: T;
   createdBy?: T;
@@ -5954,6 +6018,7 @@ export interface ClinicsSelect<T extends boolean = true> {
   name?: T;
   averageRating?: T;
   description?: T;
+  localizedDescription?: T;
   tags?: T;
   treatments?: T;
   thumbnail?: T;
@@ -6061,6 +6126,7 @@ export interface DoctorsSelect<T extends boolean = true> {
   gender?: T;
   fullName?: T;
   biography?: T;
+  localizedBiography?: T;
   profileImage?: T;
   clinic?: T;
   qualifications?: T;
@@ -6095,6 +6161,7 @@ export interface AccreditationSelect<T extends boolean = true> {
 export interface MedicalSpecialtiesSelect<T extends boolean = true> {
   stableId?: T;
   name?: T;
+  displayName?: T;
   description?: T;
   iconKey?: T;
   featureImage?: T;
@@ -6119,6 +6186,7 @@ export interface MedicalSpecialtiesSelect<T extends boolean = true> {
 export interface TreatmentsSelect<T extends boolean = true> {
   stableId?: T;
   name?: T;
+  displayName?: T;
   tags?: T;
   description?: T;
   medicalSpecialty?: T;
@@ -6292,6 +6360,7 @@ export interface CountriesSelect<T extends boolean = true> {
 export interface CitiesSelect<T extends boolean = true> {
   stableId?: T;
   name?: T;
+  displayName?: T;
   airportcode?: T;
   coordinates?: T;
   country?: T;
@@ -6328,6 +6397,7 @@ export interface AuthActionsSelect<T extends boolean = true> {
   supabaseTokenType?: T;
   principal?: T;
   principalBoundAt?: T;
+  locale?: T;
   supabaseSubject?: T;
   subjectBoundAt?: T;
   correlationDigest?: T;
@@ -6955,7 +7025,7 @@ export interface CookieConsent {
   rejectLabel: string;
   customizeLabel: string;
   /**
-   * German translation stored independently. The public consent prompt uses the English fields above.
+   * The public consent prompt uses these fields for German pages and the fields above for English pages.
    */
   germanPrompt?: {
     bannerTitle?: string | null;
@@ -6977,7 +7047,7 @@ export interface CookieConsent {
   essentialLabel: string;
   essentialDescription: string;
   /**
-   * Official optional cookie categories shown in the consent dialog. Categories are fixed; only labels, enabled state, and tool assignments can be edited.
+   * Optional cookie categories are fixed. Enabled state and tool assignments apply in both languages. Custom labels apply to the English dialog.
    */
   optionalCategorySettings: {
     functional: {
@@ -7017,72 +7087,76 @@ export interface CookieConsent {
 export interface LandingPage {
   id: number;
   home: {
-    seo: {
+    seo?: {
       /**
        * Browser and search title for this landing route.
        */
-      title: string;
+      title?: string | null;
       /**
        * Search description for this landing route.
        */
-      description: string;
+      description?: string | null;
     };
     hero: {
       /**
        * Main hero headline.
        */
-      title: string;
+      title?: string | null;
       /**
        * Hero supporting text.
        */
-      description: string;
+      description?: string | null;
       /**
        * Hero image shown on this landing route.
        */
       image: number | PlatformContentMedia;
+      /**
+       * Describe the hero image for screen readers. Leave empty if decorative.
+       */
+      imageAlt?: string | null;
     };
     /**
      * Testimonials shown in the carousel.
      */
     testimonials: {
-      quote: string;
+      quote?: string | null;
       author: string;
-      role: string;
+      role?: string | null;
       /**
        * Portrait shown for this testimonial.
        */
       image: number | PlatformContentMedia;
       id?: string | null;
     }[];
-    testimonialsIntro: {
+    testimonialsIntro?: {
       /**
        * Section headline.
        */
-      title: string;
+      title?: string | null;
       /**
        * Section supporting text.
        */
-      description: string;
+      description?: string | null;
     };
-    categoriesIntro: {
+    categoriesIntro?: {
       /**
        * Section headline.
        */
-      title: string;
+      title?: string | null;
       /**
        * Section supporting text.
        */
-      description: string;
+      description?: string | null;
     };
     features: {
       /**
        * Section headline.
        */
-      title: string;
+      title?: string | null;
       /**
        * Section supporting text.
        */
-      description: string;
+      description?: string | null;
       /**
        * Feature-section background image.
        */
@@ -7091,9 +7165,9 @@ export interface LandingPage {
        * Feature items shown in the landing feature section.
        */
       items: {
-        title: string;
+        title?: string | null;
         subtitle?: string | null;
-        description: string;
+        description?: string | null;
         /**
          * Icon shown next to this feature.
          */
@@ -7102,15 +7176,15 @@ export interface LandingPage {
       }[];
     };
     process: {
-      title: string;
-      subtitle: string;
+      title?: string | null;
+      subtitle?: string | null;
       /**
        * Process timeline steps.
        */
       steps: {
         step: number;
-        title: string;
-        description: string;
+        title?: string | null;
+        description?: string | null;
         /**
          * Image shown for this process step.
          */
@@ -7122,39 +7196,39 @@ export interface LandingPage {
       /**
        * Section headline.
        */
-      title: string;
+      title?: string | null;
       /**
        * Section supporting text.
        */
-      description: string;
+      description?: string | null;
       /**
        * FAQ questions and answers.
        */
       items: {
-        question: string;
-        answer: string;
+        question?: string | null;
+        answer?: string | null;
         id?: string | null;
       }[];
     };
-    blogTeaser: {
+    blogTeaser?: {
       /**
        * Section headline.
        */
-      title: string;
+      title?: string | null;
       /**
        * Section supporting text.
        */
-      description: string;
+      description?: string | null;
     };
-    contact: {
+    contact?: {
       /**
        * Section headline.
        */
-      title: string;
+      title?: string | null;
       /**
        * Section supporting text.
        */
-      description: string;
+      description?: string | null;
     };
   };
   clinicPartners: {
@@ -7602,6 +7676,7 @@ export interface LandingPagesSelect<T extends boolean = true> {
               title?: T;
               description?: T;
               image?: T;
+              imageAlt?: T;
             };
         testimonials?:
           | T

@@ -1,5 +1,6 @@
 import { Mail, MapPin, Phone } from 'lucide-react'
 
+import type { ClinicApplicationCopy } from '@/features/uiCopy/clinicApplication'
 import { Heading } from '@/components/atoms/Heading'
 import { cn } from '@/utilities/ui'
 import type { ClinicRegistrationFunnelVariant, ClinicRegistrationReviewSummary, ClinicRegistrationStep } from '../types'
@@ -8,6 +9,7 @@ import { SupportRow } from './SupportRow'
 
 export function StepContextPanel({
   className,
+  copy,
   reviewSummary,
   selectedCategoryLabels,
   step,
@@ -15,6 +17,7 @@ export function StepContextPanel({
   variant = 'default',
 }: {
   className?: string
+  copy: ClinicApplicationCopy['context']
   reviewSummary: ClinicRegistrationReviewSummary
   selectedCategoryLabels: string[]
   step: ClinicRegistrationStep
@@ -53,12 +56,13 @@ export function StepContextPanel({
           isLanding && 'lg:min-h-full',
           transitionClassName,
           className,
+          copy,
         )}
       >
         {panelBackground}
         <div className="relative z-10 flex min-h-full flex-col">
           <Heading align="left" as="h2" className={headingClassName} size="h4">
-            Review
+            {copy.summary.title}
           </Heading>
           <p
             className={cn(
@@ -66,9 +70,10 @@ export function StepContextPanel({
               isLanding ? paragraphClassName : 'text-[17px] leading-relaxed text-white/85',
             )}
           >
-            Summary of your details before submission.
+            {copy.summary.description}
           </p>
           <ReviewSummary
+            copy={copy.summary}
             reviewSummary={reviewSummary}
             selectedCategoryLabels={selectedCategoryLabels}
             variant={variant}
@@ -86,17 +91,16 @@ export function StepContextPanel({
           panelClassName,
           transitionClassName,
           className,
+          copy,
         )}
       >
         {panelBackground}
         <div className="relative z-10 flex min-h-full flex-col justify-center">
           <Heading align="left" as="h2" className={headingClassName} size="h4">
-            Contact information
+            {copy.contact.title}
           </Heading>
           {isLanding ? null : (
-            <p className={cn('mt-4 max-w-[360px]', paragraphClassName)}>
-              We will contact the right person once the registration has been reviewed.
-            </p>
+            <p className={cn('mt-4 max-w-[360px]', paragraphClassName)}>{copy.contact.description}</p>
           )}
           <div
             className={cn(
@@ -106,12 +110,12 @@ export function StepContextPanel({
                 : 'mt-10 gap-7 border-white/15 pt-8 lg:mt-auto',
             )}
           >
-            <SupportRow icon={Phone} label="Phone" value="+49 (0) 30 1234 5678" variant={variant} />
-            <SupportRow icon={Mail} label="Email" value="support@findmydoc.de" variant={variant} />
+            <SupportRow icon={Phone} label={copy.contact.phone} value="+49 (0) 30 1234 5678" variant={variant} />
+            <SupportRow icon={Mail} label={copy.contact.email} value="support@findmydoc.de" variant={variant} />
             <SupportRow
               icon={MapPin}
-              label="Headquarters"
-              value="Friedrichstrasse 100, 10117 Berlin, Germany"
+              label={copy.contact.office}
+              value={`Friedrichstrasse 100, 10117 Berlin, ${copy.contact.country}`}
               variant={variant}
             />
           </div>
@@ -128,12 +132,13 @@ export function StepContextPanel({
           panelClassName,
           transitionClassName,
           className,
+          copy,
         )}
       >
         {panelBackground}
         <div className="relative z-10 flex min-h-full flex-col justify-center">
           <Heading align="left" as="h2" className={headingClassName} size="h4">
-            Welcome to the network.
+            {copy.specialties.title}
           </Heading>
           <p
             className={cn(
@@ -141,7 +146,7 @@ export function StepContextPanel({
               isLanding ? paragraphClassName : 'text-base leading-relaxed text-white/90',
             )}
           >
-            Complete your profile so international patients can find you more easily.
+            {copy.specialties.description}
           </p>
         </div>
       </aside>
@@ -155,12 +160,13 @@ export function StepContextPanel({
         panelClassName,
         transitionClassName,
         className,
+        copy,
       )}
     >
       {panelBackground}
       <div className="relative z-10 flex min-h-full flex-col justify-center">
         <Heading align="left" as="h2" className={cn('max-w-[385px]', headingClassName)} size="h4">
-          Interested in gaining international patients and increasing your clinic's global reach?
+          {copy.details.title}
         </Heading>
         <p
           className={cn(
@@ -168,7 +174,7 @@ export function StepContextPanel({
             isLanding ? cn('mt-5', paragraphClassName) : 'mt-7 text-lg leading-relaxed text-white/90',
           )}
         >
-          Contact us to explore how your clinic can benefit from our international comparison platform.
+          {copy.details.description}
         </p>
       </div>
     </aside>

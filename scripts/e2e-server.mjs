@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process'
+import { execFileSync, spawn } from 'node:child_process'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { applyE2ERuntimeDefaults, loadLocalAndTestEnv } from './test-env.mjs'
 import { setupTestDatabase, teardownTestDatabase } from './test-database-harness.mjs'
@@ -90,6 +90,18 @@ process.on('unhandledRejection', (error) => {
 
 try {
   await setupTestDatabase({ templateKind: 'baseline' })
+  if (process.env.E2E_HOLDING_LEGAL_SCENARIO === 'bilingual') {
+    execFileSync('pnpm', ['exec', 'tsx', 'scripts/public-e2e-holding-legal-fixture.ts'], {
+      env: appEnv,
+      stdio: 'inherit',
+    })
+  }
+  if (process.env.E2E_FULL_HOME_SCENARIO) {
+    execFileSync('pnpm', ['exec', 'tsx', 'scripts/public-e2e-home-fixture.ts'], {
+      env: appEnv,
+      stdio: 'inherit',
+    })
+  }
   startApp()
 } catch (error) {
   console.error(error)

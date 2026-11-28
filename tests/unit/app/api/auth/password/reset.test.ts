@@ -36,6 +36,17 @@ describe('Website recovery public response', () => {
     })
     expect(mocks.request.mock.calls[0]?.[0].headers.get('cookie')).toBe('synthetic-context=origin')
   })
+  it.each(['de', 'en'])('forwards a valid %s recovery request without disclosing eligibility', async (locale) => {
+    mocks.request.mockRejectedValue(new Error('Invalid recovery principal'))
+    const response = await POST(request({ email: 'person@example.test', locale }))
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({ success: true })
+    expect(mocks.request).toHaveBeenCalledWith(expect.anything(), {
+      email: 'person@example.test',
+      context: null,
+      locale,
+    })
+  })
   it.each(['missing', 'limited', 'inactive', 'private infrastructure detail'])(
     'acknowledges %s without account disclosure',
     async (reason) => {
@@ -54,6 +65,8 @@ describe('Website recovery public response', () => {
   })
   it.each([
     { email: 'bad' },
+    { email: 'person@example.test', locale: 'fr' },
+    { email: 'person@example.test', locale: ['de', 'en'] },
     { email: 'x'.repeat(255) + '@example.test' },
     { email: 'person@example.test', recipient: 'other@example.test' },
     null,

@@ -1,8 +1,11 @@
+import { blogArchiveLocaleFromPath } from '@/i18n/blogArchivePath'
 import { createServerClient } from '@supabase/ssr'
 import type { User } from '@supabase/supabase-js'
 import { type NextRequest, NextResponse } from 'next/server'
 
 import { isPlatformUser } from '@/auth/utilities/supabaseAuthPolicy'
+import { getPublicErrorCopy } from '@/features/uiCopy/publicErrors'
+import { publicPageLocaleFromPath } from '@/i18n/publicNavigationPath'
 import { isPreviewRuntime } from '@/features/runtimePolicy'
 import {
   HOLDING_VIEW_REQUEST_HEADER,
@@ -124,6 +127,7 @@ const nextWithTemporaryLandingPublicHeaders = (
     [HOLDING_VIEW_REQUEST_HEADER]: 'public',
     [PUBLIC_SITE_MODE_REQUEST_HEADER]: publicMode,
     [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: publicMode === 'holding' ? '1' : null,
+    [SEARCH_INDEXING_REQUEST_HEADER]: isTemporaryLandingIndexablePath(request.nextUrl.pathname) ? null : 'noindex',
   })
 
 const nextWithPublicMode = (
@@ -213,7 +217,11 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
         return privateResponse(previewDeployment || translationSource ? withSearchRobotsHeader(response) : response)
       }
 
-      return privateResponse(withSearchRobotsHeader(nextWithTemporaryLandingHeaders(request, holdingMode)))
+      const response =
+        blogArchiveLocaleFromPath(pathname) === 'en'
+          ? nextWithTemporaryLandingPublicHeaders(request, holdingMode)
+          : nextWithTemporaryLandingHeaders(request, holdingMode)
+      return privateResponse(withSearchRobotsHeader(response))
     }
 
     if (
@@ -223,7 +231,12 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
       return privateResponse(withSearchRobotsHeader(nextWithTemporaryLandingHeaders(request, holdingMode)))
     }
 
-    return privateResponse(withSearchRobotsHeader(new NextResponse('Not Found', { status: 404 })))
+    const locale = publicPageLocaleFromPath(pathname)
+    const response = new NextResponse(getPublicErrorCopy(locale).notFound, {
+      status: 404,
+      headers: { 'Content-Language': locale },
+    })
+    return privateResponse(withSearchRobotsHeader(response))
   }
 
   return privateResponse(withSearchRobotsHeader(nextWithPublicMode(request, holdingMode, translationSource)))

@@ -20,6 +20,7 @@ export function LandingCategories({
   items,
   featuredIds,
   defaultActiveFilter,
+  copy,
   moreCategoriesLink,
 }: LandingCategoriesProps) {
   const baseHref = moreCategoriesLink?.href ?? '/listing-comparison'
@@ -33,6 +34,7 @@ export function LandingCategories({
         key={item.id}
         label={categoryLabelMap.get(item.categories[0] ?? '') ?? item.categories[0] ?? 'Category'}
         title={item.title}
+        linkLabel={item.linkLabel}
         subtitle={item.subtitle}
         href={item.href ?? withSpecialtyQuery(baseHref, item.id)}
         newTab={item.newTab}
@@ -58,6 +60,7 @@ export function LandingCategories({
 
         <LandingCategoriesShell
           baseHref={baseHref}
+          copy={copy}
           categories={categories}
           defaultActiveFilter={defaultActiveFilter}
           featuredIds={featuredIds}
@@ -73,12 +76,21 @@ type LandingCategoryCardProps = {
   href?: string
   image: LandingCategoriesProps['items'][number]['image']
   label: string
+  linkLabel?: string
   newTab?: boolean
   subtitle?: string | null
   title: string
 }
 
-const LandingCategoryCard: React.FC<LandingCategoryCardProps> = ({ href, image, label, newTab, subtitle, title }) => {
+const LandingCategoryCard: React.FC<LandingCategoryCardProps> = ({
+  href,
+  image,
+  label,
+  linkLabel,
+  newTab,
+  subtitle,
+  title,
+}) => {
   return (
     <div className="group relative h-full w-full overflow-hidden">
       <Image
@@ -116,7 +128,7 @@ const LandingCategoryCard: React.FC<LandingCategoryCardProps> = ({ href, image, 
             'cursor-pointer focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none',
           )}
         >
-          <span className="sr-only">Explore {title}</span>
+          <span className="sr-only">{linkLabel ?? `Explore ${title}`}</span>
         </UiLink>
       ) : null}
     </div>

@@ -3,10 +3,13 @@ import { z } from 'zod'
 import { createLocalReq, getPayload } from 'payload'
 import configPromise from '@/payload.config'
 import { requestPasswordRecovery } from '@/auth/actions/passwordRecoveryRequests'
+import { patientAuthLocaleSchema } from '@/auth/actions/patientAuthLocale'
 import { websiteRecoveryContext } from '@/auth/actions/recoveryContext'
 import { readPreparationBinding } from '@/features/inquiryPreparations/context'
 
-const requestSchema = z.object({ email: z.string().trim().email().max(254) }).strict()
+const requestSchema = z
+  .object({ email: z.string().trim().email().max(254), locale: patientAuthLocaleSchema.optional() })
+  .strict()
 
 export async function POST(request: NextRequest) {
   const headers = { 'Cache-Control': 'no-store' }
@@ -19,7 +22,7 @@ export async function POST(request: NextRequest) {
     const payload = await getPayload({ config: configPromise })
     const req = await createLocalReq({}, payload)
     req.headers = request.headers
-    await requestPasswordRecovery(req, { email: validation.data.email, context: websiteRecoveryContext(request) })
+    await requestPasswordRecovery(req, { ...validation.data, context: websiteRecoveryContext(request) })
   } catch {
     // Eligibility, limits, inactive environments and infrastructure failures share one public response.
   }

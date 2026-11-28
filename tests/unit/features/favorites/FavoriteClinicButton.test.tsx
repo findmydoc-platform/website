@@ -142,11 +142,40 @@ describe('FavoriteClinicButton', () => {
       .mockResolvedValueOnce(jsonResponse({ docs: [] }))
     vi.stubGlobal('fetch', fetchMock)
 
-    render(<FavoriteClinicButton clinicId={12} isPatient={true} loginHref="/login/patient?next=%2Fclinics%2Fabc" />)
+    render(
+      <FavoriteClinicButton
+        clinicId={12}
+        isPatient={true}
+        loginHref="/login/patient?next=%2Fclinics%2Fabc"
+        feedback={{ error: 'Synthetic save error', saved: 'Synthetic success', removed: 'Synthetic removal' }}
+      />,
+    )
 
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 
-    await waitFor(() => expect(screen.getByText('Network unavailable')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Synthetic save error'))
+    expect(screen.queryByText('Network unavailable')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Save' })).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('offers the same return destination when a patient session expires during removal', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ message: 'Forbidden' }, { status: 403 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const loginHref = '/en/login/patient?next=%2Fen%2Fpatient%2Ffavorites'
+    render(
+      <FavoriteClinicButton
+        clinicId={12}
+        initialFavoriteId={55}
+        isPatient={true}
+        loginHref={loginHref}
+        reauthenticateLabel="Synthetic sign-in action"
+        savedLabel="Synthetic remove action"
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Synthetic remove action' }))
+
+    expect(await screen.findByRole('link', { name: 'Synthetic sign-in action' })).toHaveAttribute('href', loginHref)
+    expect(screen.queryByText('Forbidden')).not.toBeInTheDocument()
   })
 })

@@ -11,6 +11,7 @@ import { readInquiryPreparationRegistration } from '@/features/inquiryCommunicat
 import { readPreparationBinding } from '@/features/inquiryPreparations/context'
 import { patientLoginCopy } from '@/features/uiCopy/patientLogin'
 import { PatientLoginFormRoot } from '@/features/uiCopy/PatientLoginFormRoot.client'
+import { SAVED_CLINICS_PATHS } from '@/i18n/savedClinicsPath'
 import { LISTING_COMPARISON_PATHS } from '@/i18n/listingComparisonPath'
 import { PATIENT_LOGIN_PATH, localizedPatientAuthPath } from '@/i18n/patientAuthPath'
 import { ENGLISH_PATIENT_LOGIN_PATH } from '@/i18n/requestLocale'
@@ -22,11 +23,7 @@ import config from '@payload-config'
 
 export const dynamic = 'force-dynamic'
 
-const LOCALIZED_PATIENT_RETURN_PATHS = [
-  PATIENT_LOGIN_HOME_PATHS,
-  LISTING_COMPARISON_PATHS,
-  { de: '/patient/favorites', en: '/en/patient/favorites' },
-]
+const LOCALIZED_PATIENT_RETURN_PATHS = [PATIENT_LOGIN_HOME_PATHS, LISTING_COMPARISON_PATHS, SAVED_CLINICS_PATHS]
 
 function localizeReturnPath(path: string, locale: UiCopyLocale): string {
   const pathname = path.split(/[?#]/, 1)[0]!

@@ -26,6 +26,7 @@ export type VerificationBadgeVariant = NonNullable<VariantProps<typeof verificat
 export type VerificationBadgeProps = Omit<React.HTMLAttributes<HTMLSpanElement>, 'children'> &
   VariantProps<typeof verificationBadgeVariants> & {
     icon?: 'auto' | 'none'
+    label?: string
   }
 
 const verificationBadgeLabels: Record<VerificationBadgeVariant, string> = {
@@ -35,13 +36,13 @@ const verificationBadgeLabels: Record<VerificationBadgeVariant, string> = {
   gold: 'gold',
 }
 
-export function VerificationBadge({ className, variant, icon = 'auto', ...props }: VerificationBadgeProps) {
+export function VerificationBadge({ className, variant, icon = 'auto', label, ...props }: VerificationBadgeProps) {
   const Icon = variant === 'unverified' ? BadgeX : BadgeCheck
 
   return (
     <span className={cn(verificationBadgeVariants({ variant, className }))} {...props}>
       {icon === 'none' ? null : <Icon className="size-3" aria-hidden="true" />}
-      <span>{verificationBadgeLabels[variant ?? 'unverified']}</span>
+      <span>{label ?? verificationBadgeLabels[variant ?? 'unverified']}</span>
     </span>
   )
 }

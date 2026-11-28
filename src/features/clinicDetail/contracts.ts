@@ -1,3 +1,4 @@
+import type { UiCopyLocale } from '@/i18n/requestLocale'
 import type { CookieConsentConfig, CookieConsentState } from '@/features/cookieConsent'
 import type { PatientInquiryCreationContext } from '@/features/patientInquiries/creationContext'
 import type { FreshnessSignals } from '@/utilities/freshness'
@@ -182,6 +183,7 @@ export type ClinicDetailConceptProps = {
     isPatient: boolean
     favoriteId?: number | null
     loginHref: string
+    locale?: UiCopyLocale
   }
   inquiryCreation?: PatientInquiryCreationContext
   analytics: ClinicDetailAnalyticsPort

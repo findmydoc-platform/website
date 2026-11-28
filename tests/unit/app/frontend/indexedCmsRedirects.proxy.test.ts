@@ -116,8 +116,8 @@ describe('permanent CMS redirects', () => {
     expect(payload.findByID).not.toHaveBeenCalled()
   })
 
-  it('leaves dedicated routes out of CMS redirect lookups', async () => {
-    const response = await proxy(new NextRequest(`${origin}/about`))
+  it.each(['/about', '/en/patient/favorites'])('leaves dedicated route %s out of CMS redirects', async (path) => {
+    const response = await proxy(new NextRequest(`${origin}${path}`))
 
     expect(response.status).toBe(200)
     expect(payload.find).not.toHaveBeenCalled()

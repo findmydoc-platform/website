@@ -29,10 +29,15 @@ export type FavoriteClinicButtonProps = {
   savedLabel?: string
   unsavedLabel?: string
   pendingLabel?: string
+  removingLabel?: string
   buttonAriaLabel?: string
   savedAriaLabel?: string
   unsavedAriaLabel?: string
   pendingAriaLabel?: string
+  removingAriaLabel?: string
+  reauthenticateLabel?: string
+  lang?: string
+  feedback?: { error: string; saved: string; removed: string }
   showIcon?: boolean
   className?: string
   favoriteApi?: FavoriteClinicButtonApi
@@ -71,18 +76,10 @@ function toFavoriteIdFromDoc(value: FavoriteClinicApiDoc | null | undefined): nu
   return toFavoriteId(value?.id) ?? toFavoriteId(value?.doc?.id)
 }
 
-async function readErrorMessage(response: Response): Promise<string> {
-  const body = (await response.json().catch(() => null)) as {
-    message?: unknown
-    errors?: unknown
-    error?: unknown
-  } | null
-  const fallback = 'We could not update your saved clinics. Please try again.'
-
-  if (typeof body?.message === 'string' && body.message.trim().length > 0) return body.message
-  if (typeof body?.error === 'string' && body.error.trim().length > 0) return body.error
-
-  return fallback
+class FavoriteRequestError extends Error {
+  constructor(readonly status: number) {
+    super('Favorite request failed')
+  }
 }
 
 async function findExistingFavoriteId(clinicId: number): Promise<number | null> {
@@ -123,10 +120,12 @@ async function createFavorite(
     if (favoriteId) return favoriteId
   }
 
+  if (response.status === 401 || response.status === 403) throw new FavoriteRequestError(response.status)
+
   const reconciledFavoriteId = await findFavoriteId(clinicId)
   if (reconciledFavoriteId) return reconciledFavoriteId
 
-  throw new Error(await readErrorMessage(response))
+  throw new FavoriteRequestError(response.status)
 }
 
 async function deleteFavorite(favoriteId: number): Promise<void> {
@@ -136,7 +135,7 @@ async function deleteFavorite(favoriteId: number): Promise<void> {
   })
 
   if (!response.ok) {
-    throw new Error(await readErrorMessage(response))
+    throw new FavoriteRequestError(response.status)
   }
 }
 
@@ -149,10 +148,15 @@ export function FavoriteClinicButton({
   savedLabel = 'Saved',
   unsavedLabel = 'Save',
   pendingLabel = 'Saving...',
+  removingLabel = pendingLabel,
   buttonAriaLabel,
   savedAriaLabel,
   unsavedAriaLabel,
   pendingAriaLabel,
+  removingAriaLabel = pendingAriaLabel,
+  reauthenticateLabel,
+  lang,
+  feedback,
   showIcon = true,
   className,
   favoriteApi,
@@ -160,14 +164,18 @@ export function FavoriteClinicButton({
 }: FavoriteClinicButtonProps) {
   const [favoriteId, setFavoriteId] = React.useState<number | null>(initialFavoriteId)
   const [isPending, setIsPending] = React.useState(false)
-  const [errorMessage, setErrorMessage] = React.useState<string | null>(null)
+  const [feedbackState, setFeedbackState] = React.useState<'error' | 'saved' | 'removed' | null>(null)
+  const [requiresLogin, setRequiresLogin] = React.useState(false)
+  const loginLinkRef = React.useRef<HTMLAnchorElement>(null)
+  const errorMessage =
+    feedbackState === 'error' ? (feedback?.error ?? 'We could not update your saved clinics. Please try again.') : null
   const isFavorite = favoriteId !== null
-  const label = isPending ? pendingLabel : isFavorite ? savedLabel : unsavedLabel
+  const label = isPending ? (isFavorite ? removingLabel : pendingLabel) : isFavorite ? savedLabel : unsavedLabel
   const isIconVariant = variant === 'icon'
   const shouldShowIcon = isIconVariant || showIcon
   const content = isIconVariant ? <span className="sr-only">{label}</span> : label
   const accessibleLabel = isPending
-    ? (pendingAriaLabel ?? buttonAriaLabel)
+    ? ((isFavorite ? removingAriaLabel : pendingAriaLabel) ?? buttonAriaLabel)
     : isFavorite
       ? (savedAriaLabel ?? buttonAriaLabel)
       : (unsavedAriaLabel ?? buttonAriaLabel)
@@ -183,6 +191,10 @@ export function FavoriteClinicButton({
     setFavoriteId(initialFavoriteId ?? null)
   }, [initialFavoriteId])
 
+  React.useEffect(() => {
+    if (requiresLogin) loginLinkRef.current?.focus()
+  }, [requiresLogin])
+
   const emitChange = React.useCallback(
     (change: FavoriteClinicButtonChange) => {
       onFavoriteChange?.(change)
@@ -197,7 +209,7 @@ export function FavoriteClinicButton({
   const handleToggle = () => {
     if (isPending) return
 
-    setErrorMessage(null)
+    setFeedbackState(null)
     const previousFavoriteId = favoriteId
     const nextIsFavorite = !isFavorite
 
@@ -207,6 +219,7 @@ export function FavoriteClinicButton({
         if (nextIsFavorite) {
           const createdFavoriteId = await createFavoriteWithApi(clinicId)
           setFavoriteId(createdFavoriteId)
+          setFeedbackState('saved')
           emitChange({ isFavorite: true, favoriteId: createdFavoriteId })
           return
         }
@@ -216,17 +229,23 @@ export function FavoriteClinicButton({
         }
 
         setFavoriteId(null)
+        setFeedbackState('removed')
         emitChange({ isFavorite: false, favoriteId: null })
       } catch (error: unknown) {
         setFavoriteId(previousFavoriteId)
-        setErrorMessage(error instanceof Error ? error.message : 'We could not update your saved clinics.')
+        if (error instanceof FavoriteRequestError && (error.status === 401 || error.status === 403)) {
+          setRequiresLogin(true)
+        } else {
+          setFeedbackState('error')
+        }
       } finally {
         setIsPending(false)
       }
     })()
   }
 
-  if (!isPatient) {
+  if (!isPatient || requiresLogin) {
+    const loginLabel = requiresLogin ? reauthenticateLabel : undefined
     return (
       <Button
         asChild
@@ -237,16 +256,24 @@ export function FavoriteClinicButton({
           className,
         )}
       >
-        <Link href={loginHref} aria-label={unsavedAriaLabel ?? buttonAriaLabel}>
+        <Link
+          href={loginHref}
+          lang={lang}
+          ref={loginLinkRef}
+          aria-label={loginLabel ?? (isFavorite ? savedAriaLabel : unsavedAriaLabel) ?? buttonAriaLabel}
+        >
           {shouldShowIcon ? <Heart className="size-4" aria-hidden={true} /> : null}
-          {isIconVariant ? <span className="sr-only">{unsavedLabel}</span> : unsavedLabel}
+          {loginLabel && isIconVariant ? <span className="sr-only">{loginLabel}</span> : (loginLabel ?? content)}
         </Link>
       </Button>
     )
   }
 
   return (
-    <div className={cn('min-w-0 space-y-1', variant === 'compact' ? 'w-full' : undefined, isIconVariant && 'relative')}>
+    <div
+      lang={lang}
+      className={cn('min-w-0 space-y-1', variant === 'compact' ? 'w-full' : undefined, isIconVariant && 'relative')}
+    >
       <Button
         type="button"
         variant={buttonVariant}
@@ -267,6 +294,7 @@ export function FavoriteClinicButton({
         {content}
       </Button>
       <p
+        role={variant === 'list' ? undefined : 'status'}
         aria-live="polite"
         className={cn(
           isIconVariant
@@ -277,6 +305,9 @@ export function FavoriteClinicButton({
         )}
       >
         {errorMessage}
+        {feedbackState && feedbackState !== 'error' ? (
+          <span className="sr-only">{feedback?.[feedbackState]}</span>
+        ) : null}
       </p>
     </div>
   )

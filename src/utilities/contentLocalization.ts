@@ -61,6 +61,7 @@ const reservedEnglishPageSlugs = new Set([
   'auth/password/reset',
   'listing-comparison',
   'login/patient',
+  'logout',
   'register/patient',
 ])
 

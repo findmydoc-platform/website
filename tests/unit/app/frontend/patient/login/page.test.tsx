@@ -1,9 +1,12 @@
 import React from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+const { getLocale } = vi.hoisted(() => ({ getLocale: vi.fn<() => Promise<'de' | 'en'>>() }))
+
 ;(globalThis as unknown as { React: typeof React }).React = React
 vi.mock('next/headers', () => ({ headers: async () => new Headers() }))
 vi.mock('next-intl/server', () => ({
-  getLocale: async () => 'de',
+  getLocale,
   getTranslations: async () => (key: string) => key,
 }))
 
@@ -11,6 +14,7 @@ describe('Patient LoginPage', () => {
   const originalEnv = process.env
 
   beforeEach(() => {
+    getLocale.mockResolvedValue('de')
     process.env = {
       ...originalEnv,
       DEPLOYMENT_ENVIRONMENT: undefined,
@@ -65,6 +69,20 @@ describe('Patient LoginPage', () => {
     const loginRoot = findLoginRootElement(result)
 
     expect(loginRoot?.props.redirectPath).toBe('/clinics/berlin-health-clinic?from=favorites')
+  })
+
+  it.each([
+    ['de', '/en/listing-comparison?from=login#results', '/listing-comparison?from=login#results'],
+    ['en', '/listing-comparison?from=login#results', '/en/listing-comparison?from=login#results'],
+    ['en', '/patient/favorites?from=login', '/en/patient/favorites?from=login'],
+    ['en', '/en/login/patient?next=/', '/en'],
+  ] as const)('opens the %s destination after a successful sign-in with next=%s', async (locale, next, target) => {
+    getLocale.mockResolvedValue(locale)
+    const LoginPage = await getLoginPage()
+
+    const result = await LoginPage({ searchParams: Promise.resolve({ next }) })
+
+    expect(findLoginRootElement(result)?.props.redirectPath).toBe(target)
   })
 
   it.each(['//evil.example.com', '/login/patient', '/en/login/patient?locale=en'])(

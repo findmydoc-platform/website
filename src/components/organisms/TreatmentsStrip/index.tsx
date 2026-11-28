@@ -265,11 +265,11 @@ function ActiveCard({ item, lifted = false }: { item: TreatmentsStripItem; lifte
           {item.description}
         </p>
         {item.cta || item.comparisonLink ? (
-          <div className="mt-5 flex flex-col items-center gap-2">
+          <div className="mt-5 flex max-w-full flex-col items-center gap-2">
             {item.cta ? (
               <Button
                 type="button"
-                className="h-auto min-h-9 rounded-full px-4 text-wrap md:px-3 lg:px-6"
+                className="h-auto min-h-9 max-w-full rounded-full px-4 whitespace-normal md:px-3 lg:px-6"
                 onClick={item.cta.onClick}
               >
                 {item.cta.label}
@@ -279,7 +279,7 @@ function ActiveCard({ item, lifted = false }: { item: TreatmentsStripItem; lifte
               <UiLink
                 href={item.comparisonLink.href}
                 label={item.comparisonLink.label}
-                className="inline-flex min-h-9 items-center text-sm font-semibold text-primary underline-offset-4 hover:underline"
+                className="inline-flex min-h-9 items-center text-center text-sm font-semibold wrap-anywhere text-primary underline-offset-4 hover:underline"
               />
             ) : null}
           </div>

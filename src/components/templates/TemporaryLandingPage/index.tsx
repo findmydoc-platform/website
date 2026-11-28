@@ -38,7 +38,7 @@ export function TemporaryLandingPage({
       contactForm={contactForm}
       afterSignals={
         <TemporaryLandingBlogSection
-          ctaHref={buildPostsIndexPath(contentLocale)}
+          ctaHref={buildPostsIndexPath({ locale: locale === 'en' ? 'en' : 'de' })}
           ctaLabel={blogCopy.ctaLabel}
           description={blogCopy.description}
           posts={posts}

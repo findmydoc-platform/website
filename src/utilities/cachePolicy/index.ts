@@ -1,3 +1,4 @@
+import { BLOG_ARCHIVE_PATHS } from '@/i18n/blogArchivePath'
 export const CACHE_CLASSES = [
   'critical-public',
   'shared-public',
@@ -840,12 +841,14 @@ export const buildPostPath = (slug: string, locale: 'de' | 'en' = 'de'): string 
 export const buildClinicPath = (slug: string): string =>
   `/clinics/${assertPayloadSlug(slug, 'clinic slug', { allowNested: false })}`
 
-export const buildPostsIndexPath = (): string => '/posts'
+export const buildPostsIndexPath = (locale: keyof typeof BLOG_ARCHIVE_PATHS = 'de'): string =>
+  BLOG_ARCHIVE_PATHS[locale]
 
-export const buildPostsPaginationPath = (page: number): string => {
+export const buildPostsPaginationPath = (page: number, locale: keyof typeof BLOG_ARCHIVE_PATHS = 'de'): string => {
   const normalizedPage = assertPositivePageNumber(page)
 
-  return normalizedPage === 1 ? buildPostsIndexPath() : `/posts/page/${normalizedPage}`
+  const archivePath = buildPostsIndexPath(locale)
+  return normalizedPage === 1 ? archivePath : `${archivePath}/page/${normalizedPage}`
 }
 
 export const buildFixedPublicPath = (surfaceId: string): string => {

@@ -1,3 +1,4 @@
+import { blogArchiveLocaleFromPath } from '@/i18n/blogArchivePath'
 import { contactLocaleFromPath } from '@/i18n/contactPath'
 import { listingComparisonLocaleFromPath } from '@/i18n/listingComparisonPath'
 import {
@@ -67,6 +68,7 @@ export function uiCopyLocaleFromPath(
   searchParams?: Pick<URLSearchParams, 'getAll'> | null,
 ): UiCopyLocale | null {
   return (
+    blogArchiveLocaleFromPath(pathname) ??
     contactLocaleFromPath(pathname) ??
     listingComparisonLocaleFromPath(pathname) ??
     patientAuthLocaleFromPath(pathname, searchParams)

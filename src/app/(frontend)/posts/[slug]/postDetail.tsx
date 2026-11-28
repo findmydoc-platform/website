@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { headers } from 'next/headers'
+import { getTranslations } from 'next-intl/server'
 
 import { resolvePost } from '@/app/(frontend)/_data/resolvePost'
 import { RelatedPosts } from '@/blocks/RelatedPosts/Component'
@@ -16,8 +17,8 @@ import PageClient from './page.client'
 import { LivePreviewListener } from '@/components/organisms/LivePreviewListener'
 import { Container } from '@/components/molecules/Container'
 import { DisclaimerNotice } from '@/components/molecules/DisclaimerNotice'
-import { calculateReadTime } from '@/utilities/blog/calculateReadTime'
-import { DISCLAIMER_COPY } from '@/utilities/legal/disclaimers'
+import { estimateReadMinutes } from '@/utilities/blog/calculateReadTime'
+import { formatDate } from '@/utilities/blog/formatDate'
 import { resolveMediaImage } from '@/utilities/media/resolveMediaImage'
 import { PostShareActionBar } from './PostShareActionBar'
 import { CmsLanguageSwitchRoute } from '@/features/languageSwitch/CmsLanguageSwitchRoute.client'
@@ -52,17 +53,13 @@ export async function renderPost(args: PostPageArgs, pathLocale: ContentLocale) 
   }
 
   const { post, locale, canonicalPath } = route
+  const t = await getTranslations({ locale, namespace: 'blog' })
   const contentLocale: ContentLocaleContext = { locale, fallbackLocale: false }
 
   const firstAuthor = post.populatedAuthors?.[0]
-  const authorData =
-    firstAuthor && typeof firstAuthor === 'object'
-      ? {
-          name: firstAuthor.name || 'Unknown',
-          avatar: firstAuthor.avatar || undefined,
-          role: undefined,
-        }
-      : undefined
+  const authorData = firstAuthor?.name
+    ? { name: firstAuthor.name, avatar: firstAuthor.avatar || undefined, role: t('article.authorRole') }
+    : { name: t('author.editorial'), role: t('article.editorialRole') }
 
   const heroImage =
     post.heroImage && typeof post.heroImage === 'object'
@@ -73,12 +70,15 @@ export async function renderPost(args: PostPageArgs, pathLocale: ContentLocale) 
       : undefined
 
   const breadcrumbs = [
-    HOME_BREADCRUMB,
-    createBlogBreadcrumb(buildPostsIndexPath(contentLocale)),
+    { label: t('navigation.home'), href: locale === 'en' ? '/en' : '/' },
+    { label: t('navigation.blog'), href: buildPostsIndexPath(contentLocale) },
     { label: post.title, href: canonicalPath, lang: locale },
   ]
-  const readTime = calculateReadTime(post.content)
+  const minutes = estimateReadMinutes(post.content)
+  const readTime =
+    minutes === null ? undefined : minutes === 0 ? t('article.readTimeShort') : t('article.readTime', { minutes })
   const hasPostContent = Boolean(post.content?.root?.children?.length)
+  const relatedPosts = post.relatedPosts?.filter((related) => typeof related === 'object').filter(({ slug }) => slug)
 
   return (
     <article className="pb-16 sm:pb-20" lang={locale}>
@@ -92,10 +92,11 @@ export async function renderPost(args: PostPageArgs, pathLocale: ContentLocale) 
           draft
             ? null
             : buildArticlePageJsonLd({
-                authorName: authorData?.name,
+                authorName: firstAuthor?.name,
                 breadcrumbs,
                 description: post.excerpt,
                 imageUrl: heroImage?.src,
+                inLanguage: locale,
                 path: canonicalPath,
                 publishedAt: post.publishedAt,
                 title: post.title,
@@ -117,15 +118,16 @@ export async function renderPost(args: PostPageArgs, pathLocale: ContentLocale) 
         author={authorData}
         publishedAt={post.publishedAt || undefined}
         readTime={readTime}
-        readTimeLang="en"
+        dateLabel={post.publishedAt ? formatDate(post.publishedAt, locale) : undefined}
+        breadcrumbLabel={t('navigation.breadcrumb')}
         breadcrumbs={breadcrumbs}
         image={heroImage}
       />
 
       {/* Action Bar - Back Link & Share Button */}
       <PostShareActionBar
-        lang="en"
-        backLink={{ label: 'Back to Blog', href: buildPostsIndexPath(contentLocale) }}
+        backLink={{ label: t('article.back'), href: buildPostsIndexPath(contentLocale) }}
+        shareLabel={t('article.share')}
         shareUrl={canonicalPath}
         shareTitle={post.title}
         shareDescription={post.excerpt || undefined}
@@ -144,18 +146,18 @@ export async function renderPost(args: PostPageArgs, pathLocale: ContentLocale) 
                 />
               ) : null}
               <DisclaimerNotice
-                lang="en"
-                routeLabel="Blog"
-                copy={DISCLAIMER_COPY.blog}
+                accessibleLabel={t('article.disclaimerLabel')}
+                copy={t('article.disclaimer')}
                 variant="slim-notice-bar"
                 standalone={true}
                 className={hasPostContent ? 'mt-10 sm:mt-12' : 'mt-0'}
               />
-              {post.relatedPosts && post.relatedPosts.length > 0 && (
+              {relatedPosts && relatedPosts.length > 0 && (
                 <RelatedPosts
                   className="mt-10 sm:mt-12"
                   contentLocale={contentLocale}
-                  docs={post.relatedPosts.filter((post) => typeof post === 'object')}
+                  docs={relatedPosts}
+                  dateLocale={locale}
                 />
               )}
             </div>
@@ -175,7 +177,18 @@ export async function generatePostMetadata(args: PostPageArgs, pathLocale: Conte
     }
   }
 
-  const metadata = await generateMeta({ doc: route.post, path: route.canonicalPath, sourceCollection: 'posts' })
+  const metadata = await generateMeta({
+    doc: {
+      ...route.post,
+      meta: {
+        ...route.post.meta,
+        title: route.post.meta?.title || route.post.title,
+        description: route.post.meta?.description || route.post.excerpt,
+      },
+    },
+    path: route.canonicalPath,
+    sourceCollection: 'posts',
+  })
   if (draft) return { ...metadata, robots: { index: false, follow: false } }
   if (!route.languagePaths) return metadata
   return {

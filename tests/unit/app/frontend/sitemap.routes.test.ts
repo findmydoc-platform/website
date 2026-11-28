@@ -142,6 +142,7 @@ describe('frontend sitemap routes', () => {
       expect.arrayContaining([
         'https://findmydoc.eu/',
         'https://findmydoc.eu/posts',
+        'https://findmydoc.eu/en/posts',
         'https://findmydoc.eu/contact',
         'https://findmydoc.eu/en/contact',
         'https://findmydoc.eu/about',

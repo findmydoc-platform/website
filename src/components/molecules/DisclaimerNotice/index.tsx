@@ -17,6 +17,7 @@ export type DisclaimerNoticeProps = {
   surface?: DisclaimerNoticeSurface
   size?: DisclaimerNoticeSize
   routeLabel?: string
+  accessibleLabel?: string
   title?: string
   showVariantLabel?: boolean
   standalone?: boolean
@@ -76,6 +77,7 @@ export function DisclaimerNotice({
   surface = 'light',
   size = 'default',
   routeLabel,
+  accessibleLabel,
   title,
   showVariantLabel = false,
   standalone = false,
@@ -139,7 +141,7 @@ export function DisclaimerNotice({
   return (
     <aside
       lang={lang}
-      aria-label={routeLabel ? `${routeLabel} disclaimer` : 'Disclaimer'}
+      aria-label={accessibleLabel ?? (routeLabel ? `${routeLabel} disclaimer` : 'Disclaimer')}
       className={cn(
         'flex items-start gap-3 rounded-xl border border-border/60 shadow-xs',
         surfaceClasses(surface),

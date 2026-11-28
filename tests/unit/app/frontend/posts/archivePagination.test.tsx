@@ -1,34 +1,33 @@
 // @vitest-environment jsdom
-import React from 'react'
 import '@testing-library/jest-dom/vitest'
 import { render, screen, within } from '@testing-library/react'
-import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 
 import { PostsPagination } from '@/app/(frontend)/posts/_components/PostsPagination'
 
-describe('blog archive page navigation', () => {
-  it('puts the next and previous German archive destinations directly in the initial HTML', () => {
-    const html = renderToStaticMarkup(<PostsPagination contentLocale={{ locale: 'de' }} page={2} totalPages={3} />)
-    const container = document.createElement('div')
-    container.innerHTML = html
-    const pagination = within(container).getByRole('navigation', { name: 'pagination' })
+const copy = {
+  label: 'Fixture pages',
+  previous: { label: 'Fixture previous page', text: 'Fixture previous' },
+  next: { label: 'Fixture next page', text: 'Fixture next' },
+}
 
-    expect(within(pagination).getByRole('link', { name: 'Go to previous page' })).toHaveAttribute(
-      'href',
-      '/posts?locale=de',
-    )
-    expect(within(pagination).getByRole('link', { name: 'Go to next page' })).toHaveAttribute(
-      'href',
-      '/posts/page/3?locale=de',
-    )
-    expect(within(pagination).getByText('2')).toHaveAttribute('aria-current', 'page')
+describe('blog archive page navigation', () => {
+  it.each([
+    { locale: 'de', previous: '/posts', next: '/posts/page/3' },
+    { locale: 'en', previous: '/en/posts', next: '/en/posts/page/3' },
+  ] as const)('links to adjacent $locale archive pages', ({ locale, previous, next }) => {
+    render(<PostsPagination locale={locale} page={2} totalPages={3} copy={copy} />)
+    const pagination = within(screen.getByRole('navigation', { name: copy.label }))
+
+    expect(pagination.getByRole('link', { name: copy.previous.label })).toHaveAttribute('href', previous)
+    expect(pagination.getByRole('link', { name: copy.next.label })).toHaveAttribute('href', next)
+    expect(pagination.getByText('2')).toHaveAttribute('aria-current', 'page')
   })
 
-  it('links directly to page two in the standard archive', () => {
-    render(<PostsPagination contentLocale={{}} page={1} totalPages={2} />)
+  it('disables the previous page control on page one', () => {
+    render(<PostsPagination locale="de" page={1} totalPages={2} copy={copy} />)
 
-    expect(screen.getByRole('link', { name: 'Go to next page' })).toHaveAttribute('href', '/posts/page/2')
-    expect(screen.getByRole('button', { name: 'Go to previous page' })).toBeDisabled()
+    expect(screen.getByRole('link', { name: copy.next.label })).toHaveAttribute('href', '/posts/page/2')
+    expect(screen.getByRole('button', { name: copy.previous.label })).toBeDisabled()
   })
 })

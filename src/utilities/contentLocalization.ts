@@ -62,6 +62,7 @@ const reservedEnglishPageSlugs = new Set([
   'auth/password/reset',
   'listing-comparison',
   'login/patient',
+  'posts',
   'logout',
   'register/patient',
 ])
@@ -76,6 +77,6 @@ export function isReservedPageSlug(slug: string, locale: string | undefined): bo
 
   const path = trimmedSlug.slice(start, end)
   if (locale === 'de') return path === TURKISH_CLINIC_LANDING_SLUG || /^en(?:\/|$)/.test(path)
-  if (locale === 'en') return /^posts\/[^/]+$/.test(path) || reservedEnglishPageSlugs.has(path)
+  if (locale === 'en') return /^posts\/(?:[^/]+|page\/[^/]+)$/.test(path) || reservedEnglishPageSlugs.has(path)
   return false
 }

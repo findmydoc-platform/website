@@ -37,10 +37,13 @@ const variants = [
 ] as const
 
 test('an unpublished English home stays out of search and links back to German @full-home', async ({
+  context,
   page,
   request,
-}) => {
+}, testInfo) => {
   test.skip(scenario !== 'german-only', 'Requires a Full site with an unpublished English home')
+  await setCookieConsent(context)
+  await page.setViewportSize({ width: 375, height: 420 })
 
   const response = await page.goto(englishHome)
   expect(response?.status()).toBe(200)
@@ -49,6 +52,7 @@ test('an unpublished English home stays out of search and links back to German @
   await expect(page.locator('link[rel="alternate"][hreflang="en"]')).toHaveCount(0)
   const source = page.getByRole('main').getByRole('link').and(page.locator('a[href="/"][hreflang="de"]'))
   await expect(source).toBeVisible()
+  await page.screenshot({ path: testInfo.outputPath('full-home-english-unavailable.png') })
   await source.click()
   await expect(page.locator('html')).toHaveAttribute('lang', 'de')
   await expect(page.locator('link[rel="alternate"][hreflang="en"]')).toHaveCount(0)

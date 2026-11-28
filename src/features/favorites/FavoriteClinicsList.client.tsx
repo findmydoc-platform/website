@@ -282,7 +282,7 @@ export function FavoriteClinicsList({
   }, [])
 
   return (
-    <section className="space-y-6" aria-labelledby="saved-clinics-title">
+    <section className="space-y-6 [--muted-foreground:#666666]" aria-labelledby="saved-clinics-title">
       <SavedClinicsHeader count={count} browseHref={browseHref} translate={translate} />
       <p role="status" aria-live="polite" className="sr-only">
         {removedClinicName ? translate('clinicRemoved', { clinic: removedClinicName }) : null}

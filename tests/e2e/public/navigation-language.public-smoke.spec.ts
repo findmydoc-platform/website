@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process'
 import { expect, test } from '@playwright/test'
 
 import { navigationLanguageScenario } from '../../fixtures/navigationLanguageScenario'
@@ -34,7 +35,10 @@ const languages = [
 ] as const
 
 for (const copy of languages) {
-  test(`keeps shared navigation in ${copy.locale} across mobile and desktop @smoke`, async ({ context, page }, info) => {
+  test(`keeps shared navigation in ${copy.locale} across mobile and desktop @smoke`, async ({
+    context,
+    page,
+  }, info) => {
     const browserIssues = createBrowserIssueCollector(page)
     await setCookieConsent(context)
     await page.setViewportSize({ width: 320, height: 400 })
@@ -110,6 +114,11 @@ test('an unpublished English CMS translation points to the published German page
 }, info) => {
   test.skip(process.env.E2E_NAVIGATION_SCENARIO !== 'german-only', 'Requires the German-only publication fixture')
 
+  execFileSync(process.execPath, ['--import', 'tsx', 'scripts/public-e2e-navigation-language-fixture.ts'], {
+    env: { ...process.env, NODE_ENV: 'test' },
+    stdio: 'inherit',
+    timeout: 30_000,
+  })
   await setCookieConsent(context)
   await page.setViewportSize({ width: 320, height: 400 })
   const germanPath = `/${navigationLanguageScenario.germanOnlyPage}`
@@ -133,7 +142,10 @@ test('an unpublished English CMS translation points to the published German page
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320)
   await page.screenshot({ path: info.outputPath('translation-unavailable-en-320x400.png') })
 
-  await page.getByRole('banner').getByRole('button', { name: /Language/ }).click()
+  await page
+    .getByRole('banner')
+    .getByRole('button', { name: /Language/ })
+    .click()
   const alternatives = page.getByRole('dialog', { name: 'Language' })
   await expect(alternatives.getByRole('link', { name: 'Deutsch', exact: true })).toHaveAttribute('href', germanPath)
   await expect(alternatives.getByRole('link', { name: 'English', exact: true })).toHaveCount(0)

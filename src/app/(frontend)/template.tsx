@@ -67,7 +67,12 @@ export default async function FrontendTemplate({ children }: { children: React.R
   }
   const resolvedMode = requestMode ?? (await resolveHoldingMode(requestUrl)).mode
   const showSiteChrome = holdingView !== 'standalone'
-  const authData = showSiteChrome ? await extractSupabaseUserData({ headers: requestHeaders }) : null
+  const pathname = requestHeaders.get(FRONTEND_PATH_HEADER) ?? '/'
+  const explicitLocale = requestHeaders.get(UI_COPY_LOCALE_HEADER)
+  const [authData, cmsLocale] = await Promise.all([
+    showSiteChrome ? extractSupabaseUserData({ headers: requestHeaders }) : null,
+    showSiteChrome && !explicitLocale ? resolveCmsDocumentLocale(requestHeaders) : undefined,
+  ])
   const isHoldingPublicView = resolvedMode === 'holding' && authData?.userType !== 'platform'
   const showPreviewBadge = isNonProductionRuntime(process.env)
   const configuredHeaderLogoSrc = process.env.NEXT_PUBLIC_HEADER_LOGO_SRC?.trim() || undefined
@@ -75,9 +80,6 @@ export default async function FrontendTemplate({ children }: { children: React.R
   const headerLogoSrc = configuredHeaderLogoSrc
   const footerLogoSrc = configuredFooterLogoSrc
 
-  const pathname = requestHeaders.get(FRONTEND_PATH_HEADER) ?? '/'
-  const explicitLocale = requestHeaders.get(UI_COPY_LOCALE_HEADER)
-  const cmsLocale = showSiteChrome && !explicitLocale ? await resolveCmsDocumentLocale(requestHeaders) : undefined
   const locale =
     cmsLocale ??
     (explicitLocale === 'de' || explicitLocale === 'en' ? explicitLocale : publicPageLocaleFromPath(pathname))
@@ -104,7 +106,8 @@ export default async function FrontendTemplate({ children }: { children: React.R
   const headerNavItems = isHoldingPublicView
     ? projectHoldingHeaderNavItems(localized.headerItems, siteOrigin)
     : localized.headerItems
-  const homeHref = locale === 'en' && (isHoldingPublicView || englishPages.some((slug) => slug === 'home')) ? '/en' : '/'
+  const homeHref =
+    locale === 'en' && (isHoldingPublicView || englishPages.some((slug) => slug === 'home')) ? '/en' : '/'
   const accountMenuState =
     showSiteChrome && !isHoldingPublicView
       ? resolvePublicAccountMenuState(authData, copy.account.title)

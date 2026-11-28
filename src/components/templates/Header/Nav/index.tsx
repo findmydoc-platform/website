@@ -145,7 +145,7 @@ const MobileMenu: React.FC<{
                             key={sub.href}
                             href={sub.href}
                             hrefLang={sub.hrefLang}
-                                    className="min-h-11 rounded-sm px-3 py-3 text-sm text-foreground transition-colors hover:bg-site-section hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-hidden"
+                            className="min-h-11 rounded-sm px-3 py-3 text-sm text-foreground transition-colors hover:bg-site-section hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-hidden"
                             onClick={onClose}
                             {...newTabProps}
                           >

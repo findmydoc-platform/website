@@ -153,25 +153,28 @@ describe('frontend CMS page route metadata', () => {
     expect((await generateMetadata(args)).robots).toEqual({ index: false, follow: false })
   })
 
-  it.each([true, false])('links directly to the published German Page with proxy source present=%s', async (hasSource) => {
-    const { default: Page, generateMetadata } = await import('@/app/(frontend)/(pages)/[...slug]/page')
+  it.each([true, false])(
+    'links directly to the published German Page with proxy source present=%s',
+    async (hasSource) => {
+      const { default: Page, generateMetadata } = await import('@/app/(frontend)/(pages)/[...slug]/page')
 
-    findPages(false)
-    if (hasSource) {
-      mocks.headers.mockResolvedValue(new Headers({ 'x-fmd-cms-translation-source': '/pflege/deutschland' }))
-    }
-    const args = routeArgs('en/pflege/deutschland')
-    const renderedPage = renderToStaticMarkup(await Page(args))
+      findPages(false)
+      if (hasSource) {
+        mocks.headers.mockResolvedValue(new Headers({ 'x-fmd-cms-translation-source': '/pflege/deutschland' }))
+      }
+      const args = routeArgs('en/pflege/deutschland')
+      const renderedPage = renderToStaticMarkup(await Page(args))
 
-    expect(renderedPage).not.toContain('aria-label="Breadcrumb"')
-    expect(renderedPage).toMatch(/<a[^>]+href="\/pflege\/deutschland"/)
-    expect(await generateMetadata(args)).toEqual({
-      title: expect.stringMatching(/\S/),
-      robots: { index: false, follow: false },
-    })
-    mocks.headers.mockResolvedValue(new Headers())
-    expect(await generateMetadata(routeArgs('en/unknown'))).not.toHaveProperty('title')
-  })
+      expect(renderedPage).not.toContain('aria-label="Breadcrumb"')
+      expect(renderedPage).toMatch(/<a[^>]+href="\/pflege\/deutschland"/)
+      expect(await generateMetadata(args)).toEqual({
+        title: expect.stringMatching(/\S/),
+        robots: { index: false, follow: false },
+      })
+      mocks.headers.mockResolvedValue(new Headers())
+      expect(await generateMetadata(routeArgs('en/unknown'))).not.toHaveProperty('title')
+    },
+  )
 
   it('only lists a published equivalent as a language alternate and keeps each canonical self-referential', async () => {
     const { generateMetadata } = await import('@/app/(frontend)/(pages)/[...slug]/page')

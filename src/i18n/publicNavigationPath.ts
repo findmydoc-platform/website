@@ -1,6 +1,7 @@
 import { CONTACT_PATHS } from './contactPath'
 import { LISTING_COMPARISON_PATHS } from './listingComparisonPath'
 import { localizedPatientAuthPath, PATIENT_LOGIN_PATH, PATIENT_LOGOUT_PATH } from './patientAuthPath'
+import { SAVED_CLINICS_PATHS } from './savedClinicsPath'
 import { uiCopyLocaleFromPath, type UiCopyLocale } from './requestLocale'
 
 /** Fixed navigation targets. CMS Pages and Posts resolve from their published locale instead. */
@@ -15,7 +16,7 @@ export const publicNavigationPaths: Record<string, { en?: string }> = {
   [PATIENT_LOGIN_PATH]: { en: localizedPatientAuthPath(PATIENT_LOGIN_PATH, 'en') },
   [PATIENT_LOGOUT_PATH]: { en: localizedPatientAuthPath(PATIENT_LOGOUT_PATH, 'en') },
   '/register/patient': { en: localizedPatientAuthPath('/register/patient', 'en') },
-  '/patient/favorites': {},
+  [SAVED_CLINICS_PATHS.de]: { en: SAVED_CLINICS_PATHS.en },
   '/patient/inquiries': {},
 }
 

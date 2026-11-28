@@ -60,8 +60,6 @@ export type HeaderNavItem = {
   subItems?: HeaderSubItem[]
 }
 
-export type FooterNavGroupTitle = 'About' | 'Services' | 'Information'
-
 export type FooterNavGroup = {
   title: string
   items: UiLinkProps[]
@@ -70,7 +68,7 @@ export type FooterNavGroup = {
 function normalizeLinkRecord(
   link: unknown,
   options: { allowGroupWithoutHref?: boolean; locale?: ContentLocale } = {},
-): { href?: string; label: string | null; newTab: boolean } | null {
+): HeaderNavItem | null {
   if (!isRecord(link)) return null
 
   const linkType = resolveLinkType(link.type)
@@ -95,6 +93,7 @@ function normalizeLinkRecord(
 
   return {
     ...(publicHref ? { href: publicHref } : {}),
+    ...(linkType === 'reference' && options.locale ? { hrefLang: options.locale } : {}),
     label: typeof localizedTitle === 'string' ? localizedTitle : typeof link.label === 'string' ? link.label : null,
     newTab: linkType === 'group' ? false : typeof link.newTab === 'boolean' ? link.newTab : false,
   }
@@ -106,9 +105,10 @@ function normalizeFooterGroupItems(
 ): UiLinkProps[] {
   return (links ?? [])
     .map((item) => normalizeLinkRecord(item?.link, { locale }))
-    .filter((item): item is { href: string; label: string | null; newTab: boolean } => Boolean(item?.href))
+    .filter((item): item is HeaderSubItem => Boolean(item?.href))
     .map((item) => ({
       href: item.href,
+      hrefLang: item.hrefLang,
       label: item.label,
       newTab: item.newTab,
       appearance: 'inline',
@@ -196,6 +196,7 @@ export function normalizeHeaderNavItems(
         .filter((sub): sub is HeaderSubItem => Boolean(sub?.href))
         .map((sub) => ({
           href: sub.href,
+          hrefLang: sub.hrefLang,
           label: sub.label,
           newTab: sub.newTab,
         }))

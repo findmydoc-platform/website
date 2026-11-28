@@ -15,6 +15,16 @@ async function main() {
   const context = { disableRevalidate: true }
 
   try {
+    const existing = await payload.find({
+      collection: 'pages',
+      locale: 'de',
+      fallbackLocale: false,
+      depth: 0,
+      limit: 1,
+      where: { slug: { equals: navigationLanguageScenario.germanOnlyPage } },
+    })
+    if (existing.docs.length) return
+
     const page = await payload.create({
       collection: 'pages',
       locale: 'de',

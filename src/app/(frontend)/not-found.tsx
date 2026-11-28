@@ -5,6 +5,7 @@ import { headers } from 'next/headers'
 import { publicPageLocaleFromPath } from '@/i18n/publicNavigationPath'
 import { FRONTEND_PATH_HEADER } from '@/i18n/requestLocale'
 import { getPublishedNavigationPageSlugs } from './_data/holdingLegalLinks'
+import { isTemporaryLandingModeRequest } from '@/features/temporaryLandingMode'
 import { getPublicErrorCopy } from '@/features/uiCopy/publicErrors'
 
 import { Button } from '@/components/atoms/button'
@@ -12,10 +13,14 @@ import { Heading } from '@/components/atoms/Heading'
 import { Container } from '@/components/molecules/Container'
 
 export default async function NotFound() {
-  const pathname = (await headers()).get(FRONTEND_PATH_HEADER) ?? '/'
+  const requestHeaders = await headers()
+  const pathname = requestHeaders.get(FRONTEND_PATH_HEADER) ?? '/'
   const locale = publicPageLocaleFromPath(pathname)
   const copy = getPublicErrorCopy(locale)
-  const homeHref = locale === 'en' && (await getPublishedNavigationPageSlugs('en')).includes('home') ? '/en' : '/'
+  const englishHomeAvailable =
+    locale === 'en' &&
+    (isTemporaryLandingModeRequest(requestHeaders) || (await getPublishedNavigationPageSlugs('en')).includes('home'))
+  const homeHref = englishHomeAvailable ? '/en' : '/'
 
   return (
     <Container className="py-16 sm:py-28" lang={locale}>

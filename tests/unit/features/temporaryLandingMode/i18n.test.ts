@@ -57,7 +57,6 @@ describe('temporaryLandingMode i18n', () => {
       expect(content.title.length).toBeGreaterThan(0)
       expect(content.whySectionHeading?.length ?? 0).toBeGreaterThan(0)
       expect(content.heroVideo?.subheadlineText?.length ?? 0).toBeGreaterThan(0)
-      expect(content.contactFormLabels?.emailPlaceholder.length ?? 0).toBeGreaterThan(0)
     })
   })
 

@@ -143,6 +143,7 @@ describe('frontend sitemap routes', () => {
         'https://findmydoc.eu/',
         'https://findmydoc.eu/posts',
         'https://findmydoc.eu/contact',
+        'https://findmydoc.eu/en/contact',
         'https://findmydoc.eu/about',
         'https://findmydoc.eu/listing-comparison',
       ]),

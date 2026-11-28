@@ -1,3 +1,4 @@
+import { CONTACT_PATHS } from '@/i18n/contactPath'
 import { FRONTEND_PATH_HEADER } from '@/i18n/requestLocale'
 import { getManagedLegalPageSlugFromPath } from '@/utilities/legalPages'
 import { temporaryLandingLocaleFromPath } from './i18n'
@@ -16,7 +17,7 @@ export const readPublicSiteModeRequestHeader = (headers: Headers): 'full' | 'hol
   return mode === 'full' || mode === 'holding' ? mode : null
 }
 
-const TEMPORARY_LANDING_PUBLIC_EXEMPT_PATHS = new Set(['/contact'])
+const TEMPORARY_LANDING_PUBLIC_EXEMPT_PATHS = new Set<string>(Object.values(CONTACT_PATHS))
 const TEMPORARY_LANDING_PUBLIC_DISCOVERY_PATHS = new Set([
   '/robots.txt',
   '/pages-sitemap.xml',

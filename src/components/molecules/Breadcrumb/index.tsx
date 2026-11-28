@@ -17,6 +17,21 @@ export type BreadcrumbProps = {
   lang?: string
 }
 
+const breadcrumbColors = {
+  default: {
+    trail: 'text-supporting-foreground',
+    link: 'text-supporting-foreground underline decoration-supporting-foreground/55 decoration-1 underline-offset-4 hover:text-primary hover:decoration-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
+    current: 'text-foreground',
+    separator: 'text-inherit',
+  },
+  light: {
+    trail: 'text-white',
+    link: '!text-white/60 hover:!text-white/85',
+    current: '!text-white',
+    separator: '!text-white/45',
+  },
+}
+
 /**
  * Breadcrumb navigation component
  * Displays a trail of links showing the current page's location in the site hierarchy
@@ -43,25 +58,13 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
     return null
   }
 
-  const variantClasses = {
-    default: 'text-supporting-foreground',
-    light: 'text-white',
-  }
+  const colors = breadcrumbColors[variant]
 
   return (
-    <nav className={cn('text-sm', variantClasses[variant], className)} aria-label="Breadcrumb" lang={lang}>
+    <nav className={cn('text-sm', colors.trail, className)} aria-label="Breadcrumb" lang={lang}>
       <ol className="flex flex-wrap items-center gap-x-4 gap-y-1">
         {items.map((item, index) => {
           const isCurrent = item.current ?? index === items.length - 1
-
-          const itemClasses =
-            variant === 'light'
-              ? isCurrent
-                ? '!text-white hover:!text-white'
-                : '!text-white/60 hover:!text-white/85'
-              : isCurrent
-                ? 'text-inherit'
-                : 'text-link'
 
           return (
             <li
@@ -70,16 +73,16 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
               className="inline-flex max-w-full min-w-0 items-center gap-4"
             >
               {isCurrent ? (
-                <span aria-current="page" className={cn('max-w-full break-words', itemClasses)} title={item.label}>
+                <span aria-current="page" className={cn('max-w-full break-words', colors.current)} title={item.label}>
                   {item.label}
                 </span>
               ) : (
-                <Link href={item.href} className={cn('max-w-full break-words transition-colors', itemClasses)}>
+                <Link href={item.href} className={cn('max-w-full break-words transition-colors', colors.link)}>
                   {item.label}
                 </Link>
               )}
               {index < items.length - 1 && (
-                <span aria-hidden="true" className={cn(variant === 'light' ? '!text-white/45' : 'text-inherit')}>
+                <span aria-hidden="true" className={colors.separator}>
                   {separator}
                 </span>
               )}

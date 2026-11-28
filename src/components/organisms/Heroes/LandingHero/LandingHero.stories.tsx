@@ -3,8 +3,8 @@ import { expect, within } from 'storybook/test'
 import { SiInstagram, SiMeta, SiX } from 'react-icons/si'
 
 import { LandingHero } from '@/components/organisms/Heroes/LandingHero'
-import { storyClinicImages } from '../fixtures/assets'
-import { withViewportStory } from '../utils/viewportMatrix'
+import { storyClinicImages } from '@/stories/fixtures/assets'
+import { withViewportStory } from '@/stories/utils/viewportMatrix'
 
 const meta = {
   title: 'Domain/Landing/Organisms/Heroes/LandingHero',
@@ -22,7 +22,8 @@ type Story = StoryObj<typeof meta>
 const assertHeroContent: Story['play'] = async ({ canvasElement, args }) => {
   const canvas = within(canvasElement)
 
-  await expect(canvas.getByRole('heading', { name: args.title })).toBeInTheDocument()
+  const heading = canvas.getByRole('heading', { level: 1, name: args.title })
+  await expect(heading).toHaveStyle({ fontWeight: args.variant === 'image-backdrop' ? '700' : '600' })
   await expect(canvas.getByText(args.description)).toBeInTheDocument()
 
   if (args.variant === 'homepage') {

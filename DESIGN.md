@@ -54,6 +54,12 @@ colors:
   sidebar-border: '#E5E5E5'
   sidebar-ring: '#A3A3A3'
 typography:
+  landing-hero-title:
+    fontFamily: 'DM Sans, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif'
+    fontSize: 2.25rem
+    fontWeight: 600
+    lineHeight: 45px
+    letterSpacing: -0.025em
   content-section:
     fontFamily: 'DM Sans, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif'
     fontSize: 1.6875rem
@@ -205,6 +211,13 @@ components:
     rounded: '{rounded.full}'
   content-inline-link:
     textColor: '{colors.primary}'
+  breadcrumb-link:
+    textColor: '{colors.supporting-foreground}'
+  breadcrumb-current:
+    textColor: '{colors.foreground}'
+  landing-hero-heading:
+    textColor: '{colors.foreground}'
+    typography: '{typography.landing-hero-title}'
   accent-inline-link:
     textColor: '{colors.accent-foreground}'
   inverse-inline-link:
@@ -477,9 +490,10 @@ The palette is built from a clear medical blue, a deep navy anchor, a mint accen
 
 ## Typography
 
-Use DM Sans as the brand typeface for all public UI. The public site and Storybook load the same regular (400) and bold (700) files through the shared frontend stylesheet. It is chosen for a neutral medical platform voice: human enough for patient decisions, precise enough for comparison workflows, and calm enough for high-stakes healthcare context. System sans fallbacks are acceptable only as runtime fallback, not as a separate design direction. Use the Heading atom for headings in implementation.
+Use DM Sans as the brand typeface for all public UI. The public site and Storybook load the same regular (400), semibold (600), and bold (700) files through the shared frontend stylesheet. It is chosen for a neutral medical platform voice: human enough for patient decisions, precise enough for comparison workflows, and calm enough for high-stakes healthcare context. System sans fallbacks are acceptable only as runtime fallback, not as a separate design direction. Use the Heading atom for headings in implementation.
 
 - **H1-H4:** Bold, compact, centered by default in the base layer. Override alignment only when the layout needs scanning, comparison, or form completion.
+- **Landing hero weight:** Use 600 for the large, multi-line titles on the homepage and clinic partner page. The centered landing hero scales from 36px on mobile to 48px at the small breakpoint and 72px at the medium breakpoint. Use 700 for compact, emphatic titles such as the clinic comparison heading.
 - **Landing-editorial type:** Prefer centered headings, larger display moments, short explanatory paragraphs, and generous line spacing. Landing copy should invite understanding, not enumerate every fact.
 - **Content-evidence type:** Prefer scan-friendly labels, compact headings, tabular or prominent numeric treatment for prices/ratings, and left alignment when comparing data. Long names must wrap cleanly instead of shrinking the whole layout.
 - **Content section titles:** Use left-aligned, bold navy type at 27px, increasing to 32px at the large breakpoint. Use 1.2 line height and tight tracking. Use this role for a section title such as the clinic comparison filter.
@@ -596,7 +610,8 @@ Components should consume the YAML tokens through Tailwind theme variables and s
 - **Inputs:** Inputs use white background, foreground text, input border, 40px height, 16px mobile text, and a visible primary focus ring.
 - **Cards:** Cards use white background, foreground text, border, `rounded-lg`, `shadow-xs`, and 24px padding by default.
 - **Popovers and dropdowns:** Use white popover surfaces, foreground text, `rounded-md`, subtle border, and compact spacing.
-- **Links:** Readable inline links on light content surfaces use primary with an underline, primary-hover on hover, and a visible focus outline. Use the shared text link style for CMS text, treatment comparison links, and light breadcrumbs. On mint use navy for links and focus. On dark surfaces use white for links and focus, with mint on hover. Navigation and calls to action use their own component styles.
+- **Links:** Readable inline links on light content surfaces use primary with an underline, primary-hover on hover, and a visible focus outline. Use the shared text link style for CMS text and treatment comparison links. On mint use navy for links and focus. On dark surfaces use white for links and focus, with mint on hover. Navigation and calls to action use their own component styles.
+- **Breadcrumb navigation:** On light surfaces, linked ancestors use supporting foreground with a subtle underline. The current page uses foreground without an underline. Hover turns linked ancestors primary blue. Keyboard focus adds a visible primary blue outline.
 - **VerificationBadge:** Preserve the bronze/silver/gold token mapping exactly; generated mockups must not redefine badge shapes, colors, or icon treatment.
 - **Trust surfaces:** Verification, accreditation, reviews, prices, location, treatment availability, and contact actions must be visibly labeled and easy to compare. Prefer explicit empty or unavailable states over hiding missing information.
 - **Transparency cues:** Use supporting metadata, captions, timestamps, source labels, and explanatory helper text when a user could reasonably ask "why should I trust this?" or "what happens next?" Do not bury these cues behind hover-only interactions.

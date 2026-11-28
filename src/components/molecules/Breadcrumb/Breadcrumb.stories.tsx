@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Breadcrumb } from '@/components/molecules/Breadcrumb'
 import { userEvent, within, expect } from 'storybook/test'
 import { ChevronRight } from 'lucide-react'
-import { withViewportStory } from '../utils/viewportMatrix'
+import { withViewportStory } from '@/stories/utils/viewportMatrix'
 
 const meta = {
   title: 'Shared/Molecules/Breadcrumb',
@@ -125,7 +125,7 @@ export const LongLabels1024: Story = withViewportStory(LongLabels, 'public1024',
 export const LongLabels1280: Story = withViewportStory(LongLabels, 'public1280', 'Long labels / 1280')
 
 export const Interactive: Story = {
-  name: 'Interactive (Hover Test)',
+  name: 'Link hover and keyboard focus',
   args: {
     items: [
       { label: 'Home', href: '/' },
@@ -136,13 +136,15 @@ export const Interactive: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
-    // Test hover on middle link
-    const blogLink = canvas.getByText('Blog')
-    await userEvent.hover(blogLink)
+    const homeLink = canvas.getByRole('link', { name: 'Home' })
+    const blogLink = canvas.getByRole('link', { name: 'Blog' })
 
-    // Test hover on last link (current page)
-    const artikelLink = canvas.getByText('Artikel')
-    await userEvent.hover(artikelLink)
+    await userEvent.hover(blogLink)
+    await userEvent.unhover(blogLink)
+    homeLink.focus()
+    await userEvent.tab()
+    await expect(blogLink).toHaveFocus()
+    await expect(canvas.getByText('Artikel', { selector: '[aria-current="page"]' })).not.toHaveAttribute('href')
   },
 }
 

@@ -8,6 +8,8 @@ import {
 } from '@/auth/actions/lifecycle'
 import { authActionTypes, authActionEnvironments, authActionStates, authActionOutcomes } from '@/auth/actions/contracts'
 
+import { patientAuthLocales } from '@/auth/actions/patientAuthLocale'
+
 type ActionField = Extract<Field, { type: 'select' | 'date' | 'relationship' | 'text' }>
 const diagnostic = <T extends ActionField>(field: T): T => ({ ...field, admin: { ...field.admin, readOnly: true } })
 const privateField = <T extends ActionField>(field: T): T => ({
@@ -82,6 +84,7 @@ export const AuthActions: CollectionConfig = {
       maxDepth: 0,
     }),
     privateField({ name: 'principalBoundAt', type: 'date' }),
+    privateField({ name: 'locale', type: 'select', options: [...patientAuthLocales] }),
     privateField({ name: 'supabaseSubject', type: 'text' }),
     privateField({ name: 'subjectBoundAt', type: 'date' }),
     privateField({ name: 'correlationDigest', type: 'text', index: true }),

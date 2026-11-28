@@ -11,7 +11,7 @@ import {
   ClinicStaffInvitationEmail,
   ClinicRegistrationReceiptEmail,
   type ClinicRegistrationReceiptEmailProps,
-  PATIENT_EMAIL_VERIFICATION_SUBJECT,
+  PATIENT_EMAIL_VERIFICATION_SUBJECTS,
   PatientEmailVerificationEmail,
 } from '@findmydoc-platform/email-templates'
 import { Body, Html, Link, Text } from '@react-email/components'
@@ -61,9 +61,10 @@ export async function renderClinicRegistrationReceipt(
 export async function renderPatientEmailVerification(
   recipientAddress: string,
   actionUrl: string,
+  locale: 'de' | 'en' = 'en',
 ): Promise<PreparedMessage> {
-  const html = await render(<PatientEmailVerificationEmail actionUrl={actionUrl} />)
-  return { recipientAddress, subject: PATIENT_EMAIL_VERIFICATION_SUBJECT, html, text: toPlainText(html) }
+  const html = await render(<PatientEmailVerificationEmail actionUrl={actionUrl} locale={locale} />)
+  return { recipientAddress, subject: PATIENT_EMAIL_VERIFICATION_SUBJECTS[locale], html, text: toPlainText(html) }
 }
 
 export async function renderClinicStaffInvitation(

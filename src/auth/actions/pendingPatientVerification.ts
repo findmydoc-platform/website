@@ -3,6 +3,7 @@ import { z } from 'zod'
 import type { SupabaseClient, User } from '@supabase/supabase-js'
 import { normalizeEmail } from '@/auth/utilities/emailNormalization'
 import { bindAuthActions } from './lifecycle'
+import { patientAuthLocaleSchema } from './patientAuthLocale'
 
 const commandSchema = z
   .object({
@@ -11,6 +12,7 @@ const commandSchema = z
     firstName: z.string().trim().min(1).max(200).optional(),
     lastName: z.string().trim().min(1).max(200).optional(),
     resendOf: z.number().int().positive().optional(),
+    locale: patientAuthLocaleSchema.optional(),
   })
   .strict()
 type Admin = Pick<SupabaseClient['auth']['admin'], 'createUser' | 'listUsers' | 'getUserById'>
@@ -88,11 +90,11 @@ export function bindPendingPatientVerification(
     async prepare(input: z.infer<typeof commandSchema>) {
       const parsed = commandSchema.safeParse(input)
       if (!parsed.success) throw new APIError('invalid-command', 400)
-      const { password, resendOf } = parsed.data
+      const { password, resendOf, locale } = parsed.data
       const email = normalizeEmail(parsed.data.email)
       let fresh = false
       const action = await actions.reservePatientVerification(
-        { email, ...(resendOf == null ? {} : { resendOf }) },
+        { email, locale, ...(resendOf == null ? {} : { resendOf }) },
         () => {
           fresh = true
         },

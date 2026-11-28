@@ -101,6 +101,26 @@ describe('patient verification at the callback HTTP boundary with offline Auth s
     expect(boundary.verify).not.toHaveBeenCalled()
     expect(storage.payload.create).not.toHaveBeenCalledWith(expect.objectContaining({ collection: 'patients' }))
   })
+  test.each([
+    ['de', '/auth/confirm'],
+    ['en', '/auth/en/confirm'],
+  ])('opens a %s verification link at its localized, token-free confirmation', async (locale, path) => {
+    const response = await GET(
+      new NextRequest(`${origin}/auth/callback?authActionId=1&type=magiclink&token_hash=${token}&locale=${locale}`),
+    )
+    expect(response.status).toBe(303)
+    expect(response.headers.get('location')).toBe(`${origin}${path}?type=patient-verification`)
+    expect(response.cookies.get('findmydoc_patient_verification')?.value).toBeTruthy()
+    expect(boundary.verify).not.toHaveBeenCalled()
+  })
+  test.each(['locale=fr', 'locale=en&locale=de'])('does not stage a malformed locale selector %s', async (query) => {
+    const response = await GET(
+      new NextRequest(`${origin}/auth/callback?authActionId=1&type=magiclink&token_hash=${token}&${query}`),
+    )
+    expect(response.status).toBe(303)
+    expect(response.cookies.get('findmydoc_patient_verification')?.value).toBe('')
+    expect(boundary.verify).not.toHaveBeenCalled()
+  })
   test('confirms the intended subject, provisions once, and uses the fixed inquiry destination', async () => {
     const context = await staged()
     const response = await submit(context)

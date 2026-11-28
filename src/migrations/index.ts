@@ -118,6 +118,7 @@ import * as migration_20261126_134943_localize_category_titles from './20261126_
 import * as migration_20261127_130352_stage_mcp_clinic_onboarding from './20261127_130352_stage_mcp_clinic_onboarding'
 import * as migration_20261127_132120_blog_editorial_upload from './20261127_132120_blog_editorial_upload'
 import * as migration_20261127_132530_clinic_onboarding_decision_grant from './20261127_132530_clinic_onboarding_decision_grant'
+import * as migration_20261128_143007_patient_auth_action_locale from './20261128_143007_patient_auth_action_locale'
 
 export const migrations = [
   {
@@ -719,5 +720,10 @@ export const migrations = [
     up: migration_20261127_132530_clinic_onboarding_decision_grant.up,
     down: migration_20261127_132530_clinic_onboarding_decision_grant.down,
     name: '20261127_132530_clinic_onboarding_decision_grant',
+  },
+  {
+    up: migration_20261128_143007_patient_auth_action_locale.up,
+    down: migration_20261128_143007_patient_auth_action_locale.down,
+    name: '20261128_143007_patient_auth_action_locale',
   },
 ]

@@ -140,15 +140,21 @@ describe('AuthActions private Local API lifecycle contract', () => {
     hooks.push(synchronize)
     try {
       const contenders = await Promise.all([reserve(), reserve()])
-      const results = await Promise.all(contenders.map((system) => system.reservePatientVerification({ email })))
+      const locales = ['de', 'en'] as const
+      const results = await Promise.all(
+        contenders.map((system, index) => system.reservePatientVerification({ email, locale: locales[index] })),
+      )
       for (const action of results) actionIDs.add(action.id)
       expect(results[0]!.id).toBe(results[1]!.id)
+      expect(locales).toContain(results[0]!.locale)
+      expect(results[1]!.locale).toBe(results[0]!.locale)
       const system = await reserve()
       const action = results[0]!
       now += 300000
       const resent = await system.reservePatientVerification({ email, resendOf: action.id })
       actionIDs.add(resent.id)
       expect(await system.read(action.id)).toMatchObject({ state: 'superseded' })
+      expect((await system.read(resent.id))?.locale).toBe(action.locale)
       now = start + 86400000
       await system.sweep()
       expect(await system.read(action.id)).toMatchObject({ correlationDigest: null, correlationKeyVersion: null })

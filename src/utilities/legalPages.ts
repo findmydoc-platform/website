@@ -48,3 +48,8 @@ export function getManagedLegalPageSpec(slug: unknown): ManagedLegalPageSpec | n
   if (!isManagedLegalPageSlug(slug)) return null
   return MANAGED_LEGAL_PAGE_SPECS.find((spec) => spec.slug === slug) ?? null
 }
+
+export function getManagedLegalPageSlugFromPath(pathname: string): ManagedLegalPageSlug | null {
+  const slug = pathname.replace(/^\/(?:en\/)?/, '').replace(/\/$/, '')
+  return isManagedLegalPageSlug(slug) ? slug : null
+}

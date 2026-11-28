@@ -1,5 +1,6 @@
 import React from 'react'
 
+import { getHoldingLegalLinks } from '@/app/(frontend)/_data/holdingLegalLinks'
 import { FrontendChrome } from '@/app/(frontend)/FrontendChrome.client'
 import { extractSupabaseUserData } from '@/auth/utilities/jwtValidation'
 import type { AuthData } from '@/auth/types/authTypes'
@@ -14,9 +15,15 @@ import { PreviewDataNotice } from '@/components/templates/PreviewDataNotice/Comp
 import { languageSwitcherCopy } from '@/features/languageSwitch/copy'
 import { HeaderLanguageSwitcher } from '@/features/languageSwitch/HeaderLanguageSwitcher.client'
 import { isNonProductionRuntime } from '@/features/runtimePolicy'
-import { projectHoldingFooterGroups, projectHoldingHeaderNavItems } from '@/features/temporaryLandingMode/navigation'
+import {
+  getHoldingLegalLinkLocale,
+  projectHoldingFooterGroups,
+  projectHoldingHeaderNavItems,
+} from '@/features/temporaryLandingMode/navigation'
 import { readHoldingViewRequestHeader, readPublicSiteModeRequestHeader } from '@/features/temporaryLandingMode'
 import { resolveHoldingMode } from '@/features/temporaryLandingMode/resolver'
+import { PATIENT_LOGIN_PATH, PATIENT_LOGOUT_PATH, localizedPatientAuthPath } from '@/i18n/patientAuthPath'
+import { FRONTEND_PATH_HEADER, UI_COPY_LOCALE_HEADER, type UiCopyLocale } from '@/i18n/requestLocale'
 import { DEFAULT_CONTENT_LOCALE } from '@/utilities/contentLocalization'
 import { getCachedGlobal } from '@/utilities/getGlobals'
 import { getServerSideURL } from '@/utilities/getURL'
@@ -28,7 +35,6 @@ const LIVE_PATIENT_ACCOUNT_MENU_LINKS: Partial<PublicAccountMenuLinks> = {
   dashboard: '/patient/inquiries',
   favorites: '/patient/favorites',
   profile: null,
-  signOut: '/logout',
 }
 
 const DEFAULT_ACCOUNT_MENU_STATE: PublicAccountMenuState = { kind: 'guest' }
@@ -80,14 +86,26 @@ export default async function FrontendTemplate({ children }: { children: React.R
   const normalizedHeaderNavItems = showSiteChrome
     ? normalizeHeaderNavItems((await getCachedGlobal('header', 1)()) as HeaderType)
     : []
+  const legalLinks =
+    isHoldingPublicView && showSiteChrome
+      ? await getHoldingLegalLinks(getHoldingLegalLinkLocale(requestHeaders.get(FRONTEND_PATH_HEADER) ?? '/'))
+      : undefined
   const footerGroups = isHoldingPublicView
-    ? projectHoldingFooterGroups(normalizedFooterGroups, siteOrigin)
+    ? projectHoldingFooterGroups(normalizedFooterGroups, siteOrigin, legalLinks)
     : normalizedFooterGroups
   const headerNavItems = isHoldingPublicView
-    ? projectHoldingHeaderNavItems(normalizedHeaderNavItems, siteOrigin)
+    ? projectHoldingHeaderNavItems(normalizedHeaderNavItems, siteOrigin, legalLinks)
     : normalizedHeaderNavItems
   const accountMenuState =
     showSiteChrome && !isHoldingPublicView ? resolvePublicAccountMenuState(authData) : DEFAULT_ACCOUNT_MENU_STATE
+  const requestPath = requestHeaders.get(FRONTEND_PATH_HEADER)
+  const requestLocale = requestHeaders.get(UI_COPY_LOCALE_HEADER)
+  const accountLocale: UiCopyLocale =
+    requestLocale === 'de' || requestLocale === 'en'
+      ? requestLocale
+      : requestPath === '/en' || requestPath?.startsWith('/en/')
+        ? 'en'
+        : 'de'
 
   return (
     <>
@@ -102,7 +120,14 @@ export default async function FrontendTemplate({ children }: { children: React.R
               logoSrc={headerLogoSrc}
               rightActions={
                 isHoldingPublicView ? null : (
-                  <PublicAccountMenu links={LIVE_PATIENT_ACCOUNT_MENU_LINKS} state={accountMenuState} />
+                  <PublicAccountMenu
+                    links={{
+                      ...LIVE_PATIENT_ACCOUNT_MENU_LINKS,
+                      login: localizedPatientAuthPath(PATIENT_LOGIN_PATH, accountLocale),
+                      signOut: localizedPatientAuthPath(PATIENT_LOGOUT_PATH, accountLocale),
+                    }}
+                    state={accountMenuState}
+                  />
                 )
               }
               showPreviewBadge={showPreviewBadge}

@@ -375,6 +375,19 @@ describe('public site mode proxy', () => {
     }
   })
 
+  it.each(['/en/imprint', '/en/privacy-policy'])(
+    'routes %s to its Holding page with indexing disabled',
+    async (pathname) => {
+      mockHoldingMode('holding')
+      const response = await proxy(new NextRequest(`https://findmydoc.eu${pathname}`))
+
+      expect(response.status).toBe(200)
+      expect(response.headers.get(`x-middleware-request-${HOLDING_VIEW_REQUEST_HEADER}`)).toBe('standalone')
+      expect(response.headers.get(`x-middleware-request-${SEARCH_INDEXING_REQUEST_HEADER}`)).toBe('noindex')
+      expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
+    },
+  )
+
   it('allows platform users to bypass temporary landing mode', async () => {
     mockHoldingMode('holding')
     mocks.getUser.mockResolvedValue({

@@ -1,3 +1,5 @@
+import { getTaxonomyDisplayName } from '@/features/listingComparison/taxonomy'
+import type { UiCopyLocale } from '@/i18n/requestLocale'
 import type { Clinic } from '@/payload-types'
 import { slugify } from '@/utilities/slugify'
 import { LISTING_COMPARISON_PRICE_MIN_DEFAULT } from '@/utilities/listingComparison/queryState'
@@ -165,27 +167,21 @@ export function buildTreatmentFacetOptions({
       value: String(treatment.id),
       label: treatment.name,
       plainLabel: treatment.name,
+      searchLabels: treatment.searchLabels,
       specialtyValue: treatment.medicalSpecialtyId ? String(treatment.medicalSpecialtyId) : null,
     })),
-  )
-    .map((option) => {
-      const count = treatmentCountsByValue.get(option.value) ?? 0
-      const isSelected = selectedTreatmentValueSet.has(option.value)
-      return {
-        value: option.value,
-        label: `${option.label} (${count})`,
-        plainLabel: option.plainLabel,
-        disabled: count === 0 && !isSelected,
-        specialtyValue: option.specialtyValue,
-      }
-    })
-    .map(({ value, label, plainLabel, disabled, specialtyValue }) => ({
-      value,
-      label,
-      plainLabel,
-      disabled,
-      specialtyValue,
-    }))
+  ).map((option) => {
+    const count = treatmentCountsByValue.get(option.value) ?? 0
+    const isSelected = selectedTreatmentValueSet.has(option.value)
+    return {
+      value: option.value,
+      label: `${option.label} (${count})`,
+      plainLabel: option.plainLabel,
+      searchLabels: option.searchLabels,
+      disabled: count === 0 && !isSelected,
+      specialtyValue: option.specialtyValue,
+    }
+  })
 
   treatmentOptions.forEach((option) => {
     if (!option.specialtyValue) return
@@ -195,6 +191,7 @@ export function buildTreatmentFacetOptions({
       value: option.value,
       label: option.label,
       plainLabel: option.plainLabel,
+      ...(option.searchLabels ? { searchLabels: option.searchLabels } : {}),
       disabled: option.disabled,
     })
     optionsBySpecialtyValue.set(option.specialtyValue, siblingOptions)
@@ -228,11 +225,14 @@ export function buildTreatmentFacetOptions({
   return orderedGroups
 }
 
-export function toCityMetaFromDocs(cityDocs: Array<{ id: number; name: string }>): CityMeta[] {
+export function toCityMetaFromDocs(
+  cityDocs: Array<{ id: number; name: string; displayName?: unknown }>,
+  locale?: UiCopyLocale,
+): CityMeta[] {
   return cityDocs
     .map((city) => ({
       id: city.id,
-      name: city.name,
+      name: locale ? getTaxonomyDisplayName(city, locale) : city.name,
       slug: slugify(city.name),
     }))
     .filter((city) => city.name.trim().length > 0)

@@ -16,6 +16,7 @@ export type SpecialtyFilterOption = FilterOption & {
 
 export type TreatmentFilterOption = FilterOption & {
   plainLabel: string
+  searchLabels?: string[]
 }
 
 export type TreatmentFilterGroup = {
@@ -69,6 +70,8 @@ export type CityMeta = {
 export type TreatmentMeta = {
   id: number
   name: string
+  searchLabels?: string[]
+  displayName?: unknown
   slug: string
   medicalSpecialtyId: number | null
 }
@@ -76,6 +79,7 @@ export type TreatmentMeta = {
 export type SpecialtyMeta = {
   id: number
   name: string
+  displayName?: unknown
   slug: string
   parentId: number | null
 }

@@ -6,6 +6,7 @@ import { cn } from '@/utilities/ui'
 
 type ListingFiltersJumpBarProps = {
   targetId: string
+  label?: string
 }
 
 type BarPlacement = {
@@ -17,7 +18,7 @@ const VIEWPORT_MARGIN_PX = 16
 const VISIBILITY_DELAY_MS = 180
 const LARGE_VIEWPORT_QUERY = '(min-width: 1024px)'
 
-export function ListingFiltersJumpBar({ targetId }: ListingFiltersJumpBarProps) {
+export function ListingFiltersJumpBar({ targetId, label = 'Jump to Filter' }: ListingFiltersJumpBarProps) {
   const [isLargeViewport, setIsLargeViewport] = React.useState(false)
   const [isTargetVisible, setIsTargetVisible] = React.useState(true)
   const [isDelayedVisible, setIsDelayedVisible] = React.useState(false)
@@ -116,6 +117,7 @@ export function ListingFiltersJumpBar({ targetId }: ListingFiltersJumpBarProps) 
         'fixed top-4 right-auto z-40 hidden transition-all duration-200 ease-out lg:block',
         isDelayedVisible ? 'translate-y-0 opacity-100' : 'pointer-events-none -translate-y-2 opacity-0',
       )}
+      aria-hidden={!isDelayedVisible}
       style={{
         left: `${placement.left}px`,
         width: `${placement.width}px`,
@@ -124,6 +126,7 @@ export function ListingFiltersJumpBar({ targetId }: ListingFiltersJumpBarProps) 
       <div className="rounded-2xl border border-border bg-background p-2 shadow-sm">
         <Button
           type="button"
+          tabIndex={isDelayedVisible ? 0 : -1}
           variant="primary"
           size="sm"
           className="w-full justify-center"
@@ -133,7 +136,7 @@ export function ListingFiltersJumpBar({ targetId }: ListingFiltersJumpBarProps) 
             target?.scrollIntoView({ behavior: 'smooth', block: 'start' })
           }}
         >
-          Jump to Filter
+          {label}
         </Button>
       </div>
     </div>

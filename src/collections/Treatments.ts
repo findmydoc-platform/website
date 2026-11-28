@@ -11,6 +11,7 @@ export const Treatments: CollectionConfig<'treatments'> = {
   // via relationship fields or join results.
   defaultPopulate: {
     name: true,
+    displayName: true,
     averagePrice: true,
     averageRating: true,
     medicalSpecialty: true,
@@ -48,6 +49,14 @@ export const Treatments: CollectionConfig<'treatments'> = {
               required: true,
               admin: {
                 description: 'Treatment name shown to patients',
+              },
+            },
+            {
+              name: 'displayName',
+              type: 'text',
+              localized: true,
+              admin: {
+                description: 'Patient-facing label in the selected language',
               },
             },
             {

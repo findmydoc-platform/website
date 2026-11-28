@@ -48,6 +48,8 @@ export async function findAllCities(payload: Payload): Promise<City[]> {
     const result = await payload.find({
       collection: 'cities',
       depth: 0,
+      locale: 'all',
+      fallbackLocale: false,
       page,
       limit: QUERY_PAGE_SIZE,
       pagination: true,
@@ -55,6 +57,8 @@ export async function findAllCities(payload: Payload): Promise<City[]> {
       select: {
         id: true,
         name: true,
+        displayName: true,
+        updatedAt: true,
       },
     })
 
@@ -70,6 +74,8 @@ export async function findAllTreatments(payload: Payload): Promise<Treatment[]> 
     const result = await payload.find({
       collection: 'treatments',
       depth: 0,
+      locale: 'all',
+      fallbackLocale: false,
       page,
       limit: QUERY_PAGE_SIZE,
       pagination: true,
@@ -77,6 +83,8 @@ export async function findAllTreatments(payload: Payload): Promise<Treatment[]> 
       select: {
         id: true,
         name: true,
+        displayName: true,
+        updatedAt: true,
         medicalSpecialty: true,
       },
     })
@@ -93,6 +101,8 @@ export async function findAllSpecialties(payload: Payload): Promise<MedicalSpeci
     const result = await payload.find({
       collection: 'medical-specialties',
       depth: 0,
+      locale: 'all',
+      fallbackLocale: false,
       page,
       limit: QUERY_PAGE_SIZE,
       pagination: true,
@@ -100,6 +110,8 @@ export async function findAllSpecialties(payload: Payload): Promise<MedicalSpeci
       select: {
         id: true,
         name: true,
+        displayName: true,
+        updatedAt: true,
         parentSpecialty: true,
       },
     })

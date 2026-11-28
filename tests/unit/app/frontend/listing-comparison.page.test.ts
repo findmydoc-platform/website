@@ -139,11 +139,7 @@ describe('listing comparison page route metadata', () => {
       pageModule.generateMetadata({
         searchParams: Promise.resolve({}),
       }),
-    ).resolves.toEqual({
-      alternates: {
-        canonical: '/listing-comparison',
-      },
-    })
+    ).resolves.toMatchObject({ title: 'Klinikpreise vergleichen' })
   })
 
   it('canonicalizes query variants and marks them noindex, follow', async () => {
@@ -155,7 +151,7 @@ describe('listing comparison page route metadata', () => {
           city: 'berlin',
         }),
       }),
-    ).resolves.toEqual({
+    ).resolves.toMatchObject({
       alternates: {
         canonical: '/listing-comparison',
       },
@@ -166,15 +162,26 @@ describe('listing comparison page route metadata', () => {
     })
   })
 
-  it('keeps the English comparison out of discovery during the copy rollout', async () => {
-    const pageModule = await import('@/app/(frontend)/en/listing-comparison/page')
+  it.each([
+    ['/listing-comparison', () => import('@/app/(frontend)/listing-comparison/page')],
+    ['/en/listing-comparison', () => import('@/app/(frontend)/en/listing-comparison/page')],
+  ] as const)('publishes reciprocal discovery metadata for %s', async (canonical, loadPage) => {
+    const { generateMetadata } = await loadPage()
 
-    for (const searchParams of [{}, { city: 'berlin' }]) {
-      await expect(pageModule.generateMetadata({ searchParams: Promise.resolve(searchParams) })).resolves.toEqual({
-        alternates: { canonical: '/en/listing-comparison' },
-        robots: { index: false, follow: true },
-      })
-    }
+    const metadata = await generateMetadata({ searchParams: Promise.resolve({}) })
+    expect(metadata.robots).toBeUndefined()
+    expect(metadata.alternates).toEqual({
+      canonical,
+      languages: {
+        de: '/listing-comparison',
+        en: '/en/listing-comparison',
+        'x-default': '/listing-comparison',
+      },
+    })
+
+    const variant = await generateMetadata({ searchParams: Promise.resolve({ city: 'berlin', sort: 'price-asc' }) })
+    expect(variant.alternates).toEqual({ canonical })
+    expect(variant.robots).toEqual({ index: false, follow: true })
   })
 
   it('renders canonical listing comparison JSON-LD from listing server data', async () => {
@@ -188,6 +195,8 @@ describe('listing comparison page route metadata', () => {
         { label: 'Home', href: '/' },
         { label: 'Clinics', href: '/listing-comparison' },
       ],
+      canonicalPath: '/listing-comparison',
+      listName: 'Klinikpreise vergleichen',
       clinics: [],
       isCanonicalRoute: true,
     })

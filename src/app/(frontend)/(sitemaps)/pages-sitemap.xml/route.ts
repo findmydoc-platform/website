@@ -1,4 +1,5 @@
 import { BLOG_ARCHIVE_PATHS } from '@/i18n/blogArchivePath'
+import { LISTING_COMPARISON_PATHS, listingComparisonLocaleFromPath } from '@/i18n/listingComparisonPath'
 import { CONTACT_PATHS } from '@/i18n/contactPath'
 import { getServerSideSitemap } from 'next-sitemap'
 import { getPayload } from 'payload'
@@ -18,7 +19,7 @@ const fixedPublicPaths = [
   ...Object.values(BLOG_ARCHIVE_PATHS),
   ...Object.values(CONTACT_PATHS),
   '/about',
-  '/listing-comparison',
+  ...Object.values(LISTING_COMPARISON_PATHS),
 ] as const
 const excludedPublicPaths = new Set(['/search'])
 
@@ -62,7 +63,7 @@ const getPagesSitemap = unstable_cache(
     for (const path of fixedPublicPaths) {
       sitemapByPath.set(path, {
         loc: buildSitemapLocation(SITE_URL, path),
-        ...(path === '/listing-comparison' && listingComparisonData.freshness.updatedAt
+        ...(listingComparisonLocaleFromPath(path) && listingComparisonData.freshness.updatedAt
           ? { lastmod: listingComparisonData.freshness.updatedAt }
           : {}),
       })

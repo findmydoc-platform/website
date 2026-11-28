@@ -147,6 +147,7 @@ describe('frontend sitemap routes', () => {
         'https://findmydoc.eu/en/contact',
         'https://findmydoc.eu/about',
         'https://findmydoc.eu/listing-comparison',
+        'https://findmydoc.eu/en/listing-comparison',
       ]),
     )
     expect(locs).not.toContain('https://findmydoc.eu/search')

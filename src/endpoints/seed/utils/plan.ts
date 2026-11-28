@@ -46,6 +46,7 @@ export const baselinePlan: SeedPlanStep[] = [
     name: 'cities',
     collection: 'cities',
     fileName: 'cities',
+    localizedFields: ['displayName'],
     mapping: [
       {
         sourceField: 'countryStableId',
@@ -60,6 +61,7 @@ export const baselinePlan: SeedPlanStep[] = [
     name: 'medical-specialties',
     collection: 'medical-specialties',
     fileName: 'medicalSpecialties',
+    localizedFields: ['displayName'],
     mapping: [
       {
         sourceField: 'parentSpecialtyStableId',
@@ -73,6 +75,7 @@ export const baselinePlan: SeedPlanStep[] = [
     name: 'medical-specialties-feature-images',
     collection: 'medical-specialties',
     fileName: 'medicalSpecialties',
+    localizedFields: ['displayName'],
     mapping: [
       {
         sourceField: 'featureImageStableId',
@@ -90,6 +93,7 @@ export const baselinePlan: SeedPlanStep[] = [
     name: 'treatments',
     collection: 'treatments',
     fileName: 'treatments',
+    localizedFields: ['displayName'],
     mapping: [
       {
         sourceField: 'medicalSpecialtyStableId',

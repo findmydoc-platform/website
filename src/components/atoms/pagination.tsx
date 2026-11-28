@@ -45,16 +45,18 @@ const PaginationLink = ({ className, isActive, size = 'icon', ...props }: Pagina
   />
 )
 
-const PaginationPrevious = ({ className, ...props }: React.ComponentProps<typeof PaginationLink>) => (
+type PaginationDirectionProps = React.ComponentProps<typeof PaginationLink> & { label?: string }
+
+const PaginationPrevious = ({ className, label = 'Previous', ...props }: PaginationDirectionProps) => (
   <PaginationLink aria-label="Go to previous page" className={cn('gap-2 pl-2', className)} size="default" {...props}>
     <ChevronLeft className="h-4 w-4" />
-    <span className="hidden sm:inline">Previous</span>
+    <span className="hidden sm:inline">{label}</span>
   </PaginationLink>
 )
 
-const PaginationNext = ({ className, ...props }: React.ComponentProps<typeof PaginationLink>) => (
+const PaginationNext = ({ className, label = 'Next', ...props }: PaginationDirectionProps) => (
   <PaginationLink aria-label="Go to next page" className={cn('gap-2 pr-2', className)} size="default" {...props}>
-    <span className="hidden sm:inline">Next</span>
+    <span className="hidden sm:inline">{label}</span>
     <ChevronRight className="h-4 w-4" />
   </PaginationLink>
 )

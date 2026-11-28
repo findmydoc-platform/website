@@ -73,60 +73,149 @@ test.afterEach(() => {
   }
 })
 
-test('clinic registration persists a real application after funnel submit @smoke', async ({ page }) => {
-  const issues = createBrowserIssueCollector(page)
-  const prefix = `e2e-clinic-registration-${Date.now()}`
-  const clinicName = `${prefix} Clinic`
-  const clinicWebsite = `https://${prefix}.example.com`
-  const contactEmail = `${prefix}@example.com`
+const clinicApplicationLocales = [
+  {
+    locale: 'de',
+    path: '/register/clinic',
+    clinicName: 'Name der Klinik',
+    website: 'Website',
+    next: 'Weiter',
+    dental: 'Zahnmedizin',
+    firstName: 'Vorname',
+    lastName: 'Nachname',
+    email: 'E-Mail-Adresse',
+    role: 'Funktion',
+    management: 'Klinikleitung',
+    submit: 'Bewerbung absenden',
+    confirmation: 'Bewerbung eingegangen',
+  },
+  {
+    locale: 'en',
+    path: '/en/register/clinic',
+    clinicName: 'Clinic name',
+    website: 'Website',
+    next: 'Continue',
+    dental: 'Dental',
+    firstName: 'First name',
+    lastName: 'Last name',
+    email: 'Email address',
+    role: 'Role',
+    management: 'Clinic Management',
+    submit: 'Submit application',
+    confirmation: 'Application received',
+  },
+] as const
 
-  clinicRegistrationPrefixes.add(prefix)
+for (const variant of clinicApplicationLocales) {
+  test(`clinic application corrects a server validation error and persists the application in ${variant.locale} @smoke`, async ({
+    page,
+  }) => {
+    const issues = createBrowserIssueCollector(page, {
+      ignoredConsoleErrors: [
+        /Failed to load resource: the server responded with a status of 400 .*\/api\/auth\/register\/clinic/,
+      ],
+    })
+    const prefix = `e2e-clinic-registration-${variant.locale}-${Date.now()}`
+    const clinicName = `${prefix} Clinic`
+    const clinicWebsite = `https://${prefix}.example.com`
+    const contactEmail = `${prefix}@example.com`
 
-  await page.goto('/register/clinic', { waitUntil: 'domcontentloaded' })
-  await expect(page.locator('[data-clinic-registration-funnel-ready="true"]')).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'Register your clinic' })).toBeVisible()
+    clinicRegistrationPrefixes.add(prefix)
 
-  await page.getByLabel('Clinic name').fill(clinicName)
-  await page.getByLabel('Website').fill(clinicWebsite)
-  await page.getByRole('button', { name: 'Continue' }).click()
+    const response = await page.goto(variant.path, { waitUntil: 'domcontentloaded' })
+    expect(response?.ok()).toBe(true)
+    await expect(page.locator('html')).toHaveAttribute('lang', variant.locale)
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/)
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', new URL(variant.path, page.url()).href)
+    await expect(page.locator('[data-clinic-registration-funnel-ready="true"]')).toBeVisible()
 
-  await expect(page.getByRole('heading', { name: 'Choose focus areas' })).toBeVisible()
-  const dentalCategory = page.getByRole('button', { name: 'Dental' })
-  if ((await dentalCategory.getAttribute('aria-pressed')) !== 'true') {
-    await dentalCategory.click()
-  }
-  await page.getByRole('button', { name: 'Continue' }).click()
+    const website = page.getByLabel(variant.website, { exact: true })
+    await page.getByLabel(variant.clinicName).fill(clinicName)
+    await website.fill('https://invalid')
+    await page.getByRole('button', { name: variant.next }).click()
 
-  await expect(page.getByRole('heading', { name: 'Your contact' })).toBeVisible()
-  await page.getByLabel('First name').fill('Ada')
-  await page.getByLabel('Last name').fill('Lovelace')
-  await page.getByLabel('Email address').fill(contactEmail)
-  await page.getByLabel('Position / role').selectOption({ label: 'Clinic Management' })
-  await page.getByRole('button', { name: 'Submit request' }).click()
+    const dentalCategory = page.getByRole('button', { name: variant.dental, exact: true })
+    if ((await dentalCategory.getAttribute('aria-pressed')) === 'true') {
+      await dentalCategory.press('Enter')
+    }
+    await expect(dentalCategory).toHaveAttribute('aria-pressed', 'false')
+    await dentalCategory.press('Enter')
+    await expect(dentalCategory).toHaveAttribute('aria-pressed', 'true')
+    await page.getByRole('button', { name: variant.next }).click()
 
-  await expect(page.getByRole('heading', { name: 'Request submitted' })).toBeVisible()
-  await expect(page.getByText(clinicName)).toBeVisible()
-  await expect(page.getByText(contactEmail)).toBeVisible()
+    const firstName = page.getByLabel(variant.firstName, { exact: true })
+    const submit = page.getByRole('button', { name: variant.submit })
+    await submit.click()
+    await expect(firstName).toBeFocused()
+    await expect(firstName).toHaveAttribute('aria-invalid', 'true')
+    await expect(firstName).toHaveAccessibleDescription(/\S/)
+    await firstName.fill('Ada')
+    await page.getByLabel(variant.lastName, { exact: true }).fill('Lovelace')
+    await page.getByLabel(variant.email, { exact: true }).fill(contactEmail)
+    await page.getByLabel(variant.role, { exact: true }).selectOption({ label: variant.management })
 
-  const application = readClinicApplication(prefix, contactEmail)
-  expect(application).toMatchObject({
-    found: true,
-    clinicName,
-    clinicWebsite: new URL(clinicWebsite).toString(),
-    contactFirstName: 'Ada',
-    contactLastName: 'Lovelace',
-    contactEmail,
-    contactRole: 'Clinic Management',
-    status: 'submitted',
-    count: 1,
-    hasAdditionalNotes: false,
+    const waitForSubmission = (status: number) =>
+      page.waitForResponse(
+        (response) => response.url().endsWith('/api/auth/register/clinic') && response.status() === status,
+      )
+    await Promise.all([waitForSubmission(400), submit.click()])
+    await expect(website).toBeFocused()
+    await expect(website).toHaveAttribute('aria-invalid', 'true')
+    await expect(website).toHaveAccessibleDescription(/\S/)
+    await expect(page.getByLabel(variant.clinicName)).toHaveValue(clinicName)
+    for (const width of [320, 375, 640, 768, 1024]) {
+      await page.setViewportSize({ width, height: width === 375 ? 568 : 812 })
+      await expect(website).toBeVisible()
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width)
+      await page.screenshot({
+        path: test.info().outputPath(`clinic-application-${variant.locale}-${width}.png`),
+        fullPage: true,
+        style: 'nextjs-portal { visibility: hidden }',
+      })
+    }
+
+    await website.fill(clinicWebsite)
+    await expect(website).not.toHaveAttribute('aria-invalid', 'true')
+    await page.getByRole('button', { name: variant.next }).click()
+    await expect(dentalCategory).toHaveAttribute('aria-pressed', 'true')
+    await page.getByRole('button', { name: variant.next }).click()
+    await expect(firstName).toHaveValue('Ada')
+    await expect(page.getByLabel(variant.email, { exact: true })).toHaveValue(contactEmail)
+    await Promise.all([waitForSubmission(202), submit.click()])
+
+    const confirmation = page.getByRole('heading', { name: variant.confirmation, exact: true })
+    await expect(confirmation).toBeVisible()
+    await expect(confirmation).toBeFocused()
+    await expect(page.getByText(clinicName)).toBeVisible()
+    await expect(page.getByText(contactEmail)).toBeVisible()
+    await page.setViewportSize({ width: 375, height: 568 })
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375)
+    await page.screenshot({
+      path: test.info().outputPath(`clinic-application-${variant.locale}-confirmation.png`),
+      fullPage: true,
+      style: 'nextjs-portal { visibility: hidden }',
+    })
+
+    const application = readClinicApplication(prefix, contactEmail)
+    expect(application).toMatchObject({
+      found: true,
+      clinicName,
+      clinicWebsite: new URL(clinicWebsite).toString(),
+      contactFirstName: 'Ada',
+      contactLastName: 'Lovelace',
+      contactEmail,
+      contactRole: 'Clinic Management',
+      status: 'submitted',
+      count: 1,
+      hasAdditionalNotes: false,
+    })
+    expect(application.medicalSpecialties.length).toBeGreaterThan(0)
+    expectValidIsoDate(application.createdAt)
+    expectValidIsoDate(application.privacyNotice?.acknowledgedAt)
+    expect(application.privacyNotice?.url).toBe('/privacy-policy')
+    await expectNoBrowserIssues(issues)
   })
-  expect(application.medicalSpecialties.length).toBeGreaterThan(0)
-  expectValidIsoDate(application.createdAt)
-  expectValidIsoDate(application.privacyNotice?.acknowledgedAt)
-  expect(application.privacyNotice?.url).toBe('/privacy-policy')
-  await expectNoBrowserIssues(issues)
-})
+}
 
 const patientRegistrationLocales = [
   {

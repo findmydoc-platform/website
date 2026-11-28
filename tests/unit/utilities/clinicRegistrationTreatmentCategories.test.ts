@@ -15,7 +15,7 @@ describe('getClinicRegistrationTreatmentCategories', () => {
       }),
     } as unknown as Payload
 
-    await expect(getClinicRegistrationTreatmentCategories(payload)).resolves.toEqual([
+    await expect(getClinicRegistrationTreatmentCategories(payload, 'en')).resolves.toEqual([
       { id: '1', label: 'Dental', iconKey: 'dental' },
       { id: '5', label: 'Plastic Surgery', iconKey: 'plastic-surgery' },
     ])
@@ -25,6 +25,26 @@ describe('getClinicRegistrationTreatmentCategories', () => {
         select: expect.objectContaining({ iconKey: true }),
       }),
     )
+  })
+
+  test('uses the requested display name without changing which taxonomy IDs can be submitted', async () => {
+    const payload = {
+      find: vi.fn().mockResolvedValue({
+        docs: [
+          { id: 1, name: 'Dental', displayName: { de: 'Zahnmedizin', en: 'Dental care' }, iconKey: 'dental' },
+          { id: 2, name: 'Other', iconKey: 'invalid' },
+        ],
+      }),
+    } as unknown as Payload
+
+    await expect(getClinicRegistrationTreatmentCategories(payload, 'de')).resolves.toEqual([
+      { id: '1', label: 'Zahnmedizin', iconKey: 'dental' },
+      { id: '2', label: 'Other', iconKey: 'fallback' },
+    ])
+    await expect(getClinicRegistrationTreatmentCategories(payload, 'en')).resolves.toEqual([
+      { id: '1', label: 'Dental care', iconKey: 'dental' },
+      { id: '2', label: 'Other', iconKey: 'fallback' },
+    ])
   })
 
   test('uses the fallback icon for missing or invalid icon keys', async () => {
@@ -37,7 +57,7 @@ describe('getClinicRegistrationTreatmentCategories', () => {
       }),
     } as unknown as Payload
 
-    await expect(getClinicRegistrationTreatmentCategories(payload)).resolves.toEqual([
+    await expect(getClinicRegistrationTreatmentCategories(payload, 'en')).resolves.toEqual([
       { id: '8', label: 'Legacy Specialty', iconKey: 'fallback' },
       { id: '7', label: 'Unknown Specialty', iconKey: 'fallback' },
     ])

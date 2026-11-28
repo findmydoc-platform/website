@@ -1,7 +1,17 @@
+import type { ReactNode } from 'react'
+
 import { cn } from '@/utilities/ui'
 import type { ClinicRegistrationFunnelVariant } from '../types'
 
-export function ContactNotice({ id, variant = 'default' }: { id: string; variant?: ClinicRegistrationFunnelVariant }) {
+export function ContactNotice({
+  children,
+  id,
+  variant = 'default',
+}: {
+  children: ReactNode
+  id: string
+  variant?: ClinicRegistrationFunnelVariant
+}) {
   const isLanding = variant === 'landing'
 
   return (
@@ -14,7 +24,7 @@ export function ContactNotice({ id, variant = 'default' }: { id: string; variant
       )}
       id={id}
     >
-      We use your details to contact you about this clinic registration based on legitimate interest.
+      {children}
     </p>
   )
 }

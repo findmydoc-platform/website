@@ -6,10 +6,14 @@ import { cn } from '@/utilities/ui'
 import type { ClinicRegistrationFunnelVariant } from '../types'
 
 export function ReviewConfirmationStep({
+  description,
   headingRef,
+  title,
   variant = 'default',
 }: {
+  description: string
   headingRef: React.Ref<HTMLHeadingElement>
+  title: string
   variant?: ClinicRegistrationFunnelVariant
 }) {
   const isLanding = variant === 'landing'
@@ -37,11 +41,9 @@ export function ReviewConfirmationStep({
         size="h3"
         tabIndex={-1}
       >
-        Request submitted
+        {title}
       </Heading>
-      <p className="mt-4 max-w-[430px] text-lg leading-relaxed text-card-foreground/70">
-        Your request has been submitted. We will contact you once the review is complete.
-      </p>
+      <p className="mt-4 max-w-[430px] text-lg leading-relaxed text-card-foreground/70">{description}</p>
     </div>
   )
 }

@@ -1,12 +1,13 @@
 import * as React from 'react'
 import { ChevronDown, CircleAlert } from 'lucide-react'
 
+import type { ClinicApplicationCopy } from '@/features/uiCopy/clinicApplication'
 import { Alert, AlertDescription } from '@/components/atoms/alert'
 import { Field, FieldError } from '@/components/atoms/field'
 import { Heading } from '@/components/atoms/Heading'
 import { Label } from '@/components/atoms/label'
 import { cn } from '@/utilities/ui'
-import { contactRoleOptions, formContentClassName } from '../constants'
+import { formContentClassName } from '../constants'
 import type {
   ClinicRegistrationFormValues,
   ClinicRegistrationFunnelVariant,
@@ -18,22 +19,30 @@ import { StepActions } from '../components/StepActions'
 import { StepForm } from '../components/StepForm'
 
 export function ContactStep({
+  backLabel,
+  copy,
   formValues,
   headingRef,
   isSubmitting = false,
   onBack,
   onSubmit,
   onValueChange,
+  pendingStatus,
+  submitLabel,
   submitError,
   validation,
   variant = 'default',
 }: {
+  backLabel: string
+  copy: ClinicApplicationCopy['contact']
   formValues: ClinicRegistrationFormValues
   headingRef: React.Ref<HTMLHeadingElement>
   isSubmitting?: boolean
   onBack: () => void
   onSubmit: () => Promise<void> | void
   onValueChange: (fieldName: keyof ClinicRegistrationFormValues, value: string) => void
+  pendingStatus: string
+  submitLabel: string
   submitError?: string | null
   validation: PublicFormValidationController
   variant?: ClinicRegistrationFunnelVariant
@@ -58,10 +67,10 @@ export function ContactStep({
           size="h3"
           tabIndex={-1}
         >
-          Your contact
+          {copy.title}
         </Heading>
         <p className={cn('mt-3 text-base', isLanding ? 'leading-7 text-slate-700' : 'text-card-foreground/70')}>
-          Who should we contact for follow-up questions?
+          {copy.description}
         </p>
 
         <div className="mt-8 grid gap-5 sm:mt-10 sm:gap-6 lg:mt-12">
@@ -69,10 +78,10 @@ export function ContactStep({
             <RegistrationField
               descriptionId={noticeId}
               id={`${idBase}-contact-first-name`}
-              label="First name"
+              disabled={isSubmitting}
+              label={copy.firstName}
               name="contactFirstName"
               onValueChange={(value) => onValueChange('contactFirstName', value)}
-              placeholder="e.g. Ada"
               required
               validation={validation}
               value={formValues.contactFirstName}
@@ -81,10 +90,10 @@ export function ContactStep({
             <RegistrationField
               descriptionId={noticeId}
               id={`${idBase}-contact-last-name`}
-              label="Last name"
+              disabled={isSubmitting}
+              label={copy.lastName}
               name="contactLastName"
               onValueChange={(value) => onValueChange('contactLastName', value)}
-              placeholder="e.g. Lovelace"
               required
               validation={validation}
               value={formValues.contactLastName}
@@ -94,7 +103,8 @@ export function ContactStep({
           <RegistrationField
             descriptionId={noticeId}
             id={`${idBase}-contact-email`}
-            label="Email address"
+            disabled={isSubmitting}
+            label={copy.email}
             name="contactEmail"
             onValueChange={(value) => onValueChange('contactEmail', value)}
             placeholder="name@example-clinic.com"
@@ -112,7 +122,7 @@ export function ContactStep({
               )}
               htmlFor={positionId}
             >
-              Position / role
+              {copy.role}
             </Label>
             <div className="relative">
               <select
@@ -123,6 +133,7 @@ export function ContactStep({
                     ? 'rounded-2xl border-slate-200 bg-white/95 focus-visible:border-secondary/40 focus-visible:ring-accent/70'
                     : 'rounded-[8px] border-slate-300 bg-[#fbfcff] focus-visible:ring-primary',
                 )}
+                disabled={isSubmitting}
                 id={positionId}
                 name="contactRole"
                 onChange={(event) => {
@@ -133,11 +144,11 @@ export function ContactStep({
                 value={formValues.contactRole}
               >
                 <option disabled value="">
-                  Please select
+                  {copy.rolePrompt}
                 </option>
-                {contactRoleOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
+                {Object.entries(copy.roleLabels).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
                   </option>
                 ))}
               </select>
@@ -157,7 +168,9 @@ export function ContactStep({
               <FieldError id={positionErrorId}>{positionError}</FieldError>
             )}
           </Field>
-          <ContactNotice id={noticeId} variant={variant} />
+          <ContactNotice id={noticeId} variant={variant}>
+            {copy.privacy}
+          </ContactNotice>
           {submitError ? (
             <Alert className={cn(isLanding && 'rounded-2xl')} variant="error">
               <CircleAlert aria-hidden="true" className="size-4" />
@@ -165,14 +178,15 @@ export function ContactStep({
             </Alert>
           ) : null}
           <p aria-live="polite" className="sr-only" role="status">
-            {isSubmitting ? 'Submitting your clinic registration.' : ''}
+            {isSubmitting ? pendingStatus : ''}
           </p>
         </div>
       </div>
       <StepActions
+        backLabel={backLabel}
         disabled={isSubmitting}
         onBack={onBack}
-        primaryLabel={isSubmitting ? 'Submitting...' : 'Submit request'}
+        primaryLabel={submitLabel}
         primaryType="submit"
         variant={variant}
       />

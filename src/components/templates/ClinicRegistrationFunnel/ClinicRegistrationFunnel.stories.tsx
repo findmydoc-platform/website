@@ -1,10 +1,13 @@
+import englishMessages from '@findmydoc-platform/ui-copy/en.json'
+import { createTranslator } from 'next-intl'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
 
 import { ClinicRegistrationFunnel } from '@/components/templates/ClinicRegistrationFunnel'
 import type { ClinicRegistrationFunnelProps } from '@/components/templates/ClinicRegistrationFunnel'
+import { buildClinicApplicationCopy } from '@/features/uiCopy/clinicApplication'
 import { cn } from '@/utilities/ui'
-import { withViewportStory } from '../utils/viewportMatrix'
+import { withViewportStory } from '@/stories/utils/viewportMatrix'
 
 const getStoryRemountKey = (args: ClinicRegistrationFunnelProps) =>
   JSON.stringify({
@@ -19,6 +22,13 @@ const getStoryRemountKey = (args: ClinicRegistrationFunnelProps) =>
 const meta = {
   title: 'Domain/ClinicRegistration/Templates/Clinic Registration Funnel',
   component: ClinicRegistrationFunnel,
+  args: {
+    copy: buildClinicApplicationCopy(
+      createTranslator({ locale: 'en', messages: englishMessages, namespace: 'website.clinicApplication' }),
+    ),
+    locale: 'en',
+    onSubmit: async () => undefined,
+  },
   decorators: [
     (Story, context) => (
       <div
@@ -79,7 +89,7 @@ const landingStoryArgs = {
   ...defaultStoryArgs,
   reviewSummary: landingStoryReviewSummary,
   variant: 'landing',
-} satisfies ClinicRegistrationFunnelProps
+} satisfies Partial<ClinicRegistrationFunnelProps>
 
 export const Step1ClinicDetails: Story = {
   args: {
@@ -112,8 +122,8 @@ export const Step1ValidationErrors: Story = {
 
     await userEvent.click(canvas.getByRole('button', { name: /^continue$/i }))
 
-    await expect(canvas.getByText('Please enter the clinic name.')).toBeInTheDocument()
-    await expect(canvas.getByText('Please enter the website.')).toBeInTheDocument()
+    await expect(canvas.getByLabelText('Clinic name')).toHaveAccessibleDescription(/\S/)
+    await expect(canvas.getByLabelText('Website')).toHaveAttribute('aria-invalid', 'true')
     await expect(canvas.getByLabelText('Clinic name')).toHaveAttribute('aria-invalid', 'true')
     await expect(canvas.getByLabelText('Clinic name')).toHaveFocus()
   },
@@ -130,8 +140,8 @@ export const Step2ValidationErrors: Story = {
 
     await userEvent.click(canvas.getByRole('button', { name: /^continue$/i }))
 
-    await expect(canvas.getByText('Please select at least one focus area.')).toBeInTheDocument()
-    await expect(canvas.getByRole('group', { name: /select treatment categories/i })).toHaveFocus()
+    await expect(canvas.getByRole('group', { name: 'Medical specialties' })).toHaveAttribute('aria-invalid', 'true')
+    await expect(canvas.getByRole('group', { name: 'Medical specialties' })).toHaveFocus()
   },
 }
 
@@ -143,12 +153,11 @@ export const Step3ValidationErrors: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
-    await userEvent.click(canvas.getByRole('button', { name: /^submit request$/i }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Submit application' }))
 
-    await expect(canvas.getByText('Please enter the first name.')).toBeInTheDocument()
-    await expect(canvas.getByText('Please enter the last name.')).toBeInTheDocument()
-    await expect(canvas.getByText('Please enter the email address.')).toBeInTheDocument()
-    await expect(canvas.getByText('Please select a position.')).toBeInTheDocument()
+    for (const field of ['First name', 'Last name', 'Email address', 'Role']) {
+      await expect(canvas.getByLabelText(field, { exact: true })).toHaveAttribute('aria-invalid', 'true')
+    }
     await expect(canvas.getByLabelText('First name')).toHaveFocus()
   },
 }
@@ -166,16 +175,16 @@ export const Step3ServerError: Story = {
       contactRole: 'Clinic Management',
     },
     onSubmit: async () => {
-      throw new Error('Clinic registration failed')
+      throw new Error('Synthetic provider failure')
     },
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
-    await userEvent.click(canvas.getByRole('button', { name: /^submit request$/i }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Submit application' }))
 
-    await expect(await canvas.findByText('Clinic registration failed')).toBeInTheDocument()
-    await expect(canvas.getByRole('heading', { name: /your contact/i })).toBeInTheDocument()
+    await expect(await canvas.findByRole('alert')).toBeInTheDocument()
+    await expect(canvas.getByRole('heading', { name: 'Enter a contact person' })).toBeInTheDocument()
   },
 }
 
@@ -218,12 +227,11 @@ export const LandingStep3ContactError: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
-    await userEvent.click(canvas.getByRole('button', { name: /^submit request$/i }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Submit application' }))
 
-    await expect(canvas.getByText('Please enter the first name.')).toBeInTheDocument()
-    await expect(canvas.getByText('Please enter the last name.')).toBeInTheDocument()
-    await expect(canvas.getByText('Please enter the email address.')).toBeInTheDocument()
-    await expect(canvas.getByText('Please select a position.')).toBeInTheDocument()
+    for (const field of ['First name', 'Last name', 'Email address', 'Role']) {
+      await expect(canvas.getByLabelText(field, { exact: true })).toHaveAttribute('aria-invalid', 'true')
+    }
     await expect(canvas.getByLabelText('First name')).toHaveFocus()
   },
 }
@@ -244,19 +252,17 @@ export const InteractiveFunnel: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
-    await expect(canvas.getByRole('heading', { name: /register your clinic/i })).toBeInTheDocument()
-    await expect(canvas.getByText(/international patients/i)).toBeInTheDocument()
+    await expect(canvas.getByRole('heading', { name: 'Enter clinic details' })).toBeInTheDocument()
     await userEvent.type(canvas.getByLabelText('Clinic name'), 'Aurora Clinic Berlin')
     await userEvent.type(canvas.getByLabelText('Website'), 'https://aurora-clinic.example')
     await userEvent.click(canvas.getByRole('button', { name: /^continue$/i }))
 
-    const treatmentCategoriesHeading = await canvas.findByRole('heading', { name: /choose focus areas/i })
+    const treatmentCategoriesHeading = await canvas.findByRole('heading', { name: 'Choose specialties' })
     await expect(treatmentCategoriesHeading).toBeInTheDocument()
     await waitFor(() => expect(treatmentCategoriesHeading).toHaveFocus())
-    await expect(canvas.getByText(/welcome to the network/i)).toBeInTheDocument()
-    const treatmentCategoryGroup = canvas.getByRole('group', { name: /select treatment categories/i })
+    const treatmentCategoryGroup = canvas.getByRole('group', { name: 'Medical specialties' })
     await expect(treatmentCategoryGroup).toBeInTheDocument()
-    await expect(treatmentCategoryGroup).toHaveAccessibleDescription(/main categories for clinic search/i)
+    await expect(treatmentCategoryGroup).toHaveAccessibleDescription(/\S/)
     for (const categoryLabel of ['Dental', 'Eye Care', 'Hair Restoration', 'Dermatology', 'Plastic Surgery']) {
       await expect(canvas.getByRole('button', { name: categoryLabel })).toBeInTheDocument()
     }
@@ -270,20 +276,18 @@ export const InteractiveFunnel: Story = {
     await expect(hairCategoryButton).toHaveAttribute('aria-pressed', 'true')
     await userEvent.click(canvas.getByRole('button', { name: /^continue$/i }))
 
-    const contactHeading = await canvas.findByRole('heading', { name: /your contact/i })
+    const contactHeading = await canvas.findByRole('heading', { name: 'Enter a contact person' })
     await expect(contactHeading).toBeInTheDocument()
     await waitFor(() => expect(contactHeading).toHaveFocus())
-    await expect(canvas.getByText(/legitimate interest/i)).toBeInTheDocument()
     await userEvent.type(canvas.getByLabelText('First name'), 'Ada')
     await userEvent.type(canvas.getByLabelText('Last name'), 'Lovelace')
     await userEvent.type(canvas.getByLabelText('Email address'), 'ada.lovelace@aurora-clinic.example')
-    await userEvent.selectOptions(canvas.getByLabelText('Position / role'), 'Clinic Management')
-    await userEvent.click(canvas.getByRole('button', { name: /^submit request$/i }))
+    await userEvent.selectOptions(canvas.getByLabelText('Role', { exact: true }), 'Clinic Management')
+    await userEvent.click(canvas.getByRole('button', { name: 'Submit application' }))
 
-    const confirmationHeading = await canvas.findByRole('heading', { name: /request submitted/i })
+    const confirmationHeading = await canvas.findByRole('heading', { name: 'Application received' })
     await expect(confirmationHeading).toBeInTheDocument()
     await waitFor(() => expect(confirmationHeading).toHaveFocus())
-    await expect(canvas.getByText(/we will contact you once the review is complete/i)).toBeInTheDocument()
     await expect(canvas.getByText('Aurora Clinic Berlin')).toBeInTheDocument()
     await expect(canvas.getByText('https://aurora-clinic.example')).toBeInTheDocument()
     await expect(canvas.getByText('Ada Lovelace')).toBeInTheDocument()
@@ -291,9 +295,6 @@ export const InteractiveFunnel: Story = {
     await expect(canvas.getByText(/ada.lovelace@aurora-clinic.example/)).toBeInTheDocument()
     await expect(canvas.getByText('Dental')).toBeInTheDocument()
     await expect(canvas.getByText('Hair Restoration')).toBeInTheDocument()
-    await expect(canvas.queryByText(/dashboard/i)).not.toBeInTheDocument()
-    await expect(canvas.queryByText(/complete your profile/i)).not.toBeInTheDocument()
-    await expect(canvas.queryByText(/consent/i)).not.toBeInTheDocument()
   },
 }
 

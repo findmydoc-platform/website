@@ -1,4 +1,5 @@
 import { blogArchiveLocaleFromPath } from '@/i18n/blogArchivePath'
+import { CLINIC_APPLICATION_PATHS } from '@/i18n/clinicApplicationPath'
 import { CONTACT_PATHS } from '@/i18n/contactPath'
 import { FRONTEND_PATH_HEADER } from '@/i18n/requestLocale'
 import { getManagedLegalPageSlugFromPath } from '@/utilities/legalPages'
@@ -26,7 +27,11 @@ const TEMPORARY_LANDING_PUBLIC_DISCOVERY_PATHS = new Set([
   '/llms.txt',
   '/.well-known/llms.txt',
 ])
-const TEMPORARY_LANDING_EXEMPT_PATHS = new Set(['/admin', ...TEMPORARY_LANDING_PUBLIC_EXEMPT_PATHS])
+const TEMPORARY_LANDING_EXEMPT_PATHS = new Set([
+  '/admin',
+  CLINIC_APPLICATION_PATHS.en,
+  ...TEMPORARY_LANDING_PUBLIC_EXEMPT_PATHS,
+])
 const TEMPORARY_LANDING_EXEMPT_PREFIXES = new Set(['/admin', '/auth', '/login', '/logout', '/register'])
 
 const normalizePathname = (pathname: string): string => {

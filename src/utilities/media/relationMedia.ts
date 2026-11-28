@@ -183,12 +183,14 @@ async function findMediaDescriptorsByIds({
 
       const docs = result.docs as MediaDocument[]
       docs.forEach((doc) => {
+        const alt = typeof doc.alt === 'string' && locale !== 'de' ? doc.alt : null
+        const localizedAlt = locale ? doc.localizedAlt?.trim() : undefined
         descriptorsById.set(doc.id, {
           url:
             typeof doc.url === 'string'
               ? versionPayloadMediaFileUrl(doc.url, doc.updatedAt)
               : buildMediaFileUrl(collection, doc.filename, doc.updatedAt),
-          alt: doc.localizedAlt?.trim() || (locale !== 'de' ? (doc.alt ?? null) : null),
+          alt: localizedAlt || alt,
         })
       })
 

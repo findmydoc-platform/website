@@ -85,7 +85,9 @@ for (const {
     await expect(page.getByRole('button', { name: remove(clinic.name) })).toHaveAttribute('aria-pressed', 'true')
 
     const listResponse = await page.goto(listPath)
-    expect(listResponse?.headers()['cache-control']).toMatch(/private.*no-store/)
+    const cacheDirectives = listResponse?.headers()['cache-control']?.split(/,\s*/)
+    expect(cacheDirectives).toContain('no-store')
+    expect(cacheDirectives).not.toContain('public')
     const main = page.getByRole('main')
     const list = main.getByRole('list')
     await expect(list.getByRole('heading', { name: clinic.name })).toBeVisible()

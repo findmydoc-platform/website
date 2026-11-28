@@ -68,16 +68,14 @@ export async function createClinicReviewBrowserFixture(payload: Payload) {
   const originalReview = 'Die Praxis beantwortete meine Fragen zum Termin.'
   const originalResponse = 'Thank you for sharing your experience with us.'
   const hiddenReview = 'This original review text must remain private.'
-  const [review, hidden] = await Promise.all([
-    payload.create({
-      collection: 'reviews',
-      data: { ...reviewFixture, patient: author.id, comment: originalReview, reviewDate: '2026-07-28T10:00:00Z' },
-    }),
-    payload.create({
-      collection: 'reviews',
-      data: { ...reviewFixture, patient: otherAuthor.id, comment: hiddenReview, reviewDate: '2026-07-26T10:00:00Z' },
-    }),
-  ])
+  const review = await payload.create({
+    collection: 'reviews',
+    data: { ...reviewFixture, patient: author.id, comment: originalReview, reviewDate: '2026-07-28T10:00:00Z' },
+  })
+  const hidden = await payload.create({
+    collection: 'reviews',
+    data: { ...reviewFixture, patient: otherAuthor.id, comment: hiddenReview, reviewDate: '2026-07-26T10:00:00Z' },
+  })
   const platformUser = asPayloadStaffUser(moderator)
   const clinicUser = await asClinicScopedPayloadUser(payload, clinicStaff, clinic.id)
   const response = await payload.create({

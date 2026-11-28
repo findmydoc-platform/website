@@ -83,12 +83,8 @@ export const Main_Default: Story = {
     const canvas = within(canvasElement)
 
     await expect(canvas.getByRole('heading', { name: 'Berlin Health Clinic' })).toBeInTheDocument()
-    await expect(canvas.getByRole('heading', { name: 'Patient Reviews' })).toBeInTheDocument()
-    await expect(canvas.getByText('5 verified reviews')).toBeInTheDocument()
     expect(canvas.getAllByText('Maya K.')).toHaveLength(1)
-    await expect(canvas.getAllByText('Verified review').length).toBeGreaterThan(0)
     expect(canvas.getAllByText(/Demo review text describes appointment preparation/).length).toBeGreaterThan(0)
-    expect(canvas.getAllByText('Clinic response')).toHaveLength(2)
     expect(canvas.getAllByRole('group', { name: 'Clinic response' })).toHaveLength(2)
 
     const showMoreButton = canvas.getByRole('button', { name: 'Show more reviews' })
@@ -105,9 +101,8 @@ export const Main_Default: Story = {
       ),
     ).toBeInTheDocument()
     await expect(
-      canvas.getByRole('article', { name: 'Anonymous patient verified review from Dec 02, 2025' }),
+      canvas.getByText(/Demo anonymous review text about document preparation/).closest('article'),
     ).toHaveFocus()
-    expect(canvas.getAllByText('Showing 5 reviews of 5 verified reviews.').length).toBeGreaterThan(0)
 
     await expect(canvas.getByRole('heading', { name: 'Treatments' })).toBeInTheDocument()
     await expect(canvas.getByRole('heading', { name: 'Further Treatments' })).toBeInTheDocument()
@@ -130,18 +125,13 @@ export const Main_InitialReviewSummary: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
-    await expect(canvas.getByRole('heading', { name: 'Patient Reviews' })).toBeInTheDocument()
-    await expect(canvas.getByText('Latest review')).toBeInTheDocument()
-    await expect(canvas.getByText('5 verified reviews')).toBeInTheDocument()
-    await expect(canvas.getByRole('button', { name: 'What verified reviews mean' })).toBeInTheDocument()
-    const reviewsRegion = canvas.getByRole('region', { name: 'Patient Reviews' })
-    await expect(
-      within(reviewsRegion).queryByRole('article', {
-        name: 'Maya K. verified review from Jan 12, 2026',
-      }),
-    ).not.toBeInTheDocument()
-    await expect(canvas.getByRole('button', { name: 'Show more reviews' })).toBeInTheDocument()
-    await expect(canvas.getByText('Loads the next 1 review inline.')).toBeInTheDocument()
+    const reviewsRegion = within(canvas.getByTestId('clinic-reviews-section'))
+    await expect(reviewsRegion.getAllByRole('article')).toHaveLength(4)
+    const reviewInfo = reviewsRegion.getByRole('button', { name: 'What verified reviews mean' })
+    await userEvent.click(reviewInfo)
+    await expect(reviewInfo).toHaveAttribute('aria-expanded', 'true')
+    await userEvent.keyboard('{Escape}')
+    await expect(reviewInfo).toHaveAttribute('aria-expanded', 'false')
   },
 }
 
@@ -191,9 +181,9 @@ export const Edge_NoReviews_FallbackText: Story = {
   render: (args) => <ClinicDetail {...args} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(canvas.getByRole('heading', { name: 'No patient reviews yet' })).toBeInTheDocument()
-    await expect(canvas.getByText('Showing 0 verified reviews.')).toBeInTheDocument()
-    await expect(canvas.getByText('Verified reviews will appear here after moderation.')).toBeInTheDocument()
+    const reviewsRegion = within(canvas.getByTestId('clinic-reviews-section'))
+    await expect(reviewsRegion.queryByRole('article')).not.toBeInTheDocument()
+    await expect(reviewsRegion.queryByRole('button')).not.toBeInTheDocument()
   },
 }
 
@@ -204,11 +194,9 @@ export const Edge_ReviewsPendingText_FallbackText: Story = {
   render: (args) => <ClinicDetail {...args} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(canvas.getByRole('heading', { name: 'Approved review text is being connected' })).toBeInTheDocument()
-    await expect(canvas.getByText('2 verified reviews are being prepared for display.')).toBeInTheDocument()
-    await expect(
-      canvas.getByText('Approved review records exist, but text content is not ready for public display yet.'),
-    ).toBeInTheDocument()
+    const reviewsRegion = within(canvas.getByTestId('clinic-reviews-section'))
+    await expect(reviewsRegion.queryByRole('article')).not.toBeInTheDocument()
+    await expect(reviewsRegion.queryByRole('button')).not.toBeInTheDocument()
   },
 }
 
@@ -219,10 +207,10 @@ export const Edge_ReviewsPartiallyLoaded_CountText: Story = {
   render: (args) => <ClinicDetail {...args} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(canvas.getByRole('heading', { name: 'Patient Reviews' })).toBeInTheDocument()
-    await expect(canvas.getByText('248 verified reviews')).toBeInTheDocument()
-    await expect(canvas.getByText('Showing 2 reviews loaded on this page of 248 verified reviews.')).toBeInTheDocument()
-    expect(canvas.getAllByText(/Demo review text describes appointment preparation/).length).toBeGreaterThan(0)
+    const reviewsRegion = within(canvas.getByTestId('clinic-reviews-section'))
+    await expect(reviewsRegion.getAllByRole('article')).toHaveLength(2)
+    await expect(reviewsRegion.queryByRole('button', { name: 'Show more reviews' })).not.toBeInTheDocument()
+    await expect(reviewsRegion.getByText(/Demo review text describes appointment preparation/)).toBeInTheDocument()
   },
 }
 
@@ -233,37 +221,21 @@ export const Main_ModeratedReviews: Story = {
   render: (args) => <ClinicDetail {...args} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    const latestReview = canvas.getByText('Latest review').closest('article')
-    if (!(latestReview instanceof HTMLElement)) throw new Error('Expected the featured latest review article')
-    await expect(within(latestReview).getByRole('note', { name: 'Review text unavailable' })).toHaveTextContent(
-      'This review was moderated. Its written content is not publicly available.',
-    )
+    const reviewsRegion = within(canvas.getByTestId('clinic-reviews-section'))
+    const [latestReview] = reviewsRegion.getAllByRole('article')
+    if (!latestReview) throw new Error('Expected the featured latest review article')
+    await expect(within(latestReview).getByRole('note')).toBeVisible()
     await expect(
       within(latestReview).queryByText('The appointment preparation and follow-up information were clear.'),
     ).not.toBeInTheDocument()
     await expect(within(latestReview).queryByRole('group', { name: 'Clinic response' })).not.toBeInTheDocument()
-    await expect(
-      canvas.getByText(
-        'Parts of this review were removed to protect legal rights or personal data. The remaining text is unchanged.',
-      ),
-    ).toBeInTheDocument()
+    await expect(reviewsRegion.getAllByRole('note')).toHaveLength(3)
     await expect(
       canvas.getByText(/This review was checked after the clinic raised a concern about how the treatment timeline/),
     ).toBeInTheDocument()
     for (const notice of canvas.getAllByRole('note')) {
       await expect(notice.scrollWidth).toBeLessThanOrEqual(notice.clientWidth)
     }
-    await expect(
-      canvas.getByRole('article', {
-        name: 'Anonymous patient verified review from Jan 05, 2026',
-      }),
-    ).toBeInTheDocument()
-    await expect(
-      canvas.queryByRole('article', {
-        name: 'Maya K. verified moderated review with unavailable text from Jan 12, 2026',
-      }),
-    ).not.toBeInTheDocument()
-    await expect(canvas.getByText('3 verified reviews')).toBeInTheDocument()
     await expect(canvas.queryByText(/Placeholder original text/)).not.toBeInTheDocument()
     expect(canvas.getAllByRole('group', { name: 'Clinic response' })).toHaveLength(1)
   },

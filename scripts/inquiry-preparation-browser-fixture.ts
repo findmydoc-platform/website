@@ -1,5 +1,6 @@
 import { createLocalReq, getPayload } from 'payload'
 import config from '../src/payload.config'
+import { createClinicReviewBrowserFixture } from '../tests/fixtures/createClinicReviewBrowserFixture'
 import { createClinicFixture } from '../tests/fixtures/createClinicFixture'
 import { createTransactionalEmailWorker } from '../src/features/transactionalEmail/worker'
 
@@ -24,6 +25,8 @@ try {
       name: fixture.clinic.name,
       doctorId: fixture.doctor.id,
     }
+  } else if (command === 'review-profile') {
+    result = await createClinicReviewBrowserFixture(payload)
   } else if (command === 'worker') {
     const worker = createTransactionalEmailWorker(await createLocalReq({}, payload), {
       suppression: async () => 'cleared',

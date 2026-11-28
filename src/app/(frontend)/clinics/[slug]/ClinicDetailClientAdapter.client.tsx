@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react'
 
+import { ClinicReviewSubmissionForm } from '@/components/organisms/ClinicDetail/ClinicReviewSubmissionForm'
 import { ClinicDetail } from '@/components/templates/ClinicDetailConcepts'
 import {
   ClinicContactRequestError,
@@ -9,6 +10,8 @@ import {
   type ClinicContactRequestSubmitter,
   type ClinicDetailConceptProps,
 } from '@/features/clinicDetail/contracts'
+import { submitClinicReview } from '@/features/clinicDetail/reviewSubmission'
+import { getClinicReviewsCopy } from '@/features/clinicDetail/reviewsCopy'
 import { postHogBrowserEvents, usePostHogAnalyticsReady } from '@/posthog/client-api'
 
 const clinicDetailAnalytics: Omit<ClinicDetailAnalyticsPort, 'isReady'> = {
@@ -77,11 +80,33 @@ export const submitClinicContactRequest: ClinicContactRequestSubmitter = async (
   return { id: String(id) }
 }
 
-export function ClinicDetailClientAdapter(
-  props: Omit<ClinicDetailConceptProps, 'analytics' | 'onSubmitContactRequest'>,
-) {
+export function ClinicDetailClientAdapter({
+  reviewSubmissionAccess,
+  ...props
+}: Omit<ClinicDetailConceptProps, 'analytics' | 'onSubmitContactRequest' | 'reviewSubmission'> & {
+  reviewSubmissionAccess?: { isPatient: boolean; loginHref: string }
+}) {
   const isReady = usePostHogAnalyticsReady()
   const analytics = useMemo(() => ({ ...clinicDetailAnalytics, isReady }), [isReady])
 
-  return <ClinicDetail {...props} analytics={analytics} onSubmitContactRequest={submitClinicContactRequest} />
+  const { clinicId, doctors, treatments } = props.data
+  const reviewSubmission = reviewSubmissionAccess ? (
+    <ClinicReviewSubmissionForm
+      key={clinicId}
+      copy={getClinicReviewsCopy(props.locale ?? 'en').form}
+      doctors={doctors}
+      treatments={treatments}
+      loginHref={reviewSubmissionAccess.loginHref}
+      onSubmit={reviewSubmissionAccess.isPatient ? (fields) => submitClinicReview(clinicId, fields) : undefined}
+    />
+  ) : undefined
+
+  return (
+    <ClinicDetail
+      {...props}
+      analytics={analytics}
+      onSubmitContactRequest={submitClinicContactRequest}
+      reviewSubmission={reviewSubmission}
+    />
+  )
 }

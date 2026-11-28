@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react'
+
 import type { UiCopyLocale } from '@/i18n/requestLocale'
 import type { CookieConsentConfig, CookieConsentState } from '@/features/cookieConsent'
 import type { PatientInquiryCreationContext } from '@/features/patientInquiries/creationContext'
@@ -73,7 +75,7 @@ export type ClinicDetailReview = ClinicDetailReviewBase &
     | {
         kind: 'text'
         comment: string
-        notice?: string
+        notice?: { kind: 'context'; text: string } | { kind: 'redaction' }
         response?: {
           body: string
           clinicName: string
@@ -82,7 +84,6 @@ export type ClinicDetailReview = ClinicDetailReviewBase &
       }
     | {
         kind: 'placeholder'
-        notice: string
       }
   )
 
@@ -187,6 +188,7 @@ export type ClinicDetailConceptProps = {
     locale?: UiCopyLocale
   }
   inquiryCreation?: PatientInquiryCreationContext
+  reviewSubmission?: ReactNode
   analytics: ClinicDetailAnalyticsPort
   onSubmitContactRequest: ClinicContactRequestSubmitter
   cookieConsentConfig?: CookieConsentConfig | null

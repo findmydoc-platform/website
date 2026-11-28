@@ -2,6 +2,7 @@ import { readdirSync } from 'node:fs'
 import { relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { uiCopyLocaleFromPath, UI_COPY_LOCALE_HEADER } from '@/i18n/requestLocale'
 
 const mocks = vi.hoisted(() => ({
   headers: vi.fn(),
@@ -28,7 +29,10 @@ vi.mock('@/features/cookieConsent/CookieConsentClientAdapter.client', () => ({
 vi.mock('@vercel/toolbar/next', () => ({ VercelToolbar: () => null }))
 
 async function renderLayout(pathname: string) {
-  mocks.headers.mockResolvedValue(new Headers({ 'x-findmydoc-frontend-path': pathname }))
+  const requestHeaders = new Headers({ 'x-findmydoc-frontend-path': pathname })
+  const uiCopyLocale = uiCopyLocaleFromPath(pathname)
+  if (uiCopyLocale) requestHeaders.set(UI_COPY_LOCALE_HEADER, uiCopyLocale)
+  mocks.headers.mockResolvedValue(requestHeaders)
   const { default: RootLayout } = await import('@/app/(frontend)/layout')
   return RootLayout({ children: null })
 }
@@ -82,10 +86,22 @@ describe('frontend document language', () => {
     ])
   })
 
-  it.each(dedicatedPagePaths)('keeps %s English without looking for a CMS document', async (path) => {
+  it.each(dedicatedPagePaths)('keeps %s outside the CMS document resolver', async (path) => {
+    await renderLayout(path)
+
+    expect(mocks.findPublicPageRoute).not.toHaveBeenCalled()
+    expect(mocks.getCachedPublicPostRoute).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['/posts', 'de'],
+    ['/posts/page/2', 'de'],
+    ['/en/posts', 'en'],
+    ['/en/posts/page/2', 'en'],
+  ])('sets the server document language for %s', async (path, language) => {
     const layout = await renderLayout(path)
 
-    expect(layout.props.lang).toBe('en')
+    expect(layout.props.lang).toBe(language)
     expect(mocks.findPublicPageRoute).not.toHaveBeenCalled()
     expect(mocks.getCachedPublicPostRoute).not.toHaveBeenCalled()
   })

@@ -1,3 +1,4 @@
+import { blogArchiveLocaleFromPath } from '@/i18n/blogArchivePath'
 import { createServerClient } from '@supabase/ssr'
 import type { User } from '@supabase/supabase-js'
 import { type NextRequest, NextResponse } from 'next/server'
@@ -126,6 +127,7 @@ const nextWithTemporaryLandingPublicHeaders = (
     [HOLDING_VIEW_REQUEST_HEADER]: 'public',
     [PUBLIC_SITE_MODE_REQUEST_HEADER]: publicMode,
     [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: publicMode === 'holding' ? '1' : null,
+    [SEARCH_INDEXING_REQUEST_HEADER]: isTemporaryLandingIndexablePath(request.nextUrl.pathname) ? null : 'noindex',
   })
 
 const nextWithPublicMode = (
@@ -215,7 +217,11 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
         return privateResponse(previewDeployment || translationSource ? withSearchRobotsHeader(response) : response)
       }
 
-      return privateResponse(withSearchRobotsHeader(nextWithTemporaryLandingHeaders(request, holdingMode)))
+      const response =
+        blogArchiveLocaleFromPath(pathname) === 'en'
+          ? nextWithTemporaryLandingPublicHeaders(request, holdingMode)
+          : nextWithTemporaryLandingHeaders(request, holdingMode)
+      return privateResponse(withSearchRobotsHeader(response))
     }
 
     if (

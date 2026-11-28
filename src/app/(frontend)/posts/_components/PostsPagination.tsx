@@ -3,19 +3,25 @@ import { Button, buttonVariants } from '@/components/atoms/button'
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem } from '@/components/atoms/pagination'
 import { UiLink } from '@/components/molecules/Link'
 import { buildPostsPagePath } from '@/utilities/content/postPaths'
-import type { ContentLocaleContext } from '@/utilities/contentLocalization'
+import type { ContentLocale } from '@/utilities/contentLocalization'
 
 type Props = {
-  contentLocale: ContentLocaleContext
+  locale: ContentLocale
+  copy: {
+    label: string
+    previous: PageStepCopy
+    next: PageStepCopy
+  }
   page: number
   totalPages: number
 }
 
-function PageStep({ href, direction }: { href?: string; direction: 'previous' | 'next' }) {
+type PageStepCopy = { label: string; text: string }
+
+function PageStep({ href, direction, copy }: { href?: string; direction: 'previous' | 'next'; copy: PageStepCopy }) {
   const previous = direction === 'previous'
-  const label = previous ? 'Go to previous page' : 'Go to next page'
+  const { label, text } = copy
   const Icon = previous ? ChevronLeft : ChevronRight
-  const text = previous ? 'Previous' : 'Next'
   const className = previous ? 'gap-2 pl-2' : 'flex-row-reverse gap-2 pr-2'
 
   if (!href) {
@@ -40,15 +46,15 @@ function PageStep({ href, direction }: { href?: string; direction: 'previous' | 
   )
 }
 
-export function PostsPagination({ contentLocale, page, totalPages }: Props) {
-  const previous = page > 1 ? buildPostsPagePath(page - 1, contentLocale) : undefined
-  const next = page < totalPages ? buildPostsPagePath(page + 1, contentLocale) : undefined
+export function PostsPagination({ locale, page, totalPages, copy }: Props) {
+  const previous = page > 1 ? buildPostsPagePath(page - 1, { locale }) : undefined
+  const next = page < totalPages ? buildPostsPagePath(page + 1, { locale }) : undefined
 
   return (
-    <Pagination className="my-12">
+    <Pagination aria-label={copy.label} className="my-12">
       <PaginationContent>
         <PaginationItem>
-          <PageStep href={previous} direction="previous" />
+          <PageStep href={previous} direction="previous" copy={copy.previous} />
         </PaginationItem>
         {page > 2 && (
           <PaginationItem>
@@ -83,7 +89,7 @@ export function PostsPagination({ contentLocale, page, totalPages }: Props) {
           </PaginationItem>
         )}
         <PaginationItem>
-          <PageStep href={next} direction="next" />
+          <PageStep href={next} direction="next" copy={copy.next} />
         </PaginationItem>
       </PaginationContent>
     </Pagination>

@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => {
 
   return {
     buildArticlePageJsonLdMock: vi.fn(() => [{ '@type': 'Article' }]),
-    calculateReadTimeMock: vi.fn(() => '5 min read'),
+    estimateReadMinutesMock: vi.fn(() => 5),
     draftModeMock: vi.fn(),
     headersMock: vi.fn(),
     findPostBySlugMock: vi.fn(),
@@ -55,6 +55,13 @@ vi.mock('next/headers', () => ({
   headers: mocks.headersMock,
 }))
 
+vi.mock('next-intl/server', () => ({
+  getTranslations:
+    async ({ locale }: { locale?: string } = {}) =>
+    (key: string) =>
+      `${locale ?? 'en'} ${key} fixture`,
+}))
+
 vi.mock('@payload-config', () => ({
   default: {},
 }))
@@ -92,7 +99,7 @@ vi.mock('@/components/molecules/DisclaimerNotice', () => ({
 }))
 
 vi.mock('@/utilities/blog/calculateReadTime', () => ({
-  calculateReadTime: mocks.calculateReadTimeMock,
+  estimateReadMinutes: mocks.estimateReadMinutesMock,
 }))
 
 vi.mock('@/utilities/media/resolveMediaImage', () => ({
@@ -234,8 +241,8 @@ describe('frontend post detail route', () => {
       }
     }> | null
     expect(heroElement?.props.breadcrumbs).toEqual([
-      { label: 'Home', href: '/' },
-      { label: 'Blog', href: '/posts?locale=de' },
+      { label: 'de navigation.home fixture', href: '/' },
+      { label: 'de navigation.blog fixture', href: '/posts' },
       { label: 'Hallo Welt', href: '/posts/hello-world', lang: 'de' },
     ])
     expect(heroElement?.props).toMatchObject({ categories: ['Dental Care'], categoryLang: 'en' })
@@ -267,8 +274,8 @@ describe('frontend post detail route', () => {
       shareUrl: string
     }> | null
     expect(shareElement?.props.backLink).toEqual({
-      label: 'Back to Blog',
-      href: '/posts?locale=de',
+      label: 'de article.back fixture',
+      href: '/posts',
     })
     expect(shareElement?.props.shareUrl).toBe('/posts/hello-world')
 
@@ -285,16 +292,16 @@ describe('frontend post detail route', () => {
 
     const disclaimerElement = findElementByType(result, mocks.disclaimerNoticeComponent) as React.ReactElement<{
       copy: string
-      routeLabel: string
+      accessibleLabel: string
       variant: string
       standalone: boolean
     }> | null
-    expect(disclaimerElement?.props.routeLabel).toBe('Blog')
+    expect(disclaimerElement?.props.accessibleLabel).toBe('de article.disclaimerLabel fixture')
     expect(disclaimerElement?.props.variant).toBe('slim-notice-bar')
     expect(disclaimerElement?.props.standalone).toBe(true)
   })
 
-  it('marks English actions and the disclaimer inside a German article', async () => {
+  it('uses German actions and disclaimer in a German article', async () => {
     const { default: PostPage } = await import('@/app/(frontend)/posts/[slug]/page')
     const result = await PostPage({
       params: Promise.resolve({ slug: 'hello-world' }),
@@ -302,8 +309,10 @@ describe('frontend post detail route', () => {
     })
 
     expect(findElementByType(result, 'article')?.props.lang).toBe('de')
-    expect(findElementByType(result, mocks.postShareActionBarComponent)?.props.lang).toBe('en')
-    expect(findElementByType(result, mocks.disclaimerNoticeComponent)?.props.lang).toBe('en')
+    expect(findElementByType(result, mocks.postShareActionBarComponent)?.props.shareLabel).toBe(
+      'de article.share fixture',
+    )
+    expect(findElementByType(result, mocks.disclaimerNoticeComponent)?.props.copy).toBe('de article.disclaimer fixture')
   })
 
   it('emits the English canonical and bidirectional hreflang for a public pair', async () => {
@@ -336,7 +345,8 @@ describe('frontend post detail route', () => {
     const args = { params: Promise.resolve({ slug: 'green-tea' }), searchParams: Promise.resolve({}) }
     const notice = renderToStaticMarkup(await PostPage(args))
 
-    expect(notice).toMatch(/<a[^>]+href="\/posts"[^>]*>Blog<\/a>/)
+    expect(notice).toContain('href="/posts/gruener-tee"')
+    expect(notice).toContain('href="/en/posts"')
     expect(await generateMetadata(args)).toEqual({
       title: expect.stringMatching(/\S/),
       robots: { index: false, follow: false },

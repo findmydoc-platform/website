@@ -18,6 +18,7 @@ export const Overview: React.FC<BlogCardBaseProps & { readTimeLang?: string }> =
   excerpt,
   href,
   dateLabel,
+  dateLang,
   readTime,
   readTimeLang,
   category,
@@ -99,7 +100,7 @@ export const Overview: React.FC<BlogCardBaseProps & { readTimeLang?: string }> =
                 <span className="truncate text-sm font-medium text-foreground">{author.name}</span>
                 <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                   {dateLabel && (
-                    <span className="flex items-center gap-1">
+                    <span lang={dateLang} className="flex items-center gap-1">
                       <Calendar className="h-3 w-3" />
                       {dateLabel}
                     </span>

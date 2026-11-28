@@ -9,6 +9,7 @@ export type ArticlePageJsonLdInput = {
   breadcrumbs: BreadcrumbItem[]
   description?: string | null
   imageUrl?: string | null
+  inLanguage?: string
   path: string
   publishedAt?: string | null
   title: string
@@ -20,6 +21,7 @@ export function buildArticlePageJsonLd({
   breadcrumbs,
   description,
   imageUrl,
+  inLanguage,
   path,
   publishedAt,
   title,
@@ -44,6 +46,7 @@ export function buildArticlePageJsonLd({
       description,
       headline: title,
       image: imageUrl ? [absoluteUrl(imageUrl)] : undefined,
+      inLanguage,
       mainEntityOfPage: {
         '@id': pageUrl,
         '@type': 'WebPage',

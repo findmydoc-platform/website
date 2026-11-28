@@ -24,7 +24,7 @@ describe('localized archive card metadata', () => {
   ] as const)(
     'renders published dates in the article language ($locale)',
     ({ locale, expectedDate, canonicalPath }) => {
-      const card = normalizeArchiveCard({ post, locale, canonicalPath })
+      const card = normalizeArchiveCard({ post, locale, canonicalPath }, 'Editorial fixture')
 
       render(
         <section lang={locale}>
@@ -38,13 +38,22 @@ describe('localized archive card metadata', () => {
   )
 
   it('uses a different editorial fallback for German cards and preserves named authors', () => {
-    const english = normalizeArchiveCard({ post, locale: 'en', canonicalPath: '/en/posts/fixture' })
-    const german = normalizeArchiveCard({ post, locale: 'de', canonicalPath: '/posts/fixture' })
-    const named = normalizeArchiveCard({
-      post: { ...post, populatedAuthors: [{ name: 'Fixture Author' }] },
-      locale: 'de',
-      canonicalPath: '/posts/fixture',
-    })
+    const english = normalizeArchiveCard(
+      { post, locale: 'en', canonicalPath: '/en/posts/fixture' },
+      'English editorial fixture',
+    )
+    const german = normalizeArchiveCard(
+      { post, locale: 'de', canonicalPath: '/posts/fixture' },
+      'German editorial fixture',
+    )
+    const named = normalizeArchiveCard(
+      {
+        post: { ...post, populatedAuthors: [{ name: 'Fixture Author' }] },
+        locale: 'de',
+        canonicalPath: '/posts/fixture',
+      },
+      'German editorial fixture',
+    )
 
     render(
       <>
@@ -60,11 +69,8 @@ describe('localized archive card metadata', () => {
 
     const englishFixture = screen.getByRole('region', { name: 'English fixture' })
     const germanFixture = screen.getByRole('region', { name: 'German fixture' })
-    const englishFallback = within(englishFixture).getByText(
-      (_, element) => element?.tagName === 'SPAN' && element.textContent !== 'January 15, 2026',
-    )
-    expect(within(germanFixture).queryByText(englishFallback.textContent ?? '')).not.toBeInTheDocument()
-    expect(german.author?.name).toBeTruthy()
+    expect(within(englishFixture).getByText('English editorial fixture')).toBeVisible()
+    expect(within(germanFixture).getByText('German editorial fixture')).toBeVisible()
     expect(screen.getByText('Fixture Author')).toBeVisible()
   })
 })

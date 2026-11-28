@@ -1,3 +1,4 @@
+import { blogArchiveLocaleFromPath } from '@/i18n/blogArchivePath'
 import { CONTACT_PATHS } from '@/i18n/contactPath'
 import { FRONTEND_PATH_HEADER } from '@/i18n/requestLocale'
 import { getManagedLegalPageSlugFromPath } from '@/utilities/legalPages'
@@ -67,11 +68,7 @@ export const isTemporaryLandingPublicExemptPath = (pathname: string): boolean =>
     return true
   }
 
-  if (normalizedPath === '/posts') {
-    return true
-  }
-
-  if (/^\/posts\/page\/[1-9]\d*$/.test(normalizedPath)) {
+  if (blogArchiveLocaleFromPath(normalizedPath)) {
     return true
   }
 
@@ -87,8 +84,7 @@ export const isTemporaryLandingIndexablePath = (pathname: string): boolean => {
 
   return (
     temporaryLandingLocaleFromPath(normalizedPath) !== null ||
-    normalizedPath === '/posts' ||
-    /^\/posts\/page\/[1-9]\d*$/.test(normalizedPath) ||
+    blogArchiveLocaleFromPath(normalizedPath) === 'de' ||
     /^(?:\/en)?\/posts\/[^/]+$/.test(normalizedPath)
   )
 }

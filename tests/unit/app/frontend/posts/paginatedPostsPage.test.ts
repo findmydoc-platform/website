@@ -10,6 +10,8 @@ const mocks = vi.hoisted(() => ({
   }),
 }))
 
+vi.mock('next-intl/server', () => ({ getTranslations: async () => () => 'Translation fixture' }))
+
 vi.mock('next/navigation', () => ({
   notFound: mocks.notFoundMock,
   redirect: mocks.redirectMock,
@@ -32,11 +34,17 @@ describe('Paginated posts page route', () => {
     await expect(
       pageModule.default({
         params: Promise.resolve({ pageNumber: '1' }),
-        searchParams: Promise.resolve({}),
       }),
     ).rejects.toThrow('redirect:/posts')
 
     expect(mocks.redirectMock).toHaveBeenCalledWith('/posts')
+    expect(mocks.getCachedPostArchivePageMock).not.toHaveBeenCalled()
+  })
+
+  it('redirects English page 1 to the English archive', async () => {
+    const route = await import('@/app/(frontend)/en/posts/page/[pageNumber]/page')
+
+    await expect(route.default({ params: Promise.resolve({ pageNumber: '1' }) })).rejects.toThrow('redirect:/en/posts')
     expect(mocks.getCachedPostArchivePageMock).not.toHaveBeenCalled()
   })
 
@@ -46,7 +54,6 @@ describe('Paginated posts page route', () => {
     await expect(
       pageModule.default({
         params: Promise.resolve({ pageNumber: 'abc' }),
-        searchParams: Promise.resolve({}),
       }),
     ).rejects.toThrow('notFound')
 
@@ -60,7 +67,6 @@ describe('Paginated posts page route', () => {
     await expect(
       pageModule.default({
         params: Promise.resolve({ pageNumber: '0' }),
-        searchParams: Promise.resolve({}),
       }),
     ).rejects.toThrow('notFound')
 
@@ -81,7 +87,6 @@ describe('Paginated posts page route', () => {
     await expect(
       pageModule.default({
         params: Promise.resolve({ pageNumber: '3' }),
-        searchParams: Promise.resolve({}),
       }),
     ).rejects.toThrow('notFound')
 

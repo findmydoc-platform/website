@@ -98,7 +98,7 @@ describe('cache revalidation planner', () => {
       'surface:home',
       'surface:partners-clinics',
     ])
-    expect(plan.paths).toEqual(['/posts/clinic-checklist', '/posts'])
+    expect(plan.paths).toEqual(['/posts/clinic-checklist', '/posts', '/en/posts'])
     expect(plan.surfaceIds).toEqual(['post-detail', 'posts-list', 'home', 'partners-clinics', 'surface:sitemap:posts'])
   })
 
@@ -119,7 +119,7 @@ describe('cache revalidation planner', () => {
         'surface:partners-clinics',
         'surface:sitemap:posts',
       ],
-      paths: ['/posts'],
+      paths: ['/posts', '/en/posts'],
     })
 
     expect(
@@ -190,6 +190,7 @@ describe('cache revalidation planner', () => {
     ])
     expect(plan.paths).toEqual([
       '/posts',
+      '/en/posts',
       '/',
       '/listing-comparison',
       '/posts-sitemap.xml',
@@ -205,7 +206,7 @@ describe('cache revalidation planner', () => {
       subjectKind: 'seed-final-flush',
       subjectId: 'seed-run-1',
       tagCount: 8,
-      pathCount: 8,
+      pathCount: 9,
     })
   })
 

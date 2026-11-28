@@ -1,5 +1,6 @@
 import { PATIENT_LOGIN_PATH } from '@/features/favorites/redirects'
 import { listingComparisonLocaleFromPath } from '@/i18n/listingComparisonPath'
+import { savedClinicsLocaleFromPath } from '@/i18n/savedClinicsPath'
 import {
   AUTH_CONFIRMATION_PATH,
   RECOVERY_COMPLETION_PATH,
@@ -55,7 +56,11 @@ export function uiCopyLocaleFromPath(
   pathname: string,
   searchParams?: Pick<URLSearchParams, 'getAll'> | null,
 ): UiCopyLocale | null {
-  return listingComparisonLocaleFromPath(pathname) ?? patientAuthLocaleFromPath(pathname, searchParams)
+  return (
+    listingComparisonLocaleFromPath(pathname) ??
+    savedClinicsLocaleFromPath(pathname) ??
+    patientAuthLocaleFromPath(pathname, searchParams)
+  )
 }
 
 export function uiCopyLocaleFromHeaders(headers: Headers): UiCopyLocale {

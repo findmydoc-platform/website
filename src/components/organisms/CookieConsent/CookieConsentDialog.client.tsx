@@ -46,7 +46,8 @@ export function CookieConsentDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        lang="en"
+        lang={config.locale}
+        closeLabel={config.closeLabel}
         aria-modal="true"
         className="max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] overflow-y-auto overscroll-contain rounded-2xl p-5 sm:max-w-2xl sm:p-6"
         onOpenAutoFocus={(event) => {
@@ -73,12 +74,7 @@ export function CookieConsentDialog({
         <div className="space-y-4">
           {config.privacyPolicyHref ? (
             <div className="flex flex-col items-start gap-4 rounded-2xl border border-border/70 bg-muted/25 px-4 py-3 sm:flex-row sm:justify-between">
-              <div className="space-y-1">
-                <p className="text-xs tracking-wide text-foreground uppercase">Privacy policy</p>
-                <p className="text-sm text-foreground">
-                  Read the page that explains how we handle optional cookies and third-party services.
-                </p>
-              </div>
+              <p className="text-sm text-foreground">{config.privacyPolicyDescription}</p>
               <UiLink
                 className="inline-flex shrink-0 items-center rounded-full border border-border/70 bg-background px-3 py-1 text-xs font-semibold tracking-wide text-primary transition-colors hover:border-primary/40 hover:bg-primary/5 hover:underline focus-visible:underline"
                 href={config.privacyPolicyHref}
@@ -132,16 +128,14 @@ export function CookieConsentDialog({
                       </Label>
                       <p className="text-sm text-foreground">{category.description}</p>
                       {category.services && category.services.length > 0 ? (
-                        <p className="text-sm text-foreground">
-                          Selecting this category permits all services listed below.
-                        </p>
+                        <p className="text-sm text-foreground">{config.serviceScope}</p>
                       ) : null}
                       {category.services?.map((service) => (
                         <div key={service.name} className="space-y-1 border-t border-border/70 pt-3 text-sm">
                           <p className="font-semibold">{service.name}</p>
                           <p className="text-foreground">{service.description}</p>
                           <UiLink className="text-primary underline" href={service.privacyHref} newTab>
-                            {service.name} privacy notice
+                            {service.privacyLabel}
                           </UiLink>
                         </div>
                       ))}

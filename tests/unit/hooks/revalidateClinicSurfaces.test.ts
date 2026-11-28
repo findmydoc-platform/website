@@ -66,7 +66,7 @@ describe('clinic surface revalidation hooks', () => {
     const result = revalidateClinicChange(buildAfterChangeArgs({ doc, req })) as ClinicDoc
 
     expect(result).toBe(doc)
-    expect(getPathCalls()).toEqual(['/clinics/berlin-health'])
+    expect(getPathCalls()).toEqual(['/clinics/berlin-health', '/en/clinics/berlin-health'])
     expect(getTagCalls()).toEqual([
       'entity:clinics:12',
       'collection:clinics',
@@ -85,7 +85,12 @@ describe('clinic surface revalidation hooks', () => {
 
     revalidateClinicChange(buildAfterChangeArgs({ doc, previousDoc, req }))
 
-    expect(getPathCalls()).toEqual(['/clinics/new-health', '/clinics/old-health'])
+    expect(getPathCalls()).toEqual([
+      '/clinics/new-health',
+      '/en/clinics/new-health',
+      '/clinics/old-health',
+      '/en/clinics/old-health',
+    ])
     expect(getTagCalls()).toContain('slug:clinics:new-health')
     expect(getTagCalls()).toContain('slug:clinics:old-health')
   })
@@ -110,7 +115,7 @@ describe('clinic surface revalidation hooks', () => {
       req,
     })
 
-    expect(getPathCalls()).toEqual(['/clinics/berlin-health'])
+    expect(getPathCalls()).toEqual(['/clinics/berlin-health', '/en/clinics/berlin-health'])
     expect(getTagCalls()).toContain('surface:clinic-detail:12')
     expect(getTagCalls()).toContain('surface:listing-comparison')
   })

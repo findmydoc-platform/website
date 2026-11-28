@@ -2,6 +2,8 @@ import type { Payload } from 'payload'
 
 import { extractSupabaseUserData } from '@/auth/utilities/jwtValidation'
 import type { VerificationBadgeVariant } from '@/components/atoms/verification-badge'
+import { clinicProfilePath } from '@/i18n/clinicProfilePath'
+import type { UiCopyLocale } from '@/i18n/requestLocale'
 import { ensurePatientOnAuth } from '@/hooks/ensurePatientOnAuth'
 import type { Clinic, Favoriteclinic, Patient } from '@/payload-types'
 import { resolveMediaDescriptorFromLoadedRelation, type MediaDescriptor } from '@/utilities/media/relationMedia'
@@ -75,7 +77,8 @@ function resolveClinicLocation(clinic: Clinic): string | null {
 
 function mapFavoriteToListItem(
   favorite: Favoriteclinic,
-  mediaByClinicId?: ReadonlyMap<number, MediaDescriptor>,
+  locale: UiCopyLocale,
+  mediaByClinicId: ReadonlyMap<number, MediaDescriptor>,
 ): FavoriteClinicListItem | null {
   if (!isLoadedClinic(favorite.clinic)) return null
 
@@ -88,7 +91,7 @@ function mapFavoriteToListItem(
     favoriteId: favorite.id,
     clinicId: clinic.id,
     name: clinic.name,
-    href: `/clinics/${encodeURIComponent(slug)}`,
+    href: clinicProfilePath(slug, locale),
     location: resolveClinicLocation(clinic),
     media: {
       src: resolvedMedia?.url ?? PLACEHOLDER_MEDIA_SRC,
@@ -186,9 +189,11 @@ export async function findFavoriteClinicStateRecord({
 export async function findPatientFavoriteClinicListItems({
   payload,
   patientId,
+  locale = 'de',
 }: {
   payload: Payload
   patientId: number
+  locale?: UiCopyLocale
 }): Promise<FavoriteClinicListItem[]> {
   const result = await payload.find({
     collection: 'favoriteclinics',
@@ -212,7 +217,7 @@ export async function findPatientFavoriteClinicListItems({
   })
 
   return result.docs.flatMap((favorite) => {
-    const item = mapFavoriteToListItem(favorite as Favoriteclinic, mediaByClinicId)
+    const item = mapFavoriteToListItem(favorite as Favoriteclinic, locale, mediaByClinicId)
     return item ? [item] : []
   })
 }

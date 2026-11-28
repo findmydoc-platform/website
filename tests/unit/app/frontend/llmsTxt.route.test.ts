@@ -93,6 +93,7 @@ describe('llms.txt routes', () => {
       'https://findmydoc.eu/',
       'https://findmydoc.eu/listing-comparison',
       'https://findmydoc.eu/clinics/{clinic-slug}',
+      'https://findmydoc.eu/en/clinics/{clinic-slug}',
       'https://findmydoc.eu/contact',
     ])
     expectIncludesNone(body, [

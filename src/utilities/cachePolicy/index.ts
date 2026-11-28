@@ -1,3 +1,4 @@
+import { clinicProfilePath } from '@/i18n/clinicProfilePath'
 import { BLOG_ARCHIVE_PATHS } from '@/i18n/blogArchivePath'
 export const CACHE_CLASSES = [
   'critical-public',
@@ -838,8 +839,8 @@ export const buildPagePath = (slug: string, locale: 'de' | 'en' = 'de'): string 
 export const buildPostPath = (slug: string, locale: 'de' | 'en' = 'de'): string =>
   `${locale === 'en' ? '/en' : ''}/posts/${assertPayloadSlug(slug, 'post slug', { allowNested: false })}`
 
-export const buildClinicPath = (slug: string): string =>
-  `/clinics/${assertPayloadSlug(slug, 'clinic slug', { allowNested: false })}`
+export const buildClinicPath = (slug: string, locale: 'de' | 'en' = 'de'): string =>
+  clinicProfilePath(assertPayloadSlug(slug, 'clinic slug', { allowNested: false }), locale)
 
 export const buildPostsIndexPath = (locale: keyof typeof BLOG_ARCHIVE_PATHS = 'de'): string =>
   BLOG_ARCHIVE_PATHS[locale]

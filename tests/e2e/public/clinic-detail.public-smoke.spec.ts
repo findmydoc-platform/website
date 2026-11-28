@@ -6,7 +6,7 @@ import { createBrowserIssueCollector, expectNoBrowserIssues } from '../helpers/b
 import { setCookieConsent } from '../helpers/cookieConsent'
 
 function runFixtureCommand(args: string[]) {
-  return execFileSync('pnpm', ['dlx', 'tsx', 'scripts/public-e2e-clinic-fixture.ts', ...args], {
+  return execFileSync('pnpm', ['exec', 'tsx', 'scripts/public-e2e-clinic-fixture.ts', ...args], {
     cwd: process.cwd(),
     env: process.env,
     encoding: 'utf8',
@@ -76,7 +76,7 @@ test.describe('clinic detail map dialog', () => {
     await context.clearCookies()
     await setCookieConsent(context, { functional: true })
 
-    await page.goto(`/clinics/${clinicSlug}`, { waitUntil: 'domcontentloaded' })
+    await page.goto(`/en/clinics/${clinicSlug}`, { waitUntil: 'domcontentloaded' })
     await page.waitForLoadState('networkidle')
     const breadcrumb = page.getByRole('navigation', { name: 'Breadcrumb' })
     await expect(breadcrumb.getByRole('link', { name: 'Home' })).toBeVisible()
@@ -112,7 +112,7 @@ test.describe('clinic detail map dialog', () => {
     await context.clearCookies()
     await setCookieConsent(context)
 
-    await page.goto(`/clinics/${clinicSlug}`, { waitUntil: 'domcontentloaded' })
+    await page.goto(`/en/clinics/${clinicSlug}`, { waitUntil: 'domcontentloaded' })
     await page.waitForLoadState('networkidle')
 
     await expect(page.getByText('OpenStreetMap is hidden until optional cookies are accepted.')).toBeVisible()
@@ -136,7 +136,7 @@ test.describe('clinic detail map dialog', () => {
     await context.clearCookies()
     await setCookieConsent(context, { functional: true })
 
-    await page.goto(`/clinics/${clinicSlug}`, { waitUntil: 'domcontentloaded' })
+    await page.goto(`/en/clinics/${clinicSlug}`, { waitUntil: 'domcontentloaded' })
     await page.waitForLoadState('networkidle')
 
     const [selectedDoctorId] = await page.locator('select[name="doctor"]').selectOption({ index: 1 })
@@ -175,6 +175,129 @@ test.describe('clinic detail map dialog', () => {
 
     expect(readInquiry(slugPrefix, secondEmail)).toMatchObject({ found: false, count: 0, totalClinicCount: 0 })
 
+    await expectNoBrowserIssues(issues)
+  })
+})
+
+test.describe('published clinic overview languages', () => {
+  const prefix = `e2e-clinic-overview-${Date.now()}`
+  const fixtureSlugs = new Map<string, string>()
+
+  test.beforeAll(() => {
+    for (const variant of ['complete', 'sparse', 'unpublished']) {
+      const output = runFixtureCommand(['create', '--prefix', `${prefix}-${variant}`, '--overview', variant])
+      const result = JSON.parse(output.trim().split('\n').at(-1) ?? '{}') as { slug?: string }
+      if (!result.slug) throw new Error(`Missing clinic fixture slug for ${variant}`)
+      fixtureSlugs.set(variant, result.slug)
+    }
+  })
+
+  test.afterAll(() => {
+    runFixtureCommand(['cleanup', '--prefix', prefix])
+  })
+
+  test('published clinic profiles reciprocate their canonical aliases and protect unpublished profiles @smoke', async ({
+    page,
+    request,
+    context,
+  }) => {
+    await setCookieConsent(context)
+    for (const variant of ['complete', 'sparse']) {
+      const slug = fixtureSlugs.get(variant)
+      const paths = { de: `/clinics/${slug}`, en: `/en/clinics/${slug}` }
+      for (const locale of ['de', 'en'] as const) {
+        const path = paths[locale]
+        const response = await request.get(path, { headers: { 'user-agent': 'Googlebot' } })
+        expect(response.status()).toBe(200)
+        expect(response.headers()['x-robots-tag']).toBeUndefined()
+        await page.goto(path)
+        await expect(page.locator('html')).toHaveAttribute('lang', locale)
+        await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+        const canonical = await page.locator('link[rel="canonical"]').getAttribute('href')
+        expect(canonical && new URL(canonical, page.url()).pathname).toBe(path)
+        for (const [language, target] of Object.entries({ ...paths, 'x-default': paths.de })) {
+          const href = await page.locator(`link[rel="alternate"][hreflang="${language}"]`).getAttribute('href')
+          expect(href && new URL(href, page.url()).pathname).toBe(target)
+        }
+        await expect(page.locator('meta[name="robots"][content*="noindex"]')).toHaveCount(0)
+      }
+    }
+
+    for (const prefix of ['', '/en']) {
+      const response = await request.get(`${prefix}/clinics/${fixtureSlugs.get('unpublished')}`)
+      expect(response.status()).toBe(404)
+    }
+  })
+
+  test('keeps locale, clinic facts and gallery navigation across both overview languages @smoke', async ({
+    page,
+    context,
+  }, testInfo) => {
+    test.setTimeout(120_000)
+    const issues = createBrowserIssueCollector(page)
+    await setCookieConsent(context)
+    const slug = fixtureSlugs.get('complete')
+    const profile = {
+      de: {
+        prefix: '',
+        description: 'Profiltest Klinikbeschreibung',
+        city: 'Profilteststadt',
+        alt: 'Eingang zur Profiltestklinik',
+        caption: 'Profiltest Bildtitel',
+        gallery: /^Foto ansehen/,
+        language: 'Sprache',
+      },
+      en: {
+        prefix: '/en',
+        description: 'Profile test clinic description',
+        city: 'Profile Test City',
+        alt: 'Entrance to the profile test clinic',
+        caption: 'Profile test caption',
+        gallery: /^View photo/,
+        language: 'Language',
+      },
+    }
+    await page.goto(`/clinics/${slug}`)
+    const name = await page.getByRole('heading', { level: 1 }).textContent()
+    for (const locale of ['de', 'en'] as const) {
+      const copy = profile[locale]
+      await page.setViewportSize({ width: 1280, height: 900 })
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText(name ?? '')
+      await expect(page.getByText(copy.description, { exact: true })).toBeVisible()
+      await expect(page.getByText(new RegExp(copy.city))).toBeVisible()
+      await expect(page.getByRole('img', { name: copy.alt })).toBeVisible()
+      for (const width of [320, 375, 640, 768, 1024, 1280]) {
+        await page.setViewportSize({ width, height: width === 640 ? 390 : 760 })
+        expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width)
+        const openGallery = page.getByRole('button', { name: copy.gallery })
+        await openGallery.focus()
+        await page.keyboard.press('Enter')
+        const gallery = page.getByRole('dialog')
+        await expect(gallery).toBeVisible()
+        await expect(gallery.getByText(copy.caption, { exact: true })).toBeVisible()
+        if (width === 640) {
+          await page.screenshot({
+            path: testInfo.outputPath(`clinic-gallery-${locale}-short.png`),
+            animations: 'disabled',
+          })
+        }
+        await page.keyboard.press('Escape')
+        await expect(gallery).not.toBeVisible()
+        await expect(openGallery).toBeFocused()
+      }
+      await page.evaluate(() => window.scrollTo(0, 0))
+      await page.screenshot({ path: testInfo.outputPath(`clinic-overview-${locale}.png`), animations: 'disabled' })
+      const alternate = locale === 'de' ? 'en' : 'de'
+      await page
+        .getByRole('banner')
+        .getByRole('button', { name: new RegExp(copy.language) })
+        .click()
+      await page
+        .getByRole('dialog', { name: copy.language })
+        .getByRole('link', { name: alternate === 'en' ? 'English' : 'Deutsch' })
+        .click()
+      await expect(page).toHaveURL((url) => url.pathname === `${profile[alternate].prefix}/clinics/${slug}`)
+    }
     await expectNoBrowserIssues(issues)
   })
 })

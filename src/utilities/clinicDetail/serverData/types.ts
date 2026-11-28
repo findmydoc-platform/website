@@ -1,4 +1,5 @@
 import type { Payload } from 'payload'
+import type { UiCopyLocale } from '@/i18n/requestLocale'
 
 import type {
   Accreditation,
@@ -15,6 +16,7 @@ import type { MediaDescriptor } from '@/utilities/media/relationMedia'
 
 export type ClinicDetailServerDataOptions = {
   draft: boolean
+  locale: UiCopyLocale
 }
 
 export type ClinicDetailRepositoryContext = {
@@ -23,6 +25,7 @@ export type ClinicDetailRepositoryContext = {
 
 export type ClinicDetailMappingArgs = {
   clinic: Clinic
+  locale: UiCopyLocale
   heroImage: {
     src: string
     alt: string

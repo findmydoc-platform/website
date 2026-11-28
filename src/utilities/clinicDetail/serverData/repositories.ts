@@ -1,4 +1,5 @@
 import type { Payload } from 'payload'
+import type { UiCopyLocale } from '@/i18n/requestLocale'
 
 import type {
   Accreditation,
@@ -62,13 +63,20 @@ async function collectAllPages<T>(fetchPage: (page: number) => Promise<PagedDocs
   return docs
 }
 
-export async function findClinicBySlug(payload: Payload, slug: string, draft: boolean): Promise<Clinic | null> {
+export async function findClinicBySlug(
+  payload: Payload,
+  slug: string,
+  draft: boolean,
+  locale: UiCopyLocale,
+): Promise<Clinic | null> {
   const result = await payload.find({
     collection: 'clinics',
     depth: 2,
     limit: 1,
     pagination: false,
     overrideAccess: draft,
+    locale,
+    fallbackLocale: false,
     where: {
       slug: {
         equals: slug,
@@ -407,7 +415,7 @@ export async function findAccreditationsByIds(payload: Payload, accreditationIds
   return allDocs
 }
 
-export async function findCitiesByIds(payload: Payload, cityIds: number[]): Promise<City[]> {
+export async function findCitiesByIds(payload: Payload, cityIds: number[], locale: UiCopyLocale): Promise<City[]> {
   if (cityIds.length === 0) return []
 
   const allDocs: City[] = []
@@ -422,6 +430,8 @@ export async function findCitiesByIds(payload: Payload, cityIds: number[]): Prom
         limit: QUERY_PAGE_SIZE,
         pagination: true,
         overrideAccess: false,
+        locale,
+        fallbackLocale: false,
         where: {
           id: {
             in: cityChunk,
@@ -430,6 +440,7 @@ export async function findCitiesByIds(payload: Payload, cityIds: number[]): Prom
         select: {
           id: true,
           name: true,
+          displayName: true,
           updatedAt: true,
         },
       })

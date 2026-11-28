@@ -757,6 +757,24 @@ export interface Clinic {
     [k: string]: unknown;
   } | null;
   /**
+   * Patient-facing overview in the selected language
+   */
+  localizedDescription?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
    * Tags for this clinic
    */
   tags?: (number | Tag)[] | null;
@@ -1879,6 +1897,28 @@ export interface ClinicMedia {
    * Optional caption for the media
    */
   caption?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * Image description for screen readers in the selected language
+   */
+  localizedAlt?: string | null;
+  /**
+   * Optional image caption in the selected language
+   */
+  localizedCaption?: {
     root: {
       type: string;
       children: {
@@ -4876,6 +4916,8 @@ export interface ClinicMediaSelect<T extends boolean = true> {
   stableId?: T;
   alt?: T;
   caption?: T;
+  localizedAlt?: T;
+  localizedCaption?: T;
   status?: T;
   clinic?: T;
   createdBy?: T;
@@ -5967,6 +6009,7 @@ export interface ClinicsSelect<T extends boolean = true> {
   name?: T;
   averageRating?: T;
   description?: T;
+  localizedDescription?: T;
   tags?: T;
   treatments?: T;
   thumbnail?: T;

@@ -34,7 +34,7 @@ An entity becomes independently indexable only when it has a stable public route
 
 The current public entity surfaces are:
 
-- `/clinics/[slug]`: approved clinic profiles; the public slug is the URL identifier.
+- `/clinics/[slug]` and `/en/clinics/[slug]` serve the German and English views of each approved clinic. Both URLs use the shared clinical record and slug.
 - `/listing-comparison`: the indexable clinic comparison entry point.
 - Published CMS pages and posts.
 

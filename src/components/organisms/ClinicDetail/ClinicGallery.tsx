@@ -5,6 +5,8 @@ import { Images } from 'lucide-react'
 
 import { Button } from '@/components/atoms/button'
 import { Media } from '@/components/molecules/Media'
+import { getClinicProfileTranslator } from '@/features/clinicDetail/overviewCopy'
+import type { UiCopyLocale } from '@/i18n/requestLocale'
 
 import type { ClinicDetailGalleryImage } from '@/features/clinicDetail/contracts'
 
@@ -14,17 +16,19 @@ const ClinicGalleryLightbox = React.lazy(() =>
 
 type ClinicGalleryProps = {
   clinicName: string
+  locale?: UiCopyLocale
   galleryImages: ClinicDetailGalleryImage[]
   heroImage: { src: string; alt: string }
 }
 
-export function ClinicGallery({ clinicName, galleryImages, heroImage }: ClinicGalleryProps) {
+export function ClinicGallery({ clinicName, galleryImages, heroImage, locale = 'en' }: ClinicGalleryProps) {
+  const t = getClinicProfileTranslator(locale)
   const triggerRef = React.useRef<HTMLButtonElement>(null)
   const [hasRequestedLightbox, setHasRequestedLightbox] = React.useState(false)
   const [open, setOpen] = React.useState(false)
   const displayImage = galleryImages[0] ?? heroImage
   const imageCount = galleryImages.length
-  const galleryAction = imageCount === 1 ? 'View photo' : `View all ${imageCount} photos`
+  const galleryAction = t('gallery.action', { count: imageCount })
 
   const preloadLightbox = () => {
     void import('./ClinicGalleryLightbox')
@@ -57,7 +61,7 @@ export function ClinicGallery({ clinicName, galleryImages, heroImage }: ClinicGa
             variant="secondary"
             className="min-h-11 rounded-full border-primary/20 bg-background px-5 text-primary shadow-brand-soft"
             aria-haspopup="dialog"
-            aria-label={`${galleryAction} for ${clinicName}`}
+            aria-label={t('gallery.actionFor', { action: galleryAction, clinic: clinicName })}
             onClick={openLightbox}
             onFocus={preloadLightbox}
             onPointerEnter={preloadLightbox}
@@ -72,6 +76,7 @@ export function ClinicGallery({ clinicName, galleryImages, heroImage }: ClinicGa
         <React.Suspense fallback={null}>
           <ClinicGalleryLightbox
             clinicName={clinicName}
+            locale={locale}
             galleryImages={galleryImages}
             open={open}
             onOpenChange={setOpen}

@@ -1,3 +1,5 @@
+import { cache } from 'react'
+
 import { loadPageRoute } from './loadPageRoute'
 import { resolvePost } from './resolvePost'
 import { FRONTEND_PATH_HEADER, FRONTEND_PREVIEW_LOCALE_HEADER, UI_COPY_LOCALE_HEADER } from '@/i18n/requestLocale'
@@ -34,7 +36,7 @@ const DEDICATED_PATHS = new Set([
 
 const DEDICATED_PATH_FAMILIES = /^\/(?:admin(?:\/|$)|(?:clinics|patient\/inquiries|posts\/page)\/[^/]+$)/
 
-export async function resolveCmsDocumentLocale(requestHeaders: Headers): Promise<ContentLocale | undefined> {
+export const resolveCmsDocumentLocale = cache(async (requestHeaders: Headers): Promise<ContentLocale | undefined> => {
   if (requestHeaders.has(UI_COPY_LOCALE_HEADER)) return undefined
   const pathname = requestHeaders.get(FRONTEND_PATH_HEADER)?.replace(/\/$/, '') || '/'
   if (DEDICATED_PATHS.has(pathname) || DEDICATED_PATH_FAMILIES.test(pathname)) return undefined
@@ -60,4 +62,4 @@ export async function resolveCmsDocumentLocale(requestHeaders: Headers): Promise
 
   const { route } = await loadPageRoute(segments, previewLocale)
   return route?.locale
-}
+})

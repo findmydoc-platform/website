@@ -10,6 +10,8 @@ import { PayloadRedirects } from '@/app/(frontend)/_components/PayloadRedirects'
 
 import { RenderBlocks } from '@/blocks/RenderBlocks'
 import { generateMeta } from '@/utilities/generateMeta'
+import { findPublicCmsCanonicalBySlug } from '@/app/(frontend)/_data/resolveRedirectTargetPath'
+import { parseCmsRedirectPath } from '@/utilities/content/cmsRedirectPaths'
 import { loadPageRoute } from '@/app/(frontend)/_data/loadPageRoute'
 import { LivePreviewListener } from '@/components/organisms/LivePreviewListener'
 import { CmsLanguageSwitchRoute } from '@/features/languageSwitch/CmsLanguageSwitchRoute.client'
@@ -32,6 +34,17 @@ type Args = {
 
 const isTurkishHoldingHome = (slug?: string[]) => slug?.length === 1 && '/' + slug[0] === TEMPORARY_LANDING_PATHS.tr
 
+async function findGermanPageSource(url: string, requestHeaders: Headers) {
+  const proxySource = requestHeaders.get(CMS_TRANSLATION_SOURCE_HEADER)
+  if (proxySource) return proxySource
+  if (url === '/en') return '/'
+
+  const source = parseCmsRedirectPath(url)
+  if (source?.collection !== 'pages' || source.locale !== 'en') return null
+  const germanPage = await findPublicCmsCanonicalBySlug({ ...source, locale: 'de' })
+  return germanPage?.path ?? null
+}
+
 async function loadRoute({ params, searchParams }: Args, requestHeaders: Headers) {
   const [{ slug = ['home'] }, { locale }] = await Promise.all([params, searchParams])
   const result = await loadPageRoute(slug, locale)
@@ -39,7 +52,7 @@ async function loadRoute({ params, searchParams }: Args, requestHeaders: Headers
   const holdingLegal = isTemporaryLandingModeRequest(requestHeaders) && Boolean(getManagedLegalPageSlugFromPath(url))
   const germanPath =
     !holdingLegal && !route && !draft && (url === '/en' || url.startsWith('/en/'))
-      ? (requestHeaders.get(CMS_TRANSLATION_SOURCE_HEADER) ?? (url === '/en' ? '/' : null))
+      ? await findGermanPageSource(url, requestHeaders)
       : null
   return { ...result, germanPath, holdingLegal }
 }

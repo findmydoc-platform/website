@@ -1,7 +1,5 @@
-import { readdirSync } from 'node:fs'
-import { relative, sep } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { FRONTEND_PATH_HEADER, UI_COPY_LOCALE_HEADER, uiCopyLocaleFromPath } from '@/i18n/requestLocale'
 
 const mocks = vi.hoisted(() => ({
   headers: vi.fn(),
@@ -30,25 +28,13 @@ vi.mock('@/features/cookieConsent/CookieConsentClientAdapter.client', () => ({
 vi.mock('@vercel/toolbar/next', () => ({ VercelToolbar: () => null }))
 
 async function renderLayout(pathname: string) {
-  mocks.headers.mockResolvedValue(new Headers({ 'x-findmydoc-frontend-path': pathname }))
+  const requestHeaders = new Headers({ [FRONTEND_PATH_HEADER]: pathname })
+  const requestLocale = uiCopyLocaleFromPath(pathname)
+  if (requestLocale) requestHeaders.set(UI_COPY_LOCALE_HEADER, requestLocale)
+  mocks.headers.mockResolvedValue(requestHeaders)
   const { default: RootLayout } = await import('@/app/(frontend)/layout')
   return RootLayout({ children: null })
 }
-
-const frontendRoutes = fileURLToPath(new URL('../../../../src/app/(frontend)/', import.meta.url))
-const cmsRouteDirectories = new Set(['(pages)/[...slug]', 'posts/[slug]', 'en/posts/[slug]'])
-const dedicatedPagePaths = readdirSync(frontendRoutes, { recursive: true, withFileTypes: true })
-  .filter((entry) => entry.isFile() && entry.name === 'page.tsx')
-  .map((entry) => relative(frontendRoutes, entry.parentPath).split(sep))
-  .filter((segments) => !cmsRouteDirectories.has(segments.join('/')))
-  .map(
-    (segments) =>
-      '/' +
-      segments
-        .filter((segment) => !segment.startsWith('('))
-        .map((segment) => (segment.startsWith('[') ? 'route-param' : segment))
-        .join('/'),
-  )
 
 describe('frontend document language', () => {
   beforeEach(() => {
@@ -84,10 +70,17 @@ describe('frontend document language', () => {
     ])
   })
 
-  it.each(dedicatedPagePaths)('keeps %s English without looking for a CMS document', async (path) => {
+  it.each([
+    ['/register/patient', 'de'],
+    ['/en/register/patient', 'en'],
+    ['/en/contact', 'en'],
+    ['/en/logout', 'en'],
+    ['/posts', 'de'],
+    ['/auth/invite/complete', 'en'],
+  ])('renders %s in %s without looking for a CMS document', async (path, locale) => {
     const layout = await renderLayout(path)
 
-    expect(layout.props.lang).toBe('en')
+    expect(layout.props.lang).toBe(locale)
     expect(mocks.findPublicPageRoute).not.toHaveBeenCalled()
     expect(mocks.getCachedPublicPostRoute).not.toHaveBeenCalled()
   })

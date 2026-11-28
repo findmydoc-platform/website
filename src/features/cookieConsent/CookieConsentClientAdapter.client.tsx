@@ -14,8 +14,9 @@ import {
 } from '@/posthog/client-api'
 
 import { temporaryLandingLocaleFromPath } from '@/features/temporaryLandingMode/i18n'
-import { AUTH_CONFIRMATION_PATH, localizedPatientAuthPath } from '@/i18n/patientAuthPath'
-import { patientAuthLocaleFromPath, type UiCopyLocale } from '@/i18n/requestLocale'
+import { AUTH_CONFIRMATION_PATH } from '@/i18n/patientAuthPath'
+import { publicPageLocaleFromPath } from '@/i18n/publicNavigationPath'
+import type { UiCopyLocale } from '@/i18n/requestLocale'
 import { getManagedLegalPageSlugFromPath } from '@/utilities/legalPages'
 
 import type { CookieConsentConfig } from './types'
@@ -31,13 +32,11 @@ export function CookieConsentClientAdapter({ config, ...props }: CookieConsentCl
   const launcherSlot = useCookieConsentLauncherSlot()
   const path = pathname?.replace(/\/+$/, '') || '/'
   const locale =
-    patientAuthLocaleFromPath(path) ??
-    (path === '/en' ||
-    path.startsWith('/en/') ||
-    path === localizedPatientAuthPath(AUTH_CONFIRMATION_PATH, 'en') ||
-    temporaryLandingLocaleFromPath(path) === 'tr'
-      ? 'en'
-      : 'de')
+    path === AUTH_CONFIRMATION_PATH
+      ? 'de'
+      : temporaryLandingLocaleFromPath(path) === 'tr'
+        ? 'en'
+        : publicPageLocaleFromPath(path)
   const activeConfig = config && 'de' in config ? config[locale] : config
   const deferInitialPrompt = Boolean(
     getManagedLegalPageSlugFromPath(path) ||

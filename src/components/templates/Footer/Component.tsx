@@ -6,36 +6,43 @@ import { Container } from '@/components/molecules/Container'
 import { UiLink } from '@/components/molecules/Link'
 import { Logo } from '@/components/molecules/Logo/Logo'
 import { SocialLink } from '@/components/molecules/SocialLink'
-import { LEGACY_LEGAL_REDIRECTS, REQUIRED_LEGAL_FOOTER_LINKS } from '@/utilities/legalPages'
+import { getManagedLegalPageSlugFromPath, LEGACY_LEGAL_REDIRECTS } from '@/utilities/legalPages'
 import { DISCLAIMER_COPY } from '@/utilities/legal/disclaimers'
 import type { FooterNavGroup } from '@/utilities/normalizeNavItems'
 
 export type FooterProps = {
   footerGroups: FooterNavGroup[]
+  copy?: FooterCopy
   holdingMode?: boolean
   logoSrc?: string
   showPreviewBadge?: boolean
 }
 
-const legalFooterHrefs = new Set([
-  ...REQUIRED_LEGAL_FOOTER_LINKS.map(({ href }) => href),
-  ...LEGACY_LEGAL_REDIRECTS.map(({ from }) => from),
-])
+type FooterCopy = {
+  main: string
+  legal: string
+  description: string
+  disclaimer: string
+  copyright: string
+}
 
-const footerDescription =
-  'Helping patients make clearer clinic decisions. Helping clinics present their strengths responsibly.'
-
-function normalizeFooterHref(href: string): string {
-  return href === '/' ? href : href.replace(/\/+$/, '')
+const defaultFooterCopy: FooterCopy = {
+  main: 'Footer primary',
+  legal: 'Footer legal quick links',
+  description: 'Helping patients make clearer clinic decisions. Helping clinics present their strengths responsibly.',
+  disclaimer: DISCLAIMER_COPY.platform,
+  copyright: `© Copyright ${new Date().getFullYear()}. findmydoc All Rights Reserved`,
 }
 
 export const Footer: React.FC<FooterProps> = ({
   footerGroups,
+  copy = defaultFooterCopy,
   holdingMode = false,
   logoSrc,
   showPreviewBadge = false,
 }) => {
-  const isLegalLink = (href: string) => legalFooterHrefs.has(normalizeFooterHref(href))
+  const isLegalLink = (href: string) =>
+    getManagedLegalPageSlugFromPath(href) !== null || LEGACY_LEGAL_REDIRECTS.some(({ from }) => href === from)
   const legalQuickLinks = footerGroups
     .flatMap((group) => group.items)
     .filter((link) => isLegalLink(link.href))
@@ -53,7 +60,7 @@ export const Footer: React.FC<FooterProps> = ({
           <div className="flex flex-col gap-8 md:hidden">
             <div className="flex flex-col items-start gap-3">
               <Logo loading="lazy" priority="low" src={logoSrc} showPreviewBadge={showPreviewBadge} className="h-10" />
-              <p className="max-w-72 text-sm leading-6 text-supporting-foreground">{footerDescription}</p>
+              <p className="max-w-72 text-sm leading-6 text-supporting-foreground">{copy.description}</p>
             </div>
 
             {visibleMobileFooterGroups.length > 0 ? (
@@ -78,7 +85,7 @@ export const Footer: React.FC<FooterProps> = ({
             ) : null}
 
             {legalQuickLinks.length > 0 ? (
-              <nav aria-label="Footer legal quick links" className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <nav aria-label={copy.legal} className="flex flex-wrap items-center gap-x-4 gap-y-2">
                 {legalQuickLinks.map((link) => (
                   <UiLink key={`legal-${link.href}-${link.label ?? ''}`} {...link} variant="footer" />
                 ))}
@@ -86,7 +93,7 @@ export const Footer: React.FC<FooterProps> = ({
             ) : null}
 
             <div className="flex flex-col items-start gap-4 border-t border-site-divider/60 pt-4">
-              <p className="text-sm text-supporting-foreground">{DISCLAIMER_COPY.platform}</p>
+              <p className="text-sm text-supporting-foreground">{copy.disclaimer}</p>
               {!holdingMode ? (
                 <div className="flex flex-wrap items-center gap-4">
                   <SocialLink href="https://meta.com" aria-label="Meta" platform="meta" variant="outline" />
@@ -99,9 +106,7 @@ export const Footer: React.FC<FooterProps> = ({
                   />
                 </div>
               ) : null}
-              <p className="text-sm text-supporting-foreground">
-                © Copyright {new Date().getFullYear()}. findmydoc All Rights Reserved
-              </p>
+              <p className="text-sm text-supporting-foreground">{copy.copyright}</p>
             </div>
           </div>
 
@@ -115,10 +120,10 @@ export const Footer: React.FC<FooterProps> = ({
                   showPreviewBadge={showPreviewBadge}
                   className="h-11"
                 />
-                <p className="max-w-72 text-sm leading-6 text-supporting-foreground">{footerDescription}</p>
+                <p className="max-w-72 text-sm leading-6 text-supporting-foreground">{copy.description}</p>
               </div>
 
-              <nav aria-label="Footer primary" className="w-full md:flex-1">
+              <nav aria-label={copy.main} className="w-full md:flex-1">
                 <div className="flex flex-col gap-8 sm:gap-10 md:flex-row md:items-start md:justify-between md:gap-x-6">
                   {footerGroups.map((group) => (
                     <div key={group.title} className="flex flex-col items-start gap-4 pt-0 pl-1.5 md:flex-1 md:basis-0">
@@ -139,11 +144,9 @@ export const Footer: React.FC<FooterProps> = ({
             </div>
 
             <div className="flex flex-col items-center gap-4 pt-2 text-center sm:pt-6">
-              <p className="text-normal text-supporting-foreground">
-                © Copyright {new Date().getFullYear()}. findmydoc All Rights Reserved
-              </p>
+              <p className="text-normal text-supporting-foreground">{copy.copyright}</p>
 
-              <p className="text-sm text-supporting-foreground">{DISCLAIMER_COPY.platform}</p>
+              <p className="text-sm text-supporting-foreground">{copy.disclaimer}</p>
 
               {!holdingMode ? (
                 <div className="flex flex-wrap items-center justify-center gap-4">

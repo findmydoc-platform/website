@@ -13,6 +13,15 @@ const getNavItemKey = (item: HeaderNavItem, index: number): string =>
   item.href ?? `group-${index}-${item.label ?? 'item'}`
 const mobileMenuId = 'header-mobile-navigation'
 
+export type HeaderNavCopy = { main: string; mobile: string; open: string; close: string }
+
+const defaultCopy: HeaderNavCopy = {
+  main: 'Main navigation',
+  mobile: 'Mobile navigation',
+  open: 'Open menu',
+  close: 'Close menu',
+}
+
 /* ------------------------------------------------------------------ */
 /*  Desktop dropdown for a single nav item with subItems              */
 /* ------------------------------------------------------------------ */
@@ -24,13 +33,15 @@ const DesktopDropdown: React.FC<{
   onClose: () => void
   onCloseWithDelay: () => void
 }> = ({ item, open, onOpen, onClose, onCloseWithDelay }) => {
+  const triggerRef = useRef<HTMLButtonElement>(null)
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === 'Escape' && open) {
+        triggerRef.current?.focus()
         onClose()
       }
     },
-    [onClose],
+    [onClose, open],
   )
 
   const handleBlur = useCallback(
@@ -48,11 +59,11 @@ const DesktopDropdown: React.FC<{
       className="relative"
       onMouseEnter={onOpen}
       onMouseLeave={onCloseWithDelay}
-      onFocus={onOpen}
       onBlur={handleBlur}
       onKeyDown={handleKeyDown}
     >
       <button
+        ref={triggerRef}
         type="button"
         className={cn(
           'flex items-center gap-1 rounded-sm px-1.5 py-1 font-bold text-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-hidden',
@@ -77,6 +88,7 @@ const DesktopDropdown: React.FC<{
                 <li key={sub.href}>
                   <Link
                     href={sub.href}
+                    hrefLang={sub.hrefLang}
                     className="block rounded-sm px-3 py-2 text-foreground transition-colors hover:bg-site-section hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-hidden"
                     onClick={onClose}
                     {...newTabProps}
@@ -101,14 +113,15 @@ const MobileMenu: React.FC<{
   navItems: HeaderNavItem[]
   open: boolean
   onClose: () => void
-}> = ({ navItems, open, onClose }) => {
+  label: string
+}> = ({ navItems, open, onClose, label }) => {
   if (!open) return null
 
   return (
     <nav
       id={mobileMenuId}
       className="fixed inset-x-0 top-[var(--site-header-height)] bottom-0 z-[60] border-t border-site-divider/70 bg-site-chrome/98 shadow-lg backdrop-blur lg:hidden"
-      aria-label="Mobile navigation"
+      aria-label={label}
     >
       <div className="flex h-full flex-col overflow-y-auto overscroll-contain px-5 pt-3 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
         {navItems.map((item, index) => {
@@ -131,7 +144,8 @@ const MobileMenu: React.FC<{
                           <Link
                             key={sub.href}
                             href={sub.href}
-                            className="min-h-11 rounded-sm px-3 py-3 text-sm text-foreground transition-colors hover:bg-site-section hover:text-foreground"
+                            hrefLang={sub.hrefLang}
+                            className="min-h-11 rounded-sm px-3 py-3 text-sm text-foreground transition-colors hover:bg-site-section hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-hidden"
                             onClick={onClose}
                             {...newTabProps}
                           >
@@ -159,8 +173,9 @@ const MobileMenu: React.FC<{
             <Link
               key={itemKey}
               href={item.href}
+              hrefLang={item.hrefLang}
               onClick={onClose}
-              className="block min-h-11 py-3 text-base font-semibold text-foreground transition-colors hover:text-foreground"
+              className="block min-h-11 py-3 text-base font-semibold text-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-hidden"
               {...newTabProps}
             >
               {item.label}
@@ -176,14 +191,17 @@ const MobileMenu: React.FC<{
 /*  HeaderNav — main export                                           */
 /* ------------------------------------------------------------------ */
 
-export const HeaderNav: React.FC<{ navItems: HeaderNavItem[] }> = ({ navItems }) => {
+export const HeaderNav: React.FC<{ navItems: HeaderNavItem[]; copy?: HeaderNavCopy }> = ({
+  navItems,
+  copy = defaultCopy,
+}) => {
   const items = navItems || []
   const hasMobileMenuItems = items.length > 0
   const desktopNavRef = useRef<HTMLElement>(null)
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null)
   const closeDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [openIndex, setOpenIndex] = useState<number | null>(null)
-  const getHeaderLogoLink = useCallback(() => document.querySelector<HTMLAnchorElement>('header a[href="/"]'), [])
+  const getHeaderLogoLink = useCallback(() => document.querySelector<HTMLAnchorElement>('header a[data-site-home]'), [])
   const {
     close: closeMobileMenu,
     isOpen: isMobileMenuOpen,
@@ -239,7 +257,7 @@ export const HeaderNav: React.FC<{ navItems: HeaderNavItem[] }> = ({ navItems })
   return (
     <>
       {/* Desktop nav */}
-      <nav ref={desktopNavRef} className="hidden items-center gap-4 lg:flex lg:gap-6" aria-label="Main navigation">
+      <nav ref={desktopNavRef} className="hidden items-center gap-4 lg:flex lg:gap-6" aria-label={copy.main}>
         {items.map((item, i) => {
           const itemKey = getNavItemKey(item, i)
 
@@ -268,10 +286,11 @@ export const HeaderNav: React.FC<{ navItems: HeaderNavItem[] }> = ({ navItems })
             <UiLink
               key={itemKey}
               href={item.href}
+              hrefLang={item.hrefLang}
               label={item.label}
               newTab={item.newTab}
               appearance="inline"
-              className="rounded-sm px-1.5 py-1 font-bold text-foreground transition-colors hover:text-foreground"
+              className="rounded-sm px-1.5 py-1 font-bold text-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-hidden"
             />
           )
         })}
@@ -282,7 +301,7 @@ export const HeaderNav: React.FC<{ navItems: HeaderNavItem[] }> = ({ navItems })
           ref={mobileMenuButtonRef}
           type="button"
           className="inline-flex size-11 items-center justify-center rounded-md text-foreground transition-colors hover:bg-site-section hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-hidden lg:hidden"
-          aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
+          aria-label={isMobileMenuOpen ? copy.close : copy.open}
           aria-controls={mobileMenuId}
           aria-expanded={isMobileMenuOpen}
           onClick={toggleMobileMenu}
@@ -292,7 +311,9 @@ export const HeaderNav: React.FC<{ navItems: HeaderNavItem[] }> = ({ navItems })
       ) : null}
 
       {/* Mobile panel */}
-      {hasMobileMenuItems ? <MobileMenu navItems={items} open={isMobileMenuOpen} onClose={closeMobileMenu} /> : null}
+      {hasMobileMenuItems ? (
+        <MobileMenu navItems={items} open={isMobileMenuOpen} onClose={closeMobileMenu} label={copy.mobile} />
+      ) : null}
     </>
   )
 }

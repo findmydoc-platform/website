@@ -107,6 +107,7 @@ for (const variant of variants) {
     await expect(alternate).toHaveAttribute('href', variant.alternate)
     await alternate.press('Enter')
     await expect.poll(() => new URL(page.url()).pathname).toBe(variant.alternate)
+    await expect(page.locator('html')).toHaveAttribute('lang', variant.locale === 'de' ? 'en' : 'de')
     await page.goBack()
     await expect(specialty).toBeVisible()
 

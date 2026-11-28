@@ -15,6 +15,7 @@ import { ScrollReveal } from '@/components/molecules/ScrollReveal'
 import { LocalizedPublicContactSection } from '@/features/contactRequests/LocalizedPublicContactSection'
 import { CmsLanguageSwitchRoute } from '@/features/languageSwitch/CmsLanguageSwitchRoute.client'
 import { getTaxonomyDisplayName } from '@/features/listingComparison/taxonomy'
+import { CmsDocumentLanguage } from '@/features/uiCopy/DocumentLanguage.client'
 import { BLOG_ARCHIVE_PATHS } from '@/i18n/blogArchivePath'
 import { LISTING_COMPARISON_PATHS } from '@/i18n/listingComparisonPath'
 import { getCachedPostArchivePage, type PublicPageRoute } from '@/utilities/content/serverData'
@@ -75,9 +76,10 @@ export async function renderFullHome(
 
   return (
     <article lang={locale}>
+      <CmsDocumentLanguage locale={locale} />
       <CmsLanguageSwitchRoute locale={locale} targets={englishAvailable ? fullHomeAlternates : { de: '/' }} />
       <LandingHero
-        title={landingContent.hero.title || page?.title || ''}
+        title={landingContent.hero.title || page?.title || blog('navigation.home')}
         description={landingContent.hero.description}
         image={landingContent.hero.image}
         variant="homepage"

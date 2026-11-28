@@ -37,14 +37,14 @@ const attachRequiredMedia = (landingPages: LandingPage): LandingPage => {
     testimonial.image = buildMedia(`/platform-media/${testimonial.author}.webp`, testimonial.author)
   })
   landingPages.home.process.steps.forEach((step) => {
-    step.image = buildMedia(`/platform-media/home-process-${step.step}.webp`, step.title)
+    step.image = buildMedia(`/platform-media/home-process-${step.step}.webp`, step.title ?? undefined)
   })
   landingPages.clinicPartners.hero.image = buildMedia(
     '/platform-media/clinic-partner-hero-large.webp',
     'Clinic partner hero image',
   )
   landingPages.clinicPartners.process.steps.forEach((step) => {
-    step.image = buildMedia(`/platform-media/partner-process-${step.step}.webp`, step.title)
+    step.image = buildMedia(`/platform-media/partner-process-${step.step}.webp`, step.title ?? undefined)
   })
   landingPages.clinicPartners.team.forEach((member) => {
     member.image = buildMedia(`/platform-media/${member.name}.webp`, member.name)

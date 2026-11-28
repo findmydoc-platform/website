@@ -63,7 +63,10 @@ async function stageHomePage() {
   }
 }
 
-void stageHomePage().catch((error: unknown) => {
-  console.error(error)
-  process.exitCode = 1
-})
+void stageHomePage().then(
+  () => process.exit(0),
+  (error: unknown) => {
+    console.error(error)
+    process.exit(1)
+  },
+)

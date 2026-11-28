@@ -311,8 +311,7 @@ describe('frontend home page route', () => {
 
   it('returns CMS homepage metadata when landing request header is missing', async () => {
     const landingPages = cloneBaselineLandingPages()
-    landingPages.home.seo.title = 'Test homepage title'
-    landingPages.home.seo.description = 'Test homepage description'
+    landingPages.home.seo = { title: 'Test homepage title', description: 'Test homepage description' }
     mocks.payloadFindGlobalMock.mockResolvedValueOnce(landingPages)
     const pageModule = await import('@/app/(frontend)/page')
     const metadata = await pageModule.generateMetadata()

@@ -427,7 +427,7 @@ function localizeHomeText(fields: Field[]): Field[] {
       return { ...field, fields: localizeHomeText(field.fields) }
     }
     if ((field.type === 'text' || field.type === 'textarea') && field.name !== 'author') {
-      return { ...field, localized: true }
+      return { ...field, localized: true, required: false }
     }
     return field
   })

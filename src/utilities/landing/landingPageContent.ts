@@ -35,7 +35,7 @@ type SectionIntro = {
 }
 
 type LandingButtonCta = {
-  buttonText: string
+  buttonText?: string
   buttonLink?: string
 }
 
@@ -134,7 +134,7 @@ export type ClinicPartnerLandingContent = {
   categoriesIntro: SectionIntro
   cta: {
     title: string
-    buttonText: string
+    buttonText?: string
     buttonLink?: string
   }
   team: LandingTeamMember[]
@@ -373,7 +373,8 @@ const normalizeLandingCtaButtonLink = (
   const safeHref = normalizeSafeLandingHref(href, { allowInternalPath: true })
 
   // Unpublished and trashed targets can appear as unresolved references in public reads.
-  if (!safeHref && isReference && linkValue.reference) return undefined
+  if (!safeHref && ((isReference && linkValue.reference) || (linkValue.type === 'custom' && linkValue.url == null)))
+    return undefined
 
   if (!safeHref) {
     throw new Error(`Landing CTA link ${fieldPath} is missing or unsafe`)
@@ -391,7 +392,9 @@ const normalizeLandingCtaButtonLink = (
   return (locale === 'en' ? (en ?? de) : de) + suffix
 }
 
-const normalizeLandingCtaButtonText = (value: string | null | undefined, fieldPath: string): string => {
+const normalizeLandingCtaButtonText = (value: string | null | undefined, fieldPath: string): string | undefined => {
+  if (value == null) return undefined
+
   const text = optionalText(value)?.trim()
 
   if (!text) {

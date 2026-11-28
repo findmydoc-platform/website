@@ -110,27 +110,29 @@ export async function renderClinicPartnerPage(locale: ContentLocale) {
           }}
         />
       </ScrollReveal>
-      <ScrollReveal>
-        <section className="py-20">
-          <CallToAction
-            variant="spotlight"
-            richText={
-              <Heading as="h2" align="left" className="text-4xl font-bold text-foreground md:text-5xl">
-                {landingContent.cta.title}
-              </Heading>
-            }
-            links={[
-              {
-                href: partnerContactHref,
-                label: landingContent.cta.buttonText,
-                appearance: 'default',
-                size: 'lg',
-                className: 'bg-secondary text-white hover:bg-secondary/90',
-              },
-            ]}
-          />
-        </section>
-      </ScrollReveal>
+      {landingContent.cta.buttonText && (
+        <ScrollReveal>
+          <section className="py-20">
+            <CallToAction
+              variant="spotlight"
+              richText={
+                <Heading as="h2" align="left" className="text-4xl font-bold text-foreground md:text-5xl">
+                  {landingContent.cta.title}
+                </Heading>
+              }
+              links={[
+                {
+                  href: partnerContactHref,
+                  label: landingContent.cta.buttonText,
+                  appearance: 'default',
+                  size: 'lg',
+                  className: 'bg-secondary text-white hover:bg-secondary/90',
+                },
+              ]}
+            />
+          </section>
+        </ScrollReveal>
+      )}
       <ScrollReveal>
         <LandingTeam
           team={landingContent.team}
@@ -175,7 +177,7 @@ export async function renderClinicPartnerPage(locale: ContentLocale) {
           className="border-t border-site-divider/60"
           copy={applicationCopy}
           locale={locale}
-          title={landingContent.registrationIntro.title}
+          title={landingContent.registrationIntro.title || applicationCopy.title}
           description={landingContent.registrationIntro.description}
           id="contact"
           treatmentCategories={clinicRegistrationTreatmentCategories}

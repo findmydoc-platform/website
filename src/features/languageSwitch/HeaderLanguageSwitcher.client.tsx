@@ -4,8 +4,8 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 
 import { PublicLanguageSwitcher } from '@/components/molecules/PublicLanguageSwitcher'
-import { isAuthConfirmationPath, uiCopyLocaleFromPath, type UiCopyLocale } from '@/i18n/requestLocale'
-import { DEFAULT_CONTENT_LOCALE } from '@/utilities/contentLocalization'
+import { isAuthConfirmationPath, type UiCopyLocale } from '@/i18n/requestLocale'
+import { publicPageLocaleFromPath } from '@/i18n/publicNavigationPath'
 
 import type { languageSwitcherCopy } from './copy'
 import { useActiveLanguageSwitchRoute } from './LanguageSwitchRouteProvider.client'
@@ -30,7 +30,7 @@ export function HeaderLanguageSwitcher({
     return null
   }
 
-  const locale = route?.locale ?? uiCopyLocaleFromPath(pathname) ?? DEFAULT_CONTENT_LOCALE
+  const locale = route?.locale ?? publicPageLocaleFromPath(pathname)
   const copy = copyByLocale[locale]
 
   return (
@@ -41,7 +41,8 @@ export function HeaderLanguageSwitcher({
       options={languages.map((language) => ({
         locale: language,
         name: copyByLocale[language].name,
-        unavailable: copyByLocale[language].unavailable,
+        unavailable: copy.unavailable,
+        unavailableLocale: locale,
         href: route?.targets[language],
       }))}
       confirmation={{

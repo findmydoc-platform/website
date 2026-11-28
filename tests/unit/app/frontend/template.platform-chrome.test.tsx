@@ -25,7 +25,7 @@ vi.mock('payload', () => ({
   }),
 }))
 
-vi.mock('next/headers', () => ({ headers: mocks.headers }))
+vi.mock('next/headers', () => ({ headers: mocks.headers, draftMode: async () => ({ isEnabled: false }) }))
 vi.mock('next/navigation', () => ({
   usePathname: () => mocks.pathname,
   useRouter: () => ({ push: vi.fn() }),
@@ -54,6 +54,8 @@ vi.mock('@/utilities/getGlobals', () => ({
 
 async function renderTemplate() {
   const { default: FrontendTemplate } = await import('@/app/(frontend)/template')
+  const requestHeaders: Headers = await mocks.headers()
+  if (!requestHeaders.has(FRONTEND_PATH_HEADER)) requestHeaders.set(FRONTEND_PATH_HEADER, mocks.pathname)
   return render(await FrontendTemplate({ children: <h1>Page content</h1> }))
 }
 
@@ -82,19 +84,25 @@ describe('platform navigation during Holding mode', () => {
 
     const header = screen.getByRole('banner')
     const footer = screen.getByRole('contentinfo')
-    expect(within(header).getByRole('link', { name: 'Compare clinics' })).toHaveAttribute('href', '/listing-comparison')
-    expect(within(footer).getByRole('link', { name: 'Compare clinics' })).toHaveAttribute('href', '/listing-comparison')
+    expect(within(header).getByRole('link', { name: 'Kliniken vergleichen' })).toHaveAttribute(
+      'href',
+      '/listing-comparison',
+    )
+    expect(within(footer).getByRole('link', { name: 'Kliniken vergleichen' })).toHaveAttribute(
+      'href',
+      '/listing-comparison',
+    )
     expect(within(footer).getAllByRole('link', { name: 'Instagram' }).length).toBeGreaterThan(0)
     expect(screen.getByRole('heading', { name: 'Page content' })).toBeInTheDocument()
   })
 
-  it('announces the shared Preview notice in English on a German Post', async () => {
+  it('announces the shared Preview notice in German on a German Post', async () => {
     vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'preview')
     mocks.pathname = '/posts/gruener-tee'
 
     await renderTemplate()
 
-    expect(screen.getByRole('note', { name: 'Preview data notice' })).toHaveAttribute('lang', 'en')
+    expect(screen.getByRole('note', { name: 'Hinweis zur Vorschau' })).toHaveAttribute('lang', 'de')
   })
 
   it.each([null, 'patient', 'clinic'])(
@@ -127,7 +135,7 @@ describe('platform navigation during Holding mode', () => {
     const footer = screen.getByRole('contentinfo')
     expect(within(header).getByRole('link', { name: 'Blog' })).toHaveAttribute('href', '/posts')
     expect(within(footer).getByRole('link', { name: 'Blog' })).toHaveAttribute('href', '/posts')
-    expect(screen.queryByRole('link', { name: 'Compare clinics' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Kliniken vergleichen' })).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Instagram' })).not.toBeInTheDocument()
   })
 
@@ -161,7 +169,7 @@ describe('platform navigation during Holding mode', () => {
     fireEvent.click(within(screen.getByRole('banner')).getByRole('button', { name: /Sprache/i }))
 
     expect(screen.getByRole('link', { name: 'English' })).toHaveAttribute('href', '/en/posts/green-tea')
-    expect(screen.queryByRole('link', { name: 'Compare clinics' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Kliniken vergleichen' })).not.toBeInTheDocument()
   })
 
   it('keeps full platform navigation when Holding mode is resolved without a request marker', async () => {
@@ -169,8 +177,10 @@ describe('platform navigation during Holding mode', () => {
 
     await renderTemplate()
 
-    expect(within(screen.getByRole('banner')).getByRole('link', { name: 'Compare clinics' })).toBeInTheDocument()
-    expect(within(screen.getByRole('contentinfo')).getByRole('link', { name: 'Compare clinics' })).toBeInTheDocument()
+    expect(within(screen.getByRole('banner')).getByRole('link', { name: 'Kliniken vergleichen' })).toBeInTheDocument()
+    expect(
+      within(screen.getByRole('contentinfo')).getByRole('link', { name: 'Kliniken vergleichen' }),
+    ).toBeInTheDocument()
   })
 
   it.each(['/posts', '/posts/article', '/posts/page/2'])(
@@ -181,7 +191,7 @@ describe('platform navigation during Holding mode', () => {
       mocks.extractSupabaseUserData.mockResolvedValue(null)
       await renderTemplate()
       expect(within(screen.getByRole('banner')).getByRole('link', { name: 'Blog' })).toBeInTheDocument()
-      expect(screen.queryByRole('link', { name: 'Compare clinics' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('link', { name: 'Kliniken vergleichen' })).not.toBeInTheDocument()
       expect(screen.queryByRole('button', { name: /open account menu/i })).not.toBeInTheDocument()
     },
   )
@@ -197,13 +207,31 @@ describe('platform navigation during Holding mode', () => {
 
     await renderTemplate()
 
-    expect(screen.getByRole('button', { name: 'TP, open account menu' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Kontomenü für Test Patient öffnen' })).toBeInTheDocument()
     expect(mocks.extractSupabaseUserData).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps the account and navigation destinations in the requested English locale where available', async () => {
+    mocks.pathname = '/en/login/patient'
+    mocks.headers.mockResolvedValue(new Headers({ [PUBLIC_SITE_MODE_REQUEST_HEADER]: 'full' }))
+    mocks.extractSupabaseUserData.mockResolvedValue(null)
+
+    await renderTemplate()
+
+    const header = within(screen.getByRole('banner'))
+    expect(header.getByRole('link', { name: 'Compare clinics' })).toHaveAttribute('href', '/en/listing-comparison')
+    fireEvent.keyDown(header.getByRole('button', { name: 'Sign in, open account menu' }), { key: 'Enter' })
+    const menu = within(await screen.findByRole('menu'))
+    expect(menu.getByRole('menuitem', { name: 'Patient login' })).toHaveAttribute('href', '/en/login/patient')
+    expect(menu.getByRole('menuitem', { name: 'Create patient account' })).toHaveAttribute(
+      'href',
+      '/en/register/patient',
+    )
   })
 
   it('updates navigation across login and logout renders while the host stays in Holding mode', async () => {
     const view = await renderTemplate()
-    expect(within(screen.getByRole('banner')).getByRole('link', { name: 'Compare clinics' })).toBeInTheDocument()
+    expect(within(screen.getByRole('banner')).getByRole('link', { name: 'Kliniken vergleichen' })).toBeInTheDocument()
 
     mocks.extractSupabaseUserData.mockResolvedValue(null)
     const { default: FrontendTemplate } = await import('@/app/(frontend)/template')
@@ -213,7 +241,9 @@ describe('platform navigation during Holding mode', () => {
 
     mocks.extractSupabaseUserData.mockResolvedValue({ userType: 'platform' })
     view.rerender(await FrontendTemplate({ children: <h1>Page content</h1> }))
-    expect(within(screen.getByRole('banner')).getByRole('link', { name: 'Compare clinics' })).toBeInTheDocument()
-    expect(within(screen.getByRole('contentinfo')).getByRole('link', { name: 'Compare clinics' })).toBeInTheDocument()
+    expect(within(screen.getByRole('banner')).getByRole('link', { name: 'Kliniken vergleichen' })).toBeInTheDocument()
+    expect(
+      within(screen.getByRole('contentinfo')).getByRole('link', { name: 'Kliniken vergleichen' }),
+    ).toBeInTheDocument()
   })
 })

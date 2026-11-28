@@ -3,6 +3,7 @@
 import { usePathname, useSearchParams } from 'next/navigation'
 import { createContext, Suspense, type ReactNode, useContext, useEffect, useState } from 'react'
 
+import { publicPageLocaleFromPath } from '@/i18n/publicNavigationPath'
 import { isAuthConfirmationPath, uiCopyLocaleFromPath } from '@/i18n/requestLocale'
 import type { ContentLocale } from '@/utilities/contentLocalization'
 import type { TemporaryLandingLocale } from '@/features/temporaryLandingMode/i18n'
@@ -55,7 +56,7 @@ function SyncDocumentLanguage({ locale }: { locale?: DocumentLocale }) {
     )
   }
 
-  return <SetDocumentLanguage locale={uiCopyLocaleFromPath(pathname) ?? 'en'} />
+  return <SetDocumentLanguage locale={publicPageLocaleFromPath(pathname)} />
 }
 
 export function DocumentLanguage({

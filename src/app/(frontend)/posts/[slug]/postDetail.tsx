@@ -26,6 +26,7 @@ import { CMS_TRANSLATION_SOURCE_HEADER } from '@/utilities/routing/cmsRedirectRe
 import { CmsDocumentLanguage } from '@/features/uiCopy/DocumentLanguage.client'
 import type { ContentLocale, ContentLocaleContext } from '@/utilities/contentLocalization'
 import { buildPostsIndexPath } from '@/utilities/content/postPaths'
+import type { PostSummaryDoc } from '@/utilities/content/serverData'
 import { createBlogBreadcrumb, HOME_BREADCRUMB } from '@/utilities/breadcrumbs'
 import { JsonLdScript, buildArticlePageJsonLd } from '@/utilities/structuredData'
 
@@ -78,7 +79,9 @@ export async function renderPost(args: PostPageArgs, pathLocale: ContentLocale) 
   const readTime =
     minutes === null ? undefined : minutes === 0 ? t('article.readTimeShort') : t('article.readTime', { minutes })
   const hasPostContent = Boolean(post.content?.root?.children?.length)
-  const relatedPosts = post.relatedPosts?.filter((related) => typeof related === 'object').filter(({ slug }) => slug)
+  const relatedPosts = post.relatedPosts?.filter((related): related is PostSummaryDoc =>
+    Boolean(related && typeof related === 'object' && related.slug),
+  )
 
   return (
     <article className="pb-16 sm:pb-20" lang={locale}>

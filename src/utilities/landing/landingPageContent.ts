@@ -233,7 +233,12 @@ const normalizeTestimonials = (
       quote: testimonial.quote ?? '',
       author: testimonial.author,
       role: testimonial.role ?? '',
-      image: decorativeImages ? { ...image, alt: '' } : image,
+      image: decorativeImages
+        ? withLandingImageAlt(
+            image,
+            'imageAlt' in testimonial && typeof testimonial.imageAlt === 'string' ? testimonial.imageAlt : undefined,
+          )
+        : image,
     }
   })
 }
@@ -260,7 +265,9 @@ const normalizeProcess = (process: Process, fieldPath: string, localizedImages =
   })),
   stepImages: requireLandingArray(process.steps, `${fieldPath}.steps`).map((step, index) => {
     const image = resolveRequiredLandingImage(step.image, `${fieldPath}.steps.${index}.image`, step.title ?? '')
-    return localizedImages ? withLandingImageAlt(image, 'imageAlt' in step ? step.imageAlt : undefined) : image
+    return localizedImages
+      ? withLandingImageAlt(image, 'imageAlt' in step && typeof step.imageAlt === 'string' ? step.imageAlt : undefined)
+      : image
   }),
 })
 
@@ -527,9 +534,7 @@ export const normalizeClinicPartnerLandingContent = (landingPages: LandingPage, 
       buttonText: normalizeLandingCtaButtonText(teamCta.buttonText, 'clinicPartners.teamCta.buttonText'),
       buttonLink: normalizeLandingCtaButtonLink(teamCta.link, 'clinicPartners.teamCta.link', locale),
     },
-    testimonials: normalizeTestimonials(clinicPartners.testimonials, 'clinicPartners.testimonials').map(
-      (testimonial) => ({ ...testimonial, image: withLandingImageAlt(testimonial.image, '') }),
-    ),
+    testimonials: normalizeTestimonials(clinicPartners.testimonials, 'clinicPartners.testimonials', true),
     testimonialsIntro: normalizeSectionIntro(testimonialsIntro),
     faq: normalizeFaq(faq, 'clinicPartners.faq'),
     blogTeaser: normalizeSectionIntro(blogTeaser),

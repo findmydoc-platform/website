@@ -91,11 +91,13 @@ describe('seedGlobalsBaseline', () => {
     expect(updateGlobal).toHaveBeenCalledWith(
       expect.objectContaining({
         slug: 'landingPages',
+        locale: 'all',
+        fallbackLocale: false,
         context: { disableRevalidate: true },
         data: expect.objectContaining({
           home: expect.objectContaining({
             hero: expect.objectContaining({
-              title: 'Clinic Comparison Türkiye for Aesthetic Treatments',
+              title: { de: expect.any(String), en: expect.any(String) },
               image: 42,
             }),
           }),

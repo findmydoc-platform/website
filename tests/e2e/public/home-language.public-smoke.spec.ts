@@ -76,16 +76,19 @@ for (const variant of variants) {
     expect(response?.status()).toBe(200)
     await expect(page.locator('html')).toHaveAttribute('lang', variant.locale)
     const url = new URL(page.url())
-    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', url.href)
+    await expect
+      .poll(() => page.locator('link[rel="canonical"]').evaluate((link: HTMLLinkElement) => link.href))
+      .toBe(url.href)
     for (const [locale, path] of [
       ['de', germanHome],
       ['en', englishHome],
       ['x-default', germanHome],
     ] as const) {
-      await expect(page.locator(`link[rel="alternate"][hreflang="${locale}"]`)).toHaveAttribute(
-        'href',
-        new URL(path, url).href,
-      )
+      await expect
+        .poll(() =>
+          page.locator(`link[rel="alternate"][hreflang="${locale}"]`).evaluate((link: HTMLLinkElement) => link.href),
+        )
+        .toBe(new URL(path, url).href)
     }
 
     const content = page.locator(`main > article[lang="${variant.locale}"]`)
